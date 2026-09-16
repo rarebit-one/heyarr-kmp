@@ -37,10 +37,14 @@ class DriveCrdtVectorsTest {
             val expectedList = JsonScan.objectsOf(JsonScan.arrayOf(caseObj, listOf("list")) ?: "[]", emptyList())
                 .map { Live(JsonScan.stringField(it, "path")!!, JsonScan.stringField(it, "blob")!!, JsonScan.boolField(it, "conflicted") ?: false) }
 
+            val expectedResolved = JsonScan.objectsOf(JsonScan.arrayOf(caseObj, listOf("resolved")) ?: "[]", emptyList())
+                .map { Live(JsonScan.stringField(it, "path")!!, JsonScan.stringField(it, "blob")!!, JsonScan.boolField(it, "conflicted") ?: false) }
+
             val d = Drive()
             d.apply(changes)
             assertEquals(expectedList, liveOf(d), "[$name] live tree")
             assertEquals(expectedSnapshot, d.snapshot(), "[$name] snapshot bytes")
+            assertEquals(expectedResolved, d.resolved().map { Live(it.path, it.blob, it.conflicted) }, "[$name] resolved tree")
 
             // Order independence: reversed apply yields the same converged tree + snapshot.
             val rev = Drive()

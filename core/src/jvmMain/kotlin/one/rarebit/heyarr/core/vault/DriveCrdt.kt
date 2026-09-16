@@ -151,6 +151,62 @@ class Drive {
     }
 
     /**
+     * The conflict-RESOLVED live tree the client renders: each path's winner at its path,
+     * plus every losing head of a conflicted path relocated to a derived "conflicted copy"
+     * path — so the merge discards no bytes (ADR-0095). A pure, order-independent function
+     * of the converged drive: two converged replicas produce byte-identical trees. All
+     * entries have conflicted=false (relocation already turned the conflict into two files).
+     */
+    fun resolved(): List<DriveEntry> {
+        val occupied = HashSet<String>()
+        for ((p, rec) in entries) if (rec.liveHeads().isNotEmpty()) occupied.add(p)
+
+        val out = ArrayList<DriveEntry>()
+        val losers = ArrayList<Pair<String, DriveValue>>()
+        for ((p, rec) in entries) {
+            val live = rec.liveHeads()
+            if (live.isEmpty()) continue
+            val winner = live.last()
+            out.add(DriveEntry(p, winner.blob, winner.size, winner.mtime, false))
+            for (l in live.subList(0, live.size - 1)) losers.add(p to l)
+        }
+        // Global sort so the numeric collision suffix is deterministic across replicas.
+        losers.sortWith(Comparator { a, b ->
+            if (a.first != b.first) a.first.compareTo(b.first)
+            else if (b.second.key.greater(a.second.key)) -1 else if (a.second.key.greater(b.second.key)) 1 else 0
+        })
+        val placed = HashSet<String>()
+        for ((orig, v) in losers) {
+            val dp = uniqueConflictPath(orig, v.key, occupied, placed)
+            placed.add(dp)
+            out.add(DriveEntry(dp, v.blob, v.size, v.mtime, false))
+        }
+        out.sortBy { it.path }
+        return out
+    }
+
+    private fun uniqueConflictPath(orig: String, key: PosKey, occupied: Set<String>, placed: Set<String>): String {
+        var n = 1
+        while (true) {
+            val cand = conflictPath(orig, key, n)
+            if (cand !in occupied && cand !in placed) return cand
+            n++
+        }
+    }
+
+    private fun conflictPath(orig: String, key: PosKey, n: Int): String {
+        val slash = orig.lastIndexOf('/')
+        val dir = if (slash < 0) "" else orig.substring(0, slash + 1)
+        val file = if (slash < 0) orig else orig.substring(slash + 1)
+        // splitExt: a leading dot (dotfile) is NOT an extension boundary.
+        val dot = file.lastIndexOf('.')
+        val stem = if (dot <= 0) file else file.substring(0, dot)
+        val ext = if (dot <= 0) "" else file.substring(dot)
+        val suffix = if (n > 1) " ($n)" else ""
+        return "$dir$stem (conflicted copy — ${key.writer} — ${key.at})$suffix$ext"
+    }
+
+    /**
      * Deterministic snapshot: entries sorted by path, writes by (at, writer). Two converged
      * drives produce byte-identical output (safe to content-address), matching Go's
      * json.Marshal of the drive snapshot exactly.
