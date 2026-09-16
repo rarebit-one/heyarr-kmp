@@ -70,6 +70,14 @@ data class DriveEntry(
     val conflicted: Boolean,
 )
 
+/**
+ * Retention knobs (ADR-0095). [maxVersionsPerPath]: prior versions a live path keeps,
+ * newest first (negative = all, 0 = none). [trashTtlSeconds]: how long a deleted path's
+ * trashed blobs are kept, measured against their newest content mtime (negative =
+ * forever, 0 = none).
+ */
+data class RetentionPolicy(val maxVersionsPerPath: Int, val trashTtlSeconds: Long)
+
 private data class DriveValue(val blob: String, val size: Long, val mtime: Long, val key: PosKey, val base: PosKey)
 
 private class DriveRecord {
@@ -148,6 +156,46 @@ class Drive {
         val prior = rec.values.values.filter { it.key !in liveKeys && it.blob.isNotEmpty() }
             .sortedWith(Comparator { a, b -> if (b.key.greater(a.key)) 1 else if (a.key.greater(b.key)) -1 else 0 })
         return prior.map { it.blob }
+    }
+
+    /**
+     * The client-side retention / GC reference view (ADR-0095, ADR-0018): under [policy]
+     * at wall-clock [nowUnix] seconds, the blob ids that NO policy-retained entry
+     * references anywhere in the drive — safe for the control plane to reclaim (which is
+     * out of scope here). Pure and read-only; the live head of every path is always kept.
+     * Sorted, deduplicated.
+     */
+    fun retain(policy: RetentionPolicy, nowUnix: Long): List<String> {
+        val kept = HashSet<String>()
+        val all = HashSet<String>()
+        for (rec in entries.values) {
+            for (v in rec.values.values) if (v.blob.isNotEmpty()) all.add(v.blob)
+            val live = rec.liveHeads()
+            for (h in live) if (h.blob.isNotEmpty()) kept.add(h.blob)
+
+            if (live.isNotEmpty()) {
+                // Live path: keep the newest maxVersionsPerPath of its prior versions.
+                val liveKeys = live.map { it.key }.toHashSet()
+                val prior = rec.values.values.filter { it.key !in liveKeys && it.blob.isNotEmpty() }
+                    .sortedWith(Comparator { a, b -> if (b.key.greater(a.key)) 1 else if (a.key.greater(b.key)) -1 else 0 })
+                for ((i, v) in prior.withIndex()) {
+                    if (policy.maxVersionsPerPath >= 0 && i >= policy.maxVersionsPerPath) break
+                    kept.add(v.blob)
+                }
+                continue
+            }
+            // Fully-deleted path: trash, kept while younger than the TTL (or forever if <0).
+            if (policy.trashTtlSeconds < 0) {
+                for (v in rec.values.values) if (v.blob.isNotEmpty()) kept.add(v.blob)
+                continue
+            }
+            var newest = 0L
+            for (v in rec.values.values) if (v.mtime > newest) newest = v.mtime
+            if (nowUnix - newest <= policy.trashTtlSeconds) {
+                for (v in rec.values.values) if (v.blob.isNotEmpty()) kept.add(v.blob)
+            }
+        }
+        return (all - kept).sorted()
     }
 
     /**
