@@ -1,6 +1,7 @@
 package one.rarebit.heyarr.core.vault
 
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.voidbind.crypto.VoidbindEncryption
 import java.util.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -26,6 +27,17 @@ class VaultFrameVectorsTest {
         val out = ByteArray(s.length / 2)
         for (i in out.indices) out[i] = s.substring(i * 2, i * 2 + 2).toInt(16).toByte()
         return out
+    }
+
+    @Test
+    fun voidbindPrimitiveRoundTrips() {
+        // Isolates "is a crypto provider registered on :core's test runtime?" from any
+        // vector-parsing issue. If this throws, the provider is missing on the classpath.
+        val key = ByteArray(32) { it.toByte() }
+        val msg = "hello vault".encodeToByteArray()
+        val ct = VoidbindEncryption.encryptChange(key, msg)
+        val back = VoidbindEncryption.decryptChange(key, ct)
+        assertTrue(back.contentEquals(msg), "voidbind encrypt/decrypt round-trip failed")
     }
 
     @Test
