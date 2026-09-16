@@ -124,3 +124,31 @@ laptop). CI has no live network — every W4 test uses fixtures/vectors, never a
 
 New `FileSettingsStore`-style JSON under `$XDG_CONFIG_HOME/heyarr-desktop/` for the
 folder⇄space mapping + sync cursor; secrets through the existing `SecretStore`.
+
+## Known issue: JDK ChaCha20 nonce-reuse guard (desktop JVM)
+
+`voidbind-client:0.7.0` builds XChaCha20-Poly1305 on cryptography-kotlin 0.6.0. On the
+**JVM** that provider pools the underlying `javax.crypto.Cipher`, and SunJCE's ChaCha20
+refuses to re-`init` it with the SAME (key, nonce) as the immediately preceding op —
+throwing `InvalidKeyException: Matching key and nonce from previous initialization`.
+
+Consequence on desktop JVM: **decrypting the same frame twice in a row throws**, and an
+encrypt-then-decrypt of one nonce in-process throws. W4's full-file sync path
+(`openAll`, each frame decrypted exactly once) is **unaffected** — so W4.1 is
+wire-correct and the full-sync product works. What is NOT yet supported on desktop JVM:
+repeated same-frame reads, i.e. random-access / VFS reads (already deferred in W4).
+
+This is a cryptography-kotlin/SunJCE interaction, not a heyarr or wire-format bug (Go
+seals and opens the identical bytes; `openAll` opens them in Kotlin). It is a shared
+concern for the whole personal-state plane on desktop, not just the vault.
+
+Options to resolve before VFS/random-access lands (a decision for later):
+1. Bump cryptography-kotlin past 0.6.0 in voidbind-kmp (coordinated with the Kotlin
+   version) if a later release stops pooling / fixes the guard.
+2. In voidbind-kmp `XChaCha20Poly1305`, obtain a fresh (non-pooled) cipher per op, or
+   reset provider state, so consecutive same-(key,nonce) decrypts are allowed.
+3. Cache decrypted frames at the vault layer so a given (key, nonce) is never decrypted
+   twice — mitigates random-access but not the general primitive.
+
+Android (Conscrypt) likely does not hit this; it is JVM/SunJCE-specific — verify when W5
+mobile lands.
