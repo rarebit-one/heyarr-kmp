@@ -85,7 +85,7 @@ object VaultFrame {
         val pt = try {
             VoidbindEncryption.decryptChange(spaceKey, sealed)
         } catch (e: Exception) {
-            throw FrameException("frame $index did not decrypt")
+            throw FrameException("frame $index did not decrypt: ${e::class.simpleName}: ${e.message}")
         }
         if (pt.size < HEADER_LEN || pt[0] != VERSION.toByte()) throw FrameException("frame $index: bad header")
         val wantId = hexToBytes(m.fileId)
