@@ -101,7 +101,10 @@ HTTP endpoints (all `/api/v1`, bearer/Device auth):
   Proven on Go golden vectors. (Known issue: repeated same-frame decrypt hits the JDK
   ChaCha20 guard — see below; full-file `openAll` is unaffected.)
 - **W4.2 — drive CRDT** (`:core` `vault/DriveCrdt.kt`): DONE — merge, heads/versions,
-  byte-identical snapshot, NFC paths. Proven on Go vectors (tree + convergence + snapshot).
+  byte-identical snapshot, NFC paths, conflicted-copy relocation (`resolved()`), and the
+  retention/GC view (`retain()`). Proven on Go vectors (tree, convergence, snapshot,
+  resolved trees, retention). Still deferred, as in Go: a dotted version vector for
+  multi-way put-vs-delete.
 - **W4.3 — space-key custody**: unwrap via `DeviceIdentity` + `DesktopSecretStore`; a
   `SpaceKey` value type; `Unwrapper` seam (software impl now, cruciform later).
 - **W4.4 — vault HTTP client** (`:composeApp`): typed clients for blob PUT (binary upload
