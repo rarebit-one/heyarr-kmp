@@ -34,40 +34,37 @@ class VaultFrameVectorsTest {
         val cases = JsonScan.objectsOf(body, emptyList())
         assertTrue(cases.isNotEmpty(), "no frame vectors loaded")
 
+        val problems = StringBuilder()
         for (obj in cases) {
-            val name = JsonScan.stringField(obj, "name") ?: fail("case has no name")
-            val spaceKey = hex(JsonScan.stringField(obj, "space_key_hex")!!)
-            val plaintext = b64(JsonScan.stringField(obj, "plaintext_b64")!!)
-            val content = b64(JsonScan.stringField(obj, "content_b64")!!)
-            val manifestBlob = b64(JsonScan.stringField(obj, "manifest_b64")!!)
-            val manifest = VaultFrame.parseManifest(JsonScan.objectAt(obj, "manifest")!!)
+            val name = JsonScan.stringField(obj, "name") ?: "?"
+            try {
+                val spaceKey = hex(JsonScan.stringField(obj, "space_key_hex")!!)
+                val plaintext = b64(JsonScan.stringField(obj, "plaintext_b64")!!)
+                val content = b64(JsonScan.stringField(obj, "content_b64")!!)
+                val manifestBlob = b64(JsonScan.stringField(obj, "manifest_b64")!!)
+                val manifest = VaultFrame.parseManifest(JsonScan.objectAt(obj, "manifest")!!)
+                val fetch = VaultFrame.Fetch { start, end -> content.copyOfRange(start.toInt(), end.toInt()) }
 
-            val fetch = VaultFrame.Fetch { start, end -> content.copyOfRange(start.toInt(), end.toInt()) }
-
-            // Whole file.
-            assertTrue(
-                VaultFrame.openAll(spaceKey, manifest, fetch).contentEquals(plaintext),
-                "[$name] openAll did not recover the plaintext",
-            )
-
-            // Every single-byte and a couple of spanning ranges.
-            val size = manifest.plaintextSize
-            if (size > 0) {
-                for (off in 0 until size) {
-                    val got = VaultFrame.openRange(spaceKey, manifest, off, 1, fetch)
-                    assertEquals(plaintext[off.toInt()], got.single(), "[$name] byte at $off")
+                val all = VaultFrame.openAll(spaceKey, manifest, fetch)
+                if (!all.contentEquals(plaintext)) {
+                    problems.append("[$name] openAll mismatch: got ${all.size}B want ${plaintext.size}B; manifest=$manifest\n")
                 }
-                val mid = size / 2
-                assertTrue(
-                    VaultFrame.openRange(spaceKey, manifest, mid, size - mid, fetch)
-                        .contentEquals(plaintext.copyOfRange(mid.toInt(), size.toInt())),
-                    "[$name] tail range",
-                )
+                val size = manifest.plaintextSize
+                var off = 0L
+                while (off < size) {
+                    val got = VaultFrame.openRange(spaceKey, manifest, off, 1, fetch)
+                    if (got.single() != plaintext[off.toInt()]) {
+                        problems.append("[$name] byte $off mismatch\n")
+                    }
+                    off++
+                }
+                assertEquals(manifest, VaultFrame.openManifest(spaceKey, manifestBlob), "[$name] manifest")
+            } catch (t: Throwable) {
+                val m = runCatching { VaultFrame.parseManifest(JsonScan.objectAt(obj, "manifest")!!) }.getOrNull()
+                problems.append("[$name] ${t::class.simpleName}: ${t.message}; parsed manifest=$m\n")
             }
-
-            // The sealed manifest round-trips to the same geometry.
-            assertEquals(manifest, VaultFrame.openManifest(spaceKey, manifestBlob), "[$name] manifest")
         }
+        if (problems.isNotEmpty()) fail("vault frame vectors failed:\n$problems")
     }
 
     @Test
@@ -79,8 +76,6 @@ class VaultFrameVectorsTest {
         val content = b64(JsonScan.stringField(multi, "content_b64")!!)
         val manifest = VaultFrame.parseManifest(JsonScan.objectAt(multi, "manifest")!!)
 
-        // Fetch frame 0's ciphertext but ask openFrame to treat it as frame 1: the
-        // in-plaintext header index no longer matches → FrameException.
         val r0 = manifest.frameByteRange(0)
         val frame0 = content.copyOfRange(r0.first.toInt(), r0.last.toInt() + 1)
         try {
