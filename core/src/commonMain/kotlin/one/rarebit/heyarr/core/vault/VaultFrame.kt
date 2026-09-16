@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.core.vault
 
+import one.rarebit.heyarr.core.crypto.Blake3
 import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.voidbind.crypto.VoidbindEncryption
@@ -73,10 +74,13 @@ object VaultFrame {
         fun range(start: Long, end: Long): ByteArray
     }
 
-    /** Names a ciphertext blob: `"blake3:<hex>"` of its bytes (BLAKE3 lands in W4.0). */
+    /** Names a ciphertext blob: `"blake3:<hex>"` of its bytes. */
     fun interface ContentHasher {
         fun hash(bytes: ByteArray): String
     }
+
+    /** The content hasher heyarr uses to name every blob (BLAKE3). */
+    val BLAKE3 = ContentHasher { Blake3.hashHex(it) }
 
     // ---- reading ----
 
@@ -142,7 +146,7 @@ object VaultFrame {
         spaceKey: ByteArray,
         plaintext: ByteArray,
         fileId: ByteArray,
-        hasher: ContentHasher,
+        hasher: ContentHasher = BLAKE3,
         frameSize: Int = FRAME_SIZE,
     ): Pair<ByteArray, Manifest> {
         require(fileId.size == FILE_ID_LEN) { "file id must be $FILE_ID_LEN bytes" }

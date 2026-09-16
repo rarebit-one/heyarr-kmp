@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.core.vault
 
+import one.rarebit.heyarr.core.crypto.Blake3
 import one.rarebit.heyarr.core.net.JsonScan
 import java.util.Base64
 import kotlin.test.Test
@@ -74,6 +75,20 @@ class VaultFrameVectorsTest {
                 )
             }
         }
+    }
+
+    @Test
+    fun sealNamesContentWithBlake3() {
+        // seal only encrypts (distinct nonces per frame) — no decrypt, so the JDK guard
+        // is not in play. Proves the upload path: frames + BLAKE3-named content blob.
+        val key = ByteArray(32) { it.toByte() }
+        val fileId = ByteArray(16) { (0xA0 + it).toByte() }
+        val plaintext = ByteArray(40) { (it % 256).toByte() }
+        val (content, m) = VaultFrame.seal(key, plaintext, fileId, frameSize = 16)
+        assertEquals(3, m.frameCount, "40 bytes over 16-byte frames = 3 frames")
+        assertEquals(40L, m.plaintextSize)
+        assertEquals("blake3:", m.content.substring(0, 7))
+        assertEquals(Blake3.hashHex(content), m.content, "content blob is named by its BLAKE3")
     }
 
     @Test
