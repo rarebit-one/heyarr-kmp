@@ -1,0 +1,104 @@
+[
+  {
+    "name": "empty",
+    "space_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "frame_size": 64,
+    "file_id_hex": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+    "plaintext_b64": "",
+    "content_b64": "",
+    "manifest_b64": "i7hPHBJd1diaU0SAGWexgkrVgnoSHZyE/T5jKONld9Bv+Qle39ZIqTG2QhoH14nIWKBcXKDmK/XIcM3Wl/SDpNv+effK8wX2CM2EAjapWfZDONfBYLejYc5jJskdcUCE0guLBTpUfqDkssguaKSQxtWl+TQc8MQspntIjwdN6TCcRU/mBinuGMa0KXK5wOQ7PKF3J12xZBNFWiIX14v3EPB/f1At/TFdsfGW/Te2YRH7KEWq0ePjQqyTpldjgIglCMdviQL9lpJE8PCx0E3i3tpa/kuepkmlYQtGY29huzMcC3AJFxKnqbI=",
+    "manifest": {
+      "version": 1,
+      "file_id": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+      "frame_size": 64,
+      "frame_count": 0,
+      "plaintext_size": 0,
+      "content": "blake3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262"
+    }
+  },
+  {
+    "name": "short_partial",
+    "space_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "frame_size": 64,
+    "file_id_hex": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+    "plaintext_b64": "aGVsbG8gdmF1bHQ=",
+    "content_b64": "XTGR99jvLoMgjvGNJEVV4POhVUxKjDMaHGL1vl+4c9IqL/wfyd9YLCJbbju3RuDcA2DWQ0tHB29F5mh6d6YrMSgM3RQ4D24t",
+    "manifest_b64": "my7/AmtWuImkwT/+lVyghkTkhO24T7KhyFIrcLD6QkzjO62zEsoNOqIR9i+5f12pKeoGch2PJVrwqdr8KhMyXiq8spW0sM4rqnp5BWzA9hDGPR8PB+5bpuh+FNj8kisCCz61w8Iy2E/J3bPlohFQ8+QKB8j+JdduU8uDXoRsYDBJwXRjZ7JYP3OBXOZknyaeV5rslkSQjLrqMAoIjahm2QtCPdY2EzE/pc5GQFqnYHlIsHAT3/cZge98JYKQGfXp3q122oXcmh17Smkm864sWgjK3JsDzqKaMjXgmEpZtwY862F1lazuSbJO",
+    "manifest": {
+      "version": 1,
+      "file_id": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+      "frame_size": 64,
+      "frame_count": 1,
+      "plaintext_size": 11,
+      "content": "blake3:bdcf455b3ff90ff14c70e8ed19ccc8bc421e5e2e83c4d3812ccab96bd393575c"
+    }
+  },
+  {
+    "name": "exact_one_frame",
+    "space_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "frame_size": 16,
+    "file_id_hex": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+    "plaintext_b64": "AAECAwQFBgcICQoLDA0ODw==",
+    "content_b64": "RZHA81Jj3Qjt9LK1HTcI5RhRJ8KhY4GWg9zpU+3P0NUByTKa1HVUp89tMmXq5sjCdsKu92EWMS2hTHVmLj0F5yazQVVSXKujxYNz/bo=",
+    "manifest_b64": "VMqrSQ8TsPMDDD/rTLl8TezL1HqkaZQ5Gw36T3ngf3VSb0izQeEuEHgBLujkBcu/sKs7n+U8vvZX92BL4lSOavocLRDSc4473BrCfMY9WgyIz8uuTc9U8rPhfJVqKwVgePFqLARPLCNSrhByEgu4ekXQqo5WawjKJUrYSpEb9zUeOxfKPQNrCG8CvDVGRax0WfC7SZ7QrDZb0dgs8/cYkWsC+nfybmEkPcO3raXHeLgb748nVCoxUAi7ZkeiKKp40kd3Hl4dPhZfqPhflsIW3LpOPYICfEYbFAdKxTsSrTqlxs+23AgAu5go",
+    "manifest": {
+      "version": 1,
+      "file_id": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+      "frame_size": 16,
+      "frame_count": 1,
+      "plaintext_size": 16,
+      "content": "blake3:42ccfcf71306751ffca8c7a2d1084d883249d406288f7bb2cc6236c16ed14a04"
+    }
+  },
+  {
+    "name": "multi_three_frames",
+    "space_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "frame_size": 16,
+    "file_id_hex": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+    "plaintext_b64": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJw==",
+    "content_b64": "TANnqjsxrCWw6vacbSUuWl243Flyb3/sM7h/866nZ/1cO1OZFWaXRbgajhi6gfZi5XQda200RYQq1w8f6oWvByZm+TBCwU6BMdEQ0764tGdjw2YalgHytsRJ7xtG6yPhqJoEum7azO54m+Y238on7jwqtLxdDRsj6xIcJ/inKQAhU95BX76YZAwCWcOUXY+sEfa1PmYiY84zFu1iE2QL7cMuP5OdNpCQWBlMNDpAfRtYvN+cxhNRyCbMiqq9F0ROTkkMhY2uiKMQZIBnEabmvtPJjtiOgJVX0C5Xb7in1A==",
+    "manifest_b64": "8gPiFDWXH/5MbzncKbOpoGjdee5fTqdts4wnsEq7QI1HrbhrS10AQ9vX/mAWnga+q8ZG4FsF9+Eol5ZoMjHcDy92fhXUNaK4RbQjKG4/TXJeag2Os+b59sT015f918YloMZ/RoDyUxHcxWVWLDgmZLfX789zSlMGgRkOtoIFwZutmjFeMjFSRhNtbKEOc/9H46CzzS77M+nka0Uu/zQhjAYUGdjIf8sg7en5Mab3hPweX7yYbWfkQS97dQn3Tv+kuujcVA0mbYanJUTAsHK/5bE6FFgBs/1K8dypStutB37oJGnZLqCsjJN1",
+    "manifest": {
+      "version": 1,
+      "file_id": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+      "frame_size": 16,
+      "frame_count": 3,
+      "plaintext_size": 40,
+      "content": "blake3:6517dc37b3dc4a48794553738fa823b41a08e1c142d37f74a6ce583e867eaee1"
+    }
+  },
+  {
+    "name": "multi_small_frames",
+    "space_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "frame_size": 8,
+    "file_id_hex": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+    "plaintext_b64": "AAECAwQFBgcICQoLDA0ODxAREhM=",
+    "content_b64": "AZpXOwvuI33pGhiGYBh6uSzbkIewSm0ad8ZXMYDi3BMehpA3lTEMG2fH9zmrOaHIb5JsSMhiMsAaIijhOt9vBkuLBG/h+AC6FGwKlRAEjYyQZt8kSf8HrC9Ut1DVRT67wxouZOxocQf5bTYJv5GaIQUb7wwXsDQ/bNdCyA7KrGmV6y9T3CMA4qzxysmtB8S1pY/y4OjjVSqvOZGbLv+IhG4HtKypRzixCP20VuQaVp5OdEuMjsgBveJrDRiQyypBOdiECOhlQsVit74=",
+    "manifest_b64": "MQvxxnpfTEsPZpZRnjivgAhc6XzTo8yhs5eb+JYiWi3/yjZZGXvbP//t9yMcZ7R7YB9kcOeDOY6uMEIPil+WC1xcR1TVlIPykKL10nEdTth3dkLINvd5U10WlEOL6fEQH/1VKcH/NBbWmA2ZQZ+1lLjmIEAbEhOHNsPFe/Th7oIvzLD7mN1AXNNXKNLgigNW3Ii3YA/HD730tXtga8XeOVCn6RHX6Hpw01K/mxB9KIv5CmOj6sWrddcBDxVDhQu+UcQV+vhs78WGsYilVTpQemSiIVeh7DUVQ8DsFEr0I5TX4MY0T4niFl0=",
+    "manifest": {
+      "version": 1,
+      "file_id": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+      "frame_size": 8,
+      "frame_count": 3,
+      "plaintext_size": 20,
+      "content": "blake3:852c6b1b9040b993d4a31b45ec9dc78dd3b3791c2a56234dcdde8cad0e7d5763"
+    }
+  },
+  {
+    "name": "one_full_one_partial",
+    "space_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+    "frame_size": 32,
+    "file_id_hex": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+    "plaintext_b64": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDE=",
+    "content_b64": "mUTbQ+DvxGFcXRF4Uqv4Pwm0NPK4gq2auqZj1cIHRJnpZkRVHZrpi8s3l2xDUEPmABk8w992f4uWQR4rhJAvxw9hnYIqsuRfwDOw6oe+jb/KeShimI15QLyxitfu8AYHBFOpCZwgATVSHTC0YQO75xwSiGJ2q/8+7Z5zD8FA8fZMSEHgihZpZhFgJgDj7RbhTcNj8cOw8wZi4d057cDy1E6k3WpFX8dSqxcKjw==",
+    "manifest_b64": "Eqi3zAQmKxA0sVLcOdLva+Oyk0LBjXIdxlfCnJP5nEzxKi13FY1Dz86YZm4e4Bxa7FCazrZ2mxbCnfHA+fGNrpBC/vPw0N7S1ljakTc+g5gzjZFhEoYniIlZg8kHCV4JEGZJC342gN+De8HPcTt3t8z3+jXLTFN36+yDSRswrLs8qWT8KOEvqAFGHS5O3JXKT+oXxFAaHEXKoc8Rz+0G5tRSCXTWsndaJe8V4SBDNj3EIBdxk720gEiWsqKssX9zltVF7F5MNnxxaEH8NeZFIKqsoVbreVbhOlX2rBh/0/YURiw5+Of+6Xdu",
+    "manifest": {
+      "version": 1,
+      "file_id": "a0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+      "frame_size": 32,
+      "frame_count": 2,
+      "plaintext_size": 50,
+      "content": "blake3:7cb3c581373c408dc33b03d03b655cbe17d543e3bb1300fd3ac3471db5154c67"
+    }
+  }
+]
