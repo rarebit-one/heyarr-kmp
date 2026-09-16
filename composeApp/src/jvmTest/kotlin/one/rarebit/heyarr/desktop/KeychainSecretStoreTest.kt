@@ -4,10 +4,12 @@ import one.rarebit.heyarr.desktop.device.DesktopSecretStore
 import one.rarebit.heyarr.desktop.device.KeyTier
 import one.rarebit.heyarr.desktop.device.KeychainBackend
 import one.rarebit.heyarr.desktop.device.KeychainSecretStore
+import one.rarebit.heyarr.desktop.device.LibSecretBackend
 import one.rarebit.heyarr.desktop.device.MacKeychainBackend
 import one.rarebit.heyarr.desktop.device.SecretStores
 import java.io.File
 import java.nio.file.Files
+import java.security.SecureRandom
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -154,6 +156,50 @@ class KeychainSecretStoreTest {
         } finally {
             backend.remove(account)
             assertNull(backend.retrieve(account), "removed after the test")
+        }
+    }
+
+    // ── real Linux libsecret / Secret Service (skips where unreachable) ──────────────
+
+    /**
+     * Exercises the actual libsecret / freedesktop Secret Service JNA binding on a Linux host
+     * with a reachable Secret Service (gnome-keyring / KWallet on the session D-Bus): it seals a
+     * random secret through the REAL backend, reads it back for a full round-trip, and asserts
+     * the store reports the OS-backed [KeyTier.KEYCHAIN] tier (not the sealed-file fallback). It
+     * also drives the overwrite (store-over-existing) and delete paths against a throwaway
+     * account. Skips (returns) on any non-Linux host and whenever no Secret Service is reachable
+     * (headless / no session bus / locked), so it never fails CI's runner and never leaves an
+     * item behind.
+     */
+    @Test fun real_linux_libsecret_round_trips_when_reachable() {
+        val os = System.getProperty("os.name")?.lowercase().orEmpty()
+        if (!os.contains("linux")) return
+
+        val backend = LibSecretBackend(service = "one.rarebit.heyarr.desktop.test")
+        if (!backend.isAvailable()) return // no Secret Service reachable — skip, don't fail
+
+        // The store over the real backend must report the OS-backed keychain tier.
+        val store = KeychainSecretStore(backend)
+        assertEquals(KeyTier.KEYCHAIN, store.tier)
+
+        val account = "roundtrip-" + System.nanoTime()
+        val secret = ByteArray(32).also { SecureRandom().nextBytes(it) }
+        try {
+            assertFalse(store.exists(account), "clean start")
+            assertNull(store.unseal(account), "nothing stored yet")
+
+            store.seal(account, secret)
+            assertTrue(store.exists(account), "present in the Secret Service after seal")
+            assertContentEquals(secret, store.unseal(account), "same bytes back out of libsecret")
+
+            // Overwrite must replace the stored secret in place.
+            val secret2 = ByteArray(32).also { SecureRandom().nextBytes(it) }
+            store.seal(account, secret2)
+            assertContentEquals(secret2, store.unseal(account), "overwrite replaces the secret")
+        } finally {
+            store.delete(account)
+            assertFalse(store.exists(account), "removed after the test")
+            assertNull(store.unseal(account), "nothing left in the Secret Service")
         }
     }
 }
