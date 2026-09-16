@@ -94,12 +94,14 @@ HTTP endpoints (all `/api/v1`, bearer/Device auth):
 
 ## Build order (each a CI-verified PR)
 
-- **W4.1 — frame codec** (`:core` `personalstate/vaultframe`): header + `encryptChange`
-  wrapper + manifest + `FrameByteRange`/`OpenRange`. Deps: BLAKE3 (W4.0). Tests:
-  cross-decrypt round-trip vectors from Go + byte-pin on header layout.
-- **W4.0 — BLAKE3** (`:core` `crypto/Blake3.kt`): vendored, KAT-tested. (Lands first, with W4.1.)
-- **W4.2 — drive CRDT** (`:core` `personalstate/crdt`): port + hand-rolled JSON (JsonScan/
-  JsonWrite). Tests: byte-equality snapshot golden vectors from Go + reorder-convergence.
+- **W4.0 — BLAKE3** (`:core` `crypto/Blake3.kt`): DONE — vendored pure-Kotlin port of the
+  reference_impl, KAT-tested vs Go across single/multi-chunk sizes.
+- **W4.1 — frame codec** (`:core` `vault/VaultFrame.kt`): DONE — header + `encryptChange`
+  wrapper + manifest + `frameByteRange`/`openRange`/`openAll`, seal names blobs via BLAKE3.
+  Proven on Go golden vectors. (Known issue: repeated same-frame decrypt hits the JDK
+  ChaCha20 guard — see below; full-file `openAll` is unaffected.)
+- **W4.2 — drive CRDT** (`:core` `vault/DriveCrdt.kt`): DONE — merge, heads/versions,
+  byte-identical snapshot, NFC paths. Proven on Go vectors (tree + convergence + snapshot).
 - **W4.3 — space-key custody**: unwrap via `DeviceIdentity` + `DesktopSecretStore`; a
   `SpaceKey` value type; `Unwrapper` seam (software impl now, cruciform later).
 - **W4.4 — vault HTTP client** (`:composeApp`): typed clients for blob PUT (binary upload
