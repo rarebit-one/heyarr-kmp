@@ -66,3 +66,13 @@ if (hasAndroidSdk) {
         }
     }
 }
+
+// Print full exception messages (and test stdout) to the build log so a JVM unit-test
+// failure is diagnosable from CI without the (un-uploaded) HTML report.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showStandardStreams = true
+        events("failed")
+    }
+}
