@@ -55,6 +55,20 @@ jobs:
       - name: Build + JVM unit tests
         run: ./gradlew :core:build :ui:build :composeApp:build --no-daemon --stacktrace
 
+      # The runnable fat JAR for the HEADLESS vault-sync daemon: Compose's supported uber-jar
+      # task bundles the whole runtime classpath (incl. voidbind-client) with service files
+      # merged. Its built-in Main-Class is the GUI window, so the daemon is launched by class
+      # name on the classpath (see docs/vault-sync-daemon.md) — this step just produces the JAR.
+      - name: Package headless vault-sync uber JAR
+        run: ./gradlew :composeApp:packageUberJarForCurrentOS --no-daemon --stacktrace
+
+      - name: Upload vault-sync JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: heyarr-vault-sync-jar
+          path: composeApp/build/compose/jars/*.jar
+          if-no-files-found: error
+
       - name: Screenshots (off-screen, fixture data)
         run: ./gradlew :composeApp:screenshots --no-daemon
         env:
