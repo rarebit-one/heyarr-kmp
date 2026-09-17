@@ -53,7 +53,7 @@ kotlin {
                 // drive the pairing flow. Resolves from the org's GitHub Packages repo
                 // (settings.gradle.kts) — CI passes GITHUB_ACTOR/GITHUB_TOKEN (desktop.yml),
                 // locally gpr.user/gpr.token in ~/.gradle/gradle.properties.
-                implementation("one.rarebit.voidbind:voidbind-client:0.7.0")
+                implementation("one.rarebit.voidbind:voidbind-client:0.8.0")
 
                 // The plain-JVM DeviceKeyStore actual voidbind ships is a NON-persisted,
                 // process-lifetime software key (regenerated each launch) and never exposes
