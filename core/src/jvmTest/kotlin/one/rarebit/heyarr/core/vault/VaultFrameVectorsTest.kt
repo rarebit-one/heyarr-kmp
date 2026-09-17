@@ -78,6 +78,25 @@ class VaultFrameVectorsTest {
     }
 
     @Test
+    fun repeatedSameFrameDecryptWorks() {
+        // Byte-by-byte openRange re-decrypts the same frame consecutively (same key+nonce).
+        // On voidbind-client 0.7.0's pooled JDK cipher this tripped SunJCE's nonce-reuse
+        // guard; the 0.8.0 fresh-cipher fix makes it work — the random-access/VFS path.
+        val body = resource("/vault/frame_vectors.json")
+        val multi = JsonScan.objectsOf(body, emptyList())
+            .first { JsonScan.stringField(it, "name") == "multi_three_frames" }
+        val spaceKey = hex(JsonScan.stringField(multi, "space_key_hex")!!)
+        val plaintext = b64(JsonScan.stringField(multi, "plaintext_b64")!!)
+        val content = b64(JsonScan.stringField(multi, "content_b64")!!)
+        val manifest = VaultFrame.parseManifest(JsonScan.objectAt(multi, "manifest")!!)
+        val fetch = VaultFrame.Fetch { start, end -> content.copyOfRange(start.toInt(), end.toInt()) }
+        for (off in 0 until manifest.plaintextSize) {
+            val got = VaultFrame.openRange(spaceKey, manifest, off, 1, fetch)
+            assertEquals(plaintext[off.toInt()], got.single(), "byte at $off")
+        }
+    }
+
+    @Test
     fun sealNamesContentWithBlake3() {
         // seal only encrypts (distinct nonces per frame) — no decrypt, so the JDK guard
         // is not in play. Proves the upload path: frames + BLAKE3-named content blob.

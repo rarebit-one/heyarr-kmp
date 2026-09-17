@@ -42,7 +42,7 @@ kotlin {
                 // variants and resolve per target. This puts voidbind on :core's classpath,
                 // so :composeApp (desktop) now pulls it transitively too → desktop CI needs a
                 // read:packages token (see .github/workflows/desktop.yml).
-                implementation("one.rarebit.voidbind:voidbind-client:0.7.0")
+                implementation("one.rarebit.voidbind:voidbind-client:0.8.0")
             }
         }
         val commonTest by getting {
