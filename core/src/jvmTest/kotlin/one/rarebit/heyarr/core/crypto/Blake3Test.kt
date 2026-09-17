@@ -36,4 +36,24 @@ class Blake3Test {
         assertEquals("blake3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262", Blake3.hashHex(ByteArray(0)))
         assertEquals("blake3:6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85", Blake3.hashHex("abc".encodeToByteArray()))
     }
+
+    @Test
+    fun streamingInChunksMatchesOneShot() {
+        // The scanner feeds large files in chunks — prove multi-update equals the one-shot
+        // hash across the same single/multi-chunk sizes, in 7-byte feeds (crosses buffers).
+        val root = JsonScan.rootObject(resource("/vault/blake3_kat.json"))!!
+        for (v in JsonScan.objectsOf(JsonScan.arrayOf(root, listOf("vectors"))!!, emptyList())) {
+            val size = JsonScan.intField(v, "size")!!
+            val expected = JsonScan.stringField(v, "hash")!!
+            val input = ByteArray(size) { (it % 251).toByte() }
+            val h = Blake3.streaming()
+            var i = 0
+            while (i < size) {
+                val n = minOf(7, size - i)
+                h.update(input.copyOfRange(i, i + n))
+                i += n
+            }
+            assertEquals(expected, h.hashHex(), "streaming blake3 of $size bytes")
+        }
+    }
 }

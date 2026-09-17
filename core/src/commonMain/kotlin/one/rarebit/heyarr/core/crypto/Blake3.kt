@@ -37,6 +37,24 @@ object Blake3 {
         return h.finalize()
     }
 
+    /**
+     * A stateful hasher for large inputs fed in chunks — so a multi-GB vault file is
+     * hashed by streaming, never loaded whole (the file scanner uses this).
+     */
+    class Streaming internal constructor() {
+        private val h = Hasher()
+
+        /** Feed [len] bytes from [chunk] (default its whole length). */
+        fun update(chunk: ByteArray, len: Int = chunk.size) {
+            h.update(if (len == chunk.size) chunk else chunk.copyOf(len))
+        }
+
+        /** The `"blake3:<hex>"` id of everything fed so far. */
+        fun hashHex(): String = "blake3:" + toHex(h.finalize())
+    }
+
+    fun streaming(): Streaming = Streaming()
+
     private fun g(s: IntArray, a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int) {
         s[a] = s[a] + s[b] + mx
         s[d] = (s[d] xor s[a]).rotateRight(16)

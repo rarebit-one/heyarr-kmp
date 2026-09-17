@@ -98,21 +98,27 @@ HTTP endpoints (all `/api/v1`, bearer/Device auth):
   reference_impl, KAT-tested vs Go across single/multi-chunk sizes.
 - **W4.1 — frame codec** (`:core` `vault/VaultFrame.kt`): DONE — header + `encryptChange`
   wrapper + manifest + `frameByteRange`/`openRange`/`openAll`, seal names blobs via BLAKE3.
-  Proven on Go golden vectors. (Known issue: repeated same-frame decrypt hits the JDK
-  ChaCha20 guard — see below; full-file `openAll` is unaffected.)
+  Proven on Go golden vectors. Repeated same-frame / random-access decrypt works since
+  the voidbind-client 0.8.0 JVM fix (see "Resolved" below).
 - **W4.2 — drive CRDT** (`:core` `vault/DriveCrdt.kt`): DONE — merge, heads/versions,
   byte-identical snapshot, NFC paths, conflicted-copy relocation (`resolved()`), and the
   retention/GC view (`retain()`). Proven on Go vectors (tree, convergence, snapshot,
   resolved trees, retention). Still deferred, as in Go: a dotted version vector for
   multi-way put-vs-delete.
-- **W4.3 — space-key custody**: unwrap via `DeviceIdentity` + `DesktopSecretStore`; a
-  `SpaceKey` value type; `Unwrapper` seam (software impl now, cruciform later).
-- **W4.4 — vault HTTP client** (`:composeApp`): typed clients for blob PUT (binary upload
-  seam, extends `BlobDownloader`), ranged blob GET (`BlobFetcher`), changes/snapshot/keys/
-  placements — shaped like `LibraryClient`/`HeyarrApi`.
-- **W4.5 — sync engine**: local folder scan + `java.nio.file.WatchService` (jvmMain) ⇄
-  drive CRDT reconcile loop; conflicted-copy materialisation; retention. Modeled on
-  `AppSession.startHeartbeat`/`io`.
+- **W4.4 — vault HTTP client** (`:composeApp`): DONE — `VaultSpaceClient` (encrypted
+  changes/snapshot/keys/pin/unpin over `HttpTransport`, ids via BLAKE3) + `VaultBlobStore`
+  (binary PUT + ranged GET, `fetchFor` → `VaultFrame.Fetch`). Fake-transport tested. Added
+  a `delete`-with-body overload to `HttpTransport` for unpin.
+- **W4.5 — sync engine** (`:composeApp`): IN PROGRESS. Decided semantics: safe deletes
+  (index-proven), conflicted copies written to disk, hybrid mtime/size→hash detection;
+  `WatchService` + periodic-scan safety net, atomic temp-then-rename writes, frontier
+  cursor. DONE: the pure `reconcile()` core (`:core`), `LocalScanner` (streaming BLAKE3 +
+  hybrid), `SyncIndex` store. TODO: the daemon orchestration (`syncOnce` execution + the
+  watch/schedule wrapper + Main wiring).
+- **W4.3 — space-key custody**: unwrap the wrapped space key via the desktop's existing
+  device keyring (`DeviceIdentity.encPrivateKey` → `VoidbindEncryption.unwrap`); a
+  `SpaceKey` type; software `Unwrapper` now, cruciform later. Self-bootstrap on first run:
+  mint the space key, wrap to this device + the recovery key, `POST /spaces`.
 - **W4.6 — control surface**: a Vault settings screen (folder picker, space, start/stop,
   status, conflicts).
 - **W4.7 — enrolment tie-in**: wrap this device into the vault space. Needs owner approval
@@ -130,30 +136,18 @@ laptop). CI has no live network — every W4 test uses fixtures/vectors, never a
 New `FileSettingsStore`-style JSON under `$XDG_CONFIG_HOME/heyarr-desktop/` for the
 folder⇄space mapping + sync cursor; secrets through the existing `SecretStore`.
 
-## Known issue: JDK ChaCha20 nonce-reuse guard (desktop JVM)
+## Resolved: JDK ChaCha20 nonce-reuse guard (desktop JVM)
 
-`voidbind-client:0.7.0` builds XChaCha20-Poly1305 on cryptography-kotlin 0.6.0. On the
-**JVM** that provider pools the underlying `javax.crypto.Cipher`, and SunJCE's ChaCha20
-refuses to re-`init` it with the SAME (key, nonce) as the immediately preceding op —
-throwing `InvalidKeyException: Matching key and nonce from previous initialization`.
+Previously, `voidbind-client:0.7.0` built XChaCha20-Poly1305 on cryptography-kotlin
+0.6.0, whose JVM provider pools the underlying `javax.crypto.Cipher`; SunJCE's ChaCha20
+then refused to re-`init` it with the SAME (key, nonce) as the immediately preceding op
+(`InvalidKeyException: Matching key and nonce from previous initialization`), so
+decrypting the same frame twice in a row — random-access / VFS reads — threw. Full-file
+`openAll` (each frame once) was unaffected.
 
-Consequence on desktop JVM: **decrypting the same frame twice in a row throws**, and an
-encrypt-then-decrypt of one nonce in-process throws. W4's full-file sync path
-(`openAll`, each frame decrypted exactly once) is **unaffected** — so W4.1 is
-wire-correct and the full-sync product works. What is NOT yet supported on desktop JVM:
-repeated same-frame reads, i.e. random-access / VFS reads (already deferred in W4).
-
-This is a cryptography-kotlin/SunJCE interaction, not a heyarr or wire-format bug (Go
-seals and opens the identical bytes; `openAll` opens them in Kotlin). It is a shared
-concern for the whole personal-state plane on desktop, not just the vault.
-
-Options to resolve before VFS/random-access lands (a decision for later):
-1. Bump cryptography-kotlin past 0.6.0 in voidbind-kmp (coordinated with the Kotlin
-   version) if a later release stops pooling / fixes the guard.
-2. In voidbind-kmp `XChaCha20Poly1305`, obtain a fresh (non-pooled) cipher per op, or
-   reset provider state, so consecutive same-(key,nonce) decrypts are allowed.
-3. Cache decrypted frames at the vault layer so a given (key, nonce) is never decrypted
-   twice — mitigates random-access but not the general primitive.
-
-Android (Conscrypt) likely does not hit this; it is JVM/SunJCE-specific — verify when W5
-mobile lands.
+**Fixed in `voidbind-client:0.8.0`** (voidbind-kmp #57): an `expect/actual` AEAD seam
+whose JVM actual uses a fresh `javax.crypto.Cipher("ChaCha20-Poly1305")` per op,
+sidestepping the pooled cipher and the per-instance guard; android/iOS keep the
+cryptography-kotlin path; the wire stays byte-identical to Go (goSealKat KAT). heyarr
+bumped to 0.8.0, and `VaultFrameVectorsTest.repeatedSameFrameDecryptWorks` (byte-by-byte
+`openRange`) confirms random-access decryption now works on desktop JVM.
