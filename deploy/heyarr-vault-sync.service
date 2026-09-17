@@ -1,0 +1,35 @@
+[Unit]
+Description=heyarr headless vault-sync daemon (W4) — one folder <-> one vault space
+Documentation=https://github.com/rarebit-one/heyarr-kmp/blob/main/docs/vault-sync-daemon.md
+# Needs the network up to reach the controller + relay, and the voidbind CLI on PATH.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Runnable fat JAR dropped into this dir (any versioned filename — the JVM `dir/*`
+# classpath wildcard picks it up, so no rename is needed). The GUI app's own
+# Main-Class is the Compose window, so the daemon is launched by class name on -cp.
+#
+# JDK 21 is installed via mise; its shim is the stable absolute path a --user unit
+# can rely on (a bare `java` is usually not on a --user service's PATH). Adjust if
+# your java lives elsewhere: `readlink -f "$(mise which java)"`.
+ExecStart=%h/.local/share/mise/shims/java -cp %h/.local/lib/heyarr-vault-sync/* one.rarebit.heyarr.desktop.vault.daemon.DaemonMainKt
+
+# Config precedence is defaults -> ~/.config/heyarr-vault-sync/config.json -> env -> args.
+# The one value with no safe default is the folder; set it here or in the config file:
+#   Environment=HEYARR_VAULT_FOLDER=%h/Vault
+# Other overrides (all optional; defaults target the enrolled BR node + the Go device store):
+#   Environment=HEYARR_VAULT_SPACE_ID=01a0ae3b-ca68-7165-9dbb-527425e2f380
+#   Environment=HEYARR_VAULT_CONTROLLER=https://heyarr.br.thesim.family:7777
+#   Environment=HEYARR_VOIDBIND_DEVICE_DIR=%h/.config/voidbind/device
+# The daemon shells out to `voidbind`; make sure it is on the service PATH:
+Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin
+
+Restart=on-failure
+RestartSec=5
+# The status file + control socket live under ~/.cache; nothing else is written outside
+# the synced folder and the voidbind store.
+
+[Install]
+WantedBy=default.target
