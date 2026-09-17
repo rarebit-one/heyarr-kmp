@@ -78,10 +78,15 @@ class DevicePairingSteps(
         } catch (e: Exception) {
             return EnrolClient.Outcome.Failed("could not sign with the device key (${e.message})")
         }
-        return EnrolClient(nodeTransport, baseUrl()).register(
+        val outcome = EnrolClient(nodeTransport, baseUrl()).register(
             op, proof, deviceName(), credential(),
             ops = MembershipOps.presentable(keyring.knownOps(), op),
         )
+        // Persist the identity's recovery encryption PUBLIC key when `/enrol` delivered one, so a
+        // new vault space can be wrapped for recovery from enrolment onward (mirrors heyarr-mobile).
+        (outcome as? EnrolClient.Outcome.Registered)?.recoveryEncryptionKey
+            ?.let { runCatching { keyring.saveRecoveryRecipient(it) } }
+        return outcome
     }
 
     private fun notReady(): PairingOutcome.Failed =

@@ -72,6 +72,7 @@ class DesktopDeviceKeyring(
     private fun encPubFile() = File(dataDir, "enc.pub")
     private fun certFile() = File(dataDir, "cert.token")
     private fun opsFile() = File(dataDir, "ops.json")
+    private fun recoveryFile() = File(dataDir, "recovery.pub")
 
     // ── provisioning (generate-once, load-thereafter) ────────────────────────────
 
@@ -166,6 +167,25 @@ class DesktopDeviceKeyring(
     fun clearCert() {
         certFile().delete()
         opsFile().delete()
+    }
+
+    // ── recovery recipient ─────────────────────────────────────────────────────────
+
+    /**
+     * The identity's recovery encryption PUBLIC key (`x25519:<hex>`), persisted plain by
+     * [saveRecoveryRecipient] when enrolment delivered one, or null. A new vault space is
+     * wrapped for it too (ADR-0022/0049) so the paper recovery secret can open the space —
+     * the desktop analog of heyarr-mobile's `DeviceKeyring.recoveryRecipient()`. Absent →
+     * the honest degraded default: the space is wrapped for THIS device only.
+     */
+    fun recoveryRecipient(): String? =
+        recoveryFile().takeIf { it.exists() }?.readText()?.trim()?.ifEmpty { null }
+
+    /** Persist the recovery encryption public key delivered by `/enrol` (a blank value clears it). */
+    fun saveRecoveryRecipient(key: String) {
+        val trimmed = key.trim()
+        dataDir.mkdirs()
+        if (trimmed.isEmpty()) recoveryFile().delete() else recoveryFile().writeText(trimmed)
     }
 
     // ── the live credential ──────────────────────────────────────────────────────

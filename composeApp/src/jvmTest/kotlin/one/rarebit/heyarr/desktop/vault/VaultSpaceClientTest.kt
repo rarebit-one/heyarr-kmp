@@ -117,6 +117,32 @@ class VaultSpaceClientTest {
     }
 
     @Test
+    fun createSpacePostsIdKindAndBase64WrappedKeys() {
+        val w1 = byteArrayOf(1, 2, 3)
+        val w2 = byteArrayOf(9, 9)
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.spacesUrl(base)
+        fake.responses["POST $url"] = HttpResponse(201, """{"id":"space-7","kind":"personal","created_at":"t"}""")
+
+        val id = VaultSpaceClient(fake, base, cred).createSpace(
+            "space-7", "personal",
+            listOf(WrappedKey("x25519:aa", w1), WrappedKey("x25519:bb", w2)),
+        )
+
+        assertEquals("space-7", id)
+        val req = fake.requests.single()
+        assertEquals("POST", req.method)
+        assertEquals(url, req.url)
+        val body = req.body!!
+        assertTrue(body.contains(""""id":"space-7""""), body)
+        assertTrue(body.contains(""""kind":"personal""""), body)
+        assertTrue(body.contains(""""recipient":"x25519:aa""""), body)
+        assertTrue(body.contains(""""wrapped":"${b64(w1)}""""), body)
+        assertTrue(body.contains(""""recipient":"x25519:bb""""), body)
+        assertTrue(body.contains(""""wrapped":"${b64(w2)}""""), body)
+    }
+
+    @Test
     fun listKeysParses() {
         val w = byteArrayOf(1, 1, 2, 3)
         val fake = FakeTransport()
