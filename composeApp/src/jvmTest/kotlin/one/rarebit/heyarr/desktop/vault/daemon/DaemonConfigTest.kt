@@ -110,4 +110,45 @@ class DaemonConfigTest {
         )
         assertEquals("arg-tok", c.token)
     }
+
+    // ── per-vault sync-index override (separate index per daemon instance, no XDG hack) ──
+
+    @Test
+    fun indexFileDefaultsToNull() {
+        assertNull(DaemonConfig().indexFile)
+    }
+
+    @Test
+    fun indexFileFromJsonFile() {
+        val dir = Files.createTempDirectory("vaultcfg")
+        try {
+            val file = File(dir.toFile(), "config.json")
+            file.writeText("""{"folder":"/data/Vault","index_file":"/data/idx/personal.json"}""")
+            assertEquals("/data/idx/personal.json", DaemonConfig.fromFile(file).indexFile)
+        } finally {
+            dir.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun indexFileEnvOverridesFileAndArgOverridesEnv() {
+        val dir = Files.createTempDirectory("vaultcfg")
+        try {
+            val file = File(dir.toFile(), "config.json")
+            file.writeText("""{"index_file":"/from/file.json"}""")
+            val env = mapOf(
+                "HEYARR_VAULT_SYNC_CONFIG" to file.path,
+                "HEYARR_VAULT_INDEX" to "/from/env.json",
+            )
+            // env beats file
+            assertEquals("/from/env.json", DaemonConfig.resolve(arrayOf(), env = { env[it] }).indexFile)
+            // arg beats env
+            assertEquals(
+                "/from/args.json",
+                DaemonConfig.resolve(arrayOf("--index-file", "/from/args.json"), env = { env[it] }).indexFile,
+            )
+        } finally {
+            dir.toFile().deleteRecursively()
+        }
+    }
 }

@@ -103,7 +103,10 @@ private fun resolveCustody(
         folder = RealVaultFolder(Path.of(folder)),
         blobs = JdkVaultBlobStore(),
         space = VaultSpaceClient(transport, config.controller, credential),
-        indexStore = FileSyncIndexStore(),
+        // Per-vault sync index: an explicit --index-file / HEYARR_VAULT_INDEX / "index_file" keeps
+        // each per-vault daemon instance's index separate without the XDG_CONFIG_HOME hack; null
+        // falls back to FileSyncIndexStore's own default.
+        indexStore = config.indexFile?.let { FileSyncIndexStore(File(it)) } ?: FileSyncIndexStore(),
         baseUrl = config.controller,
         credential = credential,
         spaceId = opened.spaceId,

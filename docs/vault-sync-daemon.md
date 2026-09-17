@@ -97,9 +97,17 @@ secret.
 
 Env vars: `HEYARR_VAULT_FOLDER`, `HEYARR_VAULT_SPACE_ID`, `HEYARR_VAULT_CONTROLLER`,
 `HEYARR_VOIDBIND_DEVICE_DIR`, `HEYARR_VAULT_TOKEN`, `HEYARR_VAULT_TOKEN_FILE`, `HEYARR_VAULT_POLL_MS`,
-`HEYARR_VAULT_RETRY_MS`, `HEYARR_VAULT_STATUS_FILE`, `HEYARR_VAULT_SOCKET`, `HEYARR_VAULT_SYNC_CONFIG`.
+`HEYARR_VAULT_RETRY_MS`, `HEYARR_VAULT_STATUS_FILE`, `HEYARR_VAULT_SOCKET`, `HEYARR_VAULT_INDEX`,
+`HEYARR_VAULT_SYNC_CONFIG`.
 CLI: `--folder`, `--space-id`, `--controller`, `--device-dir`, `--token`, `--token-file`,
-`--poll-ms`, `--config`, …
+`--poll-ms`, `--index-file`, `--config`, …
+
+`index_file` / `HEYARR_VAULT_INDEX` / `--index-file` overrides the device-local sync-index path
+(default: `FileSyncIndexStore`'s `$XDG_CONFIG_HOME/heyarr-desktop/vault-index.json`). The index
+records what this device has synced, so it is **per-vault** state — when you run one daemon instance
+per vault (e.g. the `heyarr-vault-sync@.service` template), give each its own `index_file` (alongside
+its own `status_file` + `socket`) so instances don't share an index and mistake one vault's files for
+the other's remote deletes. This replaces the earlier `XDG_CONFIG_HOME` workaround.
 
 The daemon logs its API-auth mode on startup (`bearer write token` vs `device credential
 (read-floor …)`), so `journalctl` immediately shows whether writes will work.
