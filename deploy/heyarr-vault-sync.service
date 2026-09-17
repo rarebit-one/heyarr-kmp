@@ -19,11 +19,19 @@ ExecStart=%h/.local/share/mise/shims/java -cp %h/.local/lib/heyarr-vault-sync/* 
 # Config precedence is defaults -> ~/.config/heyarr-vault-sync/config.json -> env -> args.
 # The one value with no safe default is the folder; set it here or in the config file:
 #   Environment=HEYARR_VAULT_FOLDER=%h/Vault
+#
+# WRITE TOKEN (required to actually sync): a headless writer needs a write-scoped bearer token —
+# an enrolled device credential is read-floor (ADR-0067) and its first write 403s. The heyarr CLI
+# token at %h/.config/heyarr/cli.token is auto-used when present; otherwise set one of:
+#   Environment=HEYARR_VAULT_TOKEN_FILE=%h/.config/heyarr/cli.token
+#   Environment=HEYARR_VAULT_TOKEN=heyarr_<id>_<secret>
+# (Custody — unwrapping the space key from the Go device store — is separate and always on.)
+#
 # Other overrides (all optional; defaults target the enrolled BR node + the Go device store):
 #   Environment=HEYARR_VAULT_SPACE_ID=01a0ae3b-ca68-7165-9dbb-527425e2f380
 #   Environment=HEYARR_VAULT_CONTROLLER=https://heyarr.br.thesim.family:7777
 #   Environment=HEYARR_VOIDBIND_DEVICE_DIR=%h/.config/voidbind/device
-# The daemon shells out to `voidbind`; make sure it is on the service PATH:
+# The daemon may shell out to `voidbind` (no-token fallback); make sure it is on the service PATH:
 Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin
 
 Restart=on-failure

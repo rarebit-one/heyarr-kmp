@@ -35,6 +35,19 @@ data class DaemonConfig(
      * cert). The daemon deliberately couples to this Go store + the `voidbind` CLI on the host.
      */
     val deviceDir: String = DEFAULT_DEVICE_DIR,
+    /**
+     * A WRITE-scoped API bearer token (literal). A headless writer NEEDS one: an enrolled device
+     * credential authenticates only at the READ FLOOR (ADR-0067), so it cannot POST personal-state
+     * (the vault's encrypted changes) — the first write 403s. When a token is resolved, it is the
+     * API-write credential for the vault clients; the Go store ([deviceDir]) stays the CUSTODY key
+     * (it unwraps the space key, independent of API auth). Null → fall back to the device credential.
+     */
+    val token: String? = null,
+    /**
+     * A file holding the write token (read + trimmed), for when it lives on disk rather than inline.
+     * Overridden by [token]; when neither is set, `~/.config/heyarr/cli.token` is used IF it exists.
+     */
+    val tokenFile: String? = null,
     /** The periodic safety-net cadence: run a pass at least this often even with no watch event. */
     val pollMs: Long = 30_000,
     /** How long to wait before retrying custody resolution when the node/device isn't ready yet. */
@@ -44,6 +57,17 @@ data class DaemonConfig(
     /** The unix control socket (mode 0600) the plugin/MCP drives with newline-delimited JSON. */
     val socketPath: Path = defaultSocketPath(),
 ) {
+    /**
+     * The effective API write token, or null when none is configured (→ fall back to the device
+     * credential). Precedence: the inline [token] → the [tokenFile] → the default
+     * `~/.config/heyarr/cli.token` IF it exists. [readFile] is injectable for tests.
+     */
+    fun resolveApiToken(readFile: (String) -> String? = { readTextOrNull(it) }): String? {
+        token?.trim()?.takeIf { it.isNotBlank() }?.let { return it }
+        val path = tokenFile?.takeIf { it.isNotBlank() } ?: DEFAULT_TOKEN_FILE
+        return readFile(path)?.trim()?.takeIf { it.isNotBlank() }
+    }
+
     companion object {
         /** The CLI-created vault space this box is enrolled for (wrapped to the Go store's enc key). */
         const val DEFAULT_SPACE_ID = "01a0ae3b-ca68-7165-9dbb-527425e2f380"
@@ -54,6 +78,9 @@ data class DaemonConfig(
         /** `~/.config/voidbind/device` — where the Go `voidbind pair-join` CLI writes its store. */
         val DEFAULT_DEVICE_DIR: String get() = File(File(home(), ".config"), "voidbind/device").path
 
+        /** `~/.config/heyarr/cli.token` — the heyarr CLI's write token; used only if it exists. */
+        val DEFAULT_TOKEN_FILE: String get() = File(File(home(), ".config"), "heyarr/cli.token").path
+
         /** `~/.cache/vault-sync.json` — the literal contract path (not XDG-relocated, so the plugin agrees). */
         fun defaultStatusFile(): Path = File(File(home(), ".cache"), "vault-sync.json").toPath()
 
@@ -62,6 +89,10 @@ data class DaemonConfig(
 
         /** `~/.config/heyarr-vault-sync/config.json` — the default JSON config file. */
         fun defaultConfigFile(): File = File(File(File(home(), ".config"), "heyarr-vault-sync"), "config.json")
+
+        /** Read a file's text, or null if it does not exist / cannot be read (never throws). */
+        private fun readTextOrNull(path: String): String? =
+            runCatching { File(path).takeIf { it.exists() }?.readText() }.getOrNull()
 
         /**
          * Resolve a config from (defaults → JSON file → env → args). [args] are `--key value` /
@@ -82,6 +113,8 @@ data class DaemonConfig(
             env("HEYARR_VAULT_RETRY_MS")?.toLongOrNull()?.let { cfg = cfg.copy(retryMs = it) }
             env("HEYARR_VAULT_STATUS_FILE")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(statusFile = File(it).toPath()) }
             env("HEYARR_VAULT_SOCKET")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(socketPath = File(it).toPath()) }
+            env("HEYARR_VAULT_TOKEN")?.let { cfg = cfg.copy(token = it.ifBlank { null }) }
+            env("HEYARR_VAULT_TOKEN_FILE")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(tokenFile = it) }
 
             // Command-line overrides (highest precedence).
             cli["folder"]?.let { cfg = cfg.copy(folder = it.ifBlank { null }) }
@@ -92,6 +125,8 @@ data class DaemonConfig(
             cli["retry-ms"]?.toLongOrNull()?.let { cfg = cfg.copy(retryMs = it) }
             cli["status-file"]?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(statusFile = File(it).toPath()) }
             cli["socket"]?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(socketPath = File(it).toPath()) }
+            cli["token"]?.let { cfg = cfg.copy(token = it.ifBlank { null }) }
+            cli["token-file"]?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(tokenFile = it) }
             return cfg
         }
 
@@ -105,6 +140,8 @@ data class DaemonConfig(
                 spaceId = JsonScan.stringField(obj, "space_id")?.takeIf { it.isNotBlank() } ?: base.spaceId,
                 controller = JsonScan.stringField(obj, "controller")?.takeIf { it.isNotBlank() } ?: base.controller,
                 deviceDir = JsonScan.stringField(obj, "device_dir")?.takeIf { it.isNotBlank() } ?: base.deviceDir,
+                token = JsonScan.stringField(obj, "token")?.takeIf { it.isNotBlank() },
+                tokenFile = JsonScan.stringField(obj, "token_file")?.takeIf { it.isNotBlank() },
                 pollMs = JsonScan.longField(obj, "poll_ms") ?: base.pollMs,
                 retryMs = JsonScan.longField(obj, "retry_ms") ?: base.retryMs,
                 statusFile = JsonScan.stringField(obj, "status_file")?.takeIf { it.isNotBlank() }?.let { File(it).toPath() }
