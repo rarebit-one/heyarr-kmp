@@ -4,6 +4,8 @@ import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.fail
 
 /** Config resolution precedence: defaults → JSON file → env → args (last wins). */
 class DaemonConfigTest {
@@ -62,5 +64,50 @@ class DaemonConfigTest {
         val c = DaemonConfig.resolve(arrayOf("--folder=/x", "--poll-ms=1234"), env = { null })
         assertEquals("/x", c.folder)
         assertEquals(1234, c.pollMs)
+    }
+
+    // ── write token resolution (ADR-0067: a headless writer needs a write-scoped bearer) ──
+
+    @Test
+    fun inlineTokenWinsAndIsTrimmed() {
+        val c = DaemonConfig(token = "  heyarr_abc_secret  ")
+        // readFile must not be consulted when an inline token is present.
+        assertEquals("heyarr_abc_secret", c.resolveApiToken { fail("must not read a file") })
+    }
+
+    @Test
+    fun tokenFileIsReadWhenNoInlineToken() {
+        val c = DaemonConfig(tokenFile = "/some/where/cli.token")
+        val token = c.resolveApiToken { path -> if (path == "/some/where/cli.token") "tok-from-file\n" else null }
+        assertEquals("tok-from-file", token)
+    }
+
+    @Test
+    fun defaultTokenFileUsedWhenNeitherSet() {
+        val c = DaemonConfig()
+        val token = c.resolveApiToken { path -> if (path == DaemonConfig.DEFAULT_TOKEN_FILE) "default-tok" else null }
+        assertEquals("default-tok", token)
+    }
+
+    @Test
+    fun nullWhenNoTokenAnywhere() {
+        val c = DaemonConfig()
+        assertNull(c.resolveApiToken { null })
+    }
+
+    @Test
+    fun envTokenIsPickedUp() {
+        val c = DaemonConfig.resolve(args = arrayOf(), env = { if (it == "HEYARR_VAULT_TOKEN") "env-tok" else null })
+        assertEquals("env-tok", c.token)
+        assertEquals("env-tok", c.resolveApiToken { fail("inline env token must not read a file") })
+    }
+
+    @Test
+    fun argTokenBeatsEnvToken() {
+        val c = DaemonConfig.resolve(
+            args = arrayOf("--token", "arg-tok"),
+            env = { if (it == "HEYARR_VAULT_TOKEN") "env-tok" else null },
+        )
+        assertEquals("arg-tok", c.token)
     }
 }

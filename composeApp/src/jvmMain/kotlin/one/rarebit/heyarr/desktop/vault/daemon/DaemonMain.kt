@@ -34,25 +34,34 @@ import java.util.concurrent.CountDownLatch
  * process is signalled (systemd stop / Ctrl-C), on which the shutdown hook tears the daemon down
  * cleanly (stops the loop, closes + removes the socket).
  *
- * # Custody: the Go voidbind store + CLI (OPTION 1, no phone gate)
+ * # Two credentials, two jobs: the CUSTODY key vs the API-WRITE credential
  *
- * This box was enrolled with the Go `voidbind pair-join` CLI, and the CLI-created vault space is
- * wrapped to that store's X25519 enc key. So [resolveCustody] deliberately REUSES the Go store
- * rather than a second Kotlin identity: it unwraps the space key from the plaintext-hex seed
- * ([GoDeviceStore] + [GoStoreCustody]) and mints the controller credential by shelling out to
- * `voidbind identity credential -header` ([VoidbindCliCredential]). This couples the daemon to the
- * Go voidbind store + CLI on the host (device dir configurable, default `~/.config/voidbind/device`).
- * The sync engine itself is the already-merged [VaultSyncEngine] — unchanged.
+ * Custody and API auth are independent, and the daemon uses a different key for each:
+ *
+ *  - **Custody (unwrap the space key)** — the Go voidbind store. This box was enrolled with the Go
+ *    `voidbind pair-join` CLI and the CLI-created space is wrapped to that store's X25519 enc key,
+ *    so [resolveCustody] unwraps the space key from the plaintext-hex seed ([GoDeviceStore] +
+ *    [GoStoreCustody]) rather than minting a second Kotlin identity. This part is unconditional.
+ *  - **API auth (read/write the encrypted state)** — a WRITE-scoped bearer token when one is
+ *    configured, else the device credential. A headless WRITER needs the token: an enrolled device
+ *    credential authenticates only at the READ FLOOR (ADR-0067), so its first `POST …/changes`
+ *    403s. [apiCredential] therefore prefers a bearer token ([DaemonConfig.resolveApiToken] —
+ *    `token` / `HEYARR_VAULT_TOKEN` / `token_file`, default `~/.config/heyarr/cli.token`) and only
+ *    falls back to [VoidbindCliCredential] (device credential, read-only) when none is set.
+ *
+ * Both couple the daemon to the host (the Go store + CLI, and/or the heyarr CLI's token file). The
+ * sync engine itself is the already-merged [VaultSyncEngine] — unchanged.
  */
 fun main(args: Array<String>) {
     val config = DaemonConfig.resolve(args)
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    // Built once so the credential's proof cache survives across passes/retries.
+    // Built once so a device credential's proof cache survives across passes/retries.
     val transport: HttpTransport = JdkHttpTransport()
-    val credentials = VoidbindCliCredential(config.deviceDir)
+    val bearer = bearerCredential(config)
+    val credential = bearer ?: VoidbindCliCredential(config.deviceDir).credential()
 
-    val daemon = VaultSyncDaemon(config, scope, resolve = { resolveCustody(config, transport, credentials.credential()) })
+    val daemon = VaultSyncDaemon(config, scope, resolve = { resolveCustody(config, transport, credential) })
 
     val done = CountDownLatch(1)
     Runtime.getRuntime().addShutdownHook(
@@ -65,6 +74,10 @@ fun main(args: Array<String>) {
 
     log("starting: folder=${config.folder ?: "<none>"} space=${config.spaceId} controller=${config.controller}")
     log("device store: ${config.deviceDir}")
+    log(
+        "api auth: " + if (bearer != null) "bearer write token" else
+            "device credential (read-floor, ADR-0067 — writes will 403; set a write token to sync)",
+    )
     log("status file: ${config.statusFile}  control socket: ${config.socketPath}")
     daemon.start()
     done.await() // park the main thread; the daemon runs on [scope] until the process is signalled.
@@ -107,6 +120,15 @@ private fun resolveCustody(
         watching = watched != null,
     )
 }
+
+/**
+ * A [Credential.Bearer] over the resolved write token, or null when none is configured. Wire-
+ * identical to the app's weblogin session (`Authorization: Bearer <token>`) but a long-lived,
+ * write-scoped token from the heyarr CLI — the API-WRITE credential a headless writer needs, since
+ * device credentials are read-floor (ADR-0067). Custody (the Go-store unwrap) is unaffected.
+ */
+internal fun bearerCredential(config: DaemonConfig): Credential? =
+    config.resolveApiToken()?.let { Credential.Bearer(it) }
 
 private fun log(message: String) {
     println("[vault-sync] ${StatusSnapshot.rfc3339(System.currentTimeMillis())} $message")

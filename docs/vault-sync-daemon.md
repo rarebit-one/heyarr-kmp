@@ -28,11 +28,22 @@ These are the exact paths + shapes the homelab-ops MCP + Omarchy plugin already 
 
 ## Custody (OPTION 1 — no phone gate)
 
-The daemon REUSES the Go voidbind device store this box was enrolled with (`voidbind pair-join`):
-it unwraps the space key from the plaintext-hex enc seed in `~/.config/voidbind/device/` and mints
-the controller credential by shelling out to `voidbind identity credential -header`. So the host
-needs the `voidbind` CLI on PATH and an enrolled device store; the daemon is deliberately coupled to
-both. The device dir is configurable (default `~/.config/voidbind/device`).
+Custody and API auth are **two different keys**:
+
+- **Custody (unwrap the space key):** the Go voidbind device store this box was enrolled with
+  (`voidbind pair-join`). The daemon reads the plaintext-hex enc seed in `~/.config/voidbind/device/`
+  and unwraps the space's wrapped key — no phone, no second identity. `device_dir` configurable
+  (default `~/.config/voidbind/device`). Unconditional.
+- **API auth (read/write the encrypted state):** a **write-scoped bearer token**. A headless
+  **writer needs one** — an enrolled device credential authenticates only at the READ FLOOR
+  (ADR-0067), so its first `POST …/changes` returns **403**. Give the daemon a token (same shape as
+  the heyarr CLI's / the desktop weblogin session token) and it becomes the credential for every
+  vault API call; the Go store stays the custody key. Sources, in order:
+  - `token` (config.json) / `HEYARR_VAULT_TOKEN` / `--token`, else
+  - `token_file` (config.json) / `HEYARR_VAULT_TOKEN_FILE` / `--token-file`, else
+  - the default `~/.config/heyarr/cli.token` **if it exists** (auto-used).
+  - With **no** token the daemon falls back to the read-only device credential (`voidbind identity
+    credential -header`): reads/custody work but writes 403. For a real two-way sync, set a token.
 
 ## Build / obtain the fat JAR
 
@@ -75,14 +86,23 @@ wins). Only `folder` has no default. Example config file:
   "space_id": "01a0ae3b-ca68-7165-9dbb-527425e2f380",
   "controller": "https://heyarr.br.thesim.family:7777",
   "device_dir": "/home/alarm/.config/voidbind/device",
+  "token_file": "/home/alarm/.config/heyarr/cli.token",
   "poll_ms": 30000
 }
 ```
 
+`token_file` is optional — `~/.config/heyarr/cli.token` is auto-used when present. Prefer keeping the
+token out of `config.json` (use `token_file`/`HEYARR_VAULT_TOKEN`) so a shared config file holds no
+secret.
+
 Env vars: `HEYARR_VAULT_FOLDER`, `HEYARR_VAULT_SPACE_ID`, `HEYARR_VAULT_CONTROLLER`,
-`HEYARR_VOIDBIND_DEVICE_DIR`, `HEYARR_VAULT_POLL_MS`, `HEYARR_VAULT_RETRY_MS`,
-`HEYARR_VAULT_STATUS_FILE`, `HEYARR_VAULT_SOCKET`, `HEYARR_VAULT_SYNC_CONFIG`.
-CLI: `--folder`, `--space-id`, `--controller`, `--device-dir`, `--poll-ms`, `--config`, …
+`HEYARR_VOIDBIND_DEVICE_DIR`, `HEYARR_VAULT_TOKEN`, `HEYARR_VAULT_TOKEN_FILE`, `HEYARR_VAULT_POLL_MS`,
+`HEYARR_VAULT_RETRY_MS`, `HEYARR_VAULT_STATUS_FILE`, `HEYARR_VAULT_SOCKET`, `HEYARR_VAULT_SYNC_CONFIG`.
+CLI: `--folder`, `--space-id`, `--controller`, `--device-dir`, `--token`, `--token-file`,
+`--poll-ms`, `--config`, …
+
+The daemon logs its API-auth mode on startup (`bearer write token` vs `device credential
+(read-floor …)`), so `journalctl` immediately shows whether writes will work.
 
 ## Install as a `systemd --user` service
 
