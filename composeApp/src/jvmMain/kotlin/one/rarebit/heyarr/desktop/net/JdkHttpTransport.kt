@@ -57,6 +57,14 @@ class JdkHttpTransport(
     override fun delete(url: String, headers: Map<String, String>): HttpResponse =
         send(baseRequest(url, headers).DELETE().build())
 
+    override fun delete(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse =
+        send(
+            baseRequest(url, headers)
+                .header("Content-Type", contentType ?: "application/json")
+                .method("DELETE", HttpRequest.BodyPublishers.ofString(body ?: ""))
+                .build(),
+        )
+
     private fun baseRequest(url: String, headers: Map<String, String>): HttpRequest.Builder {
         val b = HttpRequest.newBuilder(URI.create(url)).timeout(requestTimeout)
         headers.forEach { (k, v) -> b.header(k, v) }

@@ -32,6 +32,18 @@ interface HttpTransport {
         HttpResponse(405, "")
 
     /**
+     * DELETE with a request body — some endpoints (e.g. the vault's placement unpin,
+     * `DELETE /vault/placements` with `{blob_hash, peer_id}`) require one. Defaulted to a
+     * 405 like [delete]/[patch] so fakes that never need it keep compiling.
+     */
+    fun delete(
+        url: String,
+        body: String?,
+        contentType: String? = null,
+        headers: Map<String, String> = emptyMap(),
+    ): HttpResponse = HttpResponse(405, "")
+
+    /**
      * Forget any pooled connection. After the machine changes network — a laptop
      * leaving the LAN for a VPN — a pooled connection to the old network is dead but
      * not closed; every request on it waits for its timeout. A transport that pools
