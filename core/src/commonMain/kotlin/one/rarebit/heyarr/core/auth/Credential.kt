@@ -69,6 +69,22 @@ sealed interface Credential {
         override fun asHeader(): Map<String, String> = emptyMap()
     }
 
+    /**
+     * A credential whose headers are minted FRESH on every request. The primary
+     * [Device] credential carries a short-lived possession proof (it expires in
+     * ~2 min), and a long-running background client (the headless vault-sync
+     * daemon) makes many requests over a pass that can outlast one proof — so it
+     * needs to re-mint per call rather than hold a stale header. [headers] is
+     * invoked for each request and returns the full header map to send
+     * (`Authorization` plus, on first contact, `Voidbind-Membership`). It is the
+     * seam by which the daemon injects `Authorization: Device …` freshly obtained
+     * from its device store, without this module owning the proof-minting.
+     */
+    class Dynamic(private val headers: () -> Map<String, String>) : Credential {
+        override fun headerValue(): String = headers()[HEADER] ?: ""
+        override fun asHeader(): Map<String, String> = headers()
+    }
+
     companion object {
         const val HEADER = "Authorization"
     }
