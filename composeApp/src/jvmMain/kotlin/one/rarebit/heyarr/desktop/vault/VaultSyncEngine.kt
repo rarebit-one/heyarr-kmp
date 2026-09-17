@@ -56,14 +56,23 @@ class RealVaultFolder(private val root: Path) : VaultFolder {
 }
 
 /**
+ * One reconcile-and-apply pass, as the daemon sees it — a seam so
+ * [one.rarebit.heyarr.desktop.state.VaultSyncController] drives a fake pass in tests without a
+ * real engine (no crypto, HTTP or disk). [VaultSyncEngine] is the production implementation.
+ */
+fun interface VaultSync {
+    fun syncOnce(): VaultSyncEngine.Stats
+}
+
+/**
  * One reconcile-and-apply pass of the vault sync engine (W4.5). It wires the pure pieces —
  * the local scan, the remote drive rebuilt from opaque changes, [reconcile]'s plan — and
  * executes it: seal+upload local edits, download+materialise remote ones, propagate the
  * safe deletes. All the crypto/CRDT/HTTP happen through injected seams, so a two-device
  * round trip is unit-tested with in-memory backends and a real space key.
  *
- * The daemon (WatchService + schedule) just calls [syncOnce] on its cadence; this class
- * holds no loop and no clock.
+ * The daemon ([one.rarebit.heyarr.desktop.state.VaultSyncController]) just calls [syncOnce] on
+ * its cadence; this class holds no loop and no clock.
  */
 class VaultSyncEngine(
     private val folder: VaultFolder,
@@ -74,10 +83,10 @@ class VaultSyncEngine(
     private val credential: Credential,
     private val spaceId: String,
     private val spaceKey: ByteArray,
-) {
+) : VaultSync {
     data class Stats(val uploaded: Int, val downloaded: Int, val deletedRemote: Int, val deletedLocal: Int)
 
-    fun syncOnce(): Stats {
+    override fun syncOnce(): Stats {
         val index = indexStore.load()
         val local = folder.scan(index)
         val drive = buildDrive()
