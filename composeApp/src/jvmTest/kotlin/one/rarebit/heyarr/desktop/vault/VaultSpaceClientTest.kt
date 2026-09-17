@@ -1,7 +1,6 @@
 package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.core.crypto.Blake3
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
 import java.util.Base64
@@ -44,7 +43,9 @@ class VaultSpaceClientTest {
     @Test
     fun pushChangeContentAddressesAndPosts() {
         val ct = byteArrayOf(1, 2, 3, 4, 5)
-        val id = Blake3.hashHex(ct)
+        // The id is the FRAMED change id (domain ‖ space ‖ parents ‖ ciphertext), not blake3(ct) —
+        // this is what the real Go node re-derives and checks (KAT-locked in core PersonalStateIdTest).
+        val id = one.rarebit.heyarr.core.vault.PersonalStateId.changeId("space-1", listOf("blake3:aa", "blake3:bb"), ct)
         val fake = FakeTransport()
         val url = VaultSpaceClient.changesUrl(base, "space-1")
         fake.responses["POST $url"] = HttpResponse(201, """{"change_id":"$id"}""")
