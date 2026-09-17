@@ -24,6 +24,9 @@ interface VaultBlobStore {
     /** GET ciphertext bytes `[start, end)` of blob [hash] — the codec's per-frame fetch. */
     fun fetchRange(baseUrl: String, hash: String, start: Long, end: Long, credential: Credential): ByteArray
 
+    /** GET the whole blob [hash] (small blobs like the sealed manifest). */
+    fun fetchAll(baseUrl: String, hash: String, credential: Credential): ByteArray
+
     /** A [VaultFrame.Fetch] bound to one blob, so [VaultFrame.openAll]/openRange can read it. */
     fun fetchFor(baseUrl: String, hash: String, credential: Credential): VaultFrame.Fetch =
         VaultFrame.Fetch { start, end -> fetchRange(baseUrl, hash, start, end, credential) }
@@ -77,6 +80,14 @@ class JdkVaultBlobStore(
         val resp = client.send(builder.build(), BodyHandlers.ofByteArray())
         val code = resp.statusCode()
         require(code == 206 || code == 200) { "vault: range GET of $hash failed: HTTP $code" }
+        return resp.body()
+    }
+
+    override fun fetchAll(baseUrl: String, hash: String, credential: Credential): ByteArray {
+        val builder = HttpRequest.newBuilder(URI.create(contentUrl(baseUrl, hash))).timeout(requestTimeout).GET()
+        for ((k, v) in credential.asHeader()) builder.header(k, v)
+        val resp = client.send(builder.build(), BodyHandlers.ofByteArray())
+        require(resp.statusCode() == 200) { "vault: GET of $hash failed: HTTP ${resp.statusCode()}" }
         return resp.body()
     }
 

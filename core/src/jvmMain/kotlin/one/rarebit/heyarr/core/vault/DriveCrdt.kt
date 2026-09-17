@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.core.vault
 
+import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.JsonScan
 import java.text.Normalizer
 
@@ -116,6 +117,34 @@ class Drive {
     fun apply(changes: List<DriveChange>) {
         for (c in changes) if (c.valid()) applyOne(c)
     }
+
+    /**
+     * Record a local PUT of [blob] at [path] and return the [DriveChange] to ship (applied
+     * locally first). Base is the current head so a receiver can tell a clean successor
+     * from a concurrent divergence. Writer is a fresh per-write tie-break tag.
+     */
+    fun put(path: String, blob: String, size: Long, mtime: Long): DriveChange {
+        val np = normalisePath(path)
+        val base = entries[np]?.currentHead()?.first?.key ?: PosKey.ZERO
+        val c = DriveChange(DriveOp.PUT, np, blob, size, mtime, nextAt(), newWriter(), base)
+        require(c.valid()) { "put: blob must be a canonical blake3 id, got $blob" }
+        applyOne(c)
+        return c
+    }
+
+    /** Record a local DELETE (tombstone) at [path] and return the change to ship. */
+    fun delete(path: String): DriveChange {
+        val c = DriveChange(DriveOp.DELETE, normalisePath(path), at = nextAt(), writer = newWriter())
+        applyOne(c)
+        return c
+    }
+
+    private fun nextAt(): Long {
+        if (counter < Long.MAX_VALUE) counter++ // saturating, like readingpos.Set
+        return counter
+    }
+
+    private fun newWriter(): String = "u:" + java.util.UUID.randomUUID().toString()
 
     private fun applyOne(c: DriveChange) {
         if (c.at > counter) counter = c.at
@@ -344,6 +373,25 @@ class Drive {
  * path": Unicode NFC, forward slashes, cleaned (resolve . and .., collapse //), leading
  * slash trimmed, case-sensitive.
  */
+/**
+ * Serialise a [DriveChange] to its wire JSON (the inverse of [Drive.parseChange]),
+ * matching heyarr-core's `json.Marshal` field names + omitempty so a Kotlin device's
+ * change parses on a Go device and vice-versa. This is the plaintext that gets
+ * `encryptChange`d and pushed.
+ */
+fun encodeDriveChange(c: DriveChange): String {
+    val m = LinkedHashMap<String, Any?>()
+    m["op"] = c.op.wire
+    m["path"] = c.path
+    if (c.blob.isNotEmpty()) m["blob"] = c.blob
+    if (c.size != 0L) m["size"] = c.size
+    if (c.mtime != 0L) m["mtime"] = c.mtime
+    m["at"] = c.at
+    m["writer"] = c.writer
+    m["base"] = linkedMapOf<String, Any?>("At" to c.base.at, "Writer" to c.base.writer)
+    return JsonWrite.obj(m)
+}
+
 fun normalisePath(p: String): String {
     val nfc = Normalizer.normalize(p, Normalizer.Form.NFC).replace('\\', '/')
     return cleanPath("/$nfc").removePrefix("/")

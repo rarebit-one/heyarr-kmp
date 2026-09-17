@@ -27,6 +27,12 @@ data class EncryptedSnapshot(
 /** A space key sealed to one recipient (X25519), as the peer stores it (§79). */
 data class WrappedKey(val recipient: String, val wrapped: ByteArray)
 
+/** The subset of the space sync pipe the sync engine drives — an interface so it fakes cleanly. */
+interface VaultSpace {
+    fun pullChanges(spaceId: String): List<EncryptedChange>
+    fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String
+}
+
 /**
  * The encrypted personal-state sync pipe for a vault space (`/api/v1/spaces/{id}/…` and
  * `/api/v1/vault/placements`). It moves only OPAQUE ciphertext — the server and peers
@@ -42,9 +48,9 @@ class VaultSpaceClient(
     private val http: HttpTransport,
     private val baseUrl: String,
     private val credential: Credential,
-) {
+) : VaultSpace {
     /** Pull every opaque change the server holds for [spaceId]. */
-    fun pullChanges(spaceId: String): List<EncryptedChange> {
+    override fun pullChanges(spaceId: String): List<EncryptedChange> {
         val resp = http.get(changesUrl(baseUrl, spaceId), credential.asHeader())
         require(resp.status == 200) { "vault: GET changes failed: HTTP ${resp.status}" }
         val array = JsonScan.arrayOf(resp.body, listOf("changes")) ?: return emptyList()
@@ -52,7 +58,7 @@ class VaultSpaceClient(
     }
 
     /** Push one encrypted change; returns its content-addressed id. */
-    fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String {
+    override fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String {
         val changeId = Blake3.hashHex(ciphertext)
         val body = JsonWrite.obj(
             linkedMapOf(
