@@ -120,8 +120,12 @@ class VaultSpaceClient(
         require(resp.status == 200) { "vault: POST placement failed: HTTP ${resp.status}" }
     }
 
-    // NOTE: unpinning is DELETE /vault/placements with a JSON body, which the String-bodied
-    // HttpTransport delete() cannot carry. It lands with a DELETE-with-body seam (W4.4b).
+    /** Remove a placement pin (the blob may then be GC'd if it was the last reference). Idempotent. */
+    fun unpinPlacement(blobHash: String, peerId: String) {
+        val body = JsonWrite.obj(linkedMapOf("blob_hash" to blobHash, "peer_id" to peerId))
+        val resp = http.delete(placementsUrl(baseUrl), body, "application/json", credential.asHeader())
+        require(resp.status == 204 || resp.status == 200) { "vault: DELETE placement failed: HTTP ${resp.status}" }
+    }
 
     private fun parseChange(obj: String) = EncryptedChange(
         spaceId = JsonScan.stringField(obj, "space_id") ?: "",

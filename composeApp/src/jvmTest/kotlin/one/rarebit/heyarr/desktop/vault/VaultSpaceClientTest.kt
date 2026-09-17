@@ -31,6 +31,10 @@ class VaultSpaceClientTest {
             requests.add(Req("POST", url, body))
             return responses["POST $url"] ?: HttpResponse(500, "")
         }
+        override fun delete(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
+            requests.add(Req("DELETE", url, body))
+            return responses["DELETE $url"] ?: HttpResponse(500, "")
+        }
     }
 
     private val base = "https://node.example:7777"
@@ -98,6 +102,18 @@ class VaultSpaceClientTest {
         val body = fake.requests.single().body!!
         assertTrue(body.contains(""""blob_hash":"blake3:ee""""), body)
         assertTrue(body.contains(""""peer_id":"cove""""), body)
+    }
+
+    @Test
+    fun unpinPlacementDeletesPair() {
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.placementsUrl(base)
+        fake.responses["DELETE $url"] = HttpResponse(204, "")
+        VaultSpaceClient(fake, base, cred).unpinPlacement("blake3:ee", "cove")
+        val req = fake.requests.single()
+        assertEquals("DELETE", req.method)
+        assertTrue(req.body!!.contains(""""blob_hash":"blake3:ee""""), req.body!!)
+        assertTrue(req.body!!.contains(""""peer_id":"cove""""), req.body!!)
     }
 
     @Test
