@@ -42,6 +42,13 @@ import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
 import one.rarebit.heyarr.desktop.theme.Appearance
+import one.rarebit.heyarr.desktop.vault.FileSyncIndexStore
+import one.rarebit.heyarr.desktop.vault.JdkVaultBlobStore
+import one.rarebit.heyarr.desktop.vault.RealVaultFolder
+import one.rarebit.heyarr.desktop.vault.VaultCustody
+import one.rarebit.heyarr.desktop.vault.VaultSpaceClient
+import one.rarebit.heyarr.desktop.vault.VaultSyncEngine
+import one.rarebit.heyarr.desktop.vault.WatchedFolder
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
 enum class Connection {
@@ -161,6 +168,37 @@ class AppSession(
     val external: ExternalMetadata = externalMetadata ?: ExternalMetadata(enabled = { config.externalMetadata })
     val recent = RecentSearches(RecentSearches.defaultFile())
 
+    /**
+     * The desktop vault sync service (W4): resolves space-key custody and drives
+     * [one.rarebit.heyarr.desktop.state.VaultSyncController] over the designated folder. Present
+     * only with the real device stack (it needs the [deviceKeyring] to unwrap the space key);
+     * null in previews/tests, which stay guest and touch no device key store.
+     */
+    val vault: VaultService? = deviceKeyring?.let { ring ->
+        VaultService(
+            scope = scope,
+            config = { config },
+            rememberFolder = ::setVaultFolder,
+            rememberSpaceId = ::setVaultSpaceId,
+            openCustody = { spaceId ->
+                VaultCustody(ring, VaultSpaceClient(transport, config.baseUrl, credential)).openOrBootstrap(spaceId)
+            },
+            engineFor = { opened, folder ->
+                VaultSyncEngine(
+                    folder = RealVaultFolder(java.nio.file.Path.of(folder)),
+                    blobs = JdkVaultBlobStore(),
+                    space = VaultSpaceClient(transport, config.baseUrl, credential),
+                    indexStore = FileSyncIndexStore(),
+                    baseUrl = config.baseUrl,
+                    credential = credential,
+                    spaceId = opened.spaceId,
+                    spaceKey = opened.spaceKey,
+                )
+            },
+            watchFor = { folder -> WatchedFolder(java.nio.file.Path.of(folder)) },
+        )
+    }
+
     var connection: Connection by mutableStateOf(if (config.baseUrl.isBlank()) Connection.UNCONFIGURED else Connection.UNKNOWN)
         private set
     var lastLatencyMs: Long? by mutableStateOf(null)
@@ -201,6 +239,21 @@ class AppSession(
         if (otherNode) { profiles = emptyList(); index = LibraryIndex.EMPTY; generation++ }
         refreshIndex()
         startHeartbeat()
+    }
+
+    /**
+     * Persist the vault folder mapping (W4) without the heavyweight [save] side effects — the
+     * library index and connection are unaffected by which folder syncs. Null forgets it.
+     */
+    fun setVaultFolder(folder: String?) {
+        config = config.copy(vaultFolder = folder?.takeIf { it.isNotBlank() })
+        settings.save(config)
+    }
+
+    /** Persist the minted vault space id (W4) so later launches open it rather than mint again. */
+    fun setVaultSpaceId(id: String?) {
+        config = config.copy(vaultSpaceId = id?.takeIf { it.isNotBlank() })
+        settings.save(config)
     }
 
     /**

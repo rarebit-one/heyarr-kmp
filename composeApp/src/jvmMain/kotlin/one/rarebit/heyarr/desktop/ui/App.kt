@@ -155,6 +155,13 @@ fun App(
     val connectionState = remember { ConnectionState() }
 
     LaunchedEffect(Unit) { session.startHeartbeat(); session.refreshIndex(); initialQuery?.let { search.updateQuery(it) } }
+    // Resume vault sync (W4) if a folder was configured, and stop the daemon (closing its folder
+    // watch) when the shell leaves composition — the session scope dies with it, but closing the
+    // WatchService explicitly frees the OS handle.
+    DisposableEffect(Unit) {
+        session.vault?.resume()
+        onDispose { session.vault?.shutdown() }
+    }
     // A different node means different work ids: the per-work detail caches are worthless.
     LaunchedEffect(session.generation) { if (session.generation > 0) details.clear() }
     LaunchedEffect(focusSearchTick) { if (focusSearchTick > 0) runCatching { searchFocus.requestFocus() } }
