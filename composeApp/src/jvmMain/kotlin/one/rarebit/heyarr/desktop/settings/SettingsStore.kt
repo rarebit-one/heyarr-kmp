@@ -29,6 +29,16 @@ data class DesktopConfig(
      * none. Titles are sent to those services; off means nothing leaves but the node's URL.
      */
     val externalMetadata: Boolean = true,
+    /**
+     * The designated vault folder this machine keeps in sync (W4), or null when vault sync is
+     * off. One local folder ⇄ one heyarr vault space.
+     */
+    val vaultFolder: String? = null,
+    /**
+     * The vault space id this folder is bound to. Null on first run before the custody bootstrap
+     * mints one; the app records the minted id here so later launches OPEN it rather than mint again.
+     */
+    val vaultSpaceId: String? = null,
 ) {
     /** The scale to render at: the saved value, else the environment, else 1x. */
     fun effectiveUiScale(env: (String) -> String? = System::getenv): Float =
@@ -73,6 +83,8 @@ class FileSettingsStore(
             bearerToken = JsonScan.stringField(obj, "bearer_token").orEmpty(),
             uiScale = JsonScan.stringField(obj, "ui_scale")?.toFloatOrNull()?.takeIf { it in 0.5f..4f },
             externalMetadata = JsonScan.boolField(obj, "external_metadata") ?: true,
+            vaultFolder = JsonScan.stringField(obj, "vault_folder")?.takeIf { it.isNotBlank() },
+            vaultSpaceId = JsonScan.stringField(obj, "vault_space_id")?.takeIf { it.isNotBlank() },
         )
     }
 
@@ -84,6 +96,8 @@ class FileSettingsStore(
             append("  \"bearer_token\": \"").append(escape(config.bearerToken)).append("\"")
             config.uiScale?.let { append(",\n  \"ui_scale\": \"").append(it.toString()).append("\"") }
             append(",\n  \"external_metadata\": ").append(if (config.externalMetadata) "true" else "false")
+            config.vaultFolder?.let { append(",\n  \"vault_folder\": \"").append(escape(it)).append("\"") }
+            config.vaultSpaceId?.let { append(",\n  \"vault_space_id\": \"").append(escape(it)).append("\"") }
             append("\n}\n")
         }
         file.writeText(json)

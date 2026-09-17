@@ -34,6 +34,23 @@ interface VaultSpace {
 }
 
 /**
+ * The space lifecycle the custody bootstrap drives (create + read the wrapped-key list) —
+ * an interface so [one.rarebit.heyarr.desktop.vault.VaultCustody] fakes it in tests without
+ * a live node.
+ */
+interface VaultKeys {
+    /** The space keys sealed for each recipient — the caller picks its own to unwrap. */
+    fun listKeys(spaceId: String): List<WrappedKey>
+
+    /**
+     * Mint a space of [kind] with its key wrapped for each recipient in [wrapped]; returns the
+     * server-recorded id. The server enforces enrol-before-wrap (ADR-0049): every recipient must
+     * be an enrolled device key or the identity's recovery key, or it answers 403.
+     */
+    fun createSpace(id: String, kind: String, wrapped: List<WrappedKey>): String
+}
+
+/**
  * The encrypted personal-state sync pipe for a vault space (`/api/v1/spaces/{id}/…` and
  * `/api/v1/vault/placements`). It moves only OPAQUE ciphertext — the server and peers
  * hold no key and merge nothing (Invariant 6). Follows the desktop client pattern
@@ -48,7 +65,7 @@ class VaultSpaceClient(
     private val http: HttpTransport,
     private val baseUrl: String,
     private val credential: Credential,
-) : VaultSpace {
+) : VaultSpace, VaultKeys {
     /** Pull every opaque change the server holds for [spaceId]. */
     override fun pullChanges(spaceId: String): List<EncryptedChange> {
         val resp = http.get(changesUrl(baseUrl, spaceId), credential.asHeader())
@@ -107,13 +124,32 @@ class VaultSpaceClient(
     }
 
     /** The space keys sealed for each recipient — the caller picks its own to unwrap. */
-    fun listKeys(spaceId: String): List<WrappedKey> {
+    override fun listKeys(spaceId: String): List<WrappedKey> {
         val resp = http.get(keysUrl(baseUrl, spaceId), credential.asHeader())
         require(resp.status == 200) { "vault: GET keys failed: HTTP ${resp.status}" }
         val array = JsonScan.arrayOf(resp.body, listOf("wrapped_keys")) ?: return emptyList()
         return JsonScan.objectsOf(array, emptyList()).map {
             WrappedKey(JsonScan.stringField(it, "recipient") ?: "", b64d(JsonScan.stringField(it, "wrapped") ?: ""))
         }
+    }
+
+    /**
+     * Mint a space of [kind] (a `spaces.Kind`: personal/family/shared/research) with the given
+     * wrapped-key copies, and return the id the server recorded. A vault is one person's drive,
+     * so the desktop mints it `personal`. 403 here means this device is not yet enrolled (the
+     * enrol-before-wrap gate) — the custody bootstrap surfaces that as "not ready", not a crash.
+     */
+    override fun createSpace(id: String, kind: String, wrapped: List<WrappedKey>): String {
+        val body = JsonWrite.obj(
+            linkedMapOf(
+                "id" to id,
+                "kind" to kind,
+                "wrapped_keys" to wrapped.map { linkedMapOf("recipient" to it.recipient, "wrapped" to b64(it.wrapped)) },
+            ),
+        )
+        val resp = http.post(spacesUrl(baseUrl), body, "application/json", credential.asHeader())
+        require(resp.status == 201 || resp.status == 200) { "vault: POST /spaces failed: HTTP ${resp.status}" }
+        return JsonScan.stringField(resp.body, "id") ?: id
     }
 
     /**
@@ -164,6 +200,7 @@ class VaultSpaceClient(
     companion object {
         private fun base(baseUrl: String) = baseUrl.trimEnd('/') + "/api/v1"
         private fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
+        fun spacesUrl(baseUrl: String) = base(baseUrl) + "/spaces"
         fun changesUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/changes"
         fun snapshotUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/snapshot"
         fun snapshotsUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/snapshots"
