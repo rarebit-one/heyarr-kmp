@@ -130,3 +130,31 @@ from the mise shim (`~/.local/share/mise/shims/java`) with the `dir/*` classpath
 versioned JAR filename needs no rename. Adjust the java path if yours differs
 (`readlink -f "$(mise which java)"`). `Restart=on-failure` keeps it alive across transient node/
 network drops (the daemon reports `preparing`/`error` and retries on its own regardless).
+
+### One daemon per vault (the template unit)
+
+A **vault = one folder tree ⇄ one space** (access control = the space's recipient set), and a box
+can hold several — a personal vault, a family vault, and so on. To run one daemon per vault, use the
+**template unit** [`deploy/heyarr-vault-sync@.service`](../deploy/heyarr-vault-sync@.service): the
+instance name selects a per-vault config `~/.config/heyarr-vault-sync/<instance>.json`, and each
+config gives that vault its own `folder`, `space_id`, `status_file`, `socket`, and — crucially —
+`index_file`, so the instances never share a sync index (a shared index would treat one vault's
+files as the other's remote deletes).
+
+```sh
+cp deploy/heyarr-vault-sync@.service ~/.config/systemd/user/
+# ~/.config/heyarr-vault-sync/personal.json:
+#   { "folder": "…/Vault", "space_id": "…", "controller": "…",
+#     "status_file": "…/.cache/vault-sync.json", "socket": "…/.cache/vault-sync.sock",
+#     "index_file": "…/.config/heyarr-desktop/vault-index.json" }
+# ~/.config/heyarr-vault-sync/family.json:
+#   { …, "status_file": "…/.cache/vault-sync-family.json",
+#        "socket": "…/.cache/vault-sync-family.sock",
+#        "index_file": "…/.config/heyarr-desktop/vault-index-family.json" }
+systemctl --user daemon-reload
+systemctl --user enable --now heyarr-vault-sync@personal heyarr-vault-sync@family
+```
+
+Convention: the personal vault keeps the un-suffixed `vault-sync.json` / `vault-sync.sock` (so
+existing consumers keep working), and each additional vault uses `vault-sync-<vault>.json` /
+`.sock`. The homelab-ops heyarr-hub plugin + MCP discover `vault-sync*.json` and show every vault.

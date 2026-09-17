@@ -1,0 +1,46 @@
+[Unit]
+Description=heyarr headless vault-sync daemon (W4) — vault "%i" (one folder <-> one vault space)
+Documentation=https://github.com/rarebit-one/heyarr-kmp/blob/main/docs/vault-sync-daemon.md
+# Needs the network up to reach the controller + relay, and the voidbind CLI on PATH.
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# TEMPLATE UNIT — one instance per vault. `systemctl --user enable --now
+# heyarr-vault-sync@personal` runs the vault whose config is
+# ~/.config/heyarr-vault-sync/personal.json. Each per-vault config sets its own
+# folder / space_id / status_file / socket / index_file, so several vaults
+# (personal, family, …) run side by side on one box with SEPARATE sync indexes,
+# status files and control sockets. (A vault = one root tree <-> one space; access
+# control = the space's recipient set — whole-vault granularity.)
+#
+# Runnable fat JAR dropped into ~/.local/lib/heyarr-vault-sync/ (any versioned
+# filename — the JVM `dir/*` classpath wildcard picks it up). The GUI app's own
+# Main-Class is the Compose window, so the daemon is launched by class name on -cp.
+# JDK 21 via mise; its shim is the stable absolute path a --user unit can rely on
+# (a bare `java` is usually not on a --user service's PATH). Adjust if your java
+# lives elsewhere: `readlink -f "$(mise which java)"`.
+#
+# --config points the daemon at THIS instance's per-vault config file (%i = the
+# instance name). Config precedence is defaults -> that file -> env -> args.
+ExecStart=%h/.local/share/mise/shims/java -cp %h/.local/lib/heyarr-vault-sync/* one.rarebit.heyarr.desktop.vault.daemon.DaemonMainKt --config %h/.config/heyarr-vault-sync/%i.json
+
+# WRITE TOKEN (required to actually sync): a headless writer needs a write-scoped
+# bearer token — an enrolled device credential is read-floor (ADR-0067) and its
+# first write 403s. The heyarr CLI token at %h/.config/heyarr/cli.token is auto-used
+# when present; otherwise set HEYARR_VAULT_TOKEN_FILE / HEYARR_VAULT_TOKEN in the
+# per-vault config or here. (Custody — unwrapping the space key from the Go device
+# store — is separate and always on.)
+#
+# The daemon may shell out to `voidbind` (no-token fallback); keep it on the PATH:
+Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin
+
+Restart=on-failure
+RestartSec=5
+# The status file + control socket live under ~/.cache (per-vault paths from the
+# config); nothing else is written outside the synced folder, that vault's sync
+# index, and the voidbind store.
+
+[Install]
+WantedBy=default.target
