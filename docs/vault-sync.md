@@ -1,6 +1,8 @@
 # Vault sync (W4) — desktop designated-folder daemon
 
-Status: **in progress** (software-key custody; cruciform custody deferred).
+Status: **software tier complete** — the desktop daemon builds, resolves custody, and runs
+end to end (W4.0–4.6 landed + CI-green); the only remaining step is W4.7, the non-automatable
+device enrolment (Cruciform approval on the phone). Cruciform custody still deferred.
 Owner: desktop client. Server side (heyarr-core) is complete and on `main`.
 
 ## What this is
@@ -109,20 +111,36 @@ HTTP endpoints (all `/api/v1`, bearer/Device auth):
   changes/snapshot/keys/pin/unpin over `HttpTransport`, ids via BLAKE3) + `VaultBlobStore`
   (binary PUT + ranged GET, `fetchFor` → `VaultFrame.Fetch`). Fake-transport tested. Added
   a `delete`-with-body overload to `HttpTransport` for unpin.
-- **W4.5 — sync engine** (`:composeApp`): IN PROGRESS. Decided semantics: safe deletes
+- **W4.5 — sync engine** (`:composeApp`): DONE. Decided semantics: safe deletes
   (index-proven), conflicted copies written to disk, hybrid mtime/size→hash detection;
   `WatchService` + periodic-scan safety net, atomic temp-then-rename writes, frontier
-  cursor. DONE: the pure `reconcile()` core (`:core`), `LocalScanner` (streaming BLAKE3 +
-  hybrid), `SyncIndex` store. TODO: the daemon orchestration (`syncOnce` execution + the
-  watch/schedule wrapper + Main wiring).
-- **W4.3 — space-key custody**: unwrap the wrapped space key via the desktop's existing
-  device keyring (`DeviceIdentity.encPrivateKey` → `VoidbindEncryption.unwrap`); a
-  `SpaceKey` type; software `Unwrapper` now, cruciform later. Self-bootstrap on first run:
-  mint the space key, wrap to this device + the recovery key, `POST /spaces`.
-- **W4.6 — control surface**: a Vault settings screen (folder picker, space, start/stop,
-  status, conflicts).
-- **W4.7 — enrolment tie-in**: wrap this device into the vault space. Needs owner approval
-  on the Cruciform phone — the one non-automatable step.
+  cursor. The pure `reconcile()` core (`:core`), `LocalScanner` (streaming BLAKE3 +
+  hybrid), `SyncIndex` store, and the `syncOnce` capstone (two-device round-trip test)
+  landed in W4.5a–d. **W4.5e** added the daemon orchestration: `VaultSyncController` (one
+  cancellable Job — `syncOnce` off `Dispatchers.IO` via `runInterruptible`, parked on a
+  `SyncChanges` folder-watch OR the periodic tick, a failed pass → `Error` and the loop
+  keeps going, passes serialised by a `Mutex`), the `VaultSync` seam, and `WatchedFolder`/
+  `PeriodicOnlyChanges`. Also fixed a scanner bug the daemon would make live — `.sync-trash/`
+  is now ignored so a trashed file isn't re-uploaded.
+- **W4.3 — space-key custody**: DONE (software tier). `VaultCustody.openOrBootstrap` unwraps
+  the wrapped space key via the desktop keyring (`DeviceIdentity.encPrivateKey` →
+  `VoidbindEncryption.unwrap`), and self-bootstraps the first device — mint the space key,
+  wrap for this device + the recovery recipient (when enrolment provisioned one), `POST
+  /spaces` (kind `personal`; the server's closed kind set has no dedicated vault/drive kind).
+  A configured-but-unreadable space is reported "not ready" and never re-minted. Added
+  `VaultSpaceClient.createSpace`, a `VaultKeys` seam, and
+  `DesktopDeviceKeyring.recoveryRecipient()` (persisted from `/enrol`). Cruciform custody
+  swaps in later behind the same seam (still gated on the voidbind-kmp `UnwrapWithAgreement`
+  port — see "Custody now vs later").
+- **W4.6 — control surface**: DONE. `VaultService` (session-scoped) resolves custody off the
+  UI thread with retry, then drives the controller; a `VaultPhase` (Off / Preparing / Running)
+  fronts the per-pass `SyncStatus`. `AppSession` owns `vault`, `App.kt` resumes on launch and
+  shuts the daemon down on teardown, and the Settings **Vault panel** has a folder picker,
+  start/stop, and live status (phase, last ↑↓⌫ stats, error, space id).
+- **W4.7 — enrolment tie-in**: REMAINING — the one non-automatable step. Custody resolves
+  against a real node only once this device is voidbind-enrolled (Cruciform approval on the
+  phone); until then the panel sits in "getting ready". Everything else runs the moment the
+  device is enrolled.
 
 ## Verification
 
