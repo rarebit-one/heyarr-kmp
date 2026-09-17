@@ -56,6 +56,16 @@ data class DaemonConfig(
     val statusFile: Path = defaultStatusFile(),
     /** The unix control socket (mode 0600) the plugin/MCP drives with newline-delimited JSON. */
     val socketPath: Path = defaultSocketPath(),
+    /**
+     * The device-local sync-index file (`path → synced hash/blob/size/mtime`), or null to use
+     * [FileSyncIndexStore]'s own default. The index is what makes deletes safe and backs the
+     * change gate, so it is PER-VAULT state: two daemon instances syncing different folders/spaces
+     * MUST NOT share one index (a shared index would treat the other vault's files as remote
+     * deletes). [FileSyncIndexStore]'s default keys only off `XDG_CONFIG_HOME`, so before this
+     * override the only way to separate two instances was the `XDG_CONFIG_HOME` hack; set this
+     * (per-vault template unit) instead.
+     */
+    val indexFile: String? = null,
 ) {
     /**
      * The effective API write token, or null when none is configured (→ fall back to the device
@@ -113,6 +123,7 @@ data class DaemonConfig(
             env("HEYARR_VAULT_RETRY_MS")?.toLongOrNull()?.let { cfg = cfg.copy(retryMs = it) }
             env("HEYARR_VAULT_STATUS_FILE")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(statusFile = File(it).toPath()) }
             env("HEYARR_VAULT_SOCKET")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(socketPath = File(it).toPath()) }
+            env("HEYARR_VAULT_INDEX")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(indexFile = it) }
             env("HEYARR_VAULT_TOKEN")?.let { cfg = cfg.copy(token = it.ifBlank { null }) }
             env("HEYARR_VAULT_TOKEN_FILE")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(tokenFile = it) }
 
@@ -125,6 +136,7 @@ data class DaemonConfig(
             cli["retry-ms"]?.toLongOrNull()?.let { cfg = cfg.copy(retryMs = it) }
             cli["status-file"]?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(statusFile = File(it).toPath()) }
             cli["socket"]?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(socketPath = File(it).toPath()) }
+            cli["index-file"]?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(indexFile = it) }
             cli["token"]?.let { cfg = cfg.copy(token = it.ifBlank { null }) }
             cli["token-file"]?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(tokenFile = it) }
             return cfg
@@ -148,6 +160,7 @@ data class DaemonConfig(
                     ?: base.statusFile,
                 socketPath = JsonScan.stringField(obj, "socket")?.takeIf { it.isNotBlank() }?.let { File(it).toPath() }
                     ?: base.socketPath,
+                indexFile = JsonScan.stringField(obj, "index_file")?.takeIf { it.isNotBlank() },
             )
         }
 
