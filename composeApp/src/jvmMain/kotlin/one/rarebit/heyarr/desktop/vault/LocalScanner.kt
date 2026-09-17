@@ -62,13 +62,17 @@ object LocalScanner {
         return h.hashHex()
     }
 
-    /** Skip the daemon's own conflicted-copy trash + typical OS/editor cruft. */
+    /** Skip the daemon's own scratch dirs + typical OS/editor cruft. */
     private fun defaultIgnore(path: String): Boolean {
         val name = path.substringAfterLast('/')
         return name == ".DS_Store" ||
             name == "Thumbs.db" ||
             name.endsWith(".swp") ||
             name.endsWith("~") ||
-            path.startsWith(".sync-tmp/") // where in-flight downloads land before atomic rename
+            path.startsWith(".sync-tmp/") || // where in-flight downloads land before atomic rename
+            // where a local-delete moves the file (RealVaultFolder.trash). Without this, a
+            // trashed file re-appears to the scanner as a new local file and the very next pass
+            // re-uploads it — a delete that never sticks. The daemon is what makes that loop live.
+            path.startsWith(".sync-trash/")
     }
 }
