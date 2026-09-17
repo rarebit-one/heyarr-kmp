@@ -1,0 +1,11 @@
+{
+  "_comment": "Golden vectors generated from heyarr-core internal/personalstate/protocol (NewChange/NewSnapshot). The content-addressed id is blake3 over a length-framed, domain-separated tuple (domain, space, sorted refs, ciphertext) — NOT blake3(ciphertext). Regenerate from that package if the framing changes.",
+  "vectors": [
+    { "kind": "change", "space_id": "01a0ae3b-ca68-7165-9dbb-527425e2f380", "refs": [], "cipher_hex": "00", "id": "blake3:cd379e1ade96b61c92de82d1948f43ec4ae0572cfec0c2dcb98799494cf2a7f3" },
+    { "kind": "change", "space_id": "01a0ae3b-ca68-7165-9dbb-527425e2f380", "refs": [], "cipher_hex": "deadbeefcafe0011223344556677889900aabbccddeeff", "id": "blake3:c5e8f4125406d1129e8e9ec90dac75921a45d6aeb2c467fce0589e40700ed2e4" },
+    { "kind": "change", "space_id": "s1", "refs": ["blake3:aa00000000000000000000000000000000000000000000000000000000000000", "blake3:bb00000000000000000000000000000000000000000000000000000000000000"], "cipher_hex": "0102030405", "id": "blake3:b6231176ec337b4320397ee7c56042de60883791dcffe684eb1d81ed385d350d" },
+    { "kind": "change", "space_id": "space-with-many", "refs": ["blake3:cc11111111111111111111111111111111111111111111111111111111111111"], "cipher_hex": "ff", "id": "blake3:e03eee88f20e5c44c7792b919494baa03c1b73a201e61f5f2cdf602f80438d43" },
+    { "kind": "snapshot", "space_id": "01a0ae3b-ca68-7165-9dbb-527425e2f380", "refs": [], "cipher_hex": "00", "id": "blake3:3e554f00704875d5832862a9f8d29826a7e93f496d6edf3e7989d1385546599f" },
+    { "kind": "snapshot", "space_id": "s1", "refs": ["blake3:aa00000000000000000000000000000000000000000000000000000000000000", "blake3:bb00000000000000000000000000000000000000000000000000000000000000"], "cipher_hex": "0102030405", "id": "blake3:70dae794fade6f4e368b8101c9a45260af1db5325e19e65f6138e62d616c2e74" }
+  ]
+}

@@ -4,7 +4,6 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.core.vault.VaultFrame
 import java.net.URI
-import java.net.URLEncoder
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpRequest.BodyPublishers
@@ -98,10 +97,16 @@ class JdkVaultBlobStore(
             return "bytes=$start-${end - 1}"
         }
 
+        // The blob id `blake3:<64 lowercase hex>` goes into the path VERBATIM — not URL-encoded.
+        // Its only non-alphanumeric byte is the ':', which is a legal path-segment char (RFC 3986
+        // pchar). URLEncoder would percent-encode it to %3A, and the Go server (go-chi) routes on the
+        // RAW path, so `chi.URLParam` would hand `hashing.Parse` a colon-less `blake3%3A…` and it
+        // would 400 the upload as a malformed id. The Go CLI sends the literal id (`hash.String()`);
+        // we match it byte-for-byte.
         fun uploadUrl(baseUrl: String, hash: String): String =
-            baseUrl.trimEnd('/') + "/api/v1/vault/blobs/" + URLEncoder.encode(hash, "UTF-8")
+            baseUrl.trimEnd('/') + "/api/v1/vault/blobs/" + hash
 
         fun contentUrl(baseUrl: String, hash: String): String =
-            baseUrl.trimEnd('/') + "/api/v1/blobs/" + URLEncoder.encode(hash, "UTF-8") + "/content"
+            baseUrl.trimEnd('/') + "/api/v1/blobs/" + hash + "/content"
     }
 }

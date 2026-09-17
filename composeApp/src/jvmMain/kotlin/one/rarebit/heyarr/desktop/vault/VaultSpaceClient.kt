@@ -1,10 +1,10 @@
 package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.core.crypto.Blake3
 import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.vault.PersonalStateId
 import java.net.URLEncoder
 import java.util.Base64
 
@@ -57,9 +57,10 @@ interface VaultKeys {
  * (`LibraryClient`): constructed with an [HttpTransport], base URL and [Credential];
  * blocking, call off the UI thread.
  *
- * A change/snapshot is content-addressed: its id is `blake3:<hex>` of the ciphertext, and
- * the server re-verifies it (400 `id_mismatch` otherwise), so this computes the id here
- * with the vault's own [Blake3] rather than trusting the server's echo.
+ * A change/snapshot is content-addressed, and the id is NOT `blake3(ciphertext)`: it is the FRAMED
+ * [PersonalStateId] digest over `(domain ‖ space ‖ parents/frontier ‖ ciphertext)`, byte-identical
+ * to the Go peer's `computeID`. The peer re-derives it and 400s (`id_mismatch`) on any mismatch, so
+ * this computes it the same way here rather than trusting the server's echo.
  */
 class VaultSpaceClient(
     private val http: HttpTransport,
@@ -74,14 +75,21 @@ class VaultSpaceClient(
         return JsonScan.objectsOf(array, emptyList()).map { parseChange(it) }
     }
 
-    /** Push one encrypted change; returns its content-addressed id. */
+    /**
+     * Push one encrypted change; returns its content-addressed id. The id is the FRAMED
+     * `PersonalStateId.changeId` (domain ‖ space ‖ parents ‖ ciphertext), not `blake3(ciphertext)` —
+     * the peer re-derives it the same way and 400s (`ErrIDMismatch`) otherwise. Parents are sent in
+     * the same canonical (sorted/deduped) form they were hashed in, so the peer's re-derivation
+     * agrees.
+     */
     override fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String {
-        val changeId = Blake3.hashHex(ciphertext)
+        val canonicalParents = PersonalStateId.canonical(parents)
+        val changeId = PersonalStateId.changeId(spaceId, canonicalParents, ciphertext)
         val body = JsonWrite.obj(
             linkedMapOf(
                 "space_id" to spaceId,
                 "change_id" to changeId,
-                "parents" to parents,
+                "parents" to canonicalParents,
                 "ciphertext" to b64(ciphertext),
             ),
         )
@@ -105,14 +113,15 @@ class VaultSpaceClient(
         )
     }
 
-    /** Push an encrypted snapshot; returns its content-addressed id. */
+    /** Push an encrypted snapshot; returns its content-addressed id (framed, like a change's). */
     fun pushSnapshot(spaceId: String, frontier: List<String>, ciphertext: ByteArray): String {
-        val snapshotId = Blake3.hashHex(ciphertext)
+        val canonicalFrontier = PersonalStateId.canonical(frontier)
+        val snapshotId = PersonalStateId.snapshotId(spaceId, canonicalFrontier, ciphertext)
         val body = JsonWrite.obj(
             linkedMapOf(
                 "space_id" to spaceId,
                 "snapshot_id" to snapshotId,
-                "frontier" to frontier,
+                "frontier" to canonicalFrontier,
                 "ciphertext" to b64(ciphertext),
             ),
         )
