@@ -48,6 +48,12 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                // voidbind's crypto (used by the vault codec tests) needs a registered
+                // cryptography-kotlin provider at RUNTIME. voidbind-client declares the
+                // provider as `implementation`, and :composeApp adds it for the app — but
+                // :core's own tests must bring it themselves or every encrypt/decrypt
+                // throws at runtime with no compile error.
+                implementation("dev.whyoleg.cryptography:cryptography-provider-optimal:0.6.0")
             }
         }
     }
@@ -64,5 +70,15 @@ if (hasAndroidSdk) {
             sourceCompatibility = JavaVersion.VERSION_17
             targetCompatibility = JavaVersion.VERSION_17
         }
+    }
+}
+
+// Print full exception messages (and test stdout) to the build log so a JVM unit-test
+// failure is diagnosable from CI without the (un-uploaded) HTML report.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showStandardStreams = true
+        events("failed")
     }
 }

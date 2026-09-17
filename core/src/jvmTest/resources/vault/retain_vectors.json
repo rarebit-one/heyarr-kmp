@@ -1,0 +1,176 @@
+{
+  "cases": [
+    {
+      "name": "keep_all_history",
+      "changes": [
+        {
+          "op": 0,
+          "path": "a.txt",
+          "blob": "blake3:1111111111111111111111111111111111111111111111111111111111111111",
+          "size": 3,
+          "mtime": 100,
+          "at": 1,
+          "writer": "w1",
+          "base": {
+            "At": 0,
+            "Writer": ""
+          }
+        },
+        {
+          "op": 0,
+          "path": "a.txt",
+          "blob": "blake3:2222222222222222222222222222222222222222222222222222222222222222",
+          "size": 5,
+          "mtime": 200,
+          "at": 2,
+          "writer": "w2",
+          "base": {
+            "At": 1,
+            "Writer": "w1"
+          }
+        }
+      ],
+      "maxVersionsPerPath": -1,
+      "trashTtlSeconds": -1,
+      "nowUnix": 1000,
+      "unreferenced": []
+    },
+    {
+      "name": "drop_all_history",
+      "changes": [
+        {
+          "op": 0,
+          "path": "a.txt",
+          "blob": "blake3:1111111111111111111111111111111111111111111111111111111111111111",
+          "size": 3,
+          "mtime": 100,
+          "at": 1,
+          "writer": "w1",
+          "base": {
+            "At": 0,
+            "Writer": ""
+          }
+        },
+        {
+          "op": 0,
+          "path": "a.txt",
+          "blob": "blake3:2222222222222222222222222222222222222222222222222222222222222222",
+          "size": 5,
+          "mtime": 200,
+          "at": 2,
+          "writer": "w2",
+          "base": {
+            "At": 1,
+            "Writer": "w1"
+          }
+        }
+      ],
+      "maxVersionsPerPath": 0,
+      "trashTtlSeconds": -1,
+      "nowUnix": 1000,
+      "unreferenced": [
+        "blake3:1111111111111111111111111111111111111111111111111111111111111111"
+      ]
+    },
+    {
+      "name": "trash_dropped",
+      "changes": [
+        {
+          "op": 0,
+          "path": "a.txt",
+          "blob": "blake3:1111111111111111111111111111111111111111111111111111111111111111",
+          "size": 3,
+          "mtime": 100,
+          "at": 1,
+          "writer": "w1",
+          "base": {
+            "At": 0,
+            "Writer": ""
+          }
+        },
+        {
+          "op": 1,
+          "path": "a.txt",
+          "at": 2,
+          "writer": "w2",
+          "base": {
+            "At": 0,
+            "Writer": ""
+          }
+        }
+      ],
+      "maxVersionsPerPath": -1,
+      "trashTtlSeconds": 0,
+      "nowUnix": 1000,
+      "unreferenced": [
+        "blake3:1111111111111111111111111111111111111111111111111111111111111111"
+      ]
+    },
+    {
+      "name": "trash_kept_within_ttl",
+      "changes": [
+        {
+          "op": 0,
+          "path": "a.txt",
+          "blob": "blake3:1111111111111111111111111111111111111111111111111111111111111111",
+          "size": 3,
+          "mtime": 100,
+          "at": 1,
+          "writer": "w1",
+          "base": {
+            "At": 0,
+            "Writer": ""
+          }
+        },
+        {
+          "op": 1,
+          "path": "a.txt",
+          "at": 2,
+          "writer": "w2",
+          "base": {
+            "At": 0,
+            "Writer": ""
+          }
+        }
+      ],
+      "maxVersionsPerPath": -1,
+      "trashTtlSeconds": 3600,
+      "nowUnix": 200,
+      "unreferenced": []
+    },
+    {
+      "name": "trash_expired",
+      "changes": [
+        {
+          "op": 0,
+          "path": "a.txt",
+          "blob": "blake3:1111111111111111111111111111111111111111111111111111111111111111",
+          "size": 3,
+          "mtime": 100,
+          "at": 1,
+          "writer": "w1",
+          "base": {
+            "At": 0,
+            "Writer": ""
+          }
+        },
+        {
+          "op": 1,
+          "path": "a.txt",
+          "at": 2,
+          "writer": "w2",
+          "base": {
+            "At": 0,
+            "Writer": ""
+          }
+        }
+      ],
+      "maxVersionsPerPath": -1,
+      "trashTtlSeconds": 3600,
+      "nowUnix": 100000,
+      "unreferenced": [
+        "blake3:1111111111111111111111111111111111111111111111111111111111111111"
+      ]
+    }
+  ]
+}
