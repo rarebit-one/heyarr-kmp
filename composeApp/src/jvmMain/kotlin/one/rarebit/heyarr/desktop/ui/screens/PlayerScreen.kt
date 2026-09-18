@@ -437,6 +437,7 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
                 }, icon = Icons.Rounded.Cast)
             }
         }
+        GhostButton("Search the network again", { scope.launch { session.api?.let { a -> session.io { a.renderers(refresh = true) }.onSuccess { state.renderers = it } } } })
     }
 }
 
