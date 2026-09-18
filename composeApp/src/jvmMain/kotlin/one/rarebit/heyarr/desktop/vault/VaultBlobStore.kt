@@ -20,6 +20,15 @@ interface VaultBlobStore {
     /** PUT the ciphertext [bytes] at [hash] (`blake3:<hex>`). Idempotent (content-addressed). */
     fun putBlob(baseUrl: String, hash: String, bytes: ByteArray, credential: Credential): PutResult
 
+    /**
+     * PUT a ciphertext blob STREAMING from [file] at [hash] — for large content blobs whose bytes
+     * must not sit in memory (the streaming seal writes them to a temp file first). The default
+     * reads the file into memory and delegates to [putBlob], so a fake needn't implement it; the
+     * real store overrides it with a streaming body publisher. Idempotent (content-addressed).
+     */
+    fun putBlobFile(baseUrl: String, hash: String, file: java.nio.file.Path, credential: Credential): PutResult =
+        putBlob(baseUrl, hash, java.nio.file.Files.readAllBytes(file), credential)
+
     /** GET ciphertext bytes `[start, end)` of blob [hash] — the codec's per-frame fetch. */
     fun fetchRange(baseUrl: String, hash: String, start: Long, end: Long, credential: Credential): ByteArray
 
@@ -61,6 +70,29 @@ class JdkVaultBlobStore(
                 PutResult.Stored(
                     hash = JsonScan.stringField(resp.body(), "hash") ?: hash,
                     size = JsonScan.longField(resp.body(), "size") ?: bytes.size.toLong(),
+                )
+            } else {
+                PutResult.Failed("upload failed: HTTP ${resp.statusCode()}")
+            }
+        } catch (e: Exception) {
+            PutResult.Failed("upload failed: ${e.message}")
+        }
+    }
+
+    override fun putBlobFile(baseUrl: String, hash: String, file: java.nio.file.Path, credential: Credential): PutResult {
+        // Stream the ciphertext straight off disk — the bytes never sit in memory. Deliberately
+        // NO request timeout: a multi-GB blob over a slow link would blow the 120s cap; the
+        // connect timeout still bounds establishing the connection.
+        val builder = HttpRequest.newBuilder(URI.create(uploadUrl(baseUrl, hash)))
+            .header("Content-Type", "application/octet-stream")
+            .PUT(BodyPublishers.ofFile(file))
+        for ((k, v) in credential.asHeader()) builder.header(k, v)
+        return try {
+            val resp = client.send(builder.build(), BodyHandlers.ofString())
+            if (resp.statusCode() == 201) {
+                PutResult.Stored(
+                    hash = JsonScan.stringField(resp.body(), "hash") ?: hash,
+                    size = JsonScan.longField(resp.body(), "size") ?: java.nio.file.Files.size(file),
                 )
             } else {
                 PutResult.Failed("upload failed: HTTP ${resp.statusCode()}")
