@@ -173,6 +173,71 @@ object VaultFrame {
         return contentBytes to manifest
     }
 
+    /** A source of plaintext bytes, `InputStream`-style: fill `buf[off, off+len)`, return the
+     * count read, or -1 at EOF. The streaming seal never holds more than one frame. */
+    fun interface PlaintextSource {
+        fun read(buf: ByteArray, off: Int, len: Int): Int
+    }
+
+    /** A sink the streaming seal writes each sealed frame to, in order (e.g. a temp file). */
+    fun interface SealedSink {
+        fun write(bytes: ByteArray)
+    }
+
+    /**
+     * The STREAMING twin of [seal] for large files: read [source] a frame at a time, seal each
+     * frame, write it to [sink], and BLAKE3 the sealed bytes incrementally — so memory stays flat
+     * at ~one frame no matter the file size (the whole-buffer [seal] OOMs, and a file whose sealed
+     * content exceeds ~2 GiB cannot even be held in a single array). The frames, their order and
+     * the content id are byte-identical to [seal] for the same plaintext (the content blob is
+     * frame₀‖frame₁‖…‖frameₙ and its id is `blake3:` of exactly those bytes), so a file sealed
+     * either way is wire-compatible and decrypts the same. Returns the [Manifest]; the caller
+     * uploads [sink]'s bytes to the `content` id and seals+uploads the manifest.
+     */
+    fun sealStreaming(
+        spaceKey: ByteArray,
+        fileId: ByteArray,
+        source: PlaintextSource,
+        sink: SealedSink,
+        frameSize: Int = FRAME_SIZE,
+    ): Manifest {
+        require(fileId.size == FILE_ID_LEN) { "file id must be $FILE_ID_LEN bytes" }
+        val h = Blake3.streaming()
+        val buf = ByteArray(frameSize)
+        var index = 0
+        var total = 0L
+        while (true) {
+            val n = readFully(source, buf)
+            if (n == 0) break // clean EOF on a frame boundary (incl. an empty file → 0 frames)
+            val pt = frameHeader(fileId, index) + buf.copyOfRange(0, n)
+            val sealed = VoidbindEncryption.encryptChange(spaceKey, pt)
+            sink.write(sealed)
+            h.update(sealed)
+            index++
+            total += n.toLong()
+            if (n < frameSize) break // a short frame is the last one
+        }
+        return Manifest(
+            version = VERSION,
+            fileId = toHex(fileId),
+            frameSize = frameSize,
+            frameCount = index,
+            plaintextSize = total,
+            content = h.hashHex(),
+        )
+    }
+
+    /** Fill [buf] from [source], looping over short reads; return bytes read (< size ⇒ EOF). */
+    private fun readFully(source: PlaintextSource, buf: ByteArray): Int {
+        var off = 0
+        while (off < buf.size) {
+            val n = source.read(buf, off, buf.size - off)
+            if (n < 0) break
+            off += n
+        }
+        return off
+    }
+
     /** Seal a manifest under the space key → the ciphertext blob a peer stores. */
     fun sealManifest(spaceKey: ByteArray, m: Manifest): ByteArray =
         VoidbindEncryption.encryptChange(spaceKey, manifestJson(m).encodeToByteArray())

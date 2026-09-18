@@ -24,6 +24,20 @@ import java.security.SecureRandom
 interface VaultFolder {
     fun scan(index: Map<String, SyncIndexEntry>): Map<String, LocalFile>
     fun read(path: String): ByteArray
+    /**
+     * Open [path] for STREAMING reads (the large-file seal path). Defaults to wrapping [read] so a
+     * fake folder needn't implement it; the real folder streams straight off disk.
+     */
+    fun openRead(path: String): java.io.InputStream = java.io.ByteArrayInputStream(read(path))
+
+    /**
+     * A fresh temp file for a streaming seal's ciphertext, on the SAME filesystem as the vault (so
+     * it is real disk — never a tmpfs `/tmp` that would put a multi-GB blob back in RAM). The caller
+     * deletes it. Defaults to the system temp dir (fine for small test files); the real folder puts
+     * it under the vault's ignored `.sync-tmp/`.
+     */
+    fun sealTemp(): Path = Files.createTempFile("heyarr-vault-seal", ".ct")
+
     /** Write [bytes] atomically and set the file's mtime, so the next scan sees it unchanged. */
     fun write(path: String, bytes: ByteArray, mtimeEpochSec: Long)
     fun trash(path: String)
@@ -34,6 +48,13 @@ class RealVaultFolder(private val root: Path) : VaultFolder {
     override fun scan(index: Map<String, SyncIndexEntry>): Map<String, LocalFile> = LocalScanner.scan(root, index)
 
     override fun read(path: String): ByteArray = Files.readAllBytes(root.resolve(path))
+
+    override fun openRead(path: String): java.io.InputStream = Files.newInputStream(root.resolve(path))
+
+    override fun sealTemp(): Path {
+        val tmpDir = root.resolve(".sync-tmp").also { Files.createDirectories(it) }
+        return Files.createTempFile(tmpDir, "seal", ".ct")
+    }
 
     override fun write(path: String, bytes: ByteArray, mtimeEpochSec: Long) {
         val target = root.resolve(path)
@@ -118,15 +139,32 @@ class VaultSyncEngine(
     }
 
     private fun upload(path: String, lf: LocalFile, drive: Drive, newIndex: MutableMap<String, SyncIndexEntry>) {
-        val bytes = folder.read(path)
         val fileId = ByteArray(16).also { SecureRandom().nextBytes(it) }
-        val (content, manifest) = VaultFrame.seal(spaceKey, bytes, fileId)
-        blobs.putBlob(baseUrl, manifest.content, content, credential)          // the ciphertext content blob
-        val manifestBlob = VaultFrame.sealManifest(spaceKey, manifest)
-        val manifestHash = Blake3.hashHex(manifestBlob)
-        blobs.putBlob(baseUrl, manifestHash, manifestBlob, credential)         // the sealed manifest (the drive entry's blob)
-        push(drive.put(path, manifestHash, lf.size, lf.mtime))
-        newIndex[path] = SyncIndexEntry(lf.plaintextHash, manifestHash, lf.size, lf.mtime)
+        // STREAM the seal to a temp ciphertext file, one frame in memory at a time — so a multi-GB
+        // file neither OOMs the heap nor trips the JVM's ~2 GiB single-array cap. The random per-
+        // frame nonces mean the ciphertext can't be re-derived, so we materialise it once (to disk)
+        // and then stream that file to the content-addressed PUT.
+        val tmp = folder.sealTemp()
+        try {
+            val manifest = folder.openRead(path).use { input ->
+                Files.newOutputStream(tmp).buffered().use { out ->
+                    VaultFrame.sealStreaming(
+                        spaceKey,
+                        fileId,
+                        source = VaultFrame.PlaintextSource { buf, off, len -> input.read(buf, off, len) },
+                        sink = VaultFrame.SealedSink { out.write(it) },
+                    )
+                }
+            }
+            blobs.putBlobFile(baseUrl, manifest.content, tmp, credential)      // the ciphertext content blob (streamed off disk)
+            val manifestBlob = VaultFrame.sealManifest(spaceKey, manifest)
+            val manifestHash = Blake3.hashHex(manifestBlob)
+            blobs.putBlob(baseUrl, manifestHash, manifestBlob, credential)     // the sealed manifest (the drive entry's blob)
+            push(drive.put(path, manifestHash, lf.size, lf.mtime))
+            newIndex[path] = SyncIndexEntry(lf.plaintextHash, manifestHash, lf.size, lf.mtime)
+        } finally {
+            Files.deleteIfExists(tmp)
+        }
     }
 
     private fun download(path: String, manifestHash: String, entry: DriveEntry, newIndex: MutableMap<String, SyncIndexEntry>) {
