@@ -112,7 +112,7 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
     }
 
     Column(modifier.fillMaxSize().padding(horizontal = Tokens.screenPadding).padding(top = Tokens.s4), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionHeader("Library", subtitle = if (state.works == null) null else "${filtered.size} of ${all.size} works", trailing = {
+        SectionHeader("Library", icon = Icons.Rounded.GridView, subtitle = if (state.works == null) null else "${filtered.size} of ${all.size} works", trailing = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButtonRound(Icons.Rounded.Refresh, "Refresh", ::load, enabled = !state.loading, size = 36.dp)
                 IconButtonRound(Icons.Rounded.GridView, "Grid view", { state.grid = true }, filled = state.grid, size = 36.dp)
@@ -140,10 +140,10 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
         }
         when {
             state.error != null && state.works == null -> ErrorState("Couldn't load the library", state.error, ::load)
-            state.works == null -> LazyVerticalGrid(GridCells.Adaptive(Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.s3), verticalArrangement = Arrangement.spacedBy(Tokens.s3)) { items(9) { MediaCardSkeleton(width = Tokens.posterWidth) } }
+            state.works == null -> LazyVerticalGrid(GridCells.Adaptive(if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES) 280.dp else Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.s3), verticalArrangement = Arrangement.spacedBy(Tokens.s3)) { items(9) { MediaCardSkeleton(width = Tokens.posterWidth, aspect = one.rarebit.heyarr.mobile.theme.MediaThemes.of(state.type ?: MediaType.BOOK).aspect) } }
             filtered.isEmpty() -> EmptyState(if (all.isEmpty()) "The library is empty" else "Nothing matches these filters", detail = if (all.isEmpty()) "Scan a library root on the node, or Want something and let heyarr find it." else "Clear a filter to see more.")
             state.grid -> LazyVerticalGrid(
-                GridCells.Adaptive(Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.s3), verticalArrangement = Arrangement.spacedBy(Tokens.s3),
+                GridCells.Adaptive(if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES) 280.dp else Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.s3), verticalArrangement = Arrangement.spacedBy(Tokens.s3),
                 contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.fillMaxSize(),
             ) {
                 items(filtered, key = { it.id }) { w ->

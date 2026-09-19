@@ -56,8 +56,8 @@ type scale) — and the media table in `theme/MediaType.kt`:
 
 | Media | Accent | Card | CTA |
 |-------|--------|------|-----|
-| Movie | `#00935E` emerald (app default) | 2:3 | Play |
-| Series | `#7C5CFF` violet | 2:3 | Play / Next episode |
+| Movie | `#00935E` emerald (app default) | 16:9 | Play |
+| Series | `#7C5CFF` violet | 16:9 | Play / Next episode |
 | Book | `#E0A458` amber, spine shadow | 2:3 | Read |
 | Audiobook | `#2DB3A6` teal | 1:1 | Listen |
 | Podcast | `#C13BAD` magenta | 1:1 | Play episode |
@@ -191,3 +191,8 @@ Android retains its existing navigation and playback behavior in this iteration.
 Archive controls use flat fills, square borders and uppercase labels. Media titles
 and reading text retain their original casing. Desktop search uses **Ctrl+F**,
 including on Linux; the app does not bind Super/Command+K or Super/Command+F.
+
+Media cards use wide 16:9 video frames, square audio covers and tall 2:3 books.
+Artwork fits inside the frame without cropping the source image. Desktop Search
+now includes Library and Discover views sharing one query; Discover asks the
+metadata provider for TV series to add, even when local results already exist.

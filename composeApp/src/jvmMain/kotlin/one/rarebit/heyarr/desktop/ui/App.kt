@@ -297,7 +297,7 @@ fun App(
                             Box(Modifier.weight(1f)) { when (val r = current) {
                                 is Route.Consume -> LibraryScreen(session, shelves.getValue(r.experience), ::go, onWant, experience = r.experience)
                                 Route.Home -> HomeScreen(session, home, ::go, onWant)
-                                Route.Discover -> DiscoverScreen(session, discover, onWantTitle)
+                                Route.Discover -> SearchScreen(session, search, ::go, onWant, onWantTitle, searchFocus, initialDiscover = true)
                                 Route.Search -> SearchScreen(session, search, ::go, onWant, onWantTitle, searchFocus)
                                 Route.Library -> LibraryScreen(session, library, ::go, onWant)
                                 Route.Missing -> MissingScreen(session, missing, ::go, onWantTitle = { if (session.isGuest) showSignIn = true else want = WantRequest(null, "") })
