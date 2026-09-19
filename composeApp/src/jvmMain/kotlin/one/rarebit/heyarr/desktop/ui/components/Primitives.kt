@@ -260,11 +260,14 @@ fun Kbd(text: String, modifier: Modifier = Modifier) {
 
 /** A rail/grid header: display-face title with a short accent underline, optional trailing action. */
 @Composable
-fun SectionHeader(title: String, modifier: Modifier = Modifier, subtitle: String? = null, trailing: (@Composable () -> Unit)? = null) {
+fun SectionHeader(title: String, modifier: Modifier = Modifier, subtitle: String? = null, trailing: (@Composable () -> Unit)? = null, icon: ImageVector? = null) {
     val accent = LocalMediaTheme.current.accent
     Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.headlineMedium, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (icon != null) Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
+                Text(title, style = MaterialTheme.typography.headlineMedium, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
             Spacer(Modifier.height(6.dp))
             Box(Modifier.width(36.dp).height(3.dp).background(accent, RectangleShape))
             if (subtitle != null) { Spacer(Modifier.height(6.dp)); Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }

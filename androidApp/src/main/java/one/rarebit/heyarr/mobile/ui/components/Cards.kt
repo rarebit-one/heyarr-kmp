@@ -99,7 +99,7 @@ fun Artwork(url: String?, type: MediaType, modifier: Modifier = Modifier, conten
             AsyncImage(
                 model = ImageRequest.Builder(context).data(url).crossfade(if (reduce) 0 else 350).build(),
                 contentDescription = contentDescription,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize(),
             )
         }

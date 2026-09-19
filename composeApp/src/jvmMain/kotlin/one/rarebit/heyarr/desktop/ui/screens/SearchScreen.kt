@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.desktop.ui.screens
 
+import one.rarebit.heyarr.desktop.ui.components.icon
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -97,8 +99,10 @@ fun SearchScreen(
     onWantTitle: WantByTitle,
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
+    initialDiscover: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
+    var discovering by remember { mutableStateOf(initialDiscover) }
     var recent by remember { mutableStateOf(session.recent.load()) }
     val sections = search.sections
     val rows = search.rows
@@ -119,11 +123,19 @@ fun SearchScreen(
         SearchBox(
             value = search.query,
             onValueChange = search::updateQuery,
-            onSubmit = { search.selectedRow()?.let(::open) ?: search.submit() },
-            onMove = search::moveSelection,
+            onSubmit = { if (!discovering) search.selectedRow()?.let(::open) ?: search.submit() },
+            onMove = { if (!discovering) search.moveSelection(it) },
             onClear = { search.updateQuery("") },
             focusRequester = focusRequester,
         )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip("Library", !discovering, { discovering = false }, icon = Icons.Rounded.Search)
+            FilterChip("Discover", discovering, { discovering = true }, icon = Icons.Rounded.TravelExplore)
+        }
+        if (discovering) {
+            ProviderSearchPane(session, search.query, onWantTitle)
+            return@Column
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             for (f in SearchFilter.entries) {
                 val count = if (f == SearchFilter.ALL) null else sections.firstOrNull { f.admits(it.type) }?.rows?.size?.takeIf { it > 0 }
@@ -137,7 +149,7 @@ fun SearchScreen(
                 var index = 0
                 for (section in sections) {
                     if (section.segment is Segment.Loaded && section.rows.isEmpty()) continue
-                    item(key = "h:" + section.type) { MediaScope(section.type) { SectionHeader(section.title, Modifier.padding(top = 12.dp, bottom = 6.dp), subtitle = (section.segment as? Segment.Loaded)?.let { if (it.truncated) "Showing the first ${it.rows.size} — narrow the query for more." else null }) } }
+                    item(key = "h:" + section.type) { MediaScope(section.type) { SectionHeader(section.title, icon = section.type.icon(), modifier = Modifier.padding(top = 12.dp, bottom = 6.dp), subtitle = (section.segment as? Segment.Loaded)?.let { if (it.truncated) "Showing the first ${it.rows.size} — narrow the query for more." else null }) } }
                     when (val seg = section.segment) {
                         Segment.Pending -> item(key = "p:" + section.type) { MediaRowSkeleton(2) }
                         is Segment.Failed -> item(key = "f:" + section.type) { Notice("Couldn't search ${section.title.lowercase()}: ${seg.message}", tone = Tokens.danger) }
@@ -271,5 +283,26 @@ private fun NoResultsPane(session: AppSession, query: String, onWantTitle: WantB
             },
         )
         if (asked) DiscoveryResults(query, discovery, busy, onWantTitle)
+    }
+}
+
+/** Metadata discovery shares the query but keeps provider answers separate from owned works. */
+@Composable
+private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: WantByTitle) {
+    var result by remember(query, session.generation) { mutableStateOf<McpResult<List<DiscoveryHit>>?>(null) }
+    var busy by remember(query, session.generation) { mutableStateOf(query.isNotBlank()) }
+    LaunchedEffect(query, session.generation) {
+        if (query.isBlank()) return@LaunchedEffect
+        kotlinx.coroutines.delay(300)
+        val api = session.api
+        result = if (api == null) null else session.io { api.discover(query.trim()) }.getOrNull()
+        busy = false
+    }
+    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        item { SectionHeader("Discover", icon = Icons.Rounded.TravelExplore, subtitle = "Find titles to add. The current metadata integration supports TV series.") }
+        item {
+            if (query.isBlank()) Text("Enter a title above to explore the metadata catalogue.", color = Tokens.textMuted)
+            else DiscoveryResults(query, result, busy, onWantTitle)
+        }
     }
 }

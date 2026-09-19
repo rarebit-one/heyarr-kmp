@@ -92,7 +92,7 @@ fun Artwork(bitmap: ImageBitmap?, type: MediaType, modifier: Modifier = Modifier
     val alpha by animateFloatAsState(if (bitmap != null) 1f else 0f, tween(if (reduce) 0 else 350))
     Box(modifier.background(Brush.linearGradient(listOf(theme.accent.copy(alpha = 0.35f), Tokens.surface2, Tokens.surface1))), contentAlignment = Alignment.Center) {
         if (bitmap == null) Icon(type.icon(), contentDescription = null, tint = theme.accent.copy(alpha = 0.55f), modifier = Modifier.size(glyphSize))
-        if (bitmap != null) Image(bitmap, contentDescription = contentDescription, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().alpha(alpha))
+        if (bitmap != null) Image(bitmap, contentDescription = contentDescription, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().alpha(alpha))
     }
 }
 

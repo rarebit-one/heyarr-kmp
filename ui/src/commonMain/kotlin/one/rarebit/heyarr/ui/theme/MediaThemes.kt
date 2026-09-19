@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import one.rarebit.heyarr.core.theme.MediaType
 
 /** Card art aspect — width:height. */
-enum class CardAspect(val ratio: Float) { POSTER(2f / 3f), SQUARE(1f) }
+enum class CardAspect(val ratio: Float) { POSTER(2f / 3f), SQUARE(1f), WIDE(16f / 9f) }
 
 /**
  * Everything that changes when the media type changes: accent, art aspect, the primary
@@ -46,11 +46,11 @@ data class MediaTheme(
  */
 object MediaThemes {
     private val MOVIE = MediaTheme(
-        MediaType.MOVIE, Color(0xFF00935E), Color(0xFF12A96E), Color(0xFF21C063), CardAspect.POSTER,
+        MediaType.MOVIE, Color(0xFF00935E), Color(0xFF12A96E), Color(0xFF21C063), CardAspect.WIDE,
         ctaLabel = "Play", ctaSecondaryLabel = null, metadataKeys = listOf("runtime", "year", "rating", "genre"),
     )
     private val SERIES = MediaTheme(
-        MediaType.SERIES, Color(0xFF7C5CFF), Color(0xFF8F73FF), Color(0xFFA48BFF), CardAspect.POSTER,
+        MediaType.SERIES, Color(0xFF7C5CFF), Color(0xFF8F73FF), Color(0xFFA48BFF), CardAspect.WIDE,
         ctaLabel = "Play", ctaSecondaryLabel = "Next episode", metadataKeys = listOf("season", "episode", "air_status", "year"),
     )
     private val BOOK = MediaTheme(
