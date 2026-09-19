@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -238,7 +237,7 @@ fun MediaRow(
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         val thumbW = if (theme.aspect == CardAspect.POSTER) 40.dp else 52.dp
-        Box(Modifier.width(thumbW).height(52.dp).clip(RoundedCornerShape(6.dp))) { Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 18.dp) }
+        Box(Modifier.width(thumbW).height(52.dp).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 18.dp) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
@@ -358,7 +357,7 @@ fun HeroSkeleton(height: Dp = 320.dp) {
         Skeleton(Modifier.fillMaxSize(), RoundedCornerShape(0.dp))
         Column(Modifier.align(Alignment.BottomStart).padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Skeleton(Modifier.width(80.dp).height(14.dp)); Skeleton(Modifier.width(220.dp).height(28.dp)); Skeleton(Modifier.width(160.dp).height(12.dp))
-            Skeleton(Modifier.width(120.dp).height(40.dp), CircleShape)
+            Skeleton(Modifier.width(120.dp).height(40.dp), RectangleShape)
         }
     }
 }

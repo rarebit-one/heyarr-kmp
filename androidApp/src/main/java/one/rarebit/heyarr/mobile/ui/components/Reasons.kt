@@ -10,12 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
@@ -59,12 +59,12 @@ fun ReasonList(reasons: List<Reason>, modifier: Modifier = Modifier, emphasiseFa
             val strong = emphasiseFailures && r.isFailure
             Row(
                 Modifier.fillMaxWidth()
-                    .background(if (strong) Tokens.danger.copy(alpha = 0.08f) else Color.Transparent, RoundedCornerShape(6.dp))
+                    .background(if (strong) Tokens.danger.copy(alpha = 0.08f) else Color.Transparent, RoundedCornerShape(Tokens.radiusCard))
                     .padding(horizontal = 6.dp, vertical = 4.dp)
                     .semantics { this.contentDescription = "Rule ${r.rule}, ${r.section}, ${r.result}. ${r.detail}" },
                 verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Box(Modifier.padding(top = 6.dp).size(7.dp).background(tone, CircleShape))
+                Box(Modifier.padding(top = 6.dp).size(7.dp).background(tone, RectangleShape))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         RuleCode(r.rule, tone = if (strong) Tokens.danger else Tokens.textPrimary)

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cast
@@ -37,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -116,7 +116,7 @@ private fun NavTile(item: NavSection, active: Boolean, accent: Color, accentEnd:
     val fg = when { active -> accentEnd; pressed -> Tokens.textPrimary; else -> Tokens.textMuted }
     Column(
         modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Tokens.radiusButton))
             .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = onClick)
             .semantics { this.contentDescription = item.label; this.selected = active }
             .padding(vertical = 6.dp),
@@ -139,14 +139,14 @@ private fun ConnectionTile(connection: Connection, detail: String?, onClick: () 
     }
     val interaction = remember { MutableInteractionSource() }
     Column(
-        Modifier.fillMaxWidth().focusRing(interaction, RoundedCornerShape(12.dp)).clip(RoundedCornerShape(12.dp))
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusButton))
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
             .semantics { this.contentDescription = "heyarr connection: $label${detail?.let { ", $it" } ?: ""}. Open connection details" }
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.size(36.dp).background(Tokens.surface2, CircleShape).border(Tokens.hairline, tone.copy(alpha = 0.6f), CircleShape), contentAlignment = Alignment.Center) {
-            Box(Modifier.size(10.dp).background(tone, CircleShape))
+        Box(Modifier.size(36.dp).focusRing(interaction, RectangleShape).background(Tokens.surface2, RectangleShape).border(Tokens.hairline, tone.copy(alpha = 0.6f), RectangleShape), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(10.dp).background(tone, RectangleShape))
         }
         Text(label.uppercase(), style = RAIL_LABEL, color = tone, maxLines = 1, softWrap = false)
         if (detail != null) Text(detail.substringBefore(" ·"), style = RAIL_LABEL.copy(letterSpacing = 0.2.sp, fontWeight = FontWeight.Normal), color = Tokens.textDisabled, maxLines = 1, softWrap = false)

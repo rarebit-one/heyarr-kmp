@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -318,7 +317,7 @@ fun Skeleton(modifier: Modifier, shape: Shape = RoundedCornerShape(Tokens.radius
 @Composable
 fun EmptyState(title: String, modifier: Modifier = Modifier, detail: String? = null, icon: ImageVector = Icons.Rounded.Search, action: (@Composable () -> Unit)? = null) {
     Column(modifier.fillMaxWidth().padding(Tokens.s8), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Tokens.s2)) {
-        Box(Modifier.size(56.dp).background(Tokens.surface2, CircleShape).border(Tokens.hairline, Tokens.border, CircleShape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(56.dp).background(Tokens.surface2, RectangleShape).border(Tokens.hairline, Tokens.border, RectangleShape), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(26.dp))
         }
         Spacer(Modifier.height(4.dp))
@@ -332,7 +331,7 @@ fun EmptyState(title: String, modifier: Modifier = Modifier, detail: String? = n
 @Composable
 fun ErrorState(title: String, detail: String?, onRetry: (() -> Unit)?, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().padding(Tokens.s8).semantics { liveRegion = LiveRegionMode.Polite }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Tokens.s2)) {
-        Box(Modifier.size(56.dp).background(Tokens.danger.copy(alpha = 0.14f), CircleShape).border(Tokens.hairline, Tokens.danger.copy(alpha = 0.5f), CircleShape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(56.dp).background(Tokens.danger.copy(alpha = 0.14f), RectangleShape).border(Tokens.hairline, Tokens.danger.copy(alpha = 0.5f), RectangleShape), contentAlignment = Alignment.Center) {
             Icon(Icons.Rounded.ErrorOutline, contentDescription = null, tint = Tokens.danger, modifier = Modifier.size(26.dp))
         }
         Spacer(Modifier.height(4.dp))
