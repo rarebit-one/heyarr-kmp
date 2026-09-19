@@ -45,7 +45,10 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
         }
         val error = playback.startError ?: ps.error
         if (error != null) Notice(error)
-        else if (ps.buffering || playback.pendingStart) Text("Buffering…", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
+        else if (ps.buffering || playback.pendingStart) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            one.rarebit.heyarr.ui.components.ArchiveActivity(one.rarebit.heyarr.desktop.theme.LocalAppearance.current.reduceMotion)
+            Text("Buffering…", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
+        }
         var dragging by remember(item.assetId) { mutableStateOf<Float?>(null) }
         Column {
             Slider(value = dragging ?: ps.fraction, onValueChange = { dragging = it }, onValueChangeFinished = {

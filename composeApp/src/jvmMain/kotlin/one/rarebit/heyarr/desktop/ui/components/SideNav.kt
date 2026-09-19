@@ -90,9 +90,7 @@ fun SideNav(current: Route, onGo: (Route) -> Unit, connection: Connection, compa
         modifier.fillMaxHeight().width(Tokens.navWidth).background(Tokens.surface1).padding(vertical = 14.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Box(Modifier.size(40.dp).background(Brush.linearGradient(listOf(theme.ctaGradientStart, theme.accentGradientEnd)), RoundedCornerShape(11.dp)), contentAlignment = Alignment.Center) {
-            Text("h", style = MaterialTheme.typography.headlineMedium, color = theme.onAccent)
-        }
+        one.rarebit.heyarr.ui.components.ArchiveMark(Modifier.padding(4.dp))
         Spacer(Modifier.height(14.dp))
         for (item in if (consuming) CONSUME_ITEMS + NAV_ITEMS.filter { it.route == Route.Settings || it.route == Route.NowPlaying } else NAV_ITEMS) RailItem(item, active = current.section == item.route.section, accent = theme.accent, accentEnd = theme.accentGradientEnd) { onGo(item.route) }
         Spacer(Modifier.weight(1f))

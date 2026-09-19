@@ -297,7 +297,7 @@ fun App(
                                 is Route.Player -> PlayerScreen(session, r, playerScreen, fullscreen = fullscreen, onFullscreen = ::setFullscreen, onBack = { if (fullscreen) setFullscreen(false); nav.back() }, onOpen = ::go)
                                 is Route.Reader -> ReaderScreen(session, r, onBack = nav::back)
                             } }
-                            if (playback.active && current !is Route.Player && !fullscreen && !audioDock) NowPlayingBar(playback, onOpen = { playback.current?.let { nav.go(it) } })
+                            if (playback.active && current !is Route.Player && !fullscreen && !audioDock) NowPlayingBar(session, onOpen = { playback.current?.let { nav.go(it) } })
                         }
                         if (audioDock) AudioDock(session, onOpen = { playback.current?.let { nav.go(it) } })
                     }
