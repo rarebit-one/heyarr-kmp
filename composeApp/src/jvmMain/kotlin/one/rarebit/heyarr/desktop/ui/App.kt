@@ -213,6 +213,7 @@ fun App(
     DisposableEffect(Unit) {
         val kfm = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager()
         val dispatcher = java.awt.KeyEventDispatcher { e ->
+            if (dispatchSearchShortcut(e, want == null && !showConnection && !showSignIn, ::openSearch)) return@KeyEventDispatcher true
             if (e.id != java.awt.event.KeyEvent.KEY_PRESSED || e.isControlDown || e.isMetaDown || e.isAltDown) return@KeyEventDispatcher false
             if (!playback.onPlayerScreen || playback.popout || want != null || showConnection || showSignIn) return@KeyEventDispatcher false
             val key = PlayerKeys.fromAwt(e.keyCode) ?: return@KeyEventDispatcher false
@@ -249,7 +250,7 @@ fun App(
                         if (PlayerKeys.handle(e.key, playback.player, { setFullscreen(!fullscreen) }, { if (fullscreen) setFullscreen(false); nav.back() }, fullscreen)) return@onPreviewKeyEvent true
                     }
                     when {
-                        e.isCtrlPressed && !e.isMetaPressed && !e.isAltPressed && !e.isShiftPressed && e.key == Key.F -> { openSearch(); true }
+                        e.isCtrlPressed && !e.isMetaPressed && !e.isAltPressed && !e.isShiftPressed && e.key == Key.F && want == null && !showConnection && !showSignIn -> { openSearch(); true }
                         mod && e.key == Key.Comma -> { nav.go(Route.Settings); true }
                         mod && e.key == Key.One -> { consuming = true; nav.go(Route.Consume(Experience.WATCH)); true }
                         mod && e.key == Key.Two -> { consuming = true; nav.go(Route.Consume(Experience.LISTEN)); true }
