@@ -57,6 +57,7 @@ fun main(args: Array<String>) {
     // shows and the personal rails (continue / missing / following) are hidden.
     render(File(out, "01c-home-guest.png"), 1280, 900, Route.Home, guest = true)
     render(File(out, "09c-settings-guest.png"), 1280, 900, Route.Settings, guest = true)
+    render(File(out, "14-discover-refusal.png"), 1280, 900, Route.Discover, query = "dune")
     // A small window, to show the compact nav and reflow.
     render(File(out, "09b-connection.png"), 1280, 900, Route.Home, connection = true)
     render(File(out, "10-home-compact.png"), 760, 620, Route.Home)

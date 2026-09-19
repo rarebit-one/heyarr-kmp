@@ -144,7 +144,7 @@ fun SearchScreen(
         }
         when {
             search.isIdle -> IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = { session.recent.clear(); recent = emptyList() })
-            SearchGrouping.empty(sections) -> NoResultsPane(session, search.query, onWantTitle)
+            SearchGrouping.empty(sections) -> EmptyState("Nothing in the library matches “${search.query}”", detail = "Discover can find titles to add from the metadata catalogue.", action = { SecondaryButton("Discover titles", { discovering = true }, icon = Icons.Rounded.TravelExplore) })
             else -> LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxSize()) {
                 var index = 0
                 for (section in sections) {
@@ -261,28 +261,6 @@ private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: ()
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { for (q in recent) FilterChip(q, false, { onPick(q) }) }
             Text("Kept on this machine only — heyarr's personal history is encrypted controller-side and not reachable from here.", style = MaterialTheme.typography.bodySmall, color = Tokens.textDisabled)
         }
-    }
-}
-
-/** No library match: offer the honest next step — ask the metadata provider, quoting its refusal when there is none. */
-@Composable
-private fun NoResultsPane(session: AppSession, query: String, onWantTitle: WantByTitle) {
-    val scope = rememberCoroutineScope()
-    var discovery by remember(query) { mutableStateOf<McpResult<List<DiscoveryHit>>?>(null) }
-    var asked by remember(query) { mutableStateOf(false) }
-    var busy by remember(query) { mutableStateOf(false) }
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        EmptyState(
-            "Nothing in the library matches “$query”", detail = "Search matches titles the library already knows. To bring in something new, ask the metadata provider or Want it by title from the Missing screen.",
-            action = {
-                SecondaryButton("Ask the metadata provider", icon = Icons.Rounded.TravelExplore, enabled = !busy, onClick = {
-                    val a = session.api ?: return@SecondaryButton
-                    busy = true; asked = true
-                    scope.launch { discovery = session.io { a.discover(query) }.getOrNull(); busy = false }
-                })
-            },
-        )
-        if (asked) DiscoveryResults(query, discovery, busy, onWantTitle)
     }
 }
 

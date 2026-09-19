@@ -147,7 +147,7 @@ fun MediaCard(
     onWant: (() -> Unit)? = null,
     /** The client's mode; a guest ([ClientMode.GUEST]) never sees the Want affordance. */
     mode: ClientMode = ClientMode.ENROLLED,
-    width: Dp = Tokens.posterWidth,
+    width: Dp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth,
     showBadge: Boolean = true,
     /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */
     progress: Float? = null,
@@ -230,7 +230,7 @@ fun MediaRow(
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        val thumbW = if (theme.aspect == CardAspect.POSTER) 40.dp else 52.dp
+        val thumbW = 52.dp * theme.aspect.ratio
         Box(Modifier.width(thumbW).height(52.dp).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 18.dp) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
