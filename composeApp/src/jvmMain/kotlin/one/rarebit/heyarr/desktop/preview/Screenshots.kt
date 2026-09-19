@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.desktop.preview
 
+import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.*
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.use
@@ -26,6 +28,7 @@ import java.io.File
  * the running app; the same fixtures back the JVM tests.
  */
 fun main(args: Array<String>) {
+    verifyShelfSwitch()
     val out = File(args.firstOrNull() ?: "build/screenshots").apply { mkdirs() }
     val shots = linkedMapOf(
         "00-watch" to Route.Consume(Experience.WATCH),
@@ -102,4 +105,41 @@ private object NoOpener : ExternalOpener {
 
 private object NoDownloader : BlobDownloader {
     override fun download(baseUrl: String, blobHash: String, token: String, ext: String): DownloadResult = DownloadResult.Failed("no download in preview")
+}
+
+/** Exercises a reused composition: initial-route screenshots alone cannot catch a stale effect key. */
+private fun verifyShelfSwitch() {
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://heyarr.example.test:7777", externalMetadata = false))
+    val session = one.rarebit.heyarr.desktop.state.AppSession(
+        settings, FakeHeyarrTransport(), NoPlayer,
+        one.rarebit.heyarr.desktop.open.OpenExternally(NoDownloader, NoOpener), scope,
+        ArtworkLoader({ "" }, { "" }, fetcher = { PlaceholderArt.bytes(it) }),
+        one.rarebit.heyarr.desktop.state.ExternalMetadata.NONE,
+    )
+    val selected = mutableStateOf(Experience.WATCH)
+    val states = Experience.entries.associateWith { one.rarebit.heyarr.desktop.ui.screens.LibraryState() }
+    try {
+        ImageComposeScene(width = 1280, height = 900, density = Density(1f)).use { scene ->
+            scene.setContent {
+                one.rarebit.heyarr.desktop.theme.HeyarrTheme {
+                    one.rarebit.heyarr.desktop.ui.screens.LibraryScreen(
+                        session, states.getValue(selected.value), {}, { _, _ -> }, experience = selected.value,
+                    )
+                }
+            }
+            for (experience in Experience.entries + Experience.WATCH) {
+                selected.value = experience
+                val state = states.getValue(experience)
+                // Pump the real composition while the fixture request completes on IO.
+                for (attempt in 0 until 100) {
+                    scene.render(System.nanoTime())
+                    if (state.works != null) break
+                    Thread.sleep(20)
+                }
+                check(!state.works.isNullOrEmpty()) { "Shelf $experience did not load after navigation: ${state.error}" }
+            }
+        }
+    } finally { scope.cancel() }
+    println("verified Watch → Listen → Read → Watch in one composition")
 }

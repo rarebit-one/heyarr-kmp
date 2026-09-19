@@ -87,7 +87,7 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
         }
     }
     // Loaded once per node: a new URL or token (session.generation) throws the cached answer away.
-    LaunchedEffect(session.generation) { if (state.works == null || state.generation != session.generation) { state.generation = session.generation; load() } }
+    LaunchedEffect(state, session.generation) { if (state.works == null || state.generation != session.generation) { state.generation = session.generation; load() } }
 
     val variants = remember(state.works) { Variants.variantIds(state.works.orEmpty()) }
     val all = state.works.orEmpty().filter { it.id !in variants && (experience == null || MediaType.from(it.kind) in experience.kinds) }
