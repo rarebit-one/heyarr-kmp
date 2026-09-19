@@ -90,10 +90,9 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
     LaunchedEffect(session.generation) { if (state.works == null || state.generation != session.generation) { state.generation = session.generation; load() } }
 
     val variants = remember(state.works) { Variants.variantIds(state.works.orEmpty()) }
-    val all = state.works.orEmpty().filter { it.id !in variants }
+    val all = state.works.orEmpty().filter { it.id !in variants && (experience == null || MediaType.from(it.kind) in experience.kinds) }
     val counts = all.groupingBy { MediaType.from(it.kind) }.eachCount()
     val filtered = all.filter { w ->
-        (experience == null || MediaType.from(w.kind) in experience.kinds) &&
         (state.type == null || (state.type == MEDIA && MediaType.from(w.kind) in (experience?.kinds ?: MEDIA_KINDS)) || MediaType.from(w.kind) == state.type) &&
             (state.status == null || session.index.statusOf(w.id) == state.status)
     }
@@ -112,7 +111,7 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
         }
         if (experience == null && state.tab == 1) { DownloadsScreen(session, state.downloads, onOpen); return@Column }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(if (experience == null) "Media" else "All", state.type == MEDIA, { state.type = MEDIA }, count = all.count { MediaType.from(it.kind) in MEDIA_KINDS }.takeIf { it > 0 })
+            FilterChip(if (experience == null) "Media" else "All", state.type == MEDIA, { state.type = MEDIA }, count = all.count { MediaType.from(it.kind) in (experience?.kinds ?: MEDIA_KINDS) }.takeIf { it > 0 })
             for (t in (experience?.kinds ?: setOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.AUDIOBOOK, MediaType.PODCAST))) {
                 MediaScope(t) { FilterChip(t.plural, state.type == t, { state.type = if (state.type == t) MEDIA else t }, icon = t.icon(), count = counts[t]?.takeIf { it > 0 }) }
             }
