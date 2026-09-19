@@ -111,7 +111,7 @@ fun HeyarrNavRail(current: NavSection?, onGo: (NavSection) -> Unit, connection: 
 private fun NavTile(item: NavSection, active: Boolean, accent: Color, accentEnd: Color, style: TextStyle, tileSize: androidx.compose.ui.unit.Dp, iconSize: androidx.compose.ui.unit.Dp, modifier: Modifier, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val shape = RoundedCornerShape(3.dp)
+    val shape = RoundedCornerShape(Tokens.radiusButton)
     val tile = when { active -> accent.copy(alpha = 0.18f); pressed -> Tokens.surface2; else -> Color.Transparent }
     val fg = when { active -> accentEnd; pressed -> Tokens.textPrimary; else -> Tokens.textMuted }
     Column(

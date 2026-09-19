@@ -68,7 +68,7 @@ val CONSUME_ITEMS = listOf(
 val NAV_ITEMS = listOf(
     NavItem(Route.Home, "Home", Icons.Rounded.Home, "⌃1"),
     NavItem(Route.Discover, "Discover", Icons.Rounded.Explore, "⌃2"),
-    NavItem(Route.Search, "Search", Icons.Rounded.Search, "⌘K"),
+    NavItem(Route.Search, "Search", Icons.Rounded.Search, "Ctrl+F"),
     NavItem(Route.Library, "Library", Icons.Rounded.VideoLibrary, "⌃3"),
     NavItem(Route.Missing, "Missing", Icons.Rounded.ReportProblem, "⌃4"),
     NavItem(Route.NowPlaying, "Cast", Icons.Rounded.Cast, "⌃5"),
@@ -102,7 +102,7 @@ fun SideNav(current: Route, onGo: (Route) -> Unit, connection: Connection, compa
 private fun RailItem(item: NavItem, active: Boolean, accent: Color, accentEnd: Color, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
-    val shape = RoundedCornerShape(3.dp)
+    val shape = RoundedCornerShape(Tokens.radiusButton)
     val tile = when { active -> accent.copy(alpha = 0.18f); hovered -> Tokens.surface2; else -> Color.Transparent }
     val fg = when { active -> accentEnd; hovered -> Tokens.textPrimary; else -> Tokens.textMuted }
     Column(

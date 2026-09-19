@@ -42,6 +42,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -107,12 +108,12 @@ fun StatusPill(status: LibraryStatus, modifier: Modifier = Modifier, compact: Bo
         LibraryStatus.NOT_TRACKED -> Tokens.textMuted to Tokens.textDisabled
     }
     Row(
-        modifier.background(Tokens.bgBase.copy(alpha = 0.72f), CircleShape).border(Tokens.hairline, tone.copy(alpha = 0.45f), CircleShape).padding(horizontal = if (compact) 6.dp else 8.dp, vertical = 2.dp)
+        modifier.background(Tokens.bgBase.copy(alpha = 0.72f), RectangleShape).border(Tokens.hairline, tone.copy(alpha = 0.45f), RectangleShape).padding(horizontal = if (compact) 6.dp else 8.dp, vertical = 2.dp)
             .semantics { this.contentDescription = "Status: ${status.label}" },
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        Box(Modifier.size(6.dp).background(dot, CircleShape))
-        if (!compact) Text(status.label, style = MaterialTheme.typography.labelSmall, color = tone, maxLines = 1)
+        Box(Modifier.size(6.dp).background(dot, RectangleShape))
+        if (!compact) Text(status.label.uppercase(), style = MaterialTheme.typography.labelSmall, color = tone, maxLines = 1)
     }
 }
 

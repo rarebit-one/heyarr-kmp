@@ -92,7 +92,7 @@ class DetailScreenSmokeTest {
 
     @Test fun aMovieDetailRenders() {
         renders(Fixtures.SINTEL, "MOVIE", "Sintel")
-        compose.onNodeWithText("Curate").performClick()
+        compose.onNodeWithText("CURATE").performClick()
         showText("Captions & artwork")
     }
 

@@ -22,7 +22,7 @@ labels for assistive tech — and it is honest about what heyarr can and cannot 
 | Screen | heyarr surface |
 |--------|----------------|
 | **Home / Discover** — spotlight hero + themed rails | `GET /works` (recent), `search_content` per type, `get_missing_content`, `get_upgrade_candidates`, `list_followed`; `discover_content` (quotes the node's refusal when no TVDB provider is configured) |
-| **Search** (⌘K / Ctrl-K) — one box, every media kind at once, results grouped by type and streamed in per segment; ↑/↓/Enter; type filter chips; recent searches (local) | `search_content` × {movie, series, music, book} + an untyped call for episodes, in parallel; followed sources matched client-side |
+| **Search** (Ctrl+F) — one box, every media kind at once, results grouped by type and streamed in per segment; ↑/↓/Enter; type filter chips; recent searches (local) | `search_content` × {movie, series, music, book} + an untyped call for episodes, in parallel; followed sources matched client-side |
 | **Detail** — one adaptive template re-skinned per media type: hero art + scrim, the type's own CTA, *Why this release* with rule codes verbatim, releases, health | `GET /works/{id}`, `GET /works/{id}/assets`, `get_content_satisfaction`, `GET /desired/{id}/candidates`, `explain_release`, `search_releases`, `acquire_release`, `get_replica_status`, `verify_blob`, `get_external_ids`, `play_here`, `monitor_content` |
 | **Library** — everything catalogued, filter by type + status, grid/list | `GET /works` + the want index |
 | **Missing / Wanted** — bulk search-now / monitor on-off; Want by title | `get_missing_content`, `get_upgrade_candidates`, `search_releases`, `monitor_content`, `want_content` |
@@ -122,7 +122,7 @@ headless CI can show the app. The same fixtures back the JVM tests
 
 ## Keyboard
 
-⌘K / Ctrl-K search · ↑ ↓ move · ↵ open · Esc clear / back · Ctrl-1 Watch · Ctrl-2 Listen · Ctrl-3 Read · Ctrl-4 Missing · Ctrl-5 Cast · ⌘, settings · Tab walks every control, with a 2px accent focus ring.
+Ctrl+F search · ↑ ↓ move · ↵ open · Esc clear / back · Ctrl-1 Watch · Ctrl-2 Listen · Ctrl-3 Read · Ctrl-4 Missing · Ctrl-5 Cast · ⌘, settings · Tab walks every control, with a 2px accent focus ring.
 
 ## Toolchain
 
@@ -187,3 +187,7 @@ mark. Navigation labels sit below square icon tiles; selection and keyboard focu
 enclose the icon only. Cover images still come from the existing artwork pipeline.
 The desktop buffering glyph respects the reduced-motion preference.
 Android retains its existing navigation and playback behavior in this iteration.
+
+Archive controls use flat fills, square borders and uppercase labels. Media titles
+and reading text retain their original casing. Desktop search uses **Ctrl+F**,
+including on Linux; the app does not bind Super/Command+K or Super/Command+F.

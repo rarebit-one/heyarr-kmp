@@ -38,11 +38,11 @@ fun verdictColor(result: String): Color = when (result) {
     else -> Tokens.textMuted
 }
 
-/** The rule code, verbatim, in a monospace chip — the one thing a person can act on. */
+/** The rule code in an uppercase Archive tag; accessibility retains the original code. */
 @Composable
 fun RuleCode(rule: String, modifier: Modifier = Modifier, tone: Color = Tokens.textPrimary) {
-    Box(modifier.background(Tokens.surface3, RoundedCornerShape(5.dp)).border(Tokens.hairline, Tokens.border, RoundedCornerShape(5.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-        Text(rule, style = MaterialTheme.typography.labelMedium.copy(fontFamily = RubikFamily, fontWeight = FontWeight.Medium, letterSpacing = 0.3.sp), color = tone)
+    Box(modifier.semantics { contentDescription = rule }.background(Tokens.surface3, RoundedCornerShape(Tokens.radiusChip)).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusChip)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+        Text(rule.uppercase(), style = MaterialTheme.typography.labelMedium.copy(fontFamily = RubikFamily, fontWeight = FontWeight.Medium, letterSpacing = 0.3.sp), color = tone)
     }
 }
 
