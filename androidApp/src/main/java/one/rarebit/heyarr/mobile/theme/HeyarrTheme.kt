@@ -57,13 +57,13 @@ val MontserratFamily: FontFamily = FontFamily(
  * instrumentation, not prose.
  */
 val HeyarrTypography: Typography by lazy {
-    val display = MontserratFamily
-    val body = InterFamily
+    val display = RubikFamily
+    val body = RubikFamily
     Typography(
-        displayLarge = TextStyle(fontFamily = display, fontSize = Tokens.Type.h1, fontWeight = FontWeight.ExtraBold, lineHeight = 46.sp, letterSpacing = (-0.5).sp),
-        displayMedium = TextStyle(fontFamily = display, fontSize = Tokens.Type.h2, fontWeight = FontWeight.Bold, lineHeight = 38.sp, letterSpacing = (-0.3).sp),
-        displaySmall = TextStyle(fontFamily = display, fontSize = Tokens.Type.h3, fontWeight = FontWeight.Bold, lineHeight = 30.sp),
-        headlineLarge = TextStyle(fontFamily = display, fontSize = Tokens.Type.h3, fontWeight = FontWeight.SemiBold, lineHeight = 30.sp),
+        displayLarge = TextStyle(fontFamily = display, fontSize = Tokens.Type.h1, fontWeight = FontWeight.SemiBold, lineHeight = 34.sp, letterSpacing = (-0.5).sp),
+        displayMedium = TextStyle(fontFamily = display, fontSize = Tokens.Type.h2, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp, letterSpacing = (-0.3).sp),
+        displaySmall = TextStyle(fontFamily = display, fontSize = Tokens.Type.h3, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp),
+        headlineLarge = TextStyle(fontFamily = display, fontSize = Tokens.Type.h3, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp),
         headlineMedium = TextStyle(fontFamily = display, fontSize = Tokens.Type.h4, fontWeight = FontWeight.SemiBold, lineHeight = 26.sp),
         headlineSmall = TextStyle(fontFamily = display, fontSize = Tokens.Type.h5, fontWeight = FontWeight.SemiBold, lineHeight = 22.sp, letterSpacing = 0.2.sp),
         titleLarge = TextStyle(fontFamily = body, fontSize = Tokens.Type.h4, fontWeight = FontWeight.SemiBold, lineHeight = 26.sp),

@@ -10,6 +10,10 @@ import one.rarebit.heyarr.core.theme.MediaType
 sealed interface Route {
     val section: String get() = javaClass.simpleName
 
+    data class Consume(val experience: Experience) : Route {
+        override val section: String get() = experience.title
+    }
+
     data object Home : Route
     data object Discover : Route
     data object Search : Route
@@ -35,7 +39,7 @@ sealed interface Route {
 }
 
 /** A tiny back-stack router: `go` pushes, `back` pops, section routes replace their own kind. */
-class Nav(start: Route = Route.Home) {
+class Nav(start: Route = Route.Consume(Experience.WATCH)) {
     private val stack = mutableStateListOf<Route>(start)
     var current: Route by mutableStateOf(start)
         private set

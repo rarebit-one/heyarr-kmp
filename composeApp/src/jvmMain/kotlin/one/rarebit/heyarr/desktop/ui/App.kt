@@ -8,10 +8,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import one.rarebit.heyarr.desktop.ui.components.AudioDock
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -112,7 +116,7 @@ fun App(
     player: Player = MpvPlayer(),
     opener: ExternalOpener = XdgOpen(),
     downloader: BlobDownloader = JdkBlobDownloader(),
-    initialRoute: Route = Route.Home,
+    initialRoute: Route = Route.Consume(Experience.WATCH),
     artworkLoader: ArtworkLoader? = null,
     externalMetadata: one.rarebit.heyarr.desktop.state.ExternalMetadata? = null,
     /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */
@@ -122,6 +126,8 @@ fun App(
     /** Preview/test seam: open the connection sheet at once. */
     initialConnectionSheet: Boolean = false,
     initialLibraryTab: Int = 0,
+    /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */
+    initialAudioQueue: List<Route.Player> = emptyList(),
     /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */
     onFullscreen: (Boolean) -> Unit = {},
     /**
@@ -132,12 +138,14 @@ fun App(
     enableDeviceEnrol: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
-    val session = remember { AppSession(settings, transport, player, OpenExternally(downloader, opener), scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol) }
+    val session = remember { AppSession(settings, transport, player, OpenExternally(downloader, opener), scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol).also { if (initialAudioQueue.isNotEmpty()) it.playback.queueAudio(initialAudioQueue) } }
     val nav = remember { Nav(initialRoute) }
     val search = remember { SearchController(scope, { session.api }, session::noteTransportFailure) }
     val home = remember { HomeState() }
     val discover = remember { DiscoverState() }
     val library = remember { LibraryState().apply { tab = initialLibraryTab } }
+    val shelves = remember { Experience.entries.associateWith { LibraryState() } }
+    var consuming by remember { mutableStateOf(initialRoute is Route.Consume) }
     val missing = remember { MissingState() }
     val nowPlaying = remember { NowPlayingState() }
     val settingsState = remember { SettingsState() }
@@ -166,10 +174,17 @@ fun App(
     LaunchedEffect(session.generation) { if (session.generation > 0) details.clear() }
     LaunchedEffect(focusSearchTick) { if (focusSearchTick > 0) runCatching { searchFocus.requestFocus() } }
 
-    fun openSearch() { nav.go(Route.Search); focusSearchTick++ }
+    fun openSearch() { consuming = false; nav.go(Route.Search); focusSearchTick++ }
     // A Player route hands its item to the session before the screen composes, so the first
     // frame already has something to show and nothing bounces back to the previous screen.
-    fun go(route: Route) { if (route is Route.Player) playback.play(route); nav.go(route) }
+    fun go(route: Route) {
+        if (route is Route.Player) {
+            playback.play(route)
+            // Music stays in the shell while the reader/catalog retains focus.
+            if (route.typeHint.isListening()) return
+        }
+        nav.go(route)
+    }
     val current = nav.current
     // The session player streams with the saved connection; the pop-out OSC takes the media accent.
     LaunchedEffect(session.config, playback.current?.assetId) {
@@ -227,9 +242,9 @@ fun App(
                     when {
                         mod && e.key == Key.K -> { openSearch(); true }
                         mod && e.key == Key.Comma -> { nav.go(Route.Settings); true }
-                        mod && e.key == Key.One -> { nav.go(Route.Home); true }
-                        mod && e.key == Key.Two -> { nav.go(Route.Discover); true }
-                        mod && e.key == Key.Three -> { nav.go(Route.Library); true }
+                        mod && e.key == Key.One -> { consuming = true; nav.go(Route.Consume(Experience.WATCH)); true }
+                        mod && e.key == Key.Two -> { consuming = true; nav.go(Route.Consume(Experience.LISTEN)); true }
+                        mod && e.key == Key.Three -> { consuming = true; nav.go(Route.Consume(Experience.READ)); true }
                         mod && e.key == Key.Four -> { nav.go(Route.Missing); true }
                         mod && e.key == Key.Five -> { nav.go(Route.NowPlaying); true }
                         e.key == Key.Escape && showConnection -> { showConnection = false; true }
@@ -242,6 +257,7 @@ fun App(
             ) {
                 BoxWithConstraints(Modifier.fillMaxSize()) {
                     val compact = maxWidth < Tokens.compactBreakpoint
+                    val audioDock = showAudioDock(playback.type, playback.active, maxWidth.value, fullscreen)
                     Row(Modifier.fillMaxSize()) {
                         if (!fullscreen) SideNav(
                             current, onGo = { if (it == Route.Search) openSearch() else nav.go(it) }, connection = session.connection, compact = compact,
@@ -249,9 +265,14 @@ fun App(
                                 val host = session.config.baseUrl.removePrefix("https://").removePrefix("http://").substringBefore('/').substringBefore(':')
                                 session.lastLatencyMs?.let { "$it ms · $host" } ?: host.ifBlank { null }
                             },
-                            onConnection = { showConnection = true },
+                            onConnection = { showConnection = true }, consuming = consuming,
                         )
-                        Column(Modifier.fillMaxSize()) {
+                        Column(Modifier.weight(1f).fillMaxHeight()) {
+                            if (!fullscreen) Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                                FilterChip("Consume", consuming, { consuming = true; nav.go(Route.Consume(Experience.WATCH)) })
+                                FilterChip("Manage", !consuming, { consuming = false; nav.go(Route.Search) })
+                                GhostButton("Search everything", ::openSearch, icon = androidx.compose.material.icons.Icons.Rounded.Search)
+                            }
                             if (!fullscreen) when (session.connection) {
                                 Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.config.baseUrl, onRetry = { scope.launch { session.probe() } }, onSettings = { nav.go(Route.Settings) })
                                 Connection.UNAUTHORIZED -> OfflineBanner("heyarr refused the token", "Check the bearer token in Settings.", onRetry = { scope.launch { session.probe() } }, onSettings = { nav.go(Route.Settings) })
@@ -264,6 +285,7 @@ fun App(
                             val onWant: (String, String) -> Unit = { id, title -> if (session.isGuest) showSignIn = true else want = WantRequest(id, title) }
                             val onWantTitle: WantByTitle = { title, year, type -> if (session.isGuest) showSignIn = true else want = WantRequest(null, title, year, type) }
                             Box(Modifier.weight(1f)) { when (val r = current) {
+                                is Route.Consume -> LibraryScreen(session, shelves.getValue(r.experience), ::go, onWant, experience = r.experience)
                                 Route.Home -> HomeScreen(session, home, ::go, onWant)
                                 Route.Discover -> DiscoverScreen(session, discover, onWantTitle)
                                 Route.Search -> SearchScreen(session, search, ::go, onWant, onWantTitle, searchFocus)
@@ -275,8 +297,9 @@ fun App(
                                 is Route.Player -> PlayerScreen(session, r, playerScreen, fullscreen = fullscreen, onFullscreen = ::setFullscreen, onBack = { if (fullscreen) setFullscreen(false); nav.back() }, onOpen = ::go)
                                 is Route.Reader -> ReaderScreen(session, r, onBack = nav::back)
                             } }
-                            if (playback.active && current !is Route.Player && !fullscreen) NowPlayingBar(playback, onOpen = { playback.current?.let { nav.go(it) } })
+                            if (playback.active && current !is Route.Player && !fullscreen && !audioDock) NowPlayingBar(playback, onOpen = { playback.current?.let { nav.go(it) } })
                         }
+                        if (audioDock) AudioDock(session, onOpen = { playback.current?.let { nav.go(it) } })
                     }
                 }
                 PlaybackHost(session)

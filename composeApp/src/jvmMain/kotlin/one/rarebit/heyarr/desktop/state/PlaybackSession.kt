@@ -11,6 +11,7 @@ import one.rarebit.heyarr.desktop.library.Episode
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.desktop.ui.isListening
 
 /**
  * What is playing, app-wide. One mpv lives for the whole session (started by
@@ -28,6 +29,24 @@ class PlaybackSession {
 
     /** The work's playable episodes, for "next". */
     var queue: List<Episode> by mutableStateOf(emptyList())
+
+    /** Audio queue belongs to the session, not the detail/reader screen. */
+    var audioQueue: List<Route.Player> by mutableStateOf(emptyList())
+        private set
+    var loadedAssetId: String? = null
+
+    fun queueAudio(items: List<Route.Player>, startIndex: Int = 0) {
+        val playable = items.filter { it.typeHint.isListening() }
+        val start = playable.getOrNull(startIndex) ?: return
+        audioQueue = playable
+        queue = emptyList()
+        play(start)
+    }
+
+    fun previousAudio(): Route.Player? {
+        val i = audioQueue.indexOfFirst { it.assetId == current?.assetId }
+        return audioQueue.getOrNull(i - 1)
+    }
 
     /** The player screen is showing; the bar hides itself then. */
     var onPlayerScreen: Boolean by mutableStateOf(false)
@@ -49,8 +68,10 @@ class PlaybackSession {
         current = item
         startError = null
         if (same && player.isRunning) { player.play(); return }
-        if (player.isRunning && !popout) resolvePlaybackTarget(item).let { player.load(it.url, title(item), it.durationSeconds) }
-        else pendingStart = true
+        if (!item.typeHint.isListening()) audioQueue = emptyList()
+        else if (audioQueue.none { it.assetId == item.assetId }) audioQueue = listOf(item)
+        // The host resolves/loads on IO, including changes between tracks.
+        pendingStart = true
         refreshSubtitles()   // adds now if the queue is already known + player up; else a no-op re-run does it
     }
 
@@ -71,6 +92,10 @@ class PlaybackSession {
 
     fun next(): Route.Player? {
         val c = current ?: return null
+        if (c.typeHint.isListening()) {
+            val i = audioQueue.indexOfFirst { it.assetId == c.assetId }
+            return if (i < 0) null else audioQueue.getOrNull(i + 1)
+        }
         val eps = queue.filter { it.isPlayable }
         val i = eps.indexOfFirst { it.asset.id == c.assetId }
         if (i < 0) return null
@@ -83,6 +108,8 @@ class PlaybackSession {
         player.close()
         current = null
         queue = emptyList()
+        audioQueue = emptyList()
+        loadedAssetId = null
         pendingStart = false
         fullscreen = false
         popout = false

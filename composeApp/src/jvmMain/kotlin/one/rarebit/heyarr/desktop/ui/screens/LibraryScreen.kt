@@ -1,5 +1,8 @@
 package one.rarebit.heyarr.desktop.ui.screens
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import one.rarebit.heyarr.desktop.ui.Experience
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -73,7 +76,7 @@ class LibraryState {
  * are a kind of their own here so the shelf is not swamped by feed items.
  */
 @Composable
-fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> Unit, onWant: (String, String) -> Unit, modifier: Modifier = Modifier) {
+fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> Unit, onWant: (String, String) -> Unit, modifier: Modifier = Modifier, experience: Experience? = null) {
     val scope = rememberCoroutineScope()
     fun load() {
         val a = session.api ?: return
@@ -90,32 +93,33 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
     val all = state.works.orEmpty().filter { it.id !in variants }
     val counts = all.groupingBy { MediaType.from(it.kind) }.eachCount()
     val filtered = all.filter { w ->
-        (state.type == null || (state.type == MEDIA && MediaType.from(w.kind) in MEDIA_KINDS) || MediaType.from(w.kind) == state.type) &&
+        (experience == null || MediaType.from(w.kind) in experience.kinds) &&
+        (state.type == null || (state.type == MEDIA && MediaType.from(w.kind) in (experience?.kinds ?: MEDIA_KINDS)) || MediaType.from(w.kind) == state.type) &&
             (state.status == null || session.index.statusOf(w.id) == state.status)
     }
 
     Column(modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        SectionHeader("Library", subtitle = if (state.works == null) null else "${filtered.size} of ${all.size} works", trailing = {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        SectionHeader(experience?.title ?: "Library", subtitle = if (state.works == null) null else "${filtered.size} of ${all.size} works", trailing = {
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh, enabled = !state.loading)
                 IconButtonRound(Icons.Rounded.GridView, "Grid view", { state.grid = true }, filled = state.grid)
                 IconButtonRound(Icons.Rounded.ViewList, "List view", { state.grid = false }, filled = !state.grid)
             }
         })
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (experience == null) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip("Works", state.tab == 0, { state.tab = 0 })
             FilterChip("Downloads", state.tab == 1, { state.tab = 1 }, count = state.downloads.desired?.count { it.state != "FULLY_SATISFIED" && it.state != "AVAILABLE" })
         }
-        if (state.tab == 1) { DownloadsScreen(session, state.downloads, onOpen); return@Column }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip("Media", state.type == MEDIA, { state.type = MEDIA }, count = all.count { MediaType.from(it.kind) in MEDIA_KINDS }.takeIf { it > 0 })
-            for (t in listOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.PODCAST)) {
+        if (experience == null && state.tab == 1) { DownloadsScreen(session, state.downloads, onOpen); return@Column }
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(if (experience == null) "Media" else "All", state.type == MEDIA, { state.type = MEDIA }, count = all.count { MediaType.from(it.kind) in MEDIA_KINDS }.takeIf { it > 0 })
+            for (t in (experience?.kinds ?: setOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.AUDIOBOOK, MediaType.PODCAST))) {
                 MediaScope(t) { FilterChip(t.plural, state.type == t, { state.type = if (state.type == t) MEDIA else t }, icon = t.icon(), count = counts[t]?.takeIf { it > 0 }) }
             }
-            MediaScope(MediaType.FEED) { FilterChip("Feeds", state.type == MediaType.FEED, { state.type = if (state.type == MediaType.FEED) MEDIA else MediaType.FEED }, icon = MediaType.FEED.icon(), count = counts[MediaType.FEED]?.takeIf { it > 0 }) }
-            FilterChip("Everything", state.type == null, { state.type = null }, count = all.size.takeIf { it > 0 })
+            if (experience == null) MediaScope(MediaType.FEED) { FilterChip("Feeds", state.type == MediaType.FEED, { state.type = if (state.type == MediaType.FEED) MEDIA else MediaType.FEED }, icon = MediaType.FEED.icon(), count = counts[MediaType.FEED]?.takeIf { it > 0 }) }
+            if (experience == null) FilterChip("Everything", state.type == null, { state.type = null }, count = all.size.takeIf { it > 0 })
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("Status", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
             FilterChip("Any", state.status == null, { state.status = null })
             for (s in LibraryStatus.entries) FilterChip(s.label, state.status == s, { state.status = if (state.status == s) null else s })
@@ -131,14 +135,14 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
                 items(filtered, key = { it.id }) { w ->
                     val type = MediaType.from(w.kind)
                     val cover by rememberCover(session, type, w.title, w.artworkPath, w.year, w.artist ?: w.author)
-                    MediaCard(w.title, type, onOpen = { onOpen(Route.Detail(w.id, type, w.title, from = "Library")) }, subtitle = w.artist ?: w.author, meta = listOf(w.year?.toString()), artwork = cover.bitmap, status = session.index.statusOf(w.id), onWant = { onWant(w.id, w.title) }, mode = session.mode, width = Tokens.posterWidth)
+                    MediaCard(w.title, type, onOpen = { onOpen(Route.Detail(w.id, type, w.title, from = experience?.title ?: "Library")) }, subtitle = w.artist ?: w.author, meta = listOf(w.year?.toString()), artwork = cover.bitmap, status = session.index.statusOf(w.id), onWant = { onWant(w.id, w.title) }, mode = session.mode, width = Tokens.posterWidth)
                 }
             }
             else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp), contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.fillMaxSize()) {
                 items(filtered, key = { it.id }) { w ->
                     val type = MediaType.from(w.kind)
                     val cover by rememberCover(session, type, w.title, w.artworkPath, w.year, w.artist ?: w.author)
-                    MediaRow(w.title, type, onOpen = { onOpen(Route.Detail(w.id, type, w.title, from = "Library")) }, subtitle = w.artist ?: w.author, meta = listOf(w.year?.toString(), w.recency?.take(10)), artwork = cover.bitmap, status = session.index.statusOf(w.id))
+                    MediaRow(w.title, type, onOpen = { onOpen(Route.Detail(w.id, type, w.title, from = experience?.title ?: "Library")) }, subtitle = w.artist ?: w.author, meta = listOf(w.year?.toString(), w.recency?.take(10)), artwork = cover.bitmap, status = session.index.statusOf(w.id))
                 }
             }
         }

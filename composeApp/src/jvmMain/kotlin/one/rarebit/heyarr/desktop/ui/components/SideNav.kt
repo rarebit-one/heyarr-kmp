@@ -19,6 +19,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Movie
+import one.rarebit.heyarr.desktop.ui.Experience
+import one.rarebit.heyarr.desktop.theme.RubikFamily
+import androidx.compose.ui.semantics.selected
 import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Home
@@ -53,6 +59,12 @@ import one.rarebit.heyarr.desktop.ui.Route
 /** A nav destination: label, icon, route, optional keyboard hint. */
 data class NavItem(val route: Route, val label: String, val icon: ImageVector, val hint: String? = null)
 
+val CONSUME_ITEMS = listOf(
+    NavItem(Route.Consume(Experience.WATCH), "Watch", Icons.Rounded.Movie, "Ctrl 1"),
+    NavItem(Route.Consume(Experience.LISTEN), "Listen", Icons.Rounded.Headphones, "Ctrl 2"),
+    NavItem(Route.Consume(Experience.READ), "Read", Icons.Rounded.MenuBook, "Ctrl 3"),
+)
+
 val NAV_ITEMS = listOf(
     NavItem(Route.Home, "Home", Icons.Rounded.Home, "⌃1"),
     NavItem(Route.Discover, "Discover", Icons.Rounded.Explore, "⌃2"),
@@ -64,7 +76,7 @@ val NAV_ITEMS = listOf(
 )
 
 /** The rail's uppercase caption style: small sans, tracked. */
-private val RAIL_LABEL = androidx.compose.ui.text.TextStyle(fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.9.sp, lineHeight = 12.sp)
+private val RAIL_LABEL = androidx.compose.ui.text.TextStyle(fontFamily = RubikFamily,fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.9.sp, lineHeight = 12.sp)
 
 /**
  * The left rail: a logo, then each destination as an icon over an uppercase caption,
@@ -72,7 +84,7 @@ private val RAIL_LABEL = androidx.compose.ui.text.TextStyle(fontSize = 9.5.sp, f
  * gets a tinted tile in the accent of the media in focus.
  */
 @Composable
-fun SideNav(current: Route, onGo: (Route) -> Unit, connection: Connection, compact: Boolean = false, modifier: Modifier = Modifier, connectionDetail: String? = null, onConnection: () -> Unit = {}) {
+fun SideNav(current: Route, onGo: (Route) -> Unit, connection: Connection, compact: Boolean = false, modifier: Modifier = Modifier, connectionDetail: String? = null, onConnection: () -> Unit = {}, consuming: Boolean = false) {
     val theme = LocalMediaTheme.current
     Column(
         modifier.fillMaxHeight().width(Tokens.navWidth).background(Tokens.surface1).padding(vertical = 14.dp, horizontal = 8.dp),
@@ -82,7 +94,7 @@ fun SideNav(current: Route, onGo: (Route) -> Unit, connection: Connection, compa
             Text("h", style = MaterialTheme.typography.headlineMedium, color = theme.onAccent)
         }
         Spacer(Modifier.height(14.dp))
-        for (item in NAV_ITEMS) RailItem(item, active = current.section == item.route.section, accent = theme.accent, accentEnd = theme.accentGradientEnd) { onGo(item.route) }
+        for (item in if (consuming) CONSUME_ITEMS + NAV_ITEMS.filter { it.route == Route.Settings || it.route == Route.NowPlaying } else NAV_ITEMS) RailItem(item, active = current.section == item.route.section, accent = theme.accent, accentEnd = theme.accentGradientEnd) { onGo(item.route) }
         Spacer(Modifier.weight(1f))
         ConnectionTile(connection, connectionDetail, onConnection)
     }
@@ -92,20 +104,19 @@ fun SideNav(current: Route, onGo: (Route) -> Unit, connection: Connection, compa
 private fun RailItem(item: NavItem, active: Boolean, accent: Color, accentEnd: Color, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
-    val shape = RoundedCornerShape(10.dp)
+    val shape = RoundedCornerShape(3.dp)
     val tile = when { active -> accent.copy(alpha = 0.18f); hovered -> Tokens.surface2; else -> Color.Transparent }
     val fg = when { active -> accentEnd; hovered -> Tokens.textPrimary; else -> Tokens.textMuted }
     Column(
         Modifier.fillMaxWidth()
-            .focusRing(interaction, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
             .hoverable(interaction)
             .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = onClick)
-            .semantics { this.contentDescription = item.label + if (active) ", current" else "" + (item.hint?.let { " ($it)" } ?: "") }
+            .semantics { this.contentDescription = item.label; this.selected = active }
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.size(44.dp).background(tile, shape).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(44.dp).focusRing(interaction, shape).background(tile, shape).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape), contentAlignment = Alignment.Center) {
             Icon(item.icon, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))
         }
         Text(item.label.uppercase(), style = RAIL_LABEL, color = if (active) accentEnd else Tokens.textMuted, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)

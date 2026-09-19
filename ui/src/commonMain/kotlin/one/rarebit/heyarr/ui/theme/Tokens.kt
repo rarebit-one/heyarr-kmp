@@ -7,23 +7,22 @@ import androidx.compose.ui.unit.sp
 
 /**
  * THE design-token layer. Every colour, radius, spacing step and type size the UI uses
- * is named here and nowhere else — the values are the SaintStream / Movie-Streaming
- * Figma kits' extracted tokens, verbatim. Media-keyed accents live in [MediaTheme];
+ * is named here. The Archive palette uses forest surfaces and compact geometry. Media-keyed accents live in [MediaTheme];
  * these are the constant base the accents sit on so a mixed-media screen reads as one
  * app.
  */
 object Tokens {
     // Surfaces — near-black, warm-neutral.
-    val bgBase = Color(0xFF080709)
-    val surface1 = Color(0xFF131116)
-    val surface2 = Color(0xFF1B1922)
-    val surface3 = Color(0xFF232029)
-    val border = Color(0xFF2A2833)
+    val bgBase = Color(0xFF101815)
+    val surface1 = Color(0xFF17221C)
+    val surface2 = Color(0xFF1C2921)
+    val surface3 = Color(0xFF25362B)
+    val border = Color(0xFF3B5244)
 
     // Text ramp.
-    val textPrimary = Color(0xFFF5F5F4)
-    val textMuted = Color(0xFFA09F9D)
-    val textDisabled = Color(0xFF6E6D72)
+    val textPrimary = Color(0xFFE5E9DC)
+    val textMuted = Color(0xFFADBDAF)
+    val textDisabled = Color(0xFF829387)
 
     // Semantic.
     val ratingGold = Color(0xFFF5C518)
@@ -42,11 +41,11 @@ object Tokens {
     val slateGradEnd = Color(0xFF9AA5B8)
 
     // Radii.
-    val radiusCard: Dp = 14.dp
-    val radiusButton: Dp = 10.dp
-    val radiusInput: Dp = 10.dp
-    val radiusPill: Dp = 999.dp
-    val radiusChip: Dp = 8.dp
+    val radiusCard: Dp = 4.dp
+    val radiusButton: Dp = 4.dp
+    val radiusInput: Dp = 4.dp
+    val radiusPill: Dp = 4.dp
+    val radiusChip: Dp = 4.dp
 
     // Spacing (4px base).
     val s1: Dp = 4.dp
@@ -62,23 +61,23 @@ object Tokens {
     val hairline: Dp = 1.dp
 
     // Layout.
-    val navWidth: Dp = 92.dp
-    val navWidthCompact: Dp = 92.dp
+    val navWidth: Dp = 84.dp
+    val navWidthCompact: Dp = 84.dp
     val compactBreakpoint: Dp = 900.dp
     val posterWidth: Dp = 160.dp
     val posterWidthCompact: Dp = 132.dp
     val squareWidth: Dp = 168.dp
 
-    // Type scale (Montserrat display / Inter body).
+    // Compact desktop type scale (Rubik).
     object Type {
-        val h1 = 40.sp
-        val h2 = 32.sp
-        val h3 = 24.sp
-        val h4 = 20.sp
+        val h1 = 28.sp
+        val h2 = 22.sp
+        val h3 = 22.sp
+        val h4 = 18.sp
         val h5 = 16.sp
         val h6 = 14.sp
         val bodyXl = 18.sp
-        val bodyL = 16.sp
+        val bodyL = 14.sp
         val bodyM = 14.sp
         val bodyS = 12.sp
         val bodyXs = 11.sp
