@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Refresh
@@ -28,6 +27,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
@@ -103,7 +103,7 @@ fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummar
                     Connection.UNKNOWN -> Tokens.textDisabled to "Connecting…"
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(Modifier.size(10.dp).background(tone, CircleShape))
+                    Box(Modifier.size(10.dp).background(tone, RectangleShape))
                     Text(label, style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)
                     session.lastLatencyMs?.let { Text("$it ms round-trip", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted) }
                 }
@@ -136,7 +136,7 @@ fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummar
                     null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
                     else -> if (p.isEmpty()) Text("No providers configured.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
                     else for (x in p) Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.padding(top = 5.dp).size(8.dp).background(if (x.healthy) Tokens.success else Tokens.danger, CircleShape))
+                        Box(Modifier.padding(top = 5.dp).size(8.dp).background(if (x.healthy) Tokens.success else Tokens.danger, RectangleShape))
                         Column(Modifier.weight(1f)) {
                             Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(x.name, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary)
