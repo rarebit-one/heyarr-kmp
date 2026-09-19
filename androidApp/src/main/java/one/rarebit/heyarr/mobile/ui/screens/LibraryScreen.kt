@@ -140,7 +140,7 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
         }
         when {
             state.error != null && state.works == null -> ErrorState("Couldn't load the library", state.error, ::load)
-            state.works == null -> LazyVerticalGrid(GridCells.Adaptive(if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES) 280.dp else Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.s3), verticalArrangement = Arrangement.spacedBy(Tokens.s3)) { items(9) { MediaCardSkeleton(width = Tokens.posterWidth, aspect = one.rarebit.heyarr.ui.theme.MediaThemes.of(state.type ?: MediaType.BOOK).aspect) } }
+            state.works == null -> LazyVerticalGrid(GridCells.Adaptive(if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES) 280.dp else Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.s3), verticalArrangement = Arrangement.spacedBy(Tokens.s3)) { items(9) { MediaCardSkeleton(width = Tokens.posterWidth, aspect = one.rarebit.heyarr.mobile.theme.MediaThemes.of(state.type ?: MediaType.BOOK).aspect) } }
             filtered.isEmpty() -> EmptyState(if (all.isEmpty()) "The library is empty" else "Nothing matches these filters", detail = if (all.isEmpty()) "Scan a library root on the node, or Want something and let heyarr find it." else "Clear a filter to see more.")
             state.grid -> LazyVerticalGrid(
                 GridCells.Adaptive(if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES) 280.dp else Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.s3), verticalArrangement = Arrangement.spacedBy(Tokens.s3),
