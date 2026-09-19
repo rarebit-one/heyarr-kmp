@@ -13,16 +13,16 @@ import androidx.compose.ui.unit.sp
  */
 object Tokens {
     // Surfaces — near-black, warm-neutral.
-    val bgBase = Color(0xFF080709)
-    val surface1 = Color(0xFF131116)
-    val surface2 = Color(0xFF1B1922)
-    val surface3 = Color(0xFF232029)
-    val border = Color(0xFF2A2833)
+    val bgBase = one.rarebit.heyarr.ui.theme.Tokens.bgBase
+    val surface1 = one.rarebit.heyarr.ui.theme.Tokens.surface1
+    val surface2 = one.rarebit.heyarr.ui.theme.Tokens.surface2
+    val surface3 = one.rarebit.heyarr.ui.theme.Tokens.surface3
+    val border = one.rarebit.heyarr.ui.theme.Tokens.border
 
     // Text ramp.
-    val textPrimary = Color(0xFFF5F5F4)
-    val textMuted = Color(0xFFA09F9D)
-    val textDisabled = Color(0xFF6E6D72)
+    val textPrimary = one.rarebit.heyarr.ui.theme.Tokens.textPrimary
+    val textMuted = one.rarebit.heyarr.ui.theme.Tokens.textMuted
+    val textDisabled = one.rarebit.heyarr.ui.theme.Tokens.textDisabled
 
     // Semantic.
     val ratingGold = Color(0xFFF5C518)
@@ -41,11 +41,11 @@ object Tokens {
     val slateGradEnd = Color(0xFF9AA5B8)
 
     // Radii.
-    val radiusCard: Dp = 14.dp
-    val radiusButton: Dp = 10.dp
-    val radiusInput: Dp = 10.dp
-    val radiusPill: Dp = 999.dp
-    val radiusChip: Dp = 8.dp
+    val radiusCard: Dp = one.rarebit.heyarr.ui.theme.Tokens.radiusCard
+    val radiusButton: Dp = one.rarebit.heyarr.ui.theme.Tokens.radiusButton
+    val radiusInput: Dp = one.rarebit.heyarr.ui.theme.Tokens.radiusInput
+    val radiusPill: Dp = one.rarebit.heyarr.ui.theme.Tokens.radiusPill
+    val radiusChip: Dp = one.rarebit.heyarr.ui.theme.Tokens.radiusChip
 
     // Spacing (4px base).
     val s1: Dp = 4.dp
@@ -62,7 +62,7 @@ object Tokens {
 
     // Layout. The phone shows a bottom bar; from [railBreakpoint] up (a tablet, a
     // foldable open, a phone in landscape) the destinations move to a left rail.
-    val navWidth: Dp = 92.dp
+    val navWidth: Dp = one.rarebit.heyarr.ui.theme.Tokens.navWidth
     val railBreakpoint: Dp = 600.dp
     val posterWidth: Dp = 132.dp
     val posterWidthWide: Dp = 160.dp
@@ -71,14 +71,14 @@ object Tokens {
 
     // Type scale (Montserrat display / Inter body).
     object Type {
-        val h1 = 40.sp
-        val h2 = 32.sp
-        val h3 = 24.sp
-        val h4 = 20.sp
+        val h1 = 26.sp
+        val h2 = 22.sp
+        val h3 = 20.sp
+        val h4 = 18.sp
         val h5 = 16.sp
         val h6 = 14.sp
         val bodyXl = 18.sp
-        val bodyL = 16.sp
+        val bodyL = 15.sp
         val bodyM = 14.sp
         val bodyS = 12.sp
         val bodyXs = 11.sp

@@ -16,6 +16,8 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.rounded.TextDecrease
+import androidx.compose.material.icons.rounded.TextIncrease
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,6 +63,7 @@ import java.net.http.HttpResponse
 @Composable
 fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
+    var readingSize by remember { mutableStateOf(18) }
     var loading by remember(route.assetId) { mutableStateOf(true) }
     var error by remember(route.assetId) { mutableStateOf<String?>(null) }
     var unsupported by remember(route.assetId) { mutableStateOf(false) }
@@ -107,6 +110,8 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                     Text(book?.title ?: route.title, style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary, maxLines = 1)
                     book?.let { Text("${it.chapters.size} sections", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }
                 }
+                IconButtonRound(Icons.Rounded.TextDecrease, "Decrease reading text size", { readingSize = (readingSize - 1).coerceAtLeast(14) }, enabled = readingSize > 14)
+                IconButtonRound(Icons.Rounded.TextIncrease, "Increase reading text size", { readingSize = (readingSize + 1).coerceAtMost(32) }, enabled = readingSize < 32)
             }
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                 when {
@@ -136,7 +141,7 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                                 }
                                 item(key = "t$i") {
                                     SelectionContainer(Modifier.widthIn(max = 760.dp).fillMaxWidth()) {
-                                        Text(ch.text, style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp), color = Tokens.textPrimary)
+                                        Text(ch.text, style = MaterialTheme.typography.bodyLarge.copy(fontSize = readingSize.sp, lineHeight = (readingSize * 1.6f).sp), color = Tokens.textPrimary)
                                     }
                                 }
                             }

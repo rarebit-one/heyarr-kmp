@@ -47,17 +47,23 @@ fun PlaybackHost(session: AppSession) {
     val playback = session.playback
     if (GraphicsEnvironment.isHeadless()) return
     val item = playback.current ?: return
+    LaunchedEffect(item.assetId, playback.player.state.eof) {
+        if (playback.loadedAssetId == item.assetId && playback.player.state.eof && playback.audioQueue.isNotEmpty()) playback.next()?.let(playback::play)
+    }
     LaunchedEffect(item.assetId, playback.pendingStart) {
         if (!playback.pendingStart && playback.player.isRunning) return@LaunchedEffect
         val embedded = !playback.popout
         val err = session.io {
             // resolvePlaybackTarget asks the server's playback plan (a network call), so
             // it runs here inside io, off the UI thread, not before the block.
-            if (playback.player.isRunning) playback.player.switchTo(embedded)
+            if (playback.player.isRunning && playback.loadedAssetId == item.assetId) playback.player.switchTo(embedded)
+            else if (playback.player.isRunning) playback.resolvePlaybackTarget(item).let { t ->
+                playback.player.load(t.url, playback.title(item), t.durationSeconds); null
+            }
             else playback.resolvePlaybackTarget(item).let { t -> playback.player.start(embedded, t.url, playback.token, playback.title(item), t.durationSeconds) }
-        }.getOrNull()
+        }.fold(onSuccess = { it }, onFailure = { it.message ?: "Could not start playback" })
         playback.pendingStart = false
         playback.startError = err
-        if (err == null) { playback.player.play(); playback.refreshSubtitles() }
+        if (err == null) { playback.loadedAssetId = item.assetId; playback.player.play(); playback.refreshSubtitles() }
     }
 }

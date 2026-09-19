@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.desktop.preview
 
+import androidx.compose.runtime.mutableStateOf
+import kotlinx.coroutines.*
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.use
@@ -15,6 +17,7 @@ import one.rarebit.heyarr.desktop.state.ArtworkLoader
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.ui.App
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.desktop.ui.Experience
 import org.jetbrains.skia.EncodedImageFormat
 import java.io.File
 
@@ -25,8 +28,12 @@ import java.io.File
  * the running app; the same fixtures back the JVM tests.
  */
 fun main(args: Array<String>) {
+    verifyShelfSwitch()
     val out = File(args.firstOrNull() ?: "build/screenshots").apply { mkdirs() }
     val shots = linkedMapOf(
+        "00-watch" to Route.Consume(Experience.WATCH),
+        "00-listen" to Route.Consume(Experience.LISTEN),
+        "00-read" to Route.Consume(Experience.READ),
         "01-home" to Route.Home,
         "02-search-idle" to Route.Search,
         "02-search-results" to Route.Search,
@@ -44,7 +51,7 @@ fun main(args: Array<String>) {
     )
     val sizes = listOf(1280 to 900)
     for ((name, route) in shots) for ((w, h) in sizes) {
-        render(File(out, "$name.png"), w, h, route, query = if (name.endsWith("results")) "dune" else null)
+        render(File(out, "$name.png"), w, h, route, query = if (name.endsWith("results")) "dune" else null, downloads = name == "06b-downloads")
     }
     // Guest mode: no token, browsing as an anonymous guest — the "Sign in to save" affordance
     // shows and the personal rails (continue / missing / following) are hidden.
@@ -54,10 +61,12 @@ fun main(args: Array<String>) {
     render(File(out, "09b-connection.png"), 1280, 900, Route.Home, connection = true)
     render(File(out, "10-home-compact.png"), 760, 620, Route.Home)
     render(File(out, "11-search-compact.png"), 760, 620, Route.Search, query = "yellow")
+    render(File(out, "12-read-with-audio.png"), 1280, 900, Route.Consume(Experience.READ), audio = true)
+    render(File(out, "13-audio-compact.png"), 760, 620, Route.Consume(Experience.READ), audio = true)
     println("wrote ${out.listFiles()?.size ?: 0} screenshots to $out")
 }
 
-private fun render(file: File, width: Int, height: Int, route: Route, query: String? = null, connection: Boolean = false, downloads: Boolean = false, guest: Boolean = false) {
+private fun render(file: File, width: Int, height: Int, route: Route, query: String? = null, connection: Boolean = false, downloads: Boolean = false, guest: Boolean = false, audio: Boolean = false) {
     val transport = FakeHeyarrTransport()
     // A guest carries no token (browses on a trusted network); everyone else pastes one.
     val settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://heyarr.example.test:7777", bearerToken = if (guest) "" else "heyarr_fixture_token"))
@@ -66,6 +75,7 @@ private fun render(file: File, width: Int, height: Int, route: Route, query: Str
         scene.setContent {
             App(
                 settings = settings, transport = transport, player = NoPlayer, opener = NoOpener, downloader = NoDownloader,
+                initialAudioQueue = if (audio) listOf(Route.Player("w-album", "track-a", Fixtures.HASH, "Fixture album", "First track", MediaType.MUSIC), Route.Player("w-album", "track-b", Fixtures.HASH, "Fixture album", "Next track", MediaType.MUSIC)) else emptyList(),
                 initialRoute = route, artworkLoader = art, externalMetadata = one.rarebit.heyarr.desktop.state.ExternalMetadata.NONE, initialQuery = query, initialConnectionSheet = connection, initialLibraryTab = if (downloads) 1 else 0,
             )
         }
@@ -95,4 +105,41 @@ private object NoOpener : ExternalOpener {
 
 private object NoDownloader : BlobDownloader {
     override fun download(baseUrl: String, blobHash: String, token: String, ext: String): DownloadResult = DownloadResult.Failed("no download in preview")
+}
+
+/** Exercises a reused composition: initial-route screenshots alone cannot catch a stale effect key. */
+private fun verifyShelfSwitch() {
+    val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    val settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://heyarr.example.test:7777", externalMetadata = false))
+    val session = one.rarebit.heyarr.desktop.state.AppSession(
+        settings, FakeHeyarrTransport(), NoPlayer,
+        one.rarebit.heyarr.desktop.open.OpenExternally(NoDownloader, NoOpener), scope,
+        ArtworkLoader({ "" }, { "" }, fetcher = { PlaceholderArt.bytes(it) }),
+        one.rarebit.heyarr.desktop.state.ExternalMetadata.NONE,
+    )
+    val selected = mutableStateOf(Experience.WATCH)
+    val states = Experience.entries.associateWith { one.rarebit.heyarr.desktop.ui.screens.LibraryState() }
+    try {
+        ImageComposeScene(width = 1280, height = 900, density = Density(1f)).use { scene ->
+            scene.setContent {
+                one.rarebit.heyarr.desktop.theme.HeyarrTheme {
+                    one.rarebit.heyarr.desktop.ui.screens.LibraryScreen(
+                        session, states.getValue(selected.value), {}, { _, _ -> }, experience = selected.value,
+                    )
+                }
+            }
+            for (experience in Experience.entries + Experience.WATCH) {
+                selected.value = experience
+                val state = states.getValue(experience)
+                // Pump the real composition while the fixture request completes on IO.
+                for (attempt in 0 until 100) {
+                    scene.render(System.nanoTime())
+                    if (state.works != null) break
+                    Thread.sleep(20)
+                }
+                check(!state.works.isNullOrEmpty()) { "Shelf $experience did not load after navigation: ${state.error}" }
+            }
+        }
+    } finally { scope.cancel() }
+    println("verified Watch → Listen → Read → Watch in one composition")
 }

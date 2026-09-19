@@ -99,9 +99,7 @@ fun HeyarrNavRail(current: NavSection?, onGo: (NavSection) -> Unit, connection: 
         modifier.fillMaxHeight().width(Tokens.navWidth).background(Tokens.surface1).windowInsetsPadding(WindowInsets.statusBars).padding(vertical = 14.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Box(Modifier.size(40.dp).background(Brush.linearGradient(listOf(theme.ctaGradientStart, theme.accentGradientEnd)), RoundedCornerShape(11.dp)), contentAlignment = Alignment.Center) {
-            Text("h", style = MaterialTheme.typography.headlineMedium, color = theme.onAccent)
-        }
+        one.rarebit.heyarr.ui.components.ArchiveMark(Modifier.padding(4.dp))
         Spacer(Modifier.height(14.dp))
         for (s in NavSection.entries) NavTile(s, active = s == current, accent = theme.accent, accentEnd = theme.accentGradientEnd, style = RAIL_LABEL, tileSize = 44.dp, iconSize = 22.dp, modifier = Modifier.fillMaxWidth()) { onGo(s) }
         Spacer(Modifier.weight(1f))
@@ -113,19 +111,18 @@ fun HeyarrNavRail(current: NavSection?, onGo: (NavSection) -> Unit, connection: 
 private fun NavTile(item: NavSection, active: Boolean, accent: Color, accentEnd: Color, style: TextStyle, tileSize: androidx.compose.ui.unit.Dp, iconSize: androidx.compose.ui.unit.Dp, modifier: Modifier, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val shape = RoundedCornerShape(10.dp)
+    val shape = RoundedCornerShape(3.dp)
     val tile = when { active -> accent.copy(alpha = 0.18f); pressed -> Tokens.surface2; else -> Color.Transparent }
     val fg = when { active -> accentEnd; pressed -> Tokens.textPrimary; else -> Tokens.textMuted }
     Column(
         modifier
-            .focusRing(interaction, RoundedCornerShape(12.dp))
             .clip(RoundedCornerShape(12.dp))
             .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = onClick)
             .semantics { this.contentDescription = item.label; this.selected = active }
             .padding(vertical = 6.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Box(Modifier.size(tileSize).background(tile, shape).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(tileSize).focusRing(interaction, shape).background(tile, shape).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape), contentAlignment = Alignment.Center) {
             Icon(item.icon, contentDescription = null, tint = fg, modifier = Modifier.size(iconSize))
         }
         Text(item.label.uppercase(), style = style, color = if (active) accentEnd else Tokens.textMuted, textAlign = TextAlign.Center, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)

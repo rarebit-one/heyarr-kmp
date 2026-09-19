@@ -38,6 +38,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.desktop.ui.isListening
+import androidx.compose.runtime.produceState
 import one.rarebit.heyarr.desktop.state.PlaybackSession
 import one.rarebit.heyarr.desktop.theme.LocalMediaTheme
 import one.rarebit.heyarr.desktop.theme.MediaScope
@@ -51,7 +54,8 @@ import one.rarebit.heyarr.ui.theme.Tokens
  * the full player; the close button stops playback.
  */
 @Composable
-fun NowPlayingBar(playback: PlaybackSession, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+fun NowPlayingBar(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+    val playback = session.playback
     val item = playback.current ?: return
     val ps = playback.player.state
     MediaScope(playback.type) {
@@ -66,7 +70,13 @@ fun NowPlayingBar(playback: PlaybackSession, onOpen: () -> Unit, modifier: Modif
             )
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 // The live picture, small.
-                VideoSurface(playback.player, Modifier.width(88.dp).height(50.dp).clip(RoundedCornerShape(6.dp)))
+                if (playback.type.isListening()) {
+                    val detail by produceState<one.rarebit.heyarr.desktop.library.WorkDetail?>(null, item.workId, session.generation) {
+                        value = session.io { session.api?.work(item.workId) }.getOrNull()
+                    }
+                    val cover by rememberCover(session, playback.type, item.title, detail?.artworkPath, detail?.work?.year, detail?.work?.artist)
+                    Artwork(cover.bitmap, playback.type, Modifier.width(50.dp).height(50.dp), contentDescription = "Cover for ${item.title}")
+                } else VideoSurface(playback.player, Modifier.width(88.dp).height(50.dp).clip(RoundedCornerShape(4.dp)))
                 Column(
                     Modifier.weight(1f).clip(RoundedCornerShape(6.dp)).clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen).semantics { contentDescription = "Open the player for ${item.title}" }.padding(4.dp),
                 ) {

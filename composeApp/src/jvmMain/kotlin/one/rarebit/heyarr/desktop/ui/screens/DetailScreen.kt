@@ -626,14 +626,15 @@ private fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, 
 
 @Composable
 private fun TracksBlock(session: AppSession, detail: WorkDetail, state: DetailState) {
-    val scope = rememberCoroutineScope()
     val assets = state.assets
     if (assets == null) { MediaRowSkeleton(5); return }
     val tracks = assets.filter { it.isAudio && it.isPrimaryRole }.sortedWith(compareBy({ it.filename?.lowercase() ?: "" }, { it.id }))
+    val playable = tracks.filter { it.isPlayable }.mapNotNull { track ->
+        track.blobHash?.let { Route.Player(detail.work.id, track.id, it, detail.work.title, track.title, MediaType.from(detail.work.kind), "Listen") }
+    }
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        SectionHeader("Tracks", subtitle = "${tracks.count { it.isPlayable }} playable", trailing = {
-            val playable = tracks.filter { it.isPlayable }.mapNotNull { it.blobHash }
-            if (playable.isNotEmpty()) PrimaryButton("Queue all", { scope.launch { val r = session.io { session.player.playAll(session.config.baseUrl, playable, session.config.bearerToken.trim()) }.getOrNull(); if (r is PlayResult.Failed) session.toast(Toast.Kind.ERROR, "Couldn't play", r.message) else session.toast(Toast.Kind.SUCCESS, "Queued ${playable.size} tracks in mpv") } }, icon = Icons.Rounded.PlayArrow, compact = true)
+        SectionHeader("Tracks", subtitle = "${playable.size} playable", trailing = {
+            if (playable.isNotEmpty()) PrimaryButton("Play all", { session.playback.queueAudio(playable) }, icon = Icons.Rounded.PlayArrow, compact = true)
         })
         if (tracks.isEmpty()) Notice("No audio files held for this work yet.")
         for ((i, t) in tracks.withIndex()) {
@@ -642,7 +643,7 @@ private fun TracksBlock(session: AppSession, detail: WorkDetail, state: DetailSt
                 Text("%02d".format(i + 1), style = MaterialTheme.typography.labelMedium, color = theme.accentGradientEnd, modifier = Modifier.width(28.dp))
                 Text(t.title, style = MaterialTheme.typography.titleSmall, color = if (t.isPlayable) Tokens.textPrimary else Tokens.textDisabled, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 t.sizeBytes?.let { Text(PrimaryAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }
-                if (t.isPlayable) IconButtonRound(Icons.Rounded.PlayArrow, "Play ${t.title}", { t.blobHash?.let { playLocal(session, state, it, "${detail.work.title} — ${t.title}", scope, assetId = t.id, type = MediaType.MUSIC) } }, size = 32.dp, filled = true)
+                if (t.isPlayable) IconButtonRound(Icons.Rounded.PlayArrow, "Play ${t.title}", { session.playback.queueAudio(playable, playable.indexOfFirst { it.assetId == t.id }) }, size = 32.dp, filled = true)
             }
         }
     }
