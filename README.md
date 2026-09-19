@@ -122,7 +122,7 @@ headless CI can show the app. The same fixtures back the JVM tests
 
 ## Keyboard
 
-⌘K / Ctrl-K search · ↑ ↓ move · ↵ open · Esc clear / back · Ctrl-1…5 sections · ⌘, settings · Tab walks every control, with a 2px accent focus ring.
+⌘K / Ctrl-K search · ↑ ↓ move · ↵ open · Esc clear / back · Ctrl-1 Watch · Ctrl-2 Listen · Ctrl-3 Read · Ctrl-4 Missing · Ctrl-5 Cast · ⌘, settings · Tab walks every control, with a 2px accent focus ring.
 
 ## Toolchain
 
@@ -170,3 +170,20 @@ the library's `LoginApproval` / `DevicePairing` / `WebLoginClient`.
   Skia decode).
 - **Reader** — the EPUB/CBZ surface for books.
 - **Personal-state crypto** — the encrypted personal-state sync, once the desktop can hold a device key.
+
+### Archive interface
+
+Desktop opens on **Watch**, with **Listen** and **Read** shelves alongside it.
+**Manage** opens the existing search and library tools. These shelves group the
+catalogue; metadata-provider coverage is unchanged.
+
+Audio remains active while browsing or reading. On windows at least 1100 dp wide,
+a full-height player shows the actual cover, transport, volume and upcoming tracks;
+narrower windows use the compact transport. Album “Queue all” uses this same
+session player, including automatic advance at the end of a track.
+
+Desktop and Android share the forest palette, compact Rubik typography and Archive
+mark. Navigation labels sit below square icon tiles; selection and keyboard focus
+enclose the icon only. Cover images still come from the existing artwork pipeline.
+The desktop buffering glyph respects the reduced-motion preference.
+Android retains its existing navigation and playback behavior in this iteration.

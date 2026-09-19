@@ -186,6 +186,13 @@ fun App(
         nav.go(route)
     }
     val current = nav.current
+    LaunchedEffect(current) {
+        when (current) {
+            is Route.Consume -> consuming = true
+            Route.Home, Route.Discover, Route.Search, Route.Library, Route.Missing -> consuming = false
+            else -> Unit // Detail, reader and settings retain the section they were opened from.
+        }
+    }
     // The session player streams with the saved connection; the pop-out OSC takes the media accent.
     LaunchedEffect(session.config, playback.current?.assetId) {
         playback.baseUrl = session.config.baseUrl; playback.token = session.config.bearerToken.trim()

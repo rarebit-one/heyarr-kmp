@@ -99,9 +99,7 @@ fun HeyarrNavRail(current: NavSection?, onGo: (NavSection) -> Unit, connection: 
         modifier.fillMaxHeight().width(Tokens.navWidth).background(Tokens.surface1).windowInsetsPadding(WindowInsets.statusBars).padding(vertical = 14.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        Box(Modifier.size(40.dp).background(Brush.linearGradient(listOf(theme.ctaGradientStart, theme.accentGradientEnd)), RoundedCornerShape(11.dp)), contentAlignment = Alignment.Center) {
-            Text("h", style = MaterialTheme.typography.headlineMedium, color = theme.onAccent)
-        }
+        one.rarebit.heyarr.ui.components.ArchiveMark(Modifier.padding(4.dp))
         Spacer(Modifier.height(14.dp))
         for (s in NavSection.entries) NavTile(s, active = s == current, accent = theme.accent, accentEnd = theme.accentGradientEnd, style = RAIL_LABEL, tileSize = 44.dp, iconSize = 22.dp, modifier = Modifier.fillMaxWidth()) { onGo(s) }
         Spacer(Modifier.weight(1f))
