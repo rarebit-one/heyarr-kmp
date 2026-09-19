@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -42,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -107,12 +107,12 @@ fun StatusPill(status: LibraryStatus, modifier: Modifier = Modifier, compact: Bo
         LibraryStatus.NOT_TRACKED -> Tokens.textMuted to Tokens.textDisabled
     }
     Row(
-        modifier.background(Tokens.bgBase.copy(alpha = 0.72f), CircleShape).border(Tokens.hairline, tone.copy(alpha = 0.45f), CircleShape).padding(horizontal = if (compact) 6.dp else 8.dp, vertical = 2.dp)
+        modifier.background(Tokens.bgBase.copy(alpha = 0.72f), RectangleShape).border(Tokens.hairline, tone.copy(alpha = 0.45f), RectangleShape).padding(horizontal = if (compact) 6.dp else 8.dp, vertical = 2.dp)
             .semantics { this.contentDescription = "Status: ${status.label}" },
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
-        Box(Modifier.size(6.dp).background(dot, CircleShape))
-        if (!compact) Text(status.label, style = MaterialTheme.typography.labelSmall, color = tone, maxLines = 1)
+        Box(Modifier.size(6.dp).background(dot, RectangleShape))
+        if (!compact) Text(status.label.uppercase(), style = MaterialTheme.typography.labelSmall, color = tone, maxLines = 1)
     }
 }
 
@@ -231,7 +231,7 @@ fun MediaRow(
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         val thumbW = if (theme.aspect == CardAspect.POSTER) 40.dp else 52.dp
-        Box(Modifier.width(thumbW).height(52.dp).clip(RoundedCornerShape(6.dp))) { Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 18.dp) }
+        Box(Modifier.width(thumbW).height(52.dp).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 18.dp) }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
@@ -350,7 +350,7 @@ fun HeroSkeleton(height: Dp = 380.dp) {
         Skeleton(Modifier.fillMaxSize(), RoundedCornerShape(0.dp))
         Column(Modifier.align(Alignment.BottomStart).padding(28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Skeleton(Modifier.width(80.dp).height(14.dp)); Skeleton(Modifier.width(360.dp).height(30.dp)); Skeleton(Modifier.width(220.dp).height(12.dp))
-            Skeleton(Modifier.width(120.dp).height(40.dp), CircleShape)
+            Skeleton(Modifier.width(120.dp).height(40.dp), RectangleShape)
         }
     }
 }

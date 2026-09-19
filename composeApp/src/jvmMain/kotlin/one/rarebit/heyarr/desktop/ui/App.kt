@@ -36,6 +36,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
 import androidx.compose.ui.input.key.key
@@ -104,7 +106,7 @@ data class WantRequest(val workId: String?, val title: String, val year: Int? = 
 
 /**
  * The shell: left nav, offline banner, the routed screen, the toast stack and the Want
- * sheet. Global keys: ⌘K / Ctrl-K focuses search, Ctrl-1…5 jump sections, ⌘, opens
+ * sheet. Global keys: Ctrl+F focuses search, Ctrl-1…5 jump sections, ⌘, opens
  * Settings, Esc goes back or closes the sheet. The accent in force follows the media
  * of the screen in focus (a series detail turns the nav violet), per the appearance
  * preference.
@@ -211,6 +213,7 @@ fun App(
     DisposableEffect(Unit) {
         val kfm = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager()
         val dispatcher = java.awt.KeyEventDispatcher { e ->
+            if (dispatchSearchShortcut(e, want == null && !showConnection && !showSignIn, ::openSearch)) return@KeyEventDispatcher true
             if (e.id != java.awt.event.KeyEvent.KEY_PRESSED || e.isControlDown || e.isMetaDown || e.isAltDown) return@KeyEventDispatcher false
             if (!playback.onPlayerScreen || playback.popout || want != null || showConnection || showSignIn) return@KeyEventDispatcher false
             val key = PlayerKeys.fromAwt(e.keyCode) ?: return@KeyEventDispatcher false
@@ -247,7 +250,7 @@ fun App(
                         if (PlayerKeys.handle(e.key, playback.player, { setFullscreen(!fullscreen) }, { if (fullscreen) setFullscreen(false); nav.back() }, fullscreen)) return@onPreviewKeyEvent true
                     }
                     when {
-                        mod && e.key == Key.K -> { openSearch(); true }
+                        e.isCtrlPressed && !e.isMetaPressed && !e.isAltPressed && !e.isShiftPressed && e.key == Key.F && want == null && !showConnection && !showSignIn -> { openSearch(); true }
                         mod && e.key == Key.Comma -> { nav.go(Route.Settings); true }
                         mod && e.key == Key.One -> { consuming = true; nav.go(Route.Consume(Experience.WATCH)); true }
                         mod && e.key == Key.Two -> { consuming = true; nav.go(Route.Consume(Experience.LISTEN)); true }
@@ -278,7 +281,7 @@ fun App(
                             if (!fullscreen) Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 FilterChip("Consume", consuming, { consuming = true; nav.go(Route.Consume(Experience.WATCH)) })
                                 FilterChip("Manage", !consuming, { consuming = false; nav.go(Route.Search) })
-                                GhostButton("Search everything", ::openSearch, icon = androidx.compose.material.icons.Icons.Rounded.Search)
+                                GhostButton("Search everything · Ctrl+F", ::openSearch, icon = androidx.compose.material.icons.Icons.Rounded.Search)
                             }
                             if (!fullscreen) when (session.connection) {
                                 Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.config.baseUrl, onRetry = { scope.launch { session.probe() } }, onSettings = { nav.go(Route.Settings) })

@@ -40,12 +40,12 @@ object Tokens {
     val slateHover = Color(0xFF8C97AA)
     val slateGradEnd = Color(0xFF9AA5B8)
 
-    // Radii.
-    val radiusCard: Dp = 4.dp
-    val radiusButton: Dp = 4.dp
-    val radiusInput: Dp = 4.dp
-    val radiusPill: Dp = 4.dp
-    val radiusChip: Dp = 4.dp
+    // Archive surfaces and controls have square corners.
+    val radiusCard: Dp = 0.dp
+    val radiusButton: Dp = 0.dp
+    val radiusInput: Dp = 0.dp
+    val radiusPill: Dp = 0.dp
+    val radiusChip: Dp = 0.dp
 
     // Spacing (4px base).
     val s1: Dp = 4.dp

@@ -175,7 +175,7 @@ fun PlayerScreen(session: AppSession, video: VideoSession, state: PlayerScreenSt
                             .clickable(interactionSource = interaction, indication = null) { onNext(next) }.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Box(Modifier.width(112.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(6.dp))) { Artwork(next.thumbnailPath, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 18.dp) }
+                        Box(Modifier.width(112.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(next.thumbnailPath, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 18.dp) }
                         Column(Modifier.weight(1f)) {
                             Text(next.subtitle ?: next.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             next.sizeBytes?.let { Text(WorkAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }

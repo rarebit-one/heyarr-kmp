@@ -302,7 +302,7 @@ fun PlayerScreen(session: AppSession, route: Route.Player, state: PlayerScreenSt
                             .clickable(interactionSource = interaction, indication = null) { playback.play(next) }.padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Box(Modifier.width(120.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(6.dp))) { Artwork(thumb, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 18.dp) }
+                        Box(Modifier.width(120.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(thumb, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 18.dp) }
                         Column(Modifier.weight(1f)) {
                             ep?.code?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = theme.accentGradientEnd) }
                             Text(ep?.title ?: next.subtitle ?: "", style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -370,7 +370,7 @@ private fun SeekBar(ps: PlayerState, onSeek: (Float) -> Unit) {
             // Not seekable yet: an indeterminate line, so the scrubber reads as "loading"
             // rather than a live playhead frozen at zero that ignores every drag.
             LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(4.dp).clip(RoundedCornerShape(2.dp))
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(4.dp).clip(RoundedCornerShape(Tokens.radiusCard))
                     .semantics { contentDescription = "Starting…" },
                 color = theme.accent, trackColor = Tokens.surface3,
             )

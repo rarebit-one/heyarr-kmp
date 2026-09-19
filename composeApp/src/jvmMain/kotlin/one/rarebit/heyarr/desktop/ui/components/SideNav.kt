@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Headphones
@@ -39,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -68,7 +68,7 @@ val CONSUME_ITEMS = listOf(
 val NAV_ITEMS = listOf(
     NavItem(Route.Home, "Home", Icons.Rounded.Home, "⌃1"),
     NavItem(Route.Discover, "Discover", Icons.Rounded.Explore, "⌃2"),
-    NavItem(Route.Search, "Search", Icons.Rounded.Search, "⌘K"),
+    NavItem(Route.Search, "Search", Icons.Rounded.Search, "Ctrl+F"),
     NavItem(Route.Library, "Library", Icons.Rounded.VideoLibrary, "⌃3"),
     NavItem(Route.Missing, "Missing", Icons.Rounded.ReportProblem, "⌃4"),
     NavItem(Route.NowPlaying, "Cast", Icons.Rounded.Cast, "⌃5"),
@@ -102,12 +102,12 @@ fun SideNav(current: Route, onGo: (Route) -> Unit, connection: Connection, compa
 private fun RailItem(item: NavItem, active: Boolean, accent: Color, accentEnd: Color, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
-    val shape = RoundedCornerShape(3.dp)
+    val shape = RoundedCornerShape(Tokens.radiusButton)
     val tile = when { active -> accent.copy(alpha = 0.18f); hovered -> Tokens.surface2; else -> Color.Transparent }
     val fg = when { active -> accentEnd; hovered -> Tokens.textPrimary; else -> Tokens.textMuted }
     Column(
         Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Tokens.radiusButton))
             .hoverable(interaction)
             .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = onClick)
             .semantics { this.contentDescription = item.label; this.selected = active }
@@ -133,16 +133,16 @@ private fun ConnectionTile(connection: Connection, detail: String?, onClick: () 
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     Column(
-        Modifier.fillMaxWidth().focusRing(interaction, RoundedCornerShape(12.dp)).clip(RoundedCornerShape(12.dp))
-            .background(if (hovered) Tokens.surface2 else Color.Transparent, RoundedCornerShape(12.dp))
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusButton))
+            .background(if (hovered) Tokens.surface2 else Color.Transparent, RoundedCornerShape(Tokens.radiusButton))
             .hoverable(interaction)
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
             .semantics { this.contentDescription = "heyarr connection: $label${detail?.let { ", $it" } ?: ""}. Open connection details" }
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.size(36.dp).background(Tokens.surface2, CircleShape).border(Tokens.hairline, tone.copy(alpha = 0.6f), CircleShape), contentAlignment = Alignment.Center) {
-            Box(Modifier.size(10.dp).background(tone, CircleShape))
+        Box(Modifier.size(36.dp).focusRing(interaction, RectangleShape).background(Tokens.surface2, RectangleShape).border(Tokens.hairline, tone.copy(alpha = 0.6f), RectangleShape), contentAlignment = Alignment.Center) {
+            Box(Modifier.size(10.dp).background(tone, RectangleShape))
         }
         Text(label.uppercase(), style = RAIL_LABEL, color = tone, maxLines = 1, softWrap = false)
         if (detail != null) Text(detail.substringBefore(" ·"), style = RAIL_LABEL.copy(letterSpacing = 0.2.sp, fontWeight = FontWeight.Normal), color = Tokens.textDisabled, maxLines = 1, softWrap = false)

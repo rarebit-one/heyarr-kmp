@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cast
@@ -29,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
@@ -129,14 +129,14 @@ private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -> Un
     val playing = st.playing || st.state.equals("PLAYING", ignoreCase = true)
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(10.dp).background(if (playing) theme.accent else Tokens.textDisabled, CircleShape))
+            Box(Modifier.size(10.dp).background(if (playing) theme.accent else Tokens.textDisabled, RectangleShape))
             Text(st.state.lowercase().replace('_', ' '), style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)
         }
         st.title?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted) }
         val dur = st.durationSeconds
         val frac = if (dur != null && dur > 0) (st.elapsedSeconds.toFloat() / dur).coerceIn(0f, 1f) else 0f
-        Box(Modifier.fillMaxWidth().height(6.dp).background(Tokens.surface3, CircleShape)) {
-            Box(Modifier.fillMaxWidth(frac).height(6.dp).background(Brush.horizontalGradient(listOf(theme.accent, theme.accentGradientEnd)), CircleShape))
+        Box(Modifier.fillMaxWidth().height(6.dp).background(Tokens.surface3, RectangleShape)) {
+            Box(Modifier.fillMaxWidth(frac).height(6.dp).background(theme.accent, RectangleShape))
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(clock(st.elapsedSeconds) + (dur?.let { " / " + clock(it) } ?: ""), style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted, modifier = Modifier.weight(1f))

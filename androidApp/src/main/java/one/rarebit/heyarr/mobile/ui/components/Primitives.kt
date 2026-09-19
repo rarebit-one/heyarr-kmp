@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -40,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -96,8 +96,8 @@ fun Modifier.pressedSurface(interaction: MutableInteractionSource, shape: Shape)
 // ── buttons ──────────────────────────────────────────────────────────────────────
 
 /**
- * The primary CTA: an accent-gradient pill with an icon (Play ▸, Add +). Disabled is a
- * flat surface with dimmed text, never a faded gradient, so the state is unmistakable.
+ * The primary CTA: a flat rectangular control with an icon (Play ▸, Add +).
+ * Disabled controls use a dimmed surface and text.
  */
 @Composable
 fun PrimaryButton(
@@ -112,16 +112,14 @@ fun PrimaryButton(
     val theme = LocalMediaTheme.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val shape = CircleShape
-    val brush = if (!enabled) Brush.linearGradient(listOf(Tokens.surface2, Tokens.surface2))
-    else if (pressed) Brush.linearGradient(listOf(theme.accentHover, theme.accentGradientEnd))
-    else Brush.linearGradient(listOf(theme.ctaGradientStart, theme.accentGradientEnd))
+    val shape = RectangleShape
+    val bg = when { !enabled -> Tokens.surface2; pressed -> theme.accentHover; else -> theme.ctaGradientStart }
     val fg = if (enabled) theme.onAccent else Tokens.textDisabled
     Row(
         modifier
             .focusRing(interaction, shape, inset = 2.dp)
             .clip(shape)
-            .background(brush, shape)
+            .background(bg, shape)
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { this.contentDescription = contentDescription }
             .defaultMinSize(minHeight = if (compact) 36.dp else 44.dp)
@@ -130,11 +128,11 @@ fun PrimaryButton(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (icon != null) Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(if (compact) 16.dp else 20.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1)
+        Text(label.uppercase(), style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1)
     }
 }
 
-/** Secondary: hairline-bordered pill on surface-2, text-primary. */
+/** Secondary: hairline-bordered rectangle on surface-2, text-primary. */
 @Composable
 fun SecondaryButton(
     label: String,
@@ -147,7 +145,7 @@ fun SecondaryButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val shape = CircleShape
+    val shape = RectangleShape
     val fg = when { !enabled -> Tokens.textDisabled; danger -> Tokens.danger; else -> Tokens.textPrimary }
     Row(
         modifier
@@ -162,7 +160,7 @@ fun SecondaryButton(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         if (icon != null) Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(if (compact) 16.dp else 18.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1)
+        Text(label.uppercase(), style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1)
     }
 }
 
@@ -184,7 +182,7 @@ fun GhostButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifie
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (icon != null) Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(16.dp))
-        Text(label, style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1)
+        Text(label.uppercase(), style = MaterialTheme.typography.labelLarge, color = fg, maxLines = 1)
     }
 }
 
@@ -198,11 +196,11 @@ fun IconButtonRound(icon: ImageVector, contentDescription: String, onClick: () -
     val fg = when { !enabled -> Tokens.textDisabled; filled -> theme.onAccent; else -> Tokens.textPrimary }
     Box(
         modifier
-            .focusRing(interaction, CircleShape, inset = 2.dp)
+            .focusRing(interaction, RectangleShape, inset = 2.dp)
             .size(size)
-            .clip(CircleShape)
-            .background(bg, CircleShape)
-            .border(Tokens.hairline, if (filled) Color.Transparent else Tokens.border, CircleShape)
+            .clip(RectangleShape)
+            .background(bg, RectangleShape)
+            .border(Tokens.hairline, if (filled) Color.Transparent else Tokens.border, RectangleShape)
             .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { this.contentDescription = contentDescription },
         contentAlignment = Alignment.Center,
@@ -217,7 +215,7 @@ fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: 
     val theme = LocalMediaTheme.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val shape = CircleShape
+    val shape = RectangleShape
     val bg = when { selected -> theme.tint(0.22f); pressed -> Tokens.surface3; else -> Tokens.surface2 }
     val fg = when { !enabled -> Tokens.textDisabled; selected -> Tokens.textPrimary; else -> Tokens.textMuted }
     Row(
@@ -234,7 +232,7 @@ fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: 
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         if (icon != null) Icon(icon, contentDescription = null, tint = if (selected) theme.accent else fg, modifier = Modifier.size(14.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = fg, maxLines = 1, softWrap = false)
+        Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = fg, maxLines = 1, softWrap = false)
         if (count != null) Text(count.toString(), style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled, maxLines = 1, softWrap = false)
     }
 }
@@ -244,7 +242,7 @@ fun FilterChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: 
 fun MediaBadge(type: MediaType, modifier: Modifier = Modifier) {
     val theme = MediaThemes.of(type)
     Box(
-        modifier.background(theme.tint(0.22f), RoundedCornerShape(6.dp)).border(Tokens.hairline, theme.accent.copy(alpha = 0.5f), RoundedCornerShape(6.dp))
+        modifier.background(theme.tint(0.22f), RoundedCornerShape(Tokens.radiusChip)).border(Tokens.hairline, theme.accent.copy(alpha = 0.5f), RoundedCornerShape(Tokens.radiusChip))
             .padding(horizontal = 6.dp, vertical = 2.dp),
     ) {
         Text(type.label.uppercase(), style = MaterialTheme.typography.labelSmall, color = theme.accentGradientEnd, maxLines = 1)
@@ -268,7 +266,7 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier, subtitle: String
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.headlineMedium, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(6.dp))
-            Box(Modifier.width(36.dp).height(3.dp).background(Brush.horizontalGradient(listOf(accent, accent.copy(alpha = 0f))), CircleShape))
+            Box(Modifier.width(36.dp).height(3.dp).background(accent, RectangleShape))
             if (subtitle != null) { Spacer(Modifier.height(6.dp)); Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }
         }
         if (trailing != null) trailing()
@@ -284,7 +282,7 @@ fun Field(label: String, value: String, modifier: Modifier = Modifier, placehold
     val interaction = remember { MutableInteractionSource() }
     val focused by interaction.collectIsFocusedAsState()
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(label, style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
         Box(
             Modifier.fillMaxWidth().background(Tokens.surface2, RoundedCornerShape(Tokens.radiusInput))
                 .border(if (focused) 2.dp else Tokens.hairline, if (focused) accent else Tokens.border, RoundedCornerShape(Tokens.radiusInput))
@@ -319,7 +317,7 @@ fun Skeleton(modifier: Modifier, shape: Shape = RoundedCornerShape(Tokens.radius
 @Composable
 fun EmptyState(title: String, modifier: Modifier = Modifier, detail: String? = null, icon: ImageVector = Icons.Rounded.Search, action: (@Composable () -> Unit)? = null) {
     Column(modifier.fillMaxWidth().padding(Tokens.s8), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Tokens.s2)) {
-        Box(Modifier.size(56.dp).background(Tokens.surface2, CircleShape).border(Tokens.hairline, Tokens.border, CircleShape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(56.dp).background(Tokens.surface2, RectangleShape).border(Tokens.hairline, Tokens.border, RectangleShape), contentAlignment = Alignment.Center) {
             Icon(icon, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(26.dp))
         }
         Spacer(Modifier.height(4.dp))
@@ -333,7 +331,7 @@ fun EmptyState(title: String, modifier: Modifier = Modifier, detail: String? = n
 @Composable
 fun ErrorState(title: String, detail: String?, onRetry: (() -> Unit)?, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth().padding(Tokens.s8).semantics { liveRegion = LiveRegionMode.Polite }, horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Tokens.s2)) {
-        Box(Modifier.size(56.dp).background(Tokens.danger.copy(alpha = 0.14f), CircleShape).border(Tokens.hairline, Tokens.danger.copy(alpha = 0.5f), CircleShape), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(56.dp).background(Tokens.danger.copy(alpha = 0.14f), RectangleShape).border(Tokens.hairline, Tokens.danger.copy(alpha = 0.5f), RectangleShape), contentAlignment = Alignment.Center) {
             Icon(Icons.Rounded.ErrorOutline, contentDescription = null, tint = Tokens.danger, modifier = Modifier.size(26.dp))
         }
         Spacer(Modifier.height(4.dp))

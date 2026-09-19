@@ -85,7 +85,7 @@ import one.rarebit.heyarr.desktop.ui.components.SectionHeader
 /**
  * Universal search — one box, every media kind, results grouped by type and streamed in
  * per segment as each `search_content` call lands. ↑/↓ move a selection through the
- * flattened rows, Enter opens it, Esc clears; ⌘K / Ctrl-K (handled by the shell)
+ * flattened rows, Enter opens it, Esc clears; Ctrl+F (handled by the shell)
  * lands the focus here. Recent searches are local to this machine and say so.
  */
 @Composable
@@ -230,7 +230,7 @@ private fun SearchBox(value: String, onValueChange: (String) -> Unit, onSubmit: 
             )
         }
         if (value.isNotEmpty()) IconButtonRound(Icons.Rounded.Close, "Clear search", onClear, size = 28.dp)
-        else Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { Kbd("⌘K"); Kbd("↑↓"); Kbd("↵") }
+        else Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { Kbd("Ctrl+F"); Kbd("↑↓"); Kbd("↵") }
     }
 }
 

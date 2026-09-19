@@ -76,9 +76,9 @@ fun NowPlayingBar(session: AppSession, onOpen: () -> Unit, modifier: Modifier = 
                     }
                     val cover by rememberCover(session, playback.type, item.title, detail?.artworkPath, detail?.work?.year, detail?.work?.artist)
                     Artwork(cover.bitmap, playback.type, Modifier.width(50.dp).height(50.dp), contentDescription = "Cover for ${item.title}")
-                } else VideoSurface(playback.player, Modifier.width(88.dp).height(50.dp).clip(RoundedCornerShape(4.dp)))
+                } else VideoSurface(playback.player, Modifier.width(88.dp).height(50.dp).clip(RoundedCornerShape(Tokens.radiusCard)))
                 Column(
-                    Modifier.weight(1f).clip(RoundedCornerShape(6.dp)).clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen).semantics { contentDescription = "Open the player for ${item.title}" }.padding(4.dp),
+                    Modifier.weight(1f).clip(RoundedCornerShape(Tokens.radiusCard)).clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen).semantics { contentDescription = "Open the player for ${item.title}" }.padding(4.dp),
                 ) {
                     Text(item.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(listOfNotNull(item.subtitle, if (ps.duration > 0) "${clockShort(ps.position)} / ${clockShort(ps.duration)}" else null, if (ps.buffering) "buffering…" else null).joinToString("  ·  "), style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -48,6 +47,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -261,21 +261,21 @@ fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, o
 
 @Composable
 private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -> Unit) {
-    Row(Modifier.background(Tokens.surface1, CircleShape).border(Tokens.hairline, Tokens.border, CircleShape).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    Row(Modifier.background(Tokens.surface1, RectangleShape).border(Tokens.hairline, Tokens.border, RectangleShape).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         for (t in DetailTab.entries) {
             val active = t == current
             val theme = LocalMediaTheme.current
             val interaction = remember { MutableInteractionSource() }
             Row(
-                Modifier.focusRing(interaction, CircleShape).clip(CircleShape)
-                    .background(if (active) theme.tint(0.22f) else Color.Transparent, CircleShape)
+                Modifier.focusRing(interaction, RectangleShape).clip(RectangleShape)
+                    .background(if (active) theme.tint(0.22f) else Color.Transparent, RectangleShape)
                     .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = { onSelect(t) })
                     .semantics { contentDescription = t.label + if (active) ", selected" else "" }
                     .padding(horizontal = 14.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Icon(if (t == DetailTab.WATCH) Icons.Rounded.PlayArrow else Icons.Rounded.Build, contentDescription = null, tint = if (active) theme.accentGradientEnd else Tokens.textMuted, modifier = Modifier.size(14.dp))
-                Text(t.label, style = MaterialTheme.typography.labelLarge, color = if (active) Tokens.textPrimary else Tokens.textMuted)
+                Text(t.label.uppercase(), style = MaterialTheme.typography.labelLarge, color = if (active) Tokens.textPrimary else Tokens.textMuted)
             }
         }
     }
@@ -554,10 +554,10 @@ private fun EpisodeRow(session: AppSession, detail: WorkDetail, ep: Episode, sta
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Box(Modifier.width(152.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp))) {
+        Box(Modifier.width(152.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard))) {
             Artwork(thumb ?: extThumb, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 22.dp)
             if (hovered && ep.isPlayable) Box(Modifier.fillMaxSize().background(Tokens.bgBase.copy(alpha = 0.45f)), contentAlignment = Alignment.Center) {
-                Box(Modifier.size(40.dp).background(Brush.linearGradient(listOf(theme.ctaGradientStart, theme.accentGradientEnd)), CircleShape), contentAlignment = Alignment.Center) {
+                Box(Modifier.size(40.dp).background(theme.ctaGradientStart, RectangleShape), contentAlignment = Alignment.Center) {
                     Icon(Icons.Rounded.PlayArrow, contentDescription = null, tint = theme.onAccent, modifier = Modifier.size(22.dp))
                 }
             }
@@ -605,7 +605,7 @@ private fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, 
             .semantics { contentDescription = "$code not held" },
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Box(Modifier.width(152.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(8.dp)).background(Tokens.surface1), contentAlignment = Alignment.Center) {
+        Box(Modifier.width(152.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard)).background(Tokens.surface1), contentAlignment = Alignment.Center) {
             if (extThumb != null) androidx.compose.foundation.Image(extThumb!!, contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize().alpha(0.45f))
             Text("not held", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
         }

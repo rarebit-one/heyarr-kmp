@@ -10,12 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
@@ -38,11 +38,11 @@ fun verdictColor(result: String): Color = when (result) {
     else -> Tokens.textMuted
 }
 
-/** The rule code, verbatim, in a monospace chip — the one thing a person can act on. */
+/** The rule code in an uppercase Archive tag; accessibility retains the original code. */
 @Composable
 fun RuleCode(rule: String, modifier: Modifier = Modifier, tone: Color = Tokens.textPrimary) {
-    Box(modifier.background(Tokens.surface3, RoundedCornerShape(5.dp)).border(Tokens.hairline, Tokens.border, RoundedCornerShape(5.dp)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-        Text(rule, style = MaterialTheme.typography.labelMedium.copy(fontFamily = RubikFamily, fontWeight = FontWeight.Medium, letterSpacing = 0.3.sp), color = tone)
+    Box(modifier.semantics { contentDescription = rule }.background(Tokens.surface3, RoundedCornerShape(Tokens.radiusChip)).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusChip)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+        Text(rule.uppercase(), style = MaterialTheme.typography.labelMedium.copy(fontFamily = RubikFamily, fontWeight = FontWeight.Medium, letterSpacing = 0.3.sp), color = tone)
     }
 }
 
@@ -60,12 +60,12 @@ fun ReasonList(reasons: List<Reason>, modifier: Modifier = Modifier, emphasiseFa
             val strong = emphasiseFailures && r.isFailure
             Row(
                 Modifier.fillMaxWidth()
-                    .background(if (strong) Tokens.danger.copy(alpha = 0.08f) else Color.Transparent, RoundedCornerShape(6.dp))
+                    .background(if (strong) Tokens.danger.copy(alpha = 0.08f) else Color.Transparent, RoundedCornerShape(Tokens.radiusCard))
                     .padding(horizontal = 6.dp, vertical = 4.dp)
                     .semantics { this.contentDescription = "Rule ${r.rule}, ${r.section}, ${r.result}. ${r.detail}" },
                 verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Box(Modifier.padding(top = 6.dp).size(7.dp).background(tone, CircleShape))
+                Box(Modifier.padding(top = 6.dp).size(7.dp).background(tone, RectangleShape))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         RuleCode(r.rule, tone = if (strong) Tokens.danger else Tokens.textPrimary)

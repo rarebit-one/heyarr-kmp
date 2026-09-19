@@ -106,9 +106,9 @@ private fun Bar(
             colors = SliderDefaults.colors(thumbColor = theme.accentGradientEnd, activeTrackColor = theme.accent, inactiveTrackColor = Tokens.surface3),
         )
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Box(Modifier.size(44.dp).clip(RoundedCornerShape(6.dp))) { Artwork(artwork, type, Modifier.size(44.dp), glyphSize = 18.dp) }
+            Box(Modifier.size(44.dp).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(artwork, type, Modifier.size(44.dp), glyphSize = 18.dp) }
             Column(
-                Modifier.weight(1f).clip(RoundedCornerShape(6.dp)).clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen).semantics { contentDescription = "Open the player for $title" }.padding(4.dp),
+                Modifier.weight(1f).clip(RoundedCornerShape(Tokens.radiusCard)).clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen).semantics { contentDescription = "Open the player for $title" }.padding(4.dp),
             ) {
                 Text(title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
