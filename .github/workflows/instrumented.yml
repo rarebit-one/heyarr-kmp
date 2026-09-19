@@ -2,8 +2,8 @@ name: instrumented
 # On-device smoke test on an emulator: renders real screens against the preview node
 # (androidApp/src/androidTest). The JVM unit tests in android.yml cannot see Android-only
 # behaviour — a regex the phone's ICU engine refuses, a layout Compose rejects at
-# measure time — and both have shipped past them (#47, #49). Runs alongside unit tests on PRs and main so post-merge Android regressions
-# remain visible.
+# measure time — and both have shipped past them (heyarr-mobile #47, #49). Runs
+# alongside unit tests on PRs and main so post-merge regressions remain visible.
 
 on:
   push:
@@ -60,6 +60,28 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: ./gradlew :androidApp:connectedDebugAndroidTest --no-daemon --stacktrace
+
+      - name: Verify the smoke tests actually ran
+        run: |
+          python3 - <<'PYTEST'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          expected = {"aMovieDetailRenders", "aFeedDetailRenders", "aSeriesDetailRenders"}
+          executed = set()
+          reports = Path("androidApp/build/outputs/androidTest-results/connected")
+          for report in reports.rglob("TEST-*.xml"):
+              for case in ET.parse(report).iter("testcase"):
+                  if case.get("classname") != "one.rarebit.heyarr.mobile.DetailScreenSmokeTest":
+                      continue
+                  if any(case.find(tag) is not None for tag in ("skipped", "failure", "error")):
+                      raise SystemExit(f"Smoke test did not pass: {case.get('name')} ({report})")
+                  executed.add(case.get("name"))
+          missing = expected - executed
+          if missing:
+              raise SystemExit(f"Smoke tests were not exercised: {sorted(missing)}")
+          print(f"Verified {len(expected)} Android smoke tests executed successfully")
+          PYTEST
 
       - name: Upload the instrumented test report
         if: always()
