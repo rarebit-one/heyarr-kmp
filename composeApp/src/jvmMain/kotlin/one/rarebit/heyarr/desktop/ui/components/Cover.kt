@@ -27,6 +27,7 @@ fun rememberCover(session: AppSession, type: MediaType, title: String, nodeArtPa
         }
         if (!session.config.externalMetadata || title.isBlank()) return@produceState
         val meta = session.external.lookup(MetaKey(type, title, year, creator, feedRef)) ?: return@produceState
-        val url = meta.imageUrl ?: run { value = Cover(null, meta); return@produceState }
-        value = Cover(session.artwork.load(url), meta)
+        val url = (if (type == MediaType.SERIES || type == MediaType.MOVIE) meta.landscapeImageUrl ?: meta.imageUrl else meta.imageUrl) ?: run { value = Cover(null, meta); return@produceState }
+        val bitmap = session.artwork.load(url) ?: meta.imageUrl?.takeIf { it != url }?.let { session.artwork.load(it) }
+        value = Cover(bitmap, meta)
     }

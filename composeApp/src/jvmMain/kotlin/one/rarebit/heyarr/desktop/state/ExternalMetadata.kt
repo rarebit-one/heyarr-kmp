@@ -22,6 +22,7 @@ import java.time.Duration
 /** What a public source could tell us about a work: a cover, a synopsis, and where it came from. */
 data class ExternalMeta(
     val imageUrl: String? = null,
+    val landscapeImageUrl: String? = null,
     val synopsis: String? = null,
     val source: String,
     val sourceUrl: String? = null,
@@ -87,7 +88,13 @@ class ExternalMetadata(
     }
 
     private suspend fun resolve(key: MetaKey): ExternalMeta? = when (key.type) {
-        MediaType.SERIES -> get("https://api.tvmaze.com/singlesearch/shows?q=${enc(key.title)}")?.let { ExternalParsers.tvmazeShow(it) }
+        MediaType.SERIES -> get("https://api.tvmaze.com/singlesearch/shows?q=${enc(key.title)}")?.let { body ->
+            val show = ExternalParsers.tvmazeShow(body) ?: return@let null
+            val landscape = show.tvmazeId?.let { id ->
+                get("https://api.tvmaze.com/shows/$id/images")?.let(one.rarebit.heyarr.core.state.LandscapeArtwork::tvmaze)
+            }
+            show.copy(landscapeImageUrl = landscape)
+        }
         MediaType.MOVIE -> wikipedia(key)
         MediaType.BOOK -> get("https://openlibrary.org/search.json?title=${enc(key.title)}${key.creator?.let { "&author=${enc(it)}" } ?: ""}&limit=1&fields=title,author_name,cover_i,first_publish_year,first_sentence")?.let { ExternalParsers.openLibrary(it) }
         MediaType.MUSIC -> musicBrainz(key)
@@ -138,7 +145,7 @@ class ExternalMetadata(
     // ── cache ────────────────────────────────────────────────────────────────────
 
     private fun cacheKey(key: MetaKey): String {
-        val raw = "${key.type.name}|${key.title.lowercase().trim()}|${key.year ?: ""}|${key.creator?.lowercase() ?: ""}|${key.feedRef ?: ""}"
+        val raw = "artwork-v2|${key.type.name}|${key.title.lowercase().trim()}|${key.year ?: ""}|${key.creator?.lowercase() ?: ""}|${key.feedRef ?: ""}"
         return MessageDigest.getInstance("SHA-256").digest(raw.toByteArray()).joinToString("") { "%02x".format(it) }.take(32)
     }
 
@@ -148,7 +155,7 @@ class ExternalMetadata(
         val f = File(cacheDir, "$id.json"); if (!f.isFile) return null
         val o = JsonScan.rootObject(f.readText()) ?: return null
         ExternalMeta(
-            imageUrl = JsonScan.stringField(o, "image"), synopsis = JsonScan.stringField(o, "synopsis"), source = JsonScan.stringField(o, "source") ?: "none",
+            imageUrl = JsonScan.stringField(o, "image"), landscapeImageUrl = JsonScan.stringField(o, "landscape_image"), synopsis = JsonScan.stringField(o, "synopsis"), source = JsonScan.stringField(o, "source") ?: "none",
             sourceUrl = JsonScan.stringField(o, "source_url"), tvmazeId = JsonScan.longField(o, "tvmaze_id"), fetchedAt = JsonScan.longField(o, "fetched_at") ?: 0L,
         )
     }.getOrNull()
@@ -156,7 +163,7 @@ class ExternalMetadata(
     private fun writeCache(id: String, m: ExternalMeta) {
         runCatching {
             cacheDir.mkdirs()
-            File(cacheDir, "$id.json").writeText(JsonWrite.obj(linkedMapOf("image" to m.imageUrl, "synopsis" to m.synopsis, "source" to m.source, "source_url" to m.sourceUrl, "tvmaze_id" to m.tvmazeId, "fetched_at" to m.fetchedAt)))
+            File(cacheDir, "$id.json").writeText(JsonWrite.obj(linkedMapOf("image" to m.imageUrl, "landscape_image" to m.landscapeImageUrl, "synopsis" to m.synopsis, "source" to m.source, "source_url" to m.sourceUrl, "tvmaze_id" to m.tvmazeId, "fetched_at" to m.fetchedAt)))
         }
     }
 
