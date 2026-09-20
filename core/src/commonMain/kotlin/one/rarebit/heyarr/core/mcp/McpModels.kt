@@ -429,7 +429,12 @@ object QueuedJobJson {
  * and is wanted by title instead — [tvdbId] is null and [followable] is false.
  * [source]/[externalId] are the provider's own identity for the hit (e.g. "tmdb"/
  * "603", "openlibrary"/"OL893415W"), carried for display and future cross-reference
- * even when there is no follow door to act on it in one step.
+ * even when there is no follow door to act on it in one step. [posterUrl]/
+ * [backdropUrl] are provider-hosted images — plain remote URLs to render (and may
+ * cache) like any other image, never proxied through heyarr. Every provider that
+ * has an artwork notion sets posterUrl (TMDB, Open Library's book cover,
+ * MusicBrainz's Cover Art Archive release image); backdropUrl is TMDB-only, since
+ * none of the others has a wider-scene-image concept.
  */
 data class DiscoveryHit(
     val tvdbId: String?,

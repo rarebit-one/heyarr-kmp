@@ -356,23 +356,28 @@ private fun SignInSheet(session: AppSession, onClose: () -> Unit, onOpenSettings
 }
 
 /**
- * The quality profile the Want sheet pre-selects for [type], from what the node actually
- * has configured — never a hardcoded name that might not exist. A video type (movie,
- * series) defaults to "everyday"; a book or an album has no video quality axis (ADR-0082),
- * so it prefers a profile actually named for that content ("ebook") and falls back to
- * "published" (no video gate, terminal on any bytes) rather than a video profile that would
- * silently reject or misjudge it. Falls back further to whatever profile exists, so the
- * picker is never blank on a node with an unconventional profile set.
+ * The profiles worth OFFERING for [type]: every profile whose content_types either
+ * names [type] or is empty (heyarr-core: unrestricted — every profile that predates
+ * the field, and any an operator deliberately leaves general). This replaced a
+ * client-side name-guess ("ebook" must mean books) with the node's own answer, so a
+ * node with different profile names still filters correctly and a book want is never
+ * offered a video-only profile like "living-room" whose accept gate it can never pass.
+ */
+private fun profilesFor(type: MediaType, profiles: List<QualityProfile>): List<QualityProfile> {
+    val api = type.apiName
+    return profiles.filter { it.contentTypes.isEmpty() || (api != null && api in it.contentTypes) }
+}
+
+/**
+ * The quality profile the Want sheet pre-selects for [type], from what [profilesFor]
+ * offers. "everyday" is preferred when it's in that set (the common video case);
+ * otherwise the first offered profile, so the picker is never blank on a node with an
+ * unconventional profile set.
  */
 private fun defaultProfileFor(type: MediaType, profiles: List<QualityProfile>): String {
-    val preferred = when (type) {
-        MediaType.BOOK, MediaType.MUSIC -> listOf("ebook", "published")
-        else -> listOf("everyday")
-    }
-    for (name in preferred) {
-        profiles.firstOrNull { it.name == name }?.let { return it.name }
-    }
-    return profiles.firstOrNull()?.name ?: ""
+    val candidates = profilesFor(type, profiles)
+    return candidates.firstOrNull { it.name == "everyday" }?.name
+        ?: candidates.firstOrNull()?.name ?: ""
 }
 
 /**
@@ -409,10 +414,22 @@ private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -> Unit
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (t in MediaType.SEARCHABLE) FilterChip(t.label, type == t, { type = t }) }
                     Text("Created from the title with the same normalisation a scan uses, so wanting it now and scanning it later converge on one work.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
                 }
-                Text("Quality profile — the standard this want is measured against", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
-                if (session.profiles.isEmpty()) Text("No profiles loaded yet.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (p in session.profiles) FilterChip(p.name, profile == p.name, { profile = p.name }) }
-                session.profiles.firstOrNull { it.name == profile }?.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }
+                val offered = profilesFor(type, session.profiles)
+                when {
+                    // Nothing to choose: either the node has no profiles yet, or exactly
+                    // one is offered for this type (ADR-0082's book/music case — there is
+                    // no real quality axis to pick a standard against, so asking is
+                    // friction with no decision behind it). The picker only earns its
+                    // place when there is an actual choice.
+                    session.profiles.isEmpty() -> Text("No profiles loaded yet.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+                    offered.isEmpty() -> Text("No quality profile is configured for ${type.label.lowercase()} yet — add one with `heyarr quality-profile create` and tag it --content-types ${type.apiName}.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+                    offered.size == 1 -> Text("Measured against ${offered[0].name}" + (offered[0].description?.let { " — $it" } ?: "") + ".", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+                    else -> {
+                        Text("Quality profile — the standard this want is measured against", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (p in offered) FilterChip(p.name, profile == p.name, { profile = p.name }) }
+                        offered.firstOrNull { it.name == profile }?.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     FilterChip("Keep looking for something better", monitor, { monitor = !monitor })
                 }

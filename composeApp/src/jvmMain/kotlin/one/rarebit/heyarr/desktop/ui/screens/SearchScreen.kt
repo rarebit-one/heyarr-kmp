@@ -280,7 +280,7 @@ private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: 
         item { SectionHeader("Discover", icon = Icons.Rounded.TravelExplore, subtitle = "Find titles to add — series, movies, books and music the node's metadata providers know about but the library doesn't hold yet.") }
         item {
             if (query.isBlank()) Text("Enter a title above to explore the metadata catalogue.", color = Tokens.textMuted)
-            else DiscoveryResults(query, result, busy, onWantTitle)
+            else DiscoveryResults(session, query, result, busy, onWantTitle)
         }
     }
 }

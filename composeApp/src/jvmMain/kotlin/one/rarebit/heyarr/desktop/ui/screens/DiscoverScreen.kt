@@ -29,6 +29,7 @@ import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.core.heyarr.ProviderInfo
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.desktop.state.rememberArtwork
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.Tokens
@@ -85,13 +86,13 @@ fun DiscoverScreen(session: AppSession, state: DiscoverState, onWantTitle: WantB
             Field("Title to look for", state.query, Modifier.width(420.dp), placeholder = "e.g. Severance") { state.query = it }
             PrimaryButton("Ask the provider", ::ask, icon = Icons.Rounded.TravelExplore, enabled = !state.busy && state.query.isNotBlank())
         }
-        state.asked?.let { q -> DiscoveryResults(q, state.result, state.busy, onWantTitle) }
+        state.asked?.let { q -> DiscoveryResults(session, q, state.result, state.busy, onWantTitle) }
     }
 }
 
 /** The answer to one `discover_content` call: a refusal quoted verbatim, nothing, or hits that can be Wanted. */
 @Composable
-fun DiscoveryResults(query: String, result: McpResult<List<DiscoveryHit>>?, busy: Boolean, onWantTitle: WantByTitle) {
+fun DiscoveryResults(session: AppSession, query: String, result: McpResult<List<DiscoveryHit>>?, busy: Boolean, onWantTitle: WantByTitle) {
     when (result) {
         null -> if (busy) Text("Asking the provider for “$query”…", color = Tokens.textMuted, style = MaterialTheme.typography.bodyMedium)
         else Notice("discover_content did not answer", detail = "The node could not be reached for this call. The connection state at the foot of the sidebar has the details.")
@@ -108,9 +109,17 @@ fun DiscoveryResults(query: String, result: McpResult<List<DiscoveryHit>>?, busy
                 // silently mis-want every non-series hit now that the provider sends them.
                 val type = MediaType.from(hit.type)
                 val idLine = hit.tvdbId?.let { "tvdb $it" } ?: hit.source?.let { s -> hit.externalId?.let { id -> "$s $id" } }
+                // hit.posterUrl is a plain remote URL the provider hosts (TMDB/Open
+                // Library/MusicBrainz), never proxied through heyarr. ArtworkLoader
+                // already special-cases an absolute http(s) URL as external art — no
+                // credential attached — and caches it (memory + disk) exactly like a
+                // library cover, so a repeat search or a relaunch does not re-fetch.
+                // backdropUrl is TMDB-only and this is a compact row, not a hero — not
+                // worth a second fetch here.
+                val art by session.artwork.rememberArtwork(hit.posterUrl)
                 MediaRow(
                     hit.title, type, onOpen = { onWantTitle(hit.title, hit.year, type) },
-                    subtitle = hit.overview, meta = listOf(hit.year?.toString(), idLine), status = LibraryStatus.NOT_TRACKED,
+                    subtitle = hit.overview, meta = listOf(hit.year?.toString(), idLine), artwork = art, status = LibraryStatus.NOT_TRACKED,
                     trailing = { PrimaryButton("Want", { onWantTitle(hit.title, hit.year, type) }, icon = Icons.Rounded.Add, compact = true, contentDescription = "Want ${hit.title}") },
                 )
             }

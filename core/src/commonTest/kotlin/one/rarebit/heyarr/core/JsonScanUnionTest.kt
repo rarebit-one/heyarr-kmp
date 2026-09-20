@@ -36,4 +36,17 @@ class JsonScanUnionTest {
         assertNull(JsonScan.doubleField(body, "q"))
         assertNull(JsonScan.doubleField(body, "absent"))
     }
+
+    @Test
+    fun stringArrayReadsPlainStringElementsInOrder() {
+        val body = """{"content_types":["movie","series"]}"""
+        assertEquals(listOf("movie", "series"), JsonScan.stringArray(body, "content_types"))
+    }
+
+    @Test
+    fun stringArrayIsEmptyForAbsentOrEmptyOrNull() {
+        assertEquals(emptyList(), JsonScan.stringArray("""{"content_types":[]}""", "content_types"))
+        assertEquals(emptyList(), JsonScan.stringArray("""{"content_types":null}""", "content_types"))
+        assertEquals(emptyList(), JsonScan.stringArray("""{}""", "content_types"))
+    }
 }
