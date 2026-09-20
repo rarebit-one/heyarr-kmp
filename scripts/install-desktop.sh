@@ -37,9 +37,12 @@ echo "building $VERSION..."
 BUILD_OUT="composeApp/build/compose/binaries/main/app/heyarr-desktop"
 [[ -d "$BUILD_OUT" ]] || { echo "ERROR: no distributable at $BUILD_OUT" >&2; exit 1; }
 
+# Copy BUILD_OUT's contents (bin/, lib/) straight into DEST — not BUILD_OUT itself.
+# Each version already gets its own directory, so nesting an extra app/heyarr-desktop/
+# inside it would just repeat that per version for no reason.
 rm -rf "$DEST"
-mkdir -p "$LIB_DIR"
-cp -r "$BUILD_OUT" "$DEST"
+mkdir -p "$DEST"
+cp -r "$BUILD_OUT"/. "$DEST"/
 
 ln -sfn "$VERSION" "$LIB_DIR/current"
 
@@ -50,7 +53,7 @@ cat > "$LAUNCHER" <<'EOF'
 # managers; without this AWT never accepts the compositor's resize and paints
 # only its initial 1280x800 (matches heyarr-kmp's scripts/heyarr-desktop).
 export _JAVA_AWT_WM_NONREPARENTING=1
-exec "$HOME/.local/lib/heyarr-desktop/current/app/heyarr-desktop/bin/heyarr-desktop" "$@"
+exec "$HOME/.local/lib/heyarr-desktop/current/bin/heyarr-desktop" "$@"
 EOF
 chmod +x "$LAUNCHER"
 
@@ -62,7 +65,7 @@ Name=Heyarr Desktop
 GenericName=Media Library
 Comment=Self-hosted media library — movies, series, music, books
 Exec=$LAUNCHER
-Icon=$LIB_DIR/current/app/heyarr-desktop/lib/heyarr-desktop.png
+Icon=$LIB_DIR/current/lib/heyarr-desktop.png
 Terminal=false
 Categories=AudioVideo;Player;
 Keywords=heyarr;media;library;movies;series;music;books;
