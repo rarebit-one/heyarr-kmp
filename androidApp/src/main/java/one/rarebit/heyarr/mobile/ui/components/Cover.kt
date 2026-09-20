@@ -25,5 +25,5 @@ fun rememberCover(session: AppSession, type: MediaType, title: String, nodeArtPa
         if (nodeArtPath != null) { value = Cover(HeyarrApi.blobUrlFromPath(session.baseUrl, nodeArtPath)); return@produceState }
         if (!session.externalMetadata || title.isBlank()) { value = Cover(null); return@produceState }
         val meta = session.external.lookup(MetaKey(type, title, year, creator, feedRef)) ?: return@produceState
-        value = Cover(meta.imageUrl, meta)
+        value = Cover(if (type == MediaType.SERIES || type == MediaType.MOVIE) meta.landscapeImageUrl ?: meta.imageUrl else meta.imageUrl, meta)
     }
