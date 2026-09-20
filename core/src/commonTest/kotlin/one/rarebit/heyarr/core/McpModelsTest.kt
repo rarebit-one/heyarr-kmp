@@ -3,6 +3,7 @@ package one.rarebit.heyarr.core
 import one.rarebit.heyarr.core.heyarr.CandidateJson
 import one.rarebit.heyarr.core.heyarr.DesiredItemJson
 import one.rarebit.heyarr.core.heyarr.QualityProfileJson
+import one.rarebit.heyarr.core.mcp.DiscoveryJson
 import one.rarebit.heyarr.core.mcp.ExplanationJson
 import one.rarebit.heyarr.core.mcp.PlaybackStatusJson
 import one.rarebit.heyarr.core.mcp.ReleaseAttributes
@@ -83,6 +84,32 @@ class McpModelsTest {
         val typed = SearchHitsJson.parse(Fixtures.searchContent("dune", "book"))
         assertEquals(listOf("Dune"), typed.works.map { it.title })
         assertEquals("Frank Herbert", typed.works[0].creator)
+    }
+
+    // heyarr-core ADR-0099: discover_content now answers with tv_series/movie/book/music
+    // candidates, not tv_series alone. A tv_series hit is followable and carries tvdb_id;
+    // a movie/book hit is not (no calendar to follow) and carries source+external_id
+    // instead — DiscoveryHit.followable is what a caller reads to route one or the other.
+    @Test
+    fun discoveryHitsReadFollowableAndWantScopedCandidates() {
+        val body = """
+            {"count":2,"results":[
+              {"title":"The Expanse","year":2015,"type":"tv_series","tvdb_id":"280619","source":"tvdb","overview":"A political thriller in space."},
+              {"title":"Dune","year":1965,"type":"book","source":"openlibrary","external_id":"OL893415W","overview":"by Frank Herbert"}
+            ]}
+        """.trimIndent()
+        val hits = DiscoveryJson.list(body)
+        assertEquals(2, hits.size)
+        val series = hits[0]
+        assertEquals("tv_series", series.type)
+        assertTrue(series.followable)
+        assertEquals("280619", series.tvdbId)
+        val book = hits[1]
+        assertEquals("book", book.type)
+        assertFalse(book.followable)
+        assertNull(book.tvdbId)
+        assertEquals("openlibrary", book.source)
+        assertEquals("OL893415W", book.externalId)
     }
 
     @Test

@@ -99,11 +99,21 @@ fun DiscoveryResults(query: String, result: McpResult<List<DiscoveryHit>>?, busy
         is McpResult.Ok -> if (result.value.isEmpty()) Text("The provider found nothing for “$query”.", color = Tokens.textMuted, style = MaterialTheme.typography.bodyMedium)
         else Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text("${result.value.size} from the provider — Want one to have the node look for it.", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
-            for (hit in result.value) MediaRow(
-                hit.title, MediaType.SERIES, onOpen = { onWantTitle(hit.title, hit.year, MediaType.SERIES) },
-                subtitle = hit.overview, meta = listOf(hit.year?.toString(), hit.tvdbId?.let { "tvdb $it" }), status = LibraryStatus.NOT_TRACKED,
-                trailing = { PrimaryButton("Want", { onWantTitle(hit.title, hit.year, MediaType.SERIES) }, icon = Icons.Rounded.Add, compact = true, contentDescription = "Want ${hit.title}") },
-            )
+            for (hit in result.value) {
+                // The provider names the kind (heyarr-core ADR-0099): a tv_series/podcast/
+                // youtube_channel/rss_feed hit is followable and carries a tvdb_id; a
+                // movie/book/music hit has no calendar and is wanted by title instead —
+                // MediaType.from maps either shape onto the row's theme and onWantTitle's
+                // content_type. Defaulting to SERIES here (as this screen always did) would
+                // silently mis-want every non-series hit now that the provider sends them.
+                val type = MediaType.from(hit.type)
+                val idLine = hit.tvdbId?.let { "tvdb $it" } ?: hit.source?.let { s -> hit.externalId?.let { id -> "$s $id" } }
+                MediaRow(
+                    hit.title, type, onOpen = { onWantTitle(hit.title, hit.year, type) },
+                    subtitle = hit.overview, meta = listOf(hit.year?.toString(), idLine), status = LibraryStatus.NOT_TRACKED,
+                    trailing = { PrimaryButton("Want", { onWantTitle(hit.title, hit.year, type) }, icon = Icons.Rounded.Add, compact = true, contentDescription = "Want ${hit.title}") },
+                )
+            }
         }
     }
 }

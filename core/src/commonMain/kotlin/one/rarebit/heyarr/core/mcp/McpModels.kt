@@ -418,8 +418,31 @@ object QueuedJobJson {
     }
 }
 
-/** A TVDB discovery hit (`discover_content`): content the library does NOT hold yet. */
-data class DiscoveryHit(val tvdbId: String?, val title: String, val year: Int?, val overview: String?)
+/**
+ * A discovery hit (`discover_content`): content the library does NOT hold yet, from
+ * any configured metadata provider (heyarr-core ADR-0099) — TVDB/TMDB series, TMDB
+ * movies, Open Library books, MusicBrainz music.
+ *
+ * [type] says which door acts on it: the four followed-source kinds (`tv_series`,
+ * `podcast`, `youtube_channel`, `rss_feed`) are followed — [tvdbId] is set and
+ * [followable] is true; everything else (`movie`, `book`, `music`) has no calendar
+ * and is wanted by title instead — [tvdbId] is null and [followable] is false.
+ * [source]/[externalId] are the provider's own identity for the hit (e.g. "tmdb"/
+ * "603", "openlibrary"/"OL893415W"), carried for display and future cross-reference
+ * even when there is no follow door to act on it in one step.
+ */
+data class DiscoveryHit(
+    val tvdbId: String?,
+    val title: String,
+    val year: Int?,
+    val overview: String?,
+    val type: String?,
+    val source: String?,
+    val externalId: String?,
+) {
+    /** True for the four followed-source kinds; false for movie/book/music. */
+    val followable: Boolean get() = type == "tv_series" || type == "podcast" || type == "youtube_channel" || type == "rss_feed"
+}
 
 object DiscoveryJson {
     fun list(body: String): List<DiscoveryHit> =
@@ -430,6 +453,9 @@ object DiscoveryJson {
                 title = title,
                 year = JsonScan.intField(d, "year"),
                 overview = JsonScan.firstString(d, listOf("overview", "description")),
+                type = JsonScan.stringField(d, "type"),
+                source = JsonScan.stringField(d, "source"),
+                externalId = JsonScan.stringField(d, "external_id"),
             )
         }
 }
