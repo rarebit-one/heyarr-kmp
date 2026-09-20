@@ -165,7 +165,10 @@ class AppSession(
     val playback = PlaybackSession()
 
     val artwork: ArtworkLoader = artworkLoader ?: ArtworkLoader({ config.baseUrl }, { config.bearerToken.trim() })
-    val external: ExternalMetadata = externalMetadata ?: ExternalMetadata(enabled = { config.externalMetadata })
+    val external: ExternalMetadata = externalMetadata ?: ExternalMetadata(enabled = { config.externalMetadata }, movieLookup = { key ->
+        val hits = api?.discover(key.title)?.getOrNull().orEmpty()
+        one.rarebit.heyarr.desktop.state.MovieArtwork.select(key, hits)
+    })
     val recent = RecentSearches(RecentSearches.defaultFile())
 
     /**
@@ -229,6 +232,8 @@ class AppSession(
     /** Bumped when the node (URL or token) changes; screens that cache a node's answers reload on it. */
     var generation: Int by mutableStateOf(0)
         private set
+
+    fun catalogChanged() { generation++; refreshIndex() }
 
     fun save(updated: DesktopConfig) {
         settings.save(updated)

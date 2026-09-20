@@ -54,6 +54,7 @@ class ExternalMetadata(
     private val cacheDir: File = defaultCacheDir(),
     private val enabled: () -> Boolean = { true },
     private val fetch: (String) -> String? = ::httpGet,
+    private val movieLookup: (MetaKey) -> ExternalMeta? = { null },
 ) {
     private val inFlight = HashMap<String, Mutex>()
     private val hostLocks = HashMap<String, Mutex>()
@@ -95,7 +96,7 @@ class ExternalMetadata(
             }
             show.copy(landscapeImageUrl = landscape)
         }
-        MediaType.MOVIE -> wikipedia(key)
+        MediaType.MOVIE -> movieLookup(key) ?: wikipedia(key)
         MediaType.BOOK -> get("https://openlibrary.org/search.json?title=${enc(key.title)}${key.creator?.let { "&author=${enc(it)}" } ?: ""}&limit=1&fields=title,author_name,cover_i,first_publish_year,first_sentence")?.let { ExternalParsers.openLibrary(it) }
         MediaType.MUSIC -> musicBrainz(key)
         MediaType.PODCAST, MediaType.AUDIOBOOK -> get("https://itunes.apple.com/search?term=${enc(key.title)}&media=podcast&limit=1")?.let { ExternalParsers.itunes(it) } ?: feedImage(key)
@@ -145,7 +146,7 @@ class ExternalMetadata(
     // ── cache ────────────────────────────────────────────────────────────────────
 
     private fun cacheKey(key: MetaKey): String {
-        val raw = "artwork-v2|${key.type.name}|${key.title.lowercase().trim()}|${key.year ?: ""}|${key.creator?.lowercase() ?: ""}|${key.feedRef ?: ""}"
+        val raw = "${if (key.type == MediaType.MOVIE) "movie-artwork-v3" else "artwork-v2"}|${key.type.name}|${key.title.lowercase().trim()}|${key.year ?: ""}|${key.creator?.lowercase() ?: ""}|${key.feedRef ?: ""}"
         return MessageDigest.getInstance("SHA-256").digest(raw.toByteArray()).joinToString("") { "%02x".format(it) }.take(32)
     }
 

@@ -439,6 +439,8 @@ data class DiscoveryHit(
     val type: String?,
     val source: String?,
     val externalId: String?,
+    val posterUrl: String? = null,
+    val backdropUrl: String? = null,
 ) {
     /** True for the four followed-source kinds; false for movie/book/music. */
     val followable: Boolean get() = type == "tv_series" || type == "podcast" || type == "youtube_channel" || type == "rss_feed"
@@ -456,6 +458,8 @@ object DiscoveryJson {
                 type = JsonScan.stringField(d, "type"),
                 source = JsonScan.stringField(d, "source"),
                 externalId = JsonScan.stringField(d, "external_id"),
+                posterUrl = JsonScan.stringField(d, "poster_url"),
+                backdropUrl = JsonScan.stringField(d, "backdrop_url"),
             )
         }
 }

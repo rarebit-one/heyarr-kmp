@@ -320,6 +320,21 @@ class HeyarrApi(
     /** A cheap liveness probe for the offline banner: one authenticated page of one work. The HTTP status; a transport failure throws. */
     fun ping(): Int = http.get("$baseUrl/api/v1/works?limit=1", credential.asHeader()).status
 
+    /** Explicit catalogue removal; subscriptions must be stopped before the server accepts it. */
+    fun removeWork(workId: String) {
+        val subscriptions = followed().filter { it.workId == workId }
+        for (source in subscriptions) {
+            when (val result = unfollow(source.id)) {
+                is McpResult.Refused -> throw IllegalStateException(result.message)
+                is McpResult.Ok -> {}
+            }
+        }
+        val response = http.delete("$baseUrl/api/v1/works/${enc(workId)}", credential.asHeader())
+        if (response.status != 204) throw IllegalStateException(
+            (if (subscriptions.isNotEmpty()) "Following stopped, but removal failed: " else "") + Problem.message(response.body, response.status, "Remove from library")
+        )
+    }
+
     // ── plumbing ─────────────────────────────────────────────────────────────────
 
     private fun get(url: String, what: String): String {
