@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.desktop.ui.screens
 
+import androidx.compose.material.icons.rounded.DeleteOutline
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -171,6 +173,29 @@ class DetailState(val workId: String) {
 @Composable
 fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, onBack: () -> Unit, onOpen: (Route) -> Unit, onWant: (String, String, MediaType) -> Unit, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
+    var confirmRemoval by remember(route.workId) { mutableStateOf(false) }
+    var removing by remember(route.workId) { mutableStateOf(false) }
+    var removalError by remember(route.workId) { mutableStateOf<String?>(null) }
+    if (confirmRemoval) androidx.compose.material3.AlertDialog(
+        onDismissRequest = { if (!removing) confirmRemoval = false },
+        title = { Text("Remove “${route.titleHint ?: "this title"}”?") },
+        text = { Column {
+            Text("Stops following this title and removes its catalogue entry and download requests. Files are not deleted immediately; unused managed data may be reclaimed later.")
+            removalError?.let { Text(it, color = Tokens.danger) }
+        } },
+        confirmButton = { one.rarebit.heyarr.desktop.ui.components.PrimaryButton(if (removing) "Removing…" else "Remove", enabled = !removing, onClick = {
+            val api = session.api ?: return@PrimaryButton
+            removing = true; removalError = null
+            scope.launch {
+                session.io { api.removeWork(route.workId) }.fold(
+                    onSuccess = { session.catalogChanged(); confirmRemoval = false; onBack() },
+                    onFailure = { removalError = it.message ?: "Removal failed" },
+                )
+                removing = false
+            }
+        }) },
+        dismissButton = { GhostButton("Cancel", { confirmRemoval = false }, enabled = !removing) },
+    )
     val wants: List<DesiredItem> = session.index.wantsFor(route.workId)
     val detail = state.detail
     val type = detail?.work?.kind?.let { MediaType.from(it) } ?: route.typeHint
@@ -231,6 +256,7 @@ fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, o
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     GhostButton(route.from, onBack, icon = Icons.Rounded.ArrowBack)
                     Spacer(Modifier.weight(1f))
+                    if (!session.isGuest && detail != null) GhostButton("Remove", { confirmRemoval = true }, icon = androidx.compose.material.icons.Icons.Rounded.DeleteOutline)
                     TabSwitch(state.tab, onSelect = { state.tab = it })
                 }
             }
