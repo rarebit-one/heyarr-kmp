@@ -114,6 +114,29 @@ object JsonScan {
     }
 
     /**
+     * A top-level array of plain JSON strings under [key] (e.g. a quality profile's
+     * `content_types`: `["movie","series"]`), in document order. Absent, `null` or a
+     * non-array value → an empty list; a non-string element is skipped rather than
+     * guessed at.
+     */
+    fun stringArray(json: String, key: String): List<String> {
+        val arr = arrayOf(json, listOf(key)) ?: return emptyList()
+        val out = ArrayList<String>()
+        var i = 0
+        while (i < arr.length) {
+            val c = arr[i]
+            if (c == '"') {
+                val v = readStringAt(arr, i) ?: break
+                out.add(v.first)
+                i = v.second
+            } else {
+                i++
+            }
+        }
+        return out
+    }
+
+    /**
      * Read the JSON string literal starting at [start] (which must be `"`), returning
      * the decoded value and the index just past the closing quote, or null if unterminated.
      */

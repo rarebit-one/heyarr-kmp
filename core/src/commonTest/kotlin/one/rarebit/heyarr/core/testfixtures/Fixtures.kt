@@ -71,8 +71,8 @@ object Fixtures {
     ],"next_cursor":null}"""
 
     val profiles = """{"items":[
-      {"id":"qp-archival","name":"archival","description":"Keep the best there is. Never terminal: there is no condition under which this profile stops looking for something better."},
-      {"id":"qp-everyday","name":"everyday","description":"A laptop or a tablet. Accepts 720p and up and is finished at 1080p — smaller files, reached sooner."},
+      {"id":"qp-archival","name":"archival","description":"Keep the best there is. Never terminal: there is no condition under which this profile stops looking for something better.","content_types":["movie","series"]},
+      {"id":"qp-everyday","name":"everyday","description":"A laptop or a tablet. Accepts 720p and up and is finished at 1080p — smaller files, reached sooner.","content_types":["movie","series"]},
       {"id":"qp-living","name":"living-room","description":"The big screen. Accepts 1080p and up, prefers HEVC/HDR/surround, finished at a 2160p remux."}
     ]}"""
 

@@ -11,7 +11,13 @@ import one.rarebit.heyarr.core.net.JsonScan
  * want's indexer candidates (`GET /api/v1/desired/{id}/candidates`). All three were
  * verified live before being relied on; none is invented.
  */
-data class QualityProfile(val id: String, val name: String, val description: String?)
+/**
+ * [contentTypes] is which works content type(s) this profile is meant to judge
+ * ("movie", "book", …) — empty means unrestricted, usable for any content type.
+ * It is metadata for deciding which profiles to OFFER for a given want; nothing
+ * in evaluation reads it server-side, so it never changes what a profile accepts.
+ */
+data class QualityProfile(val id: String, val name: String, val description: String?, val contentTypes: List<String> = emptyList())
 
 object QualityProfileJson {
     fun list(body: String): List<QualityProfile> =
@@ -21,6 +27,7 @@ object QualityProfileJson {
                 id = JsonScan.stringField(p, "id") ?: name,
                 name = name,
                 description = JsonScan.stringField(p, "description"),
+                contentTypes = JsonScan.stringArray(p, "content_types"),
             )
         }
 }

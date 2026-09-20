@@ -122,6 +122,8 @@ class McpModelsTest {
 
         val profiles = QualityProfileJson.list(Fixtures.profiles)
         assertEquals(listOf("archival", "everyday", "living-room"), profiles.map { it.name })
+        assertEquals(listOf("movie", "series"), profiles[0].contentTypes)
+        assertEquals(emptyList(), profiles[2].contentTypes)
 
         val desired = DesiredItemJson.list(Fixtures.desired)
         assertEquals(5, desired.size)
