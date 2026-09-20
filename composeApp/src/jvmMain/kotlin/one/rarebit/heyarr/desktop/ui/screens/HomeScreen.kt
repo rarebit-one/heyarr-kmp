@@ -71,7 +71,7 @@ class HomeState {
  * playback history — so none is shown.
  */
 @Composable
-fun HomeScreen(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, onWant: (String, String) -> Unit, modifier: Modifier = Modifier) {
+fun HomeScreen(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, onWant: (String, String, MediaType) -> Unit, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
 
     fun load() {
@@ -149,7 +149,7 @@ fun HomeScreen(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, o
                     MediaCard(
                         hit.title, MediaType.from(hit.contentType), onOpen = { onOpen(Route.Detail(hit.workId, t, hit.title, from = "Home")) },
                         subtitle = hit.creator, meta = listOf(hit.year?.toString()), artwork = cover.bitmap, status = status,
-                        onWant = { onWant(hit.workId, hit.title) }, mode = session.mode, width = if (MediaThemes.of(t).aspect == CardAspect.SQUARE) Tokens.squareWidth else Tokens.posterWidth, showBadge = false,
+                        onWant = { onWant(hit.workId, hit.title, t) }, mode = session.mode, width = if (MediaThemes.of(t).aspect == CardAspect.SQUARE) Tokens.squareWidth else Tokens.posterWidth, showBadge = false,
                     )
                 }
             }
@@ -172,7 +172,7 @@ fun HomeScreen(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, o
 }
 
 @Composable
-private fun SpotlightBlock(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, onWant: (String, String) -> Unit) {
+private fun SpotlightBlock(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, onWant: (String, String, MediaType) -> Unit) {
     when (val s = state.spotlight) {
         RailState.Loading -> HeroSkeleton()
         is RailState.Failed -> Notice("Couldn't load the library: ${s.message}", tone = Tokens.danger)
@@ -191,7 +191,7 @@ private fun SpotlightBlock(session: AppSession, state: HomeState, onOpen: (Route
                     PrimaryButton(theme.ctaLabel, { onOpen(Route.Detail(work.id, type, work.title, from = "Home")) }, icon = Icons.Rounded.PlayArrow)
                 },
                 secondary = {
-                    if (status == LibraryStatus.NOT_TRACKED && GuestGate.allows(session.mode, Surface.WANT)) SecondaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add)
+                    if (status == LibraryStatus.NOT_TRACKED && GuestGate.allows(session.mode, Surface.WANT)) SecondaryButton("Want", { onWant(work.id, work.title, type) }, icon = Icons.Rounded.Add)
                     if (s.items.size > 1) GhostButton("Next", { i = (i + 1) % s.items.size })
                 },
             )
@@ -200,12 +200,12 @@ private fun SpotlightBlock(session: AppSession, state: HomeState, onOpen: (Route
 }
 
 @Composable
-private fun WorkRail(title: String, state: RailState<Work>, session: AppSession, onOpen: (Route) -> Unit, onWant: (String, String) -> Unit, trailing: (@Composable () -> Unit)? = null) {
+private fun WorkRail(title: String, state: RailState<Work>, session: AppSession, onOpen: (Route) -> Unit, onWant: (String, String, MediaType) -> Unit, trailing: (@Composable () -> Unit)? = null) {
     Rail(title, state, emptyText = "Nothing added yet.", trailing = trailing, key = { it.id }) { w ->
         val type = MediaType.from(w.kind)
         val status = session.index.statusOf(w.id)
         val cover by rememberCover(session, type, w.title, w.artworkPath, w.year, w.artist ?: w.author)
-        MediaCard(w.title, type, onOpen = { onOpen(Route.Detail(w.id, type, w.title, from = "Home")) }, subtitle = w.artist ?: w.author, meta = listOf(w.year?.toString()), artwork = cover.bitmap, status = status, onWant = { onWant(w.id, w.title) }, mode = session.mode)
+        MediaCard(w.title, type, onOpen = { onOpen(Route.Detail(w.id, type, w.title, from = "Home")) }, subtitle = w.artist ?: w.author, meta = listOf(w.year?.toString()), artwork = cover.bitmap, status = status, onWant = { onWant(w.id, w.title, type) }, mode = session.mode)
     }
 }
 

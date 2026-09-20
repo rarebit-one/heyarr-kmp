@@ -95,7 +95,7 @@ fun SearchScreen(
     session: AppSession,
     search: SearchController,
     onOpen: (Route) -> Unit,
-    onWant: (workId: String, title: String) -> Unit,
+    onWant: (workId: String, title: String, type: MediaType) -> Unit,
     onWantTitle: WantByTitle,
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
@@ -170,7 +170,7 @@ fun SearchScreen(
 }
 
 @Composable
-private fun ResultRow(session: AppSession, row: SearchRow, selected: Boolean, onOpen: () -> Unit, onWant: (String, String) -> Unit) {
+private fun ResultRow(session: AppSession, row: SearchRow, selected: Boolean, onOpen: () -> Unit, onWant: (String, String, MediaType) -> Unit) {
     when (row) {
         is SearchRow.WorkRow -> {
             val hit = row.hit
@@ -183,7 +183,7 @@ private fun ResultRow(session: AppSession, row: SearchRow, selected: Boolean, on
                 trailing = {
                     // Want writes desired state (enrolled-only Surface.WANT): hide it for a
                     // guest — GuestGate is the single source of truth — and fall back to Open.
-                    if (status == LibraryStatus.NOT_TRACKED && GuestGate.allows(session.mode, Surface.WANT)) PrimaryButton("Want", { onWant(hit.workId, hit.title) }, icon = Icons.Rounded.Add, compact = true, contentDescription = "Want ${hit.title}")
+                    if (status == LibraryStatus.NOT_TRACKED && GuestGate.allows(session.mode, Surface.WANT)) PrimaryButton("Want", { onWant(hit.workId, hit.title, row.type) }, icon = Icons.Rounded.Add, compact = true, contentDescription = "Want ${hit.title}")
                     else SecondaryButton("Open", onOpen, compact = true)
                 },
             )

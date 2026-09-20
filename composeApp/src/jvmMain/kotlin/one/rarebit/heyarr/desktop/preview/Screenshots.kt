@@ -125,7 +125,7 @@ private fun verifyShelfSwitch() {
             scene.setContent {
                 one.rarebit.heyarr.desktop.theme.HeyarrTheme {
                     one.rarebit.heyarr.desktop.ui.screens.LibraryScreen(
-                        session, states.getValue(selected.value), {}, { _, _ -> }, experience = selected.value,
+                        session, states.getValue(selected.value), {}, { _, _, _ -> }, experience = selected.value,
                     )
                 }
             }

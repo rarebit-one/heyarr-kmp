@@ -169,7 +169,7 @@ class DetailState(val workId: String) {
  * captions and artwork inventory, files — one tab away, never on the way.
  */
 @Composable
-fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, onBack: () -> Unit, onOpen: (Route) -> Unit, onWant: (String, String) -> Unit, modifier: Modifier = Modifier) {
+fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, onBack: () -> Unit, onOpen: (Route) -> Unit, onWant: (String, String, MediaType) -> Unit, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     val wants: List<DesiredItem> = session.index.wantsFor(route.workId)
     val detail = state.detail
@@ -290,7 +290,7 @@ private fun playLocal(session: AppSession, state: DetailState, blobHash: String,
 }
 
 @Composable
-private fun DetailHero(session: AppSession, detail: WorkDetail, type: MediaType, wants: List<DesiredItem>, state: DetailState, seasons: List<Season>, onWant: (String, String) -> Unit) {
+private fun DetailHero(session: AppSession, detail: WorkDetail, type: MediaType, wants: List<DesiredItem>, state: DetailState, seasons: List<Season>, onWant: (String, String, MediaType) -> Unit) {
     val scope = rememberCoroutineScope()
     val cover by rememberCover(session, type, detail.work.title, detail.artworkPath, detail.work.year, detail.work.artist ?: detail.work.author)
     val art = cover.bitmap
@@ -347,7 +347,7 @@ private fun DetailHero(session: AppSession, detail: WorkDetail, type: MediaType,
                             state.busy = null
                         }
                     }, icon = Icons.Rounded.Search, enabled = state.busy == null)
-                    asset == null && canWant -> PrimaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add, enabled = status == LibraryStatus.NOT_TRACKED)
+                    asset == null && canWant -> PrimaryButton("Want", { onWant(work.id, work.title, type) }, icon = Icons.Rounded.Add, enabled = status == LibraryStatus.NOT_TRACKED)
                     // Guest, nothing to play and no want affordance to offer: no primary CTA.
                     asset == null -> Unit
                     type == MediaType.BOOK -> PrimaryButton(theme.ctaLabel, ::openBook, icon = Icons.Rounded.MenuBook, enabled = state.busy == null)
@@ -358,7 +358,7 @@ private fun DetailHero(session: AppSession, detail: WorkDetail, type: MediaType,
             secondary = {
                 val castId = if (type == MediaType.SERIES) (first?.asset?.id) else asset?.assetId
                 if (castId != null && type != MediaType.BOOK && type != MediaType.FEED) SecondaryButton("Play on…", { toggleCast(session, state, castId, scope) }, icon = Icons.Rounded.Cast)
-                if (status == LibraryStatus.NOT_TRACKED && canWant && (asset != null || type == MediaType.SERIES)) SecondaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add)
+                if (status == LibraryStatus.NOT_TRACKED && canWant && (asset != null || type == MediaType.SERIES)) SecondaryButton("Want", { onWant(work.id, work.title, type) }, icon = Icons.Rounded.Add)
             },
         )
         if (asset == null && type != MediaType.SERIES && type != MediaType.FEED && type != MediaType.PODCAST) Notice("Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Releases shows what the indexers found."}")

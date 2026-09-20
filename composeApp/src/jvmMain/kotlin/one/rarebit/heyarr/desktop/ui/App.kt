@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
+import one.rarebit.heyarr.core.heyarr.QualityProfile
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
 import one.rarebit.heyarr.desktop.heyarr.McpResult
@@ -292,7 +293,7 @@ fun App(
                             // enrolled-only surface, so in guest mode it opens the "Sign in to save"
                             // prompt instead of the Want sheet. This gates want uniformly across
                             // every screen from one place.
-                            val onWant: (String, String) -> Unit = { id, title -> if (session.isGuest) showSignIn = true else want = WantRequest(id, title) }
+                            val onWant: (String, String, MediaType) -> Unit = { id, title, type -> if (session.isGuest) showSignIn = true else want = WantRequest(id, title, type = type) }
                             val onWantTitle: WantByTitle = { title, year, type -> if (session.isGuest) showSignIn = true else want = WantRequest(null, title, year, type) }
                             Box(Modifier.weight(1f)) { when (val r = current) {
                                 is Route.Consume -> LibraryScreen(session, shelves.getValue(r.experience), ::go, onWant, experience = r.experience)
@@ -355,6 +356,26 @@ private fun SignInSheet(session: AppSession, onClose: () -> Unit, onOpenSettings
 }
 
 /**
+ * The quality profile the Want sheet pre-selects for [type], from what the node actually
+ * has configured — never a hardcoded name that might not exist. A video type (movie,
+ * series) defaults to "everyday"; a book or an album has no video quality axis (ADR-0082),
+ * so it prefers a profile actually named for that content ("ebook") and falls back to
+ * "published" (no video gate, terminal on any bytes) rather than a video profile that would
+ * silently reject or misjudge it. Falls back further to whatever profile exists, so the
+ * picker is never blank on a node with an unconventional profile set.
+ */
+private fun defaultProfileFor(type: MediaType, profiles: List<QualityProfile>): String {
+    val preferred = when (type) {
+        MediaType.BOOK, MediaType.MUSIC -> listOf("ebook", "published")
+        else -> listOf("everyday")
+    }
+    for (name in preferred) {
+        profiles.firstOrNull { it.name == name }?.let { return it.name }
+    }
+    return profiles.firstOrNull()?.name ?: ""
+}
+
+/**
  * The Want sheet: pick a quality profile (required — "this should exist" with no
  * standard cannot be evaluated), optionally a note, and go. Work-by-id when opened from
  * a card; title + type when opened from Missing for something the library has never seen.
@@ -365,7 +386,14 @@ private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -> Unit
     var title by remember { mutableStateOf(req.title) }
     var year by remember { mutableStateOf(req.year?.toString() ?: "") }
     var type by remember { mutableStateOf(req.type) }
-    var profile by remember(session.profiles) { mutableStateOf(session.profiles.firstOrNull { it.name == "everyday" }?.name ?: session.profiles.firstOrNull()?.name ?: "") }
+    // "everyday" is a VIDEO profile (resolution/codec gates) — the right default for a
+    // movie or series, but silently wrong for a book or an album (heyarr-core ADR-0082:
+    // "inventing an accept-anything profile... would claim a judgement the system cannot
+    // make", so book/music have no default of their own server-side; this is the one place
+    // client-side that must not paper over that with a video profile's default). Keyed on
+    // `type`, not just session.profiles, so picking a different chip in the by-title flow
+    // re-picks the right default rather than leaving a stale video profile selected.
+    var profile by remember(session.profiles, type) { mutableStateOf(defaultProfileFor(type, session.profiles)) }
     var monitor by remember { mutableStateOf(true) }
     var reason by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
