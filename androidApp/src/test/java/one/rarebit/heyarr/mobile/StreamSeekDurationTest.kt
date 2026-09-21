@@ -23,8 +23,7 @@ class StreamSeekDurationTest {
 
     @Test
     fun thePlansSourceRuntimeIsParsed() {
-        val body = """{"mode":"stream","url":"/api/v1/playback/stream/tok",
-            "source":{"container":"mp4","video":"hevc","audio":"eac3","duration_seconds":2703.4}}"""
+        val body = """{"mode":"stream","url":"/api/v1/playback/stream/tok","source":{"container":"mp4","video":"hevc","audio":"eac3","duration_seconds":2703.4}}"""
         val plan = PlaybackJson.parse(body)
         assertTrue(plan.isStream)
         assertEquals(2703.4, plan.source?.durationSeconds!!, 0.0001)
@@ -41,7 +40,7 @@ class StreamSeekDurationTest {
     @Test
     fun aNonPositiveRuntimeIsTreatedAsUnknown() {
         val plan = PlaybackJson.parse("""{"mode":"stream","url":"/s/t","source":{"duration_seconds":0}}""")
-        assertNull(plan.source?.durationSeconds, "zero is not a runtime")
+        assertNull("zero is not a runtime", plan.source?.durationSeconds)
     }
 
     @Test
@@ -65,7 +64,7 @@ class StreamSeekDurationTest {
     fun aFractionalSeekAgainstAKnownRuntimeLandsWhereItWasDropped() {
         // The arithmetic seekFraction does, with a total that is no longer zero.
         val durationMs = (2703.4 * 1000).toLong()
-        assertEquals(1351700L, (0.5f * durationMs).toLong())
+        assertEquals(1_351_700L, (0.5f * durationMs).toLong())
     }
 
     @Test
