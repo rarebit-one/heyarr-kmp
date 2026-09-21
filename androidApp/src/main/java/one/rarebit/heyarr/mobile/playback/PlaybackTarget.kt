@@ -51,6 +51,15 @@ data class PlaybackTarget(
     /** Where the current repackage begins in the source, in seconds (0 at first play). */
     val streamStartSeconds: Double = 0.0,
     /**
+     * The source's full runtime in seconds, as the plan reported it — the scrubber's
+     * total for a stream. A repackage has no `Content-Length` and its own duration is
+     * unset until ffmpeg finishes, so without this the player's duration is 0, the
+     * playhead sits at the left edge, and a fractional seek resolves to 0 × 0 = the
+     * top of the film: dragging the bar anywhere restarted playback. Null for a direct
+     * blob (the player reads the container) or a blob whose duration was never probed.
+     */
+    val sourceDurationSeconds: Double? = null,
+    /**
      * External subtitle sidecars (ingested `.srt`/`.vtt` assets) to hand the player as
      * `MediaItem.SubtitleConfiguration`s. Each [Sidecar.url] is the same range-capable
      * blob endpoint the video uses, so Media3 fetches it through the one authenticated

@@ -275,7 +275,7 @@ fun PlayerScreen(session: AppSession, route: Route.Player, state: PlayerScreenSt
                         if (playback.popout) { playback.popout = false; playback.pendingStart = true }
                         else {
                             playback.popout = true
-                            val err = session.io { if (p.isRunning) p.switchTo(embedded = false) else playback.resolvePlaybackTarget(item).let { t -> p.start(false, t.url, playback.token, playback.title(item), t.durationSeconds) } }.getOrNull()
+                            val err = session.io { if (p.isRunning) p.switchTo(embedded = false) else playback.resolvePlaybackTarget(item).let { t -> p.start(false, t.url, playback.token, playback.title(item), t.durationSeconds, t.streamBaseUrl) } }.getOrNull()
                             if (err != null) { session.toast(Toast.Kind.ERROR, "Couldn't pop out", err); playback.popout = false; playback.pendingStart = true }
                         }
                     }

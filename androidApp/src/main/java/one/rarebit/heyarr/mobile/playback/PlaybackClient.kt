@@ -118,6 +118,8 @@ class PlaybackClient(
                 restartSeekable = true,
                 streamBaseUrl = r.url,
                 streamStartSeconds = 0.0,
+                // Without this the scrubber has no total and every drag lands on zero.
+                sourceDurationSeconds = r.source?.durationSeconds,
             )
             is PlanResult.Direct -> direct.copy(
                 contentUrl = r.url ?: direct.contentUrl,

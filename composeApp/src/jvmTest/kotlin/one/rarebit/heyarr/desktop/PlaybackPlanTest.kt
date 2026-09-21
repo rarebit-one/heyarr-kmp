@@ -55,6 +55,33 @@ class PlaybackPlanTest {
     }
 
     @Test
+    fun aStreamPlanIsMarkedRestartSeekableOffAUrlWithNoStart() {
+        // A transcode stream cannot be seeked natively (no length, no ranges), so the
+        // player needs to know it must RE-CUT instead — and needs the base URL to
+        // build `?start=` from, so a second seek never stacks one param on another.
+        val t = transport(200, """{"mode":"stream","url":"/api/v1/playback/stream/tok"}""")
+        val target = api(t).playbackTarget("asset-1", "blake3:abc")
+        assertTrue(target.restartSeekable, "a stream seeks by restarting")
+        assertEquals("$base/api/v1/playback/stream/tok", target.streamBaseUrl)
+    }
+
+    @Test
+    fun aDirectPlanIsNotRestartSeekable() {
+        // The blob endpoint answers ranges, so mpv seeks it itself — restarting would
+        // throw away a perfectly good native seek.
+        val t = transport(200, """{"mode":"direct","url":"/api/v1/blobs/blake3:abc/content"}""")
+        val target = api(t).playbackTarget("asset-1", "blake3:abc")
+        assertTrue(!target.restartSeekable, "a direct blob seeks natively")
+        assertNull(target.streamBaseUrl)
+    }
+
+    @Test
+    fun aFailedPlanFallsBackToADirectlySeekableBlob() {
+        val t = transport(500, "boom")
+        assertTrue(!api(t).playbackTarget("asset-1", "blake3:abc").restartSeekable)
+    }
+
+    @Test
     fun aDirectPlanIsPlayedAsThePlansUrl() {
         val t = transport(200, """{"mode":"direct","url":"/api/v1/blobs/blake3:abc/content"}""")
         val target = api(t).playbackTarget("asset-1", "blake3:abc")
