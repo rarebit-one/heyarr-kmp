@@ -78,8 +78,10 @@ class VaultSyncDaemonTest {
         fail("condition not met within $timeoutMs ms")
     }
 
-    private fun phaseInFile(path: Path): String? =
-        runCatching { JsonScan.stringField(Files.readString(path), "phase") }.getOrNull()
+    private fun fieldInFile(path: Path, key: String): String? =
+        runCatching { JsonScan.stringField(Files.readString(path), key) }.getOrNull()
+
+    private fun phaseInFile(path: Path): String? = fieldInFile(path, "phase")
 
     private fun awaitSocket(path: Path) = awaitUntil { Files.exists(path) }
 
@@ -203,7 +205,11 @@ class VaultSyncDaemonTest {
             )
             daemon.start()
             awaitSocket(dir.resolve("vault-sync.sock"))
-            awaitUntil { phaseInFile(dir.resolve("vault-sync.json")) == "preparing" }
+            // Wait for the ERROR, not the phase. `phase` is already "preparing" the
+            // instant start() returns — recorder is null before resolve has even been
+            // attempted — so waiting on it races the resolve coroutine that records
+            // last_error, and the assertion below would read a null it never settled on.
+            awaitUntil { fieldInFile(dir.resolve("vault-sync.json"), "last_error") == "node unreachable" }
             val status = ask(dir.resolve("vault-sync.sock"), """{"cmd":"status"}""")
             assertEquals("preparing", JsonScan.stringField(status, "phase"))
             assertEquals("node unreachable", JsonScan.stringField(status, "last_error"))
@@ -224,7 +230,10 @@ class VaultSyncDaemonTest {
             )
             daemon.start()
             awaitSocket(dir.resolve("vault-sync.sock"))
-            awaitUntil { phaseInFile(dir.resolve("vault-sync.json")) == "preparing" }
+            // Same trap: "preparing" is true from the outset, so waiting on it asserts
+            // nothing. The distinguishing fact is WHY it is parked.
+            awaitUntil { fieldInFile(dir.resolve("vault-sync.json"), "last_error") == "no folder configured" }
+            assertEquals("preparing", phaseInFile(dir.resolve("vault-sync.json")))
             daemon.close()
         } finally {
             scope.cancel(); dir.toFile().deleteRecursively()
