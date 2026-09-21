@@ -3,10 +3,10 @@ package one.rarebit.heyarr.mobile
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.mobile.playback.PlaybackJson
 import one.rarebit.heyarr.mobile.playback.PlaybackTarget
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
 
 /**
  * A `stream` plan is a transcode ffmpeg is still producing: no `Content-Length`, and
@@ -27,7 +27,7 @@ class StreamSeekDurationTest {
             "source":{"container":"mp4","video":"hevc","audio":"eac3","duration_seconds":2703.4}}"""
         val plan = PlaybackJson.parse(body)
         assertTrue(plan.isStream)
-        assertEquals(2703.4, plan.source?.durationSeconds)
+        assertEquals(2703.4, plan.source?.durationSeconds!!, 0.0001)
     }
 
     @Test
@@ -56,7 +56,7 @@ class StreamSeekDurationTest {
             streamBaseUrl = "https://h.example/api/v1/playback/stream/tok",
             sourceDurationSeconds = 2703.4,
         )
-        assertEquals(2703.4, t.sourceDurationSeconds)
+        assertEquals(2703.4, t.sourceDurationSeconds!!, 0.0001)
         // And the restart seek still builds off the base, unencoded.
         assertEquals("${t.streamBaseUrl}?start=1800", t.atStreamStart(1800.0).contentUrl)
     }
