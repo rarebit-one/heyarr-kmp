@@ -107,6 +107,17 @@ class VaultSyncEngine(
 ) : VaultSync {
     data class Stats(val uploaded: Int, val downloaded: Int, val deletedRemote: Int, val deletedLocal: Int)
 
+    /**
+     * The folded remote drive, carried BETWEEN passes so a steady-state sync pulls nothing.
+     * Null until the first successful fold. Held in memory only: a restarted daemon simply
+     * starts from cursor 0 and pays one full pull, which is the old cost exactly once rather
+     * than on every poll.
+     */
+    private var drive: Drive? = null
+
+    /** The peer's opaque arrival position we have folded up to. 0 = nothing yet. */
+    private var cursor: Long = 0
+
     override fun syncOnce(): Stats {
         val index = indexStore.load()
         val local = folder.scan(index)
@@ -128,13 +139,34 @@ class VaultSyncEngine(
         return Stats(up, down, dr, dl)
     }
 
-    /** Rebuild the converged drive from the space's opaque changes (decrypt + fold). */
+    /**
+     * The converged drive, advanced INCREMENTALLY: the drive folded so far plus whatever arrived
+     * after [cursor].
+     *
+     * This used to rebuild from scratch every pass — re-downloading and re-decrypting the entire
+     * change log each time, which on a large vault is tens of MB per poll forever, whether or not
+     * anything changed. Folding the tail into the drive we already hold is EXACTLY equivalent
+     * because [Drive.apply] is idempotent, commutative and associative (a semilattice): replaying
+     * everything and applying the tail converge on the same state.
+     *
+     * The order below matters. The cursor advances only AFTER the page has been folded in, so a
+     * decrypt or parse that throws mid-page leaves the cursor where it was and the next pass
+     * re-fetches that page — re-applying changes already folded is a no-op, so a retry is safe.
+     * On the very first pass [drive] is null, so a failure there discards the partial fold and the
+     * next pass starts clean from 0.
+     *
+     * Local writes ([push]) mutate this same drive and are then shipped; the server hands them
+     * back on a later pull and they fold in again idempotently, landing on the identical key.
+     */
     private fun buildDrive(): Drive {
-        val d = Drive()
-        for (c in space.pullChanges(spaceId)) {
+        val d = drive ?: Drive()
+        val page = space.pullChangesSince(spaceId, cursor)
+        for (c in page.changes) {
             val json = VoidbindEncryption.decryptChange(spaceKey, c.ciphertext).decodeToString()
             d.apply(Drive.parseChange(json))
         }
+        drive = d
+        cursor = page.cursor
         return d
     }
 

@@ -30,6 +30,19 @@ class VaultSyncEngineTest {
     private class MemSpace : VaultSpace {
         val changes = ArrayList<EncryptedChange>()
         override fun pullChanges(spaceId: String): List<EncryptedChange> = changes.toList()
+
+        /**
+         * Counts what actually went over the wire, so a test can assert that a caught-up pass
+         * transfers NOTHING — the whole point of the cursor.
+         */
+        var served = 0
+            private set
+
+        override fun pullChangesSince(spaceId: String, since: Long): ChangePage {
+            val tail = changes.drop(since.toInt())
+            served += tail.size
+            return ChangePage(tail, changes.size.toLong())
+        }
         override fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String {
             val id = Blake3.hashHex(ciphertext)
             changes.add(EncryptedChange(spaceId, id, parents, ciphertext))
@@ -91,5 +104,74 @@ class VaultSyncEngineTest {
         val before = space.changes.size
         assertEquals(1, eng.syncOnce().uploaded)
         assertTrue(space.changes.size > before, "the edit pushed another change")
+    }
+
+    /**
+     * The bandwidth contract. A caught-up engine must pull NOTHING on a quiet pass. Before the
+     * cursor existed this re-fetched the entire change log every single pass, which on a real
+     * vault meant tens of MB per poll around the clock.
+     *
+     * SABOTAGE (the reviewer's break): drop the `cursor` field in buildDrive and pass 0 — the
+     * quiet passes then re-serve the whole log and `served` climbs.
+     */
+    @Test
+    fun aCaughtUpPassTransfersNothing() {
+        val blobs = MemBlobStore()
+        val space = MemSpace()
+        val folder = MemFolder(
+            mutableMapOf("a.txt" to "one".encodeToByteArray(), "b.txt" to "two".encodeToByteArray()),
+            mutableMapOf("a.txt" to 1L, "b.txt" to 2L),
+        )
+        val eng = engine(folder, blobs, space)
+        assertEquals(2, eng.syncOnce().uploaded)  // pushes 2 changes (the log was empty before this)
+        eng.syncOnce()                            // folds its own 2 changes back in
+
+        val baseline = space.served
+        assertTrue(baseline > 0, "the engine must actually have read the log by now")
+
+        // Three quiet passes: nothing changed anywhere, so nothing may cross the wire.
+        repeat(3) { eng.syncOnce() }
+        assertEquals(baseline, space.served, "a quiet pass re-downloaded the change log")
+    }
+
+    /**
+     * Incremental folding must land on the SAME state as replaying the whole log — the property
+     * that makes carrying the drive between passes safe ([Drive.apply] is a semilattice). If these
+     * ever diverge, a long-running daemon's view of the vault silently drifts from a fresh one's.
+     */
+    @Test
+    fun incrementalFoldMatchesAFullReplay() {
+        val blobs = MemBlobStore()
+        val space = MemSpace()
+
+        // A long-running engine that folds incrementally across several passes.
+        val folder = MemFolder()
+        val incremental = engine(folder, blobs, space)
+        val writer = MemFolder(mutableMapOf("x.txt" to "v1".encodeToByteArray()), mutableMapOf("x.txt" to 1L))
+        val other = engine(writer, blobs, space)
+
+        other.syncOnce()                       // push x.txt v1
+        incremental.syncOnce()                 // fold it
+        writer.files["x.txt"] = "v2-longer".encodeToByteArray(); writer.mtimes["x.txt"] = 2L
+        other.syncOnce()                       // push v2
+        writer.files["y.txt"] = "why".encodeToByteArray(); writer.mtimes["y.txt"] = 3L
+        other.syncOnce()                       // push y.txt
+        incremental.syncOnce()                 // fold the tail
+
+        // A cold engine replaying the entire log from scratch.
+        val coldFolder = MemFolder()
+        engine(coldFolder, blobs, space).syncOnce()
+
+        assertEquals(
+            coldFolder.files.keys.sorted(),
+            folder.files.keys.sorted(),
+            "the incrementally folded drive disagrees with a full replay",
+        )
+        for (path in coldFolder.files.keys) {
+            assertTrue(
+                coldFolder.files.getValue(path).contentEquals(folder.files[path]),
+                "$path differs between an incremental fold and a full replay",
+            )
+        }
     }
 }
