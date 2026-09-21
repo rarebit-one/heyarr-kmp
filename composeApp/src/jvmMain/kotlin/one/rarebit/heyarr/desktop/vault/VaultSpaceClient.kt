@@ -27,9 +27,25 @@ data class EncryptedSnapshot(
 /** A space key sealed to one recipient (X25519), as the peer stores it (§79). */
 data class WrappedKey(val recipient: String, val wrapped: ByteArray)
 
+/**
+ * One incremental pull: the changes that arrived after the cursor asked for, and the cursor to
+ * ask with next time. [cursor] is the peer's OPAQUE arrival position — not a timestamp, not a
+ * causal frontier, and not comparable across peers, so a device that repoints at a different
+ * controller must restart from 0.
+ */
+data class ChangePage(val changes: List<EncryptedChange>, val cursor: Long)
+
 /** The subset of the space sync pipe the sync engine drives — an interface so it fakes cleanly. */
 interface VaultSpace {
     fun pullChanges(spaceId: String): List<EncryptedChange>
+
+    /**
+     * Pull only what arrived after [since] (0 = from the beginning). This is what makes a
+     * steady-state sync free: a caught-up device transfers an empty list instead of the entire
+     * change log, which for a large vault is tens of MB EVERY poll.
+     */
+    fun pullChangesSince(spaceId: String, since: Long): ChangePage
+
     fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String
 }
 
@@ -68,11 +84,20 @@ class VaultSpaceClient(
     private val credential: Credential,
 ) : VaultSpace, VaultKeys {
     /** Pull every opaque change the server holds for [spaceId]. */
-    override fun pullChanges(spaceId: String): List<EncryptedChange> {
-        val resp = http.get(changesUrl(baseUrl, spaceId), credential.asHeader())
+    override fun pullChanges(spaceId: String): List<EncryptedChange> = pullChangesSince(spaceId, 0).changes
+
+    /**
+     * Pull the tail after [since]. An older peer that does not understand `?since` ignores it and
+     * answers the whole log with no `cursor` field; that reads back as cursor 0, so this degrades
+     * to the old full-pull behaviour instead of silently skipping changes.
+     */
+    override fun pullChangesSince(spaceId: String, since: Long): ChangePage {
+        val url = changesUrl(baseUrl, spaceId) + if (since > 0) "?since=$since" else ""
+        val resp = http.get(url, credential.asHeader())
         require(resp.status == 200) { "vault: GET changes failed: HTTP ${resp.status}" }
-        val array = JsonScan.arrayOf(resp.body, listOf("changes")) ?: return emptyList()
-        return JsonScan.objectsOf(array, emptyList()).map { parseChange(it) }
+        val cursor = JsonScan.longField(resp.body, "cursor") ?: 0L
+        val array = JsonScan.arrayOf(resp.body, listOf("changes")) ?: return ChangePage(emptyList(), cursor)
+        return ChangePage(JsonScan.objectsOf(array, emptyList()).map { parseChange(it) }, cursor)
     }
 
     /**
