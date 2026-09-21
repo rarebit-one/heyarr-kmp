@@ -26,6 +26,15 @@ object PlaybackJson {
         val audio: String?,
         val width: Int?,
         val height: Int?,
+        /**
+         * The source's full runtime in seconds. The ONE field here that is not merely
+         * shown: a `stream` plan is a transcode that cannot report its own length until
+         * it has finished producing, so ExoPlayer's duration is unset and the scrubber
+         * has no total to work against. The node sends the real runtime for exactly
+         * this, and the player pins it (see `VideoSession.load`). Absent (`omitempty`)
+         * when nothing has probed the blob's duration.
+         */
+        val durationSeconds: Double?,
     )
 
     /** The parsed shape of a playback plan response. */
@@ -57,6 +66,7 @@ object PlaybackJson {
                 audio = JsonScan.stringField(s, "audio"),
                 width = JsonScan.intField(s, "width"),
                 height = JsonScan.intField(s, "height"),
+                durationSeconds = JsonScan.doubleField(s, "duration_seconds")?.takeIf { it > 0 },
             )
         }
         return Plan(

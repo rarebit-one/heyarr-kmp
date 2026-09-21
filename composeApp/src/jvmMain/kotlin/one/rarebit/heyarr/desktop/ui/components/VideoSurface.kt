@@ -58,9 +58,9 @@ fun PlaybackHost(session: AppSession) {
             // it runs here inside io, off the UI thread, not before the block.
             if (playback.player.isRunning && playback.loadedAssetId == item.assetId) playback.player.switchTo(embedded)
             else if (playback.player.isRunning) playback.resolvePlaybackTarget(item).let { t ->
-                playback.player.load(t.url, playback.title(item), t.durationSeconds); null
+                playback.player.load(t.url, playback.title(item), t.durationSeconds, t.streamBaseUrl); null
             }
-            else playback.resolvePlaybackTarget(item).let { t -> playback.player.start(embedded, t.url, playback.token, playback.title(item), t.durationSeconds) }
+            else playback.resolvePlaybackTarget(item).let { t -> playback.player.start(embedded, t.url, playback.token, playback.title(item), t.durationSeconds, t.streamBaseUrl) }
         }.fold(onSuccess = { it }, onFailure = { it.message ?: "Could not start playback" })
         playback.pendingStart = false
         playback.startError = err

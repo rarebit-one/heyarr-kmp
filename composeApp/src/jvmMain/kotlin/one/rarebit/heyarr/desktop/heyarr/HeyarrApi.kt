@@ -58,8 +58,22 @@ import java.net.URLEncoder
  * Where and how to play an asset, resolved from the playback plan: the URL to
  * open, plus the source's true runtime in seconds when the plan is a transcode
  * `stream` (null for a direct blob, where the player's own duration is right).
+ *
+ * A `mode: "stream"` plan is a fragmented MP4 the node repackages as it goes: no
+ * `Content-Length`, no ranges, so mpv can only seek inside what it has already
+ * demuxed — a scrub ahead of the cache does nothing. ADR-0069 gives that stream a
+ * *restart* seek instead, and [streamBaseUrl] is what makes it reachable: the token
+ * URL with no `start` param, from which [HeyarrApi.streamUrl] builds `?start=<s>`.
+ * Null for a direct blob, which the blob endpoint already seeks natively (ADR-0013).
  */
-data class PlaybackTarget(val url: String, val durationSeconds: Double? = null)
+data class PlaybackTarget(
+    val url: String,
+    val durationSeconds: Double? = null,
+    val streamBaseUrl: String? = null,
+) {
+    /** True for a node-repackaged stream: a seek is a restart, not an offset. */
+    val restartSeekable: Boolean get() = streamBaseUrl != null
+}
 
 class HeyarrApi(
     private val http: HttpTransport,
@@ -225,7 +239,10 @@ class HeyarrApi(
             // The plan's source carries the true runtime; use it as the scrubber total
             // for a transcode stream (whose own duration only grows as it encodes).
             val dur = JsonScan.objectAt(root, "source")?.let { JsonScan.longField(it, "duration_seconds") }?.toDouble()?.takeIf { it > 0 }
-            PlaybackTarget(abs, dur)
+            // Only a `stream` is restart-seekable, and only off a URL that carries no
+            // `start` of its own — so a second seek never stacks `?start=` on a first.
+            val streamBase = abs.takeIf { JsonScan.stringField(root, "mode") == "stream" }
+            PlaybackTarget(abs, dur, streamBase)
         } catch (_: Exception) {
             fallback
         }

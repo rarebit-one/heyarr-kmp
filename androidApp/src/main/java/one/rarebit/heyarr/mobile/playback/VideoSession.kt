@@ -97,6 +97,13 @@ class VideoSession(
         private set
     private var trackSelector: DefaultTrackSelector? = null
     private var target: PlaybackTarget? = null
+    /**
+     * The source runtime the plan reported, for a stream whose own duration ExoPlayer
+     * cannot know (no `Content-Length`, and the transcode is still being produced).
+     * When set it PINS [State.durationMs], so the scrubber spans the whole film and a
+     * fractional seek resolves against the real total instead of zero.
+     */
+    private var pinnedDurationMs = 0L
     private var streamStart = 0.0
     private var resumed = true
     private var startSeconds = 0.0
@@ -115,6 +122,7 @@ class VideoSession(
         current = np
         if (same && player != null) { player?.play(); return }
         val t = np.target
+        pinnedDurationMs = t.sourceDurationSeconds?.takeIf { it > 0 }?.let { (it * 1000).toLong() } ?: 0L
         streamStart = if (t.restartSeekable && np.startSeconds > 0) np.startSeconds else t.streamStartSeconds
         startSeconds = np.startSeconds
         resumed = np.startSeconds <= 0 || t.restartSeekable
@@ -125,7 +133,10 @@ class VideoSession(
     private fun start(t: PlaybackTarget, title: String) {
         release()
         target = t
-        state = State()
+        // Show the target position and the pinned total straight away: a re-cut takes a
+        // moment to produce its first frame, and a scrubber that snaps back to zero in
+        // the meantime reads as "the seek failed".
+        state = State(positionMs = streamOffsetMs(), bufferedMs = streamOffsetMs(), durationMs = pinnedDurationMs)
         val selector = DefaultTrackSelector(context)
         trackSelector = selector
         val p = ExoPlayer.Builder(context)
@@ -179,6 +190,28 @@ class VideoSession(
         }
     }
 
+    /**
+     * The scrubber total: the plan's source runtime when it pinned one, else whatever
+     * the player worked out from the container. A stream has no length of its own, so
+     * without the pin this is 0 — and a 0 total is what made every fractional seek
+     * resolve to the start of the film.
+     */
+    private fun durationMs(p: ExoPlayer): Long =
+        if (pinnedDurationMs > 0) pinnedDurationMs else p.duration.coerceAtLeast(0)
+
+    /**
+     * Position and buffer in SOURCE time. A re-cut stream's own clock restarts at zero
+     * however far into the film it actually is, so the offset it was cut at is added
+     * back — otherwise a seek to 30:00 would report 0:00 and drag the playhead back to
+     * the left edge the moment it landed. Zero for a direct blob.
+     */
+    private fun streamOffsetMs(): Long =
+        if (target?.origin == PlaybackTarget.Origin.STREAM) (streamStart * 1000).toLong() else 0L
+
+    private fun positionMs(p: ExoPlayer): Long = streamOffsetMs() + p.currentPosition.coerceAtLeast(0)
+
+    private fun bufferedMs(p: ExoPlayer): Long = streamOffsetMs() + p.bufferedPosition.coerceAtLeast(0)
+
     /** The source position: a stream's own clock starts at its offset. */
     fun sourceSeconds(): Double {
         val p = player ?: return streamStart
@@ -216,7 +249,7 @@ class VideoSession(
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             val p = player ?: return
-            state = state.copy(buffering = playbackState == Player.STATE_BUFFERING, durationMs = p.duration.coerceAtLeast(0), ended = playbackState == Player.STATE_ENDED)
+            state = state.copy(buffering = playbackState == Player.STATE_BUFFERING, durationMs = durationMs(p), ended = playbackState == Player.STATE_ENDED)
             if (playbackState == Player.STATE_READY && !resumed) {
                 resumed = true
                 p.seekTo((startSeconds * 1000).toLong())
@@ -238,7 +271,7 @@ class VideoSession(
             var lastReport = 0L
             while (isActive) {
                 player?.let { p ->
-                    state = state.copy(positionMs = p.currentPosition.coerceAtLeast(0), durationMs = p.duration.coerceAtLeast(0), bufferedMs = p.bufferedPosition.coerceAtLeast(0))
+                    state = state.copy(positionMs = positionMs(p), durationMs = durationMs(p), bufferedMs = bufferedMs(p))
                     val now = System.currentTimeMillis()
                     if (p.isPlaying && now - lastReport >= PROGRESS_TICK_MS) { lastReport = now; onProgress(PlaybackProgress(sourceSeconds(), false, PlaybackProgress.Event.TICK)) }
                 }
@@ -260,7 +293,16 @@ class VideoSession(
         player?.seekTo(positionMs.coerceAtLeast(0))
     }
 
-    fun seekFraction(f: Float) { seekTo((f.coerceIn(0f, 1f) * state.durationMs).toLong()) }
+    /**
+     * Seek to a fraction of the runtime. A no-op when nothing knows the runtime: with
+     * a zero total every fraction is zero, so honouring it would silently restart the
+     * film on any drag — refusing is the honest answer, and the UI shows no scrubber
+     * to drag in that case anyway.
+     */
+    fun seekFraction(f: Float) {
+        if (state.durationMs <= 0) return
+        seekTo((f.coerceIn(0f, 1f) * state.durationMs).toLong())
+    }
 
     fun seekBy(seconds: Double) {
         val t = target ?: return
@@ -304,6 +346,8 @@ class VideoSession(
         current = null
         queue = emptyList()
         fullscreen = false
+        pinnedDurationMs = 0L
+        streamStart = 0.0
         state = State()
     }
 
