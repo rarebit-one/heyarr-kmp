@@ -982,32 +982,31 @@
         <error line="213" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="214" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="215" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="216" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="219" column="120" source="standard:statement-wrapping" />
-        <error line="219" column="141" source="standard:statement-wrapping" />
-        <error line="219" column="200" source="standard:statement-wrapping" />
-        <error line="219" column="224" source="standard:statement-wrapping" />
-        <error line="219" column="234" source="standard:statement-wrapping" />
-        <error line="219" column="236" source="standard:statement-wrapping" />
-        <error line="219" column="282" source="standard:statement-wrapping" />
-        <error line="233" column="31" source="standard:multiline-if-else" />
-        <error line="234" column="104" source="standard:statement-wrapping" />
-        <error line="234" column="231" source="standard:statement-wrapping" />
-        <error line="234" column="275" source="standard:statement-wrapping" />
+        <error line="218" column="120" source="standard:statement-wrapping" />
+        <error line="218" column="141" source="standard:statement-wrapping" />
+        <error line="218" column="200" source="standard:statement-wrapping" />
+        <error line="218" column="224" source="standard:statement-wrapping" />
+        <error line="218" column="234" source="standard:statement-wrapping" />
+        <error line="218" column="236" source="standard:statement-wrapping" />
+        <error line="218" column="282" source="standard:statement-wrapping" />
+        <error line="232" column="31" source="standard:multiline-if-else" />
+        <error line="233" column="104" source="standard:statement-wrapping" />
+        <error line="233" column="231" source="standard:statement-wrapping" />
+        <error line="233" column="275" source="standard:statement-wrapping" />
+        <error line="238" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="239" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="240" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="242" column="32" source="standard:statement-wrapping" />
-        <error line="242" column="52" source="standard:statement-wrapping" />
-        <error line="242" column="87" source="standard:statement-wrapping" />
-        <error line="242" column="247" source="standard:statement-wrapping" />
-        <error line="251" column="42" source="standard:multiline-if-else" />
-        <error line="254" column="28" source="standard:statement-wrapping" />
-        <error line="254" column="47" source="standard:statement-wrapping" />
-        <error line="254" column="129" source="standard:statement-wrapping" />
-        <error line="254" column="253" source="standard:statement-wrapping" />
-        <error line="263" column="28" source="standard:statement-wrapping" />
-        <error line="263" column="68" source="standard:statement-wrapping" />
-        <error line="263" column="95" source="standard:statement-wrapping" />
+        <error line="241" column="32" source="standard:statement-wrapping" />
+        <error line="241" column="52" source="standard:statement-wrapping" />
+        <error line="241" column="87" source="standard:statement-wrapping" />
+        <error line="241" column="247" source="standard:statement-wrapping" />
+        <error line="250" column="42" source="standard:multiline-if-else" />
+        <error line="253" column="28" source="standard:statement-wrapping" />
+        <error line="253" column="47" source="standard:statement-wrapping" />
+        <error line="253" column="129" source="standard:statement-wrapping" />
+        <error line="253" column="253" source="standard:statement-wrapping" />
+        <error line="262" column="28" source="standard:statement-wrapping" />
+        <error line="262" column="68" source="standard:statement-wrapping" />
+        <error line="262" column="95" source="standard:statement-wrapping" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/DetailScreen.kt">
         <error line="3" column="1" source="standard:import-ordering" />
