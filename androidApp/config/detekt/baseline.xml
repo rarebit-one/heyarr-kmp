@@ -15,12 +15,20 @@
     <ID>CyclomaticComplexMethod:ClientCapabilities.kt$ClientCapabilities.Companion$fun codecName(mediaCodecMime: String): String?</ID>
     <ID>CyclomaticComplexMethod:ContinueClient.kt$ContinueClient.Companion$fun parse(body: String): List&lt;ContinueEntry&gt;</ID>
     <ID>CyclomaticComplexMethod:Decisions.kt$Decisions$fun section(route: Route?): NavSection?</ID>
+    <ID>CyclomaticComplexMethod:DetailCurate.kt$@Composable internal fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
+    <ID>CyclomaticComplexMethod:DetailCurate.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal())</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun DetailHero(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
+    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
+    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
+    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
+    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable private fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
+    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable private fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
+    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable private fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
     <ID>CyclomaticComplexMethod:DeviceEnrolment.kt$DeviceEnrolment$fun refreshMembership(): Boolean</ID>
     <ID>CyclomaticComplexMethod:DeviceEnrolment.kt$DeviceEnrolment$private suspend fun reflectPairing(ps: PairingState)</ID>
     <ID>CyclomaticComplexMethod:EnrolScreen.kt$@Composable fun EnrolScreen( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
@@ -60,7 +68,14 @@
     <ID>FunctionNaming:Cards.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: String? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The card width; null fills the parent (a grid cell). */ width: Dp? = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, actions: List&lt;CardAction&gt; = emptyList(), )</ID>
     <ID>FunctionNaming:CastScreen.kt$@Composable fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:CastScreen.kt$@Composable private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailCurate.kt$@Composable internal fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailCurate.kt$@Composable internal fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
+    <ID>FunctionNaming:DetailCurate.kt$@Composable internal fun SidecarsPanel(state: DetailState, seasons: List&lt;Season&gt;)</ID>
+    <ID>FunctionNaming:DetailCurate.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailCurate.kt$@Composable private fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
+    <ID>FunctionNaming:DetailCurate.kt$@Composable private fun SidecarsPanel(state: DetailState, seasons: List&lt;Season&gt;)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal())</ID>
+    <ID>FunctionNaming:DetailScreen.kt$@Composable internal fun AssetPersonalActions(personal: DetailPersonal, assetId: String, title: String)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun ArchiveBlock(state: DetailState, onOpen: (Route) -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun AssetPersonalActions(personal: DetailPersonal, assetId: String, title: String)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun BookFilesBlock(work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
@@ -77,6 +92,24 @@
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun TracksBlock(session: AppSession, work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun ArchiveBlock(state: DetailState, onOpen: (Route) -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun BookFilesBlock(work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun FileBlock(work: Work, state: DetailState)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, ext: ExternalEpisode?)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun SynopsisBlock(work: Work, state: DetailState, coverIsExternal: Boolean)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun TracksBlock(session: AppSession, work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun ArchiveBlock(state: DetailState, onOpen: (Route) -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun BookFilesBlock(work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun FileBlock(work: Work, state: DetailState)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, ext: ExternalEpisode?)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun SynopsisBlock(work: Work, state: DetailState, coverIsExternal: Boolean)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun TracksBlock(session: AppSession, work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
     <ID>FunctionNaming:EnrolScreen.kt$@Composable fun EnrolScreen( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
     <ID>FunctionNaming:EnrolScreen.kt$@Composable private fun CountdownLine(prefix: String, deadlineMillis: Long, now: Long, suffix: String)</ID>
     <ID>FunctionNaming:EnrolScreen.kt$@Composable private fun DeviceKeyLine(info: DeviceKeyInfo, full: Boolean)</ID>
@@ -152,6 +185,8 @@
     <ID>FunctionNaming:Table.kt$@Composable private fun RowScope.HeaderCell(c: TableColumn)</ID>
     <ID>FunctionNaming:TelemetryScreen.kt$@Composable fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummary: String, onBack: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:WantSheet.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
+    <ID>LongMethod:DetailCurate.kt$@Composable internal fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
+    <ID>LongMethod:DetailCurate.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>LongMethod:DetailScreen.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>LongMethod:EnrolScreen.kt$@Composable fun EnrolScreen( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
     <ID>LongMethod:HeyarrNavHost.kt$@UnstableApi @Composable fun HeyarrNavHost( vm: AppViewModel, graph: AppGraph, focusDevice: Int, /** Raise the "Sign in to save" upgrade (QR/device) over the guest shell. */ onSignInToSave: () -&gt; Unit = {}, navController: NavHostController = rememberNavController(), )</ID>
@@ -172,11 +207,14 @@
     <ID>LongParameterList:CatalogClient.kt$CatalogClient$(contentType: String?, sort: Sort = Sort.TITLE, limit: Int = DEFAULT_LIMIT, cursor: String? = null, artist: String? = null, author: String? = null)</ID>
     <ID>LongParameterList:CatalogClient.kt$CatalogClient.Companion$(baseUrl: String, contentType: String?, sort: Sort, limit: Int, cursor: String?, artist: String? = null, author: String? = null)</ID>
     <ID>LongParameterList:Cover.kt$(session: AppSession, type: MediaType, title: String, nodeArtPath: String?, year: Int? = null, creator: String? = null, feedRef: String? = null)</ID>
+    <ID>LongParameterList:DetailCurate.kt$(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>LongParameterList:DetailScreen.kt$(session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal())</ID>
     <ID>LongParameterList:DetailScreen.kt$(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
     <ID>LongParameterList:DetailScreen.kt$(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
     <ID>LongParameterList:DetailScreen.kt$(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit)</ID>
     <ID>LongParameterList:DetailScreen.kt$(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
+    <ID>LongParameterList:DetailWatch.kt$(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
+    <ID>LongParameterList:DetailWatch.kt$(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
     <ID>LongParameterList:DevicePairingSteps.kt$DevicePairingSteps$( private val keyring: () -&gt; DeviceKeyring?, private val relayTransport: VoidbindHttpTransport, private val nodeTransport: HttpTransport, private val baseUrl: () -&gt; String, private val deviceName: () -&gt; String, private val credential: () -&gt; Credential?, private val clock: () -&gt; Long = System::currentTimeMillis, )</ID>
     <ID>LongParameterList:EnrolScreen.kt$( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
     <ID>LongParameterList:Fixtures.kt$Fixtures$(id: String, type: String, title: String, year: Int?, art: Boolean = false, attrs: String = "{}")</ID>
@@ -250,6 +288,12 @@
     <ID>MagicNumber:CruciformPairCallback.kt$CruciformPairCallback$0xFF</ID>
     <ID>MagicNumber:CruciformPairCallback.kt$CruciformPairCallback$3</ID>
     <ID>MagicNumber:CruciformPairCallback.kt$CruciformPairCallback$4</ID>
+    <ID>MagicNumber:DetailCurate.kt$10</ID>
+    <ID>MagicNumber:DetailCurate.kt$20</ID>
+    <ID>MagicNumber:DetailCurate.kt$3</ID>
+    <ID>MagicNumber:DetailCurate.kt$4</ID>
+    <ID>MagicNumber:DetailCurate.kt$5</ID>
+    <ID>MagicNumber:DetailCurate.kt$6</ID>
     <ID>MagicNumber:DetailScreen.kt$0.22f</ID>
     <ID>MagicNumber:DetailScreen.kt$10</ID>
     <ID>MagicNumber:DetailScreen.kt$16f</ID>
@@ -259,6 +303,13 @@
     <ID>MagicNumber:DetailScreen.kt$5</ID>
     <ID>MagicNumber:DetailScreen.kt$6</ID>
     <ID>MagicNumber:DetailScreen.kt$9f</ID>
+    <ID>MagicNumber:DetailWatch.kt$10</ID>
+    <ID>MagicNumber:DetailWatch.kt$16f</ID>
+    <ID>MagicNumber:DetailWatch.kt$3</ID>
+    <ID>MagicNumber:DetailWatch.kt$4</ID>
+    <ID>MagicNumber:DetailWatch.kt$5</ID>
+    <ID>MagicNumber:DetailWatch.kt$6</ID>
+    <ID>MagicNumber:DetailWatch.kt$9f</ID>
     <ID>MagicNumber:DevicePairingSteps.kt$DevicePairingSteps$1000</ID>
     <ID>MagicNumber:DiscoverClient.kt$DiscoverClient$200</ID>
     <ID>MagicNumber:DiscoverClient.kt$DiscoverClient$404</ID>
@@ -569,6 +620,63 @@
     <ID>MaxLineLength:DecisionsTest.kt$DecisionsTest$private val track = AudioItem(assetId = "a1", workId = "w", title = "One", contentUrl = "https://n/api/v1/blobs/$hash/content")</ID>
     <ID>MaxLineLength:DecisionsTest.kt$DecisionsTest$private val video = NowPlaying(PlaybackTarget("https://n/api/v1/blobs/$hash/content", Credential.Session("t"), isVideo = true), "Film")</ID>
     <ID>MaxLineLength:DecisionsTest.kt$DecisionsTest$val work = Work(id = "w", title = "Kid A", kind = "music", artist = "Radiohead", artworkPath = "/api/v1/blobs/$hash/content")</ID>
+    <ID>MaxLineLength:DetailCurate.kt$.</ID>
+    <ID>MaxLineLength:DetailCurate.kt$/** "Would this be accepted?" — describe a release, get every rule back. Absent fields stay absent so they read as undetermined. */</ID>
+    <ID>MaxLineLength:DetailCurate.kt$0 -&gt; Cell(t.filename ?: t.id, color = if (t.isPlayable || t.role == "artwork") Tokens.textPrimary else Tokens.textDisabled)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$0 -&gt; Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { Cell(cand.title); if (cand.selected) Text("selected", style = MaterialTheme.typography.labelSmall, color = LocalMediaTheme.current.accentGradientEnd) }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$1 -&gt; Cell(session.profiles.firstOrNull { it.id == w.qualityProfileId }?.name ?: w.qualityProfileId ?: "?", mono = true)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$2 -&gt; Text(when { v == null -&gt; "unmeasured"; v.accepted -&gt; "accepted"; else -&gt; "rejected" }, style = MaterialTheme.typography.labelMedium, color = verdictColor(when { v == null -&gt; ""; v.accepted -&gt; "pass"; else -&gt; "fail" }))</ID>
+    <ID>MaxLineLength:DetailCurate.kt$3 -&gt; Text(sat?.contentSatisfaction?.replace('_', ' ') ?: (w.content ?: "…"), style = MaterialTheme.typography.labelMedium, color = verdictColor(if ((sat?.contentSatisfaction ?: w.content) == "satisfied") "pass" else "fail"))</ID>
+    <ID>MaxLineLength:DetailCurate.kt$4 -&gt; Cell(sat?.let { if (it.placementUnproven) "unproven (single node)" else it.placementSatisfaction } ?: (w.placement ?: "…"), muted = true)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$4 -&gt; Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { for (x in v?.rejectedBy.orEmpty().take(2)) RuleCode(x.rule, tone = Tokens.danger); if ((v?.rejectedBy?.size ?: 0) &gt; 2) Cell("+${v!!.rejectedBy.size - 2}", muted = true) }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$4 -&gt; Text(if (cand.accepted) "accepted" else "rejected", style = MaterialTheme.typography.labelMedium, color = verdictColor(if (cand.accepted) "pass" else "fail"))</ID>
+    <ID>MaxLineLength:DetailCurate.kt$4 -&gt; if (t.missingSince != null) Text("missing", style = MaterialTheme.typography.labelSmall, color = Tokens.danger) else Cell("")</ID>
+    <ID>MaxLineLength:DetailCurate.kt$5 -&gt; Cell(sat?.let { (if (it.upgradeEligible) "eligible" else it.upgradeStatus.replace('_', ' ')) + (it.upgradeDetail.takeIf { d -&gt; d.isNotBlank() }?.let { d -&gt; " — $d" } ?: "") } ?: (w.detail ?: ""), muted = true, maxLines = 2)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$DataTable</ID>
+    <ID>MaxLineLength:DetailCurate.kt$DetailPlayback$val</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Field("Resolution (480/720/1080/2160)", resolution, Modifier.weight(1f), keyboard = KeyboardType.Number) { resolution = it.filter { c -&gt; c.isDigit() } }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Field("Size (bytes)", size, Modifier.weight(1f), keyboard = KeyboardType.Number) { size = it.filter { c -&gt; c.isDigit() } }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Icon(Icons.Rounded.ClosedCaption, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(16.dp))</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Icon(Icons.Rounded.Image, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(16.dp))</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Notice("heyarr's tool surface has no caption or artwork search yet: sidecars arrive with a release or a scan. Asking the indexers again (Indexer candidates) is the only fetch this node can queue.", tone = Tokens.slate)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (p in profiles) FilterChip(p.name, profile == p.name, { profile = p.name }) }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Row</ID>
+    <ID>MaxLineLength:DetailCurate.kt$SecondaryButton</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Section("Score a release", subtitle = "Ask the profile about a release you are looking at", initiallyOpen = false) { ExplainPanel(session, wants) }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Section</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Text("${art.size} artwork file${if (art.size == 1) "" else "s"}", style = MaterialTheme.typography.bodyMedium, color = Tokens.textPrimary)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Text("${subs.size} caption file${if (subs.size == 1) "" else "s"}", style = MaterialTheme.typography.bodyMedium, color = Tokens.textPrimary)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Text("Describe a release and heyarr explains, rule by rule, whether the profile would accept it. Leave a field blank when you do not know — a blank reads as undetermined, a guess reads as a claim.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Text("score ${ranked.score}${if (ranked.terminal) " · terminal" else ""}", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Text(if (ranked.accepted) "Would be accepted" else "Would be rejected", style = MaterialTheme.typography.titleSmall, color = verdictColor(if (ranked.accepted) "pass" else "fail"))</ID>
+    <ID>MaxLineLength:DetailCurate.kt$columns = listOf(TableColumn("File", width = 260.dp), TableColumn("Size", width = 80.dp, alignEnd = true), TableColumn("Verdict", width = 100.dp), TableColumn("Score", width = 60.dp, alignEnd = true), TableColumn("Rejected by", width = 220.dp))</ID>
+    <ID>MaxLineLength:DetailCurate.kt$columns = listOf(TableColumn("Release", width = 260.dp), TableColumn("Provider", width = 100.dp), TableColumn("Size", width = 80.dp, alignEnd = true), TableColumn("Score", width = 60.dp, alignEnd = true), TableColumn("Verdict", width = 90.dp), TableColumn("", width = 120.dp, alignEnd = true))</ID>
+    <ID>MaxLineLength:DetailCurate.kt$columns = listOf(TableColumn("Scope", width = 70.dp), TableColumn("Profile", width = 110.dp), TableColumn("State", width = 110.dp), TableColumn("Content", width = 110.dp), TableColumn("Placement", width = 140.dp), TableColumn("Upgrade", width = 220.dp), TableColumn("Monitor", width = 120.dp, alignEnd = true))</ID>
+    <ID>MaxLineLength:DetailCurate.kt$detail = { r -&gt; Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { RejectedBy(cands[r].second.rejectedBy); ReasonList(cands[r].second.reasons) } }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$detail = { r -&gt; verdicts[held[r].id]?.let { ReasonList(it.reasons) } ?: Text("No verdict — this file is not measured by any want.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$else</ID>
+    <ID>MaxLineLength:DetailCurate.kt$for (w in wants) (state.satisfaction[w.id] as? McpResult.Refused)?.let { Notice("get_content_satisfaction: ${it.message}", tone = Tokens.danger) }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$fun</ID>
+    <ID>MaxLineLength:DetailCurate.kt$if (seasons.isNotEmpty()) Text("· ${seasons.sumOf { s -&gt; s.episodes.count { it.subtitles.isEmpty() &amp;&amp; it.isPlayable } }} held episodes without captions", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$if (seasons.isNotEmpty()) Text("· ${seasons.sumOf { s -&gt; s.episodes.count { it.thumbnail == null } }} episodes without a thumbnail", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$if</ID>
+    <ID>MaxLineLength:DetailCurate.kt$internal</ID>
+    <ID>MaxLineLength:DetailCurate.kt$is McpResult.Ok</ID>
+    <ID>MaxLineLength:DetailCurate.kt$null -&gt; if (hash != null) Skeleton(Modifier.fillMaxWidth().height(40.dp)) else Text("Nothing to check.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailCurate.kt$private</ID>
+    <ID>MaxLineLength:DetailCurate.kt$rowCount = cands.size</ID>
+    <ID>MaxLineLength:DetailCurate.kt$rowCount = wants.size</ID>
+    <ID>MaxLineLength:DetailCurate.kt$scope.launch { session.io { session.api.monitor(w.id, !w.monitor) }.onSuccess { res -&gt; if (res is McpResult.Refused) session.refused(res) else session.refreshIndex() } }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$scope.launch { session.io { session.api.searchReleases(wants.first().id) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Search queued", "Indexers answer within a minute; the Downloads tab under Library shows the job."); is McpResult.Refused -&gt; session.refused(r) } } }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$scope.launch { session.io { session.api.verifyBlob(hash) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Verification queued", "Re-hashing runs as a job; see Library → Downloads."); is McpResult.Refused -&gt; session.refused(r) } } }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$session.io { session.api.acquire(w.id, cand.candidateId) }.onSuccess { res -&gt; when (res) { is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Acquiring", cand.title); session.refreshIndex(); reload() }; is McpResult.Refused -&gt; session.refused(res) } }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$val rel = ReleaseToExplain("candidate", title.ifBlank { "untitled release" }, ReleaseAttributes(resolution = resolution.toIntOrNull(), source = source, videoCodec = codec, sizeBytes = size.toLongOrNull()))</ID>
+    <ID>MaxLineLength:DetailCurate.kt$val rows = listOf("work id" to work.id, "work key" to (work.workKey ?: "—"), "type" to type.label) + work.externalIds.map { it.key to it.value } + state.externalIds.map { it.source to it.value }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$val verdicts = wants.flatMap { w -&gt; (state.satisfaction[w.id] as? McpResult.Ok)?.value?.assets.orEmpty() }.associateBy { it.assetId }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$var profile by remember(profiles) { mutableStateOf(wants.firstOrNull()?.let { w -&gt; profiles.firstOrNull { it.id == w.qualityProfileId }?.name } ?: profiles.firstOrNull()?.name ?: session.defaultProfile) }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$when (c) { 0 -&gt; Cell(rep.peer); 1 -&gt; Cell(rep.state, mono = true); 2 -&gt; Text(if (rep.verified) "yes" else "no", style = MaterialTheme.typography.labelMedium, color = verdictColor(if (rep.verified) "pass" else "undetermined")) }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$when (c) { 0 -&gt; Cell(v.title); 1 -&gt; Cell(Variants.seasonOf(v)?.let { "S$it" } ?: "", mono = true, muted = true); 2 -&gt; GhostButton("Open", { onOpen(detailRoute(v.id, MediaType.from(v.kind), v.title, from = work.title, curate = true)) }) }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$}</ID>
     <ID>MaxLineLength:DetailScreen.kt$.</ID>
     <ID>MaxLineLength:DetailScreen.kt$/** "Would this be accepted?" — describe a release, get every rule back. Absent fields stay absent so they read as undetermined. */</ID>
     <ID>MaxLineLength:DetailScreen.kt$0 -&gt; Cell(t.filename ?: t.id, color = if (t.isPlayable || t.role == "artwork") Tokens.textPrimary else Tokens.textDisabled)</ID>
@@ -709,6 +817,64 @@
     <ID>MaxLineLength:DetailScreen.kt$when (c) { 0 -&gt; Cell(v.title); 1 -&gt; Cell(Variants.seasonOf(v)?.let { "S$it" } ?: "", mono = true, muted = true); 2 -&gt; GhostButton("Open", { onOpen(detailRoute(v.id, MediaType.from(v.kind), v.title, from = work.title, curate = true)) }) }</ID>
     <ID>MaxLineLength:DetailScreen.kt$}</ID>
     <ID>MaxLineLength:DetailScreenSmokeTest.kt$DetailScreenSmokeTest$DetailScreen(s, Route.Detail(workId, type, title), state, noPlayback, onBack = {}, onOpen = {}, onWant = { _, _ -&gt; })</ID>
+    <ID>MaxLineLength:DetailWatch.kt$.</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Box</ID>
+    <ID>MaxLineLength:DetailWatch.kt$DetailPlayback$val</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Icon(Icons.Rounded.ClosedCaption, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(14.dp))</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Icon(Icons.Rounded.Info, contentDescription = null, tint = Tokens.textDisabled, modifier = Modifier.size(14.dp))</ID>
+    <ID>MaxLineLength:DetailWatch.kt$IconButtonRound(Icons.Rounded.Cast, "Play ${ep.label} on a renderer", { toggleCast(session, state, ep.asset.id, scope) }, size = 36.dp)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$IconButtonRound(Icons.Rounded.PlayArrow, "Play ${ep.label}", { onPlay(ep) }, size = 40.dp, filled = true, enabled = state.busy == null)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).border(Tokens.hairline, Tokens.border.copy(alpha = 0.6f), RoundedCornerShape(Tokens.radiusInput)).padding(8.dp)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$ReaderFormat.AUDIOBOOK -&gt; PrimaryButton("Listen", { play.playAudio(work, listOf(asset), 0) }, icon = Icons.Rounded.Headphones, compact = true)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Row</ID>
+    <ID>MaxLineLength:DetailWatch.kt$SecondaryButton(if (state.wantMenu) "Close" else "Want more…", { state.wantMenu = !state.wantMenu }, icon = Icons.Rounded.Add, compact = true)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$SecondaryButton</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Section</ID>
+    <ID>MaxLineLength:DetailWatch.kt$SectionHeader</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text("%02d".format(i + 1), style = MaterialTheme.typography.labelMedium, color = theme.accentGradientEnd, modifier = Modifier.width(28.dp))</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text("No synopsis — the node has no metadata provider and no public source knew this title. Titles, seasons and episodes below come from the files themselves.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text("Seasons the library has never seen have nothing to point a want at yet — they arrive through a follow.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text("Synopsis${if (coverIsExternal) " and cover" else ""} via ${ext.source} — not from your library. The node has no metadata provider (TVDB, ADR-0058).", style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(asset.filename ?: asset.id, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(ep.subtitles.size.toString(), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(ep.title ?: ext?.name ?: ep.asset.filename ?: ep.asset.id, style = MaterialTheme.typography.titleSmall, color = if (ep.isPlayable) Tokens.textPrimary else Tokens.textDisabled, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(ext.synopsis.orEmpty(), style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary, maxLines = 6, overflow = TextOverflow.Ellipsis)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(ext?.name ?: "Not held", style = MaterialTheme.typography.titleSmall, color = Tokens.textDisabled, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(if (subs.isEmpty()) "No caption files held — captions inside the container still show in the player's CC menu." else "Caption files: " + subs.joinToString(", ") { it.filename?.substringBeforeLast('.')?.substringAfterLast('.') ?: "?" }, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(if (wants.isEmpty()) "Want this series and heyarr will look for it." else "Wanted — heyarr searches on its schedule; ask now to jump the queue.", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(item.title, style = MaterialTheme.typography.titleSmall, color = if (item.archived) Tokens.textPrimary else Tokens.textDisabled)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(listOfNotNull(format?.label, asset.sizeBytes?.let { WorkAsset.formatBytes(it) }).joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(listOfNotNull(item.publishedAt?.take(10), if (item.archived) "archived" else "not archived yet", item.want?.summary?.takeIf { it.isNotBlank() }).joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$Text(trackTitle(t), style = MaterialTheme.typography.titleSmall, color = if (t.isPlayable) Tokens.textPrimary else Tokens.textDisabled, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$else -&gt; PrimaryButton("Read", { play.read(work, asset) }, icon = Icons.Rounded.MenuBook, compact = true)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$else</ID>
+    <ID>MaxLineLength:DetailWatch.kt$ep.asset.sizeBytes?.let { Text(WorkAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }</ID>
+    <ID>MaxLineLength:DetailWatch.kt$file?.sizeBytes?.let { Text(WorkAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }</ID>
+    <ID>MaxLineLength:DetailWatch.kt$for (s in all) FilterChip(s.label, s == selected, { state.season = s.number }, count = maxOf(s.episodes.size, ext.count { it.season == s.number }).takeIf { it &gt; 0 })</ID>
+    <ID>MaxLineLength:DetailWatch.kt$fun</ID>
+    <ID>MaxLineLength:DetailWatch.kt$icon = Icons.Rounded.Add</ID>
+    <ID>MaxLineLength:DetailWatch.kt$if (!ep.isPlayable) Text("file missing since ${ep.asset.missingSince?.take(10)}", style = MaterialTheme.typography.labelSmall, color = Tokens.danger)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$if (all.isEmpty()) { Notice("No episode files are held for this series yet.${if (wants.isNotEmpty()) " heyarr is looking — Curate → Indexer candidates shows what it found." else ""}"); return }</ID>
+    <ID>MaxLineLength:DetailWatch.kt$if (already) "${s.label} · wanted" else "Want ${s.label}${s.gaps.takeIf { it.isNotEmpty() }?.let { " (${it.size} missing)" } ?: ""}"</ID>
+    <ID>MaxLineLength:DetailWatch.kt$if (idx &gt;= 0) IconButtonRound(Icons.Rounded.PlayArrow, "Play ${trackTitle(t)}", { play.playAudio(work, playable, idx) }, size = 36.dp, filled = true)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$if (isContinue) Text("continue · ${state.continueEntry?.progressLabel}", style = MaterialTheme.typography.labelSmall, color = theme.accentGradientEnd)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$if (item.archived &amp;&amp; wid != null) SecondaryButton("Open", { onOpen(detailRoute(wid, MediaType.UNKNOWN, item.title, from = "Archive")) }, icon = Icons.Rounded.OpenInNew, compact = true)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$if (playable.isNotEmpty()) PrimaryButton("Play all", { play.playAudio(work, playable, 0) }, icon = Icons.Rounded.PlayArrow, compact = true)</ID>
+    <ID>MaxLineLength:DetailWatch.kt$if</ID>
+    <ID>MaxLineLength:DetailWatch.kt$internal</ID>
+    <ID>MaxLineLength:DetailWatch.kt$is CoreEpisode&lt;*&gt; -&gt; EpisodeRow(session, work, row.phone(), state, extForSeason[row.number], onPlay = { ep -&gt; play.playVideo(work, ep.asset.id, ep.asset.blobHash!!, ep.asset.mime ?: work.mime, Series.playTitle(work, ep), null, queue, art, ep.subtitles) })</ID>
+    <ID>MaxLineLength:DetailWatch.kt$is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Following ${work.title}", "Every episode, past and future, becomes a want. If this node can't identify the series yet, it stays a plain want until it can."); session.refreshIndex() }</ID>
+    <ID>MaxLineLength:DetailWatch.kt$is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Wanted ${s.label}", "Measured against $profile; heyarr will look for what this season is missing."); session.refreshIndex() }</ID>
+    <ID>MaxLineLength:DetailWatch.kt$is McpResult.Ok</ID>
+    <ID>MaxLineLength:DetailWatch.kt$private</ID>
+    <ID>MaxLineLength:DetailWatch.kt$scope.launch { session.io { session.api.follow(null, tvdb, null, profile, backfill = "full", reason = "followed from the phone") }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Following ${work.title}", "Every episode, past and future, becomes a want."); session.refreshIndex() }; is McpResult.Refused -&gt; session.refused(r) } } }</ID>
+    <ID>MaxLineLength:DetailWatch.kt$scope.launch { session.io { session.api.searchReleases(wants.first().id) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Search queued for ${season.label}", "Results land under Curate → Indexer candidates."); is McpResult.Refused -&gt; session.refused(r) } } }</ID>
+    <ID>MaxLineLength:DetailWatch.kt$t.sizeBytes?.let { Text(WorkAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }</ID>
+    <ID>MaxLineLength:DetailWatch.kt$val all: List&lt;Season&gt; = (seasons + extSeasons.map { Season(it, emptyList()) }).sortedWith(compareBy({ it.number == null }, { if (it.number == 0) Int.MAX_VALUE else it.number ?: 0 }))</ID>
+    <ID>MaxLineLength:DetailWatch.kt$val isContinue = cont != null &amp;&amp; (cont.assetId == ep.asset.id || (cont.blobHash != null &amp;&amp; cont.blobHash == ep.asset.blobHash))</ID>
+    <ID>MaxLineLength:DetailWatch.kt$val thumb = ep.thumbnailPath?.let { HeyarrApi.blobUrlFromPath(session.baseUrl, it) } ?: ext?.imageUrl?.takeIf { session.externalMetadata }</ID>
+    <ID>MaxLineLength:DetailWatch.kt$var profile by remember(profiles) { mutableStateOf(profiles.firstOrNull { it.name == session.defaultProfile }?.name ?: profiles.firstOrNull()?.name ?: session.defaultProfile) }</ID>
+    <ID>MaxLineLength:DetailWatch.kt$}</ID>
     <ID>MaxLineLength:DeviceAuthTransport.kt$DeviceAuthTransport$private inline</ID>
     <ID>MaxLineLength:DevicePairingSteps.kt$DevicePairingSteps$PairingOutcome.Failed(PairingFailureKind.PROTOCOL, "The admission could not be stored: ${e.message}", "")</ID>
     <ID>MaxLineLength:DevicePairingSteps.kt$DevicePairingSteps$PairingOutcome.Failed(PairingFailureKind.PROTOCOL, "This phone's device keys are not available. Open the Device screen and try again.", "")</ID>
@@ -1564,8 +1730,12 @@
     <ID>TooManyFunctions:SpaceRegistry.kt$SpaceRegistry</ID>
     <ID>TooManyFunctions:SpaceSession.kt$SpaceSession</ID>
     <ID>TooManyFunctions:VideoSession.kt$VideoSession</ID>
+    <ID>UnusedParameter:DetailCurate.kt$session: AppSession</ID>
+    <ID>UnusedParameter:DetailCurate.kt$work: Work</ID>
     <ID>UnusedParameter:DetailScreen.kt$session: AppSession</ID>
     <ID>UnusedParameter:DetailScreen.kt$work: Work</ID>
+    <ID>UnusedParameter:DetailWatch.kt$session: AppSession</ID>
+    <ID>UnusedParameter:DetailWatch.kt$work: Work</ID>
     <ID>UnusedParameter:Fakes.kt$SubstringTransport$body: String?</ID>
     <ID>UnusedParameter:SearchScreen.kt$onWant: (String, String) -&gt; Unit</ID>
     <ID>UseCheckOrError:ContinueClient.kt$ContinueClient$throw IllegalStateException("continue: GET /consumption/continue failed: HTTP ${resp.status}")</ID>

@@ -89,6 +89,21 @@ if (hasAndroidSdk) {
     }
 }
 
+// The OpenAPI contract test (src/jvmTest/…/contract) reads EVERY module's main Kotlin sources
+// as text, to extract the JSON keys each hand-written parser reads. Declare them as inputs, or
+// the build cache (org.gradle.caching=true) would replay a pass for a parser change made in
+// another module.
+tasks.named<Test>("jvmTest") {
+    inputs.files(
+        listOf("core", "ui", "composeApp", "androidApp").map { module ->
+            rootProject.fileTree(rootDir.resolve("$module/src")) {
+                include("**/*.kt")
+                exclude("*[Tt]est*/**")
+            }
+        },
+    ).withPropertyName("contractParserSources").withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 // Print full exception messages (and test stdout) to the build log so a JVM unit-test
 // failure is diagnosable from CI without the (un-uploaded) HTML report.
 tasks.withType<Test>().configureEach {
