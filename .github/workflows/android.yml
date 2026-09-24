@@ -1,10 +1,35 @@
 name: android
 
+# Path-filtered: a change that cannot affect this build does not run it. The shared
+# modules and the Gradle build itself trigger every workflow; only :androidApp
+# triggers the android ones.
 on:
   push:
     branches: [main]
+    paths:
+      - "androidApp/**"
+      - "core/**"
+      - "ui/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - ".github/workflows/android.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "androidApp/**"
+      - "core/**"
+      - "ui/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - ".github/workflows/android.yml"
 
 # Cancel superseded runs on the same ref.
 concurrency:
