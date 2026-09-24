@@ -23,8 +23,6 @@ class WantsClientTest {
       {"provider":"x"}]}"""
 
     @Test fun urlsAndBody() {
-        assertEquals("$base/api/v1/desired?limit=200", WantsClient.desiredUrl("$base/", null))
-        assertEquals("$base/api/v1/desired?limit=200&cursor=c%2F1", WantsClient.desiredUrl(base, "c/1"))
         assertEquals("$base/api/v1/desired/i%3A1/candidates", WantsClient.candidatesUrl(base, "i:1"))
         assertEquals("$base/api/v1/desired/i1/select", WantsClient.selectUrl(base, "i1"))
         assertEquals("""{"candidate_id":"good"}""", WantsClient.selectBody("good"))

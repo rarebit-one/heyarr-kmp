@@ -9,8 +9,7 @@ import java.net.URLEncoder
  * Browses heyarr's **native** library reach — `GET /api/v1/works` — authenticated
  * with the caller's [Credential] (a `Device` cert+proof, or a bootstrap `Bearer`
  * session token). This is the reach surface the scaffold DEMONSTRATES end-to-end
- * (URL + auth header + parse); the Subsonic reach is stubbed in [SubsonicClient] as
- * the documented alternative.
+ * (URL + auth header + parse).
  *
  * `/api/v1/works` and `/api/v1/works/{id}` are the real server routes
  * (internal/api/resources). The list is paged (`{items, next_cursor?}`, server max

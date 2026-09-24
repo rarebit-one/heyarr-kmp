@@ -22,7 +22,6 @@ data class Reason(
 ) {
     val isFailure: Boolean get() = result == "fail"
     val isUndetermined: Boolean get() = result == "undetermined"
-    val isPositive: Boolean get() = result == "pass" || result == "bonus"
 }
 
 object ReasonJson {
