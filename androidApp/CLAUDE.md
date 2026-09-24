@@ -195,9 +195,9 @@ slate). The accent drives the CTA gradient, pressed/focus states, the active nav
 progress bars and the section underline; surfaces and text never change.
 `MediaScope(type) { … }` re-skins a subtree; `MediaThemeTest` pins the table and AA contrast.
 Fonts are self-hosted OFL TTFs shipped once by `:ui` (`ui/src/commonMain/composeResources/font`,
-licences under `composeResources/files/licenses`, typed families in `HeyarrFonts`): **Inter**
-(body/UI), **Montserrat** (display headings), **Rubik** (the technical voice — nav
-captions, rule-code chips, key/value labels, badges; the two small `label*` type slots).
+licences under `composeResources/files/licenses`, typed families in `HeyarrFonts`): **Rubik**
+fills every type slot (headings, body and the technical voice — nav captions, rule-code chips,
+key/value labels, badges). Inter and Montserrat were dropped once nothing used them.
 
 Nav is a bottom bar on a phone and a left rail from 600 dp (`Tokens.railBreakpoint`):
 Home · Discover · Search · Library (Works / Downloads / Playlists tabs) · Missing · Cast ·

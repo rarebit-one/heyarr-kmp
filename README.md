@@ -118,10 +118,10 @@ spacing, type scale) — and the media table in `:ui`'s `theme/MediaThemes.kt`, 
 
 The accent swaps the CTA gradient, focus rings, active-nav mark, progress bars and
 section underline; surfaces and text stay constant. Wrap any subtree in
-`MediaScope(type) { … }` to re-skin it. Fonts are self-hosted (OFL): **Inter** for UI
-and body, **Montserrat** for display headings, **Rubik** for the compact technical
-labels — shipped once, for both apps, from `:ui` (`ui/src/commonMain/composeResources/font`,
-exposed as `HeyarrFonts`).
+`MediaScope(type) { … }` to re-skin it. Fonts are self-hosted (OFL): **Rubik** fills
+every type slot, from headings and body to the compact technical labels — shipped once,
+for both apps, from `:ui` (`ui/src/commonMain/composeResources/font`, exposed as
+`HeyarrFonts`).
 
 ## How heyarr is reached
 
