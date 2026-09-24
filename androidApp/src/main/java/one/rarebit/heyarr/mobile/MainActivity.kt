@@ -111,15 +111,21 @@ class MainActivity : FragmentActivity() {
     /** The `heyarr-mobile://pair` handoff, if this intent is one; null for anything else. */
     private fun routeLink(intent: Intent?): LinkedInvite? = when (val r = PairDeepLink.route(intent?.action, intent?.dataString)) {
         is PairDeepLink.Invite -> LinkedInvite(r.inviteQr, null, ++linkSeq)
+
         is PairDeepLink.Invalid -> LinkedInvite(null, r.message, ++linkSeq)
+
         // The one-tap return leg (voidbind-kmp ADR-0008): nothing to join, nothing to
         // trust — just bring the human back to the Device screen, where the app-scoped
         // pairing has (or is about to have) reached Enrolled on its own. A refusal is
         // the one thing it can add: Cruciform's verdict, so the wait ends now.
         is PairDeepLink.Done -> LinkedInvite(
-            null, null, ++linkSeq, done = true,
+            null,
+            null,
+            ++linkSeq,
+            done = true,
             refusal = if (r.refused && r.session != null) r.session to (r.reason ?: "the report did not match the relay.") else null,
         )
+
         null -> null
     }
 
@@ -211,7 +217,11 @@ class MainActivity : FragmentActivity() {
                 // A registered admission signs the phone in by itself (EnrolAdvance): drop the
                 // enrol/login frames and the deep-link focus so the shell opens on Home, not Device.
                 LaunchedEffect(loginState is LoginUiState.Approved) {
-                    if (loginState is LoginUiState.Approved) { showEnrol = false; showLogin = false; focusDevice = 0 }
+                    if (loginState is LoginUiState.Approved) {
+                        showEnrol = false
+                        showLogin = false
+                        focusDevice = 0
+                    }
                 }
 
                 Box(Modifier.fillMaxSize().background(Tokens.bgBase)) {
@@ -221,11 +231,18 @@ class MainActivity : FragmentActivity() {
                             PreLoginScreen(subtitle = config.baseUrl, onSettings = null) {
                                 SectionHeader("Settings")
                                 Panel("heyarr connection") {
-                                    ConnectionFields(config, onSave = { url, profile -> vm.updateSettings(url, profile); showSettings = false }, onReset = { vm.resetSettings(); showSettings = false })
+                                    ConnectionFields(config, onSave = { url, profile ->
+                                        vm.updateSettings(url, profile)
+                                        showSettings = false
+                                    }, onReset = {
+                                        vm.resetSettings()
+                                        showSettings = false
+                                    })
                                 }
                                 GhostButton("Close", { showSettings = false })
                             }
                         }
+
                         // The "Sign in to save" upgrade raised over the guest shell.
                         showLogin && loginState !is LoginUiState.Approved -> {
                             BackHandler { showLogin = false }
@@ -235,13 +252,19 @@ class MainActivity : FragmentActivity() {
                                     onSignIn = vm::signIn,
                                     onApproveOnThisPhone = if (voidbindInstalled) {
                                         { tuple -> HandoffLauncher.open(context, VoidbindHandoff.loginUri(tuple)) }
-                                    } else null,
-                                    onEnrolDevice = { showLogin = false; showEnrol = true },
+                                    } else {
+                                        null
+                                    },
+                                    onEnrolDevice = {
+                                        showLogin = false
+                                        showEnrol = true
+                                    },
                                     modifier = Modifier,
                                 )
                                 GhostButton("Keep browsing as guest", { showLogin = false })
                             }
                         }
+
                         showEnrol -> {
                             // Enrolment needs no session: pairing runs over the relay, and an enrolled
                             // phone then signs in with its cert instead of a QR login.
@@ -263,6 +286,7 @@ class MainActivity : FragmentActivity() {
                                 )
                             }
                         }
+
                         // Guest-as-default: the browsing shell is what the app opens on, whether
                         // signed in or browsing anonymously. "Sign in to save" raises showLogin.
                         else -> HeyarrNavHost(vm = vm, graph = app.graph, focusDevice = focusDevice, onSignInToSave = { showLogin = true })

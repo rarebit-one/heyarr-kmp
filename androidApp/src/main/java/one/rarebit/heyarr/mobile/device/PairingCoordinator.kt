@@ -255,11 +255,17 @@ class PairingCoordinator(
         val session = checked.session
         when (val current = _state.value) {
             is PairingState.Live -> if (current.session == session && job?.isActive == true) return
+
             is PairingState.Failed -> if (current.session == session &&
                 (current.kind == PairingFailure.INTERRUPTED || current.kind == PairingFailure.EXPIRED)
-            ) return
+            ) {
+                return
+            }
+
             is PairingState.Registering -> if (current.session == session) return
+
             is PairingState.Enrolled -> if (current.session == session) return
+
             PairingState.Idle -> Unit
         }
         cancelLive()
@@ -288,8 +294,13 @@ class PairingCoordinator(
             handshaked.deviceId.isNotBlank() &&
             announcer.announceJoined(p.session, handshaked.deviceId, sas)
         _state.value = PairingState.CompareSas(
-            p.session, p.inviteQr, p.sameDevice, deadline, sas,
-            awaitingAdmission = handedOff, handedOff = handedOff,
+            p.session,
+            p.inviteQr,
+            p.sameDevice,
+            deadline,
+            sas,
+            awaitingAdmission = handedOff,
+            handedOff = handedOff,
         )
         // When the apps compared, there is no human verdict to wait for on this side:
         // the gate that matters is Cruciform's biometric, and nothing reaches this phone
@@ -298,14 +309,22 @@ class PairingCoordinator(
         if (!matched) {
             return finish(
                 PairingState.Failed(
-                    p.session, p.inviteQr, p.sameDevice, PairingFailure.MISMATCH,
+                    p.session,
+                    p.inviteQr,
+                    p.sameDevice,
+                    PairingFailure.MISMATCH,
                     "Security codes differed — pairing aborted. Nothing was exchanged.",
                 ),
             )
         }
         _state.value = PairingState.CompareSas(
-            p.session, p.inviteQr, p.sameDevice, deadline, sas,
-            awaitingAdmission = true, handedOff = handedOff,
+            p.session,
+            p.inviteQr,
+            p.sameDevice,
+            deadline,
+            sas,
+            awaitingAdmission = true,
+            handedOff = handedOff,
         )
         val op = when (val r = s.receive(deadline)) {
             is PairingOutcome.Failed -> return fail(p, r)
@@ -321,26 +340,43 @@ class PairingCoordinator(
         val out = s.register(op)
         _state.value = when (out) {
             is EnrolClient.Outcome.Registered -> PairingState.Enrolled(
-                session, op, sameDevice, registered = true,
-                registration = "Registered with the node via ${out.via}.", needsAdmin = false, retriable = false,
+                session,
+                op,
+                sameDevice,
+                registered = true,
+                registration = "Registered with the node via ${out.via}.",
+                needsAdmin = false,
+                retriable = false,
             )
+
             is EnrolClient.Outcome.NeedsAdmin -> PairingState.Enrolled(
-                session, op, sameDevice, registered = false,
+                session,
+                op,
+                sameDevice,
+                registered = false,
                 registration = "The admission is stored, but the node does not know it yet (${out.reason}). An admin " +
                     "must register it: POST /api/v1/identities/devices {\"cert\":…,\"name\":…}.",
-                needsAdmin = true, retriable = false,
+                needsAdmin = true,
+                retriable = false,
             )
+
             is EnrolClient.Outcome.Failed -> PairingState.Enrolled(
-                session, op, sameDevice, registered = false,
+                session,
+                op,
+                sameDevice,
+                registered = false,
                 registration = "The admission is stored, but registering it with the node failed: ${out.message}",
-                needsAdmin = false, retriable = true,
+                needsAdmin = false,
+                retriable = true,
             )
         }
     }
 
     private fun fail(p: PendingPairing, f: PairingOutcome.Failed) = finish(
         PairingState.Failed(
-            p.session, p.inviteQr, p.sameDevice,
+            p.session,
+            p.inviteQr,
+            p.sameDevice,
             kind = when (f.kind) {
                 PairingFailureKind.UNREACHABLE -> PairingFailure.UNREACHABLE
                 PairingFailureKind.TIMEOUT -> PairingFailure.TIMEOUT
@@ -382,7 +418,10 @@ class PairingCoordinator(
         cancelLive()
         finish(
             PairingState.Failed(
-                live.session, live.inviteQr, live.sameDevice, PairingFailure.MISMATCH,
+                live.session,
+                live.inviteQr,
+                live.sameDevice,
+                PairingFailure.MISMATCH,
                 "Cruciform refused the pairing: $reason Nothing was exchanged.",
             ),
         )
@@ -416,6 +455,7 @@ class PairingCoordinator(
                 live = null
                 _state.value = PairingState.Idle
             }
+
             else -> Unit
         }
     }

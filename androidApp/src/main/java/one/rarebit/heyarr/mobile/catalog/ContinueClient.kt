@@ -52,7 +52,9 @@ data class ContinueEntry(
         }
 
     private fun clock(s: Long): String {
-        val h = s / 3600; val m = (s % 3600) / 60; val sec = s % 60
+        val h = s / 3600
+        val m = (s % 3600) / 60
+        val sec = s % 60
         return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
     }
 
@@ -95,33 +97,32 @@ class ContinueClient(
             baseUrl.trimEnd('/') + "/api/v1/consumption/continue?limit=" + limit
 
         /** Each entry is read from its own nested slices; one missing its work or asset id is skipped. */
-        fun parse(body: String): List<ContinueEntry> =
-            JsonScan.objectsOf(body, listOf("items")).mapNotNull { obj ->
-                val session = JsonScan.objectAt(obj, "session") ?: return@mapNotNull null
-                val work = JsonScan.objectAt(obj, "work") ?: return@mapNotNull null
-                val asset = JsonScan.objectAt(obj, "asset") ?: return@mapNotNull null
-                val edition = JsonScan.objectAt(obj, "edition")
-                val attrs = edition?.let { JsonScan.objectAt(it, "attributes") }
-                val progress = JsonScan.objectAt(session, "progress")
-                ContinueEntry(
-                    sessionId = JsonScan.stringField(session, "id") ?: return@mapNotNull null,
-                    state = JsonScan.stringField(session, "state") ?: "",
-                    verb = JsonScan.stringField(session, "verb"),
-                    progressLocator = progress?.let { JsonScan.stringField(it, "locator") },
-                    progressUnit = progress?.let { JsonScan.stringField(it, "unit") },
-                    workId = JsonScan.stringField(work, "id") ?: return@mapNotNull null,
-                    workTitle = JsonScan.stringField(work, "title") ?: "",
-                    contentType = JsonScan.stringField(work, "content_type"),
-                    year = JsonScan.intField(work, "year"),
-                    artworkPath = JsonScan.objectAt(work, "artwork")?.let { JsonScan.stringField(it, "content_url") },
-                    editionLabel = edition?.let { JsonScan.stringField(it, "label") },
-                    season = attrs?.let { JsonScan.intField(it, "season") },
-                    episode = attrs?.let { JsonScan.intField(it, "episode") },
-                    assetId = JsonScan.stringField(asset, "asset_id") ?: return@mapNotNull null,
-                    blobHash = JsonScan.stringField(asset, "blob_hash"),
-                    mime = JsonScan.stringField(asset, "mime"),
-                    durationSeconds = JsonScan.doubleField(asset, "duration_seconds"),
-                )
-            }
+        fun parse(body: String): List<ContinueEntry> = JsonScan.objectsOf(body, listOf("items")).mapNotNull { obj ->
+            val session = JsonScan.objectAt(obj, "session") ?: return@mapNotNull null
+            val work = JsonScan.objectAt(obj, "work") ?: return@mapNotNull null
+            val asset = JsonScan.objectAt(obj, "asset") ?: return@mapNotNull null
+            val edition = JsonScan.objectAt(obj, "edition")
+            val attrs = edition?.let { JsonScan.objectAt(it, "attributes") }
+            val progress = JsonScan.objectAt(session, "progress")
+            ContinueEntry(
+                sessionId = JsonScan.stringField(session, "id") ?: return@mapNotNull null,
+                state = JsonScan.stringField(session, "state") ?: "",
+                verb = JsonScan.stringField(session, "verb"),
+                progressLocator = progress?.let { JsonScan.stringField(it, "locator") },
+                progressUnit = progress?.let { JsonScan.stringField(it, "unit") },
+                workId = JsonScan.stringField(work, "id") ?: return@mapNotNull null,
+                workTitle = JsonScan.stringField(work, "title") ?: "",
+                contentType = JsonScan.stringField(work, "content_type"),
+                year = JsonScan.intField(work, "year"),
+                artworkPath = JsonScan.objectAt(work, "artwork")?.let { JsonScan.stringField(it, "content_url") },
+                editionLabel = edition?.let { JsonScan.stringField(it, "label") },
+                season = attrs?.let { JsonScan.intField(it, "season") },
+                episode = attrs?.let { JsonScan.intField(it, "episode") },
+                assetId = JsonScan.stringField(asset, "asset_id") ?: return@mapNotNull null,
+                blobHash = JsonScan.stringField(asset, "blob_hash"),
+                mime = JsonScan.stringField(asset, "mime"),
+                durationSeconds = JsonScan.doubleField(asset, "duration_seconds"),
+            )
+        }
     }
 }

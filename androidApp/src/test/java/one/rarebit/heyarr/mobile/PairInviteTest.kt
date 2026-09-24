@@ -15,6 +15,7 @@ class PairInviteTest {
     private val relay = "http://192.168.16.224:7777/pair"
     private val session = "s3ss10n"
     private val salt = ByteArray(16) { it.toByte() }
+
     /** The identity (genesis key) a v3 invite names — what the responder judges membership under. */
     private val usr = "ed25519:" + "ab".repeat(32)
     private val invite = Invite.encode(relay, session, salt, usr)

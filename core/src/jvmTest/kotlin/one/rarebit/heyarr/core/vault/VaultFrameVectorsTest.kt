@@ -66,7 +66,7 @@ class VaultFrameVectorsTest {
             // whose nonce differs from the manifest just decrypted (no back-to-back repeat).
             if (manifest.frameCount >= 2) {
                 val fs = manifest.frameSize
-                val start = fs.toLong()            // first byte of frame 1
+                val start = fs.toLong() // first byte of frame 1
                 val n = minOf(fs.toLong(), manifest.plaintextSize - start)
                 assertTrue(
                     VaultFrame.openRange(spaceKey, manifest, start, n, fetch)

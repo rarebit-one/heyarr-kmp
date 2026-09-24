@@ -33,10 +33,9 @@ class MembershipClient(
         fun url(baseUrl: String, usr: String) = baseUrl.trimEnd('/') + "/membership/" + usr
 
         /** The `ops` list out of the response body; a body without one is an empty log. */
-        fun parse(body: String): List<String> =
-            (MiniJson.parseObject(body)["ops"] as? List<*>)
-                ?.mapNotNull { it as? String }
-                ?.filter { it.isNotBlank() }
-                ?: emptyList()
+        fun parse(body: String): List<String> = (MiniJson.parseObject(body)["ops"] as? List<*>)
+            ?.mapNotNull { it as? String }
+            ?.filter { it.isNotBlank() }
+            ?: emptyList()
     }
 }

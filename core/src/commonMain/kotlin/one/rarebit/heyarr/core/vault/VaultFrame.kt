@@ -43,11 +43,11 @@ object VaultFrame {
     /** A vault object's geometry (mirrors heyarr-core's Manifest; JSON is the contract). */
     data class Manifest(
         val version: Int,
-        val fileId: String,        // hex of the 16 random per-object bytes
+        val fileId: String, // hex of the 16 random per-object bytes
         val frameSize: Int,
         val frameCount: Int,
         val plaintextSize: Long,
-        val content: String,       // "blake3:<hex>" of the ciphertext content blob
+        val content: String, // "blake3:<hex>" of the ciphertext content blob
     ) {
         private fun fullFrameCipherLen(): Long =
             (NONCE_LEN + HEADER_LEN).toLong() + frameSize.toLong() + TAG_LEN.toLong()
@@ -250,7 +250,7 @@ object VaultFrame {
             "frame_count" to m.frameCount,
             "plaintext_size" to m.plaintextSize,
             "content" to m.content,
-        )
+        ),
     )
 
     // ---- bytes ----
@@ -266,11 +266,10 @@ object VaultFrame {
         return h
     }
 
-    private fun beU32(b: ByteArray, at: Int): Int =
-        ((b[at].toInt() and 0xFF) shl 24) or
-            ((b[at + 1].toInt() and 0xFF) shl 16) or
-            ((b[at + 2].toInt() and 0xFF) shl 8) or
-            (b[at + 3].toInt() and 0xFF)
+    private fun beU32(b: ByteArray, at: Int): Int = ((b[at].toInt() and 0xFF) shl 24) or
+        ((b[at + 1].toInt() and 0xFF) shl 16) or
+        ((b[at + 2].toInt() and 0xFF) shl 8) or
+        (b[at + 3].toInt() and 0xFF)
 
     private fun hexToBytes(s: String): ByteArray {
         require(s.length % 2 == 0) { "hex must be even length" }

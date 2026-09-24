@@ -1,10 +1,10 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.catalog.ContinueClient
-import one.rarebit.heyarr.mobile.catalog.ContinueEntry
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.catalog.ContinueClient
+import one.rarebit.heyarr.mobile.catalog.ContinueEntry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -12,7 +12,10 @@ import org.junit.Test
 
 private class OneTransport(private val response: HttpResponse) : HttpTransport {
     var lastUrl: String? = null
-    override fun get(url: String, headers: Map<String, String>): HttpResponse { lastUrl = url; return response }
+    override fun get(url: String, headers: Map<String, String>): HttpResponse {
+        lastUrl = url
+        return response
+    }
     override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(405, "")
 }
 

@@ -1,8 +1,7 @@
 package one.rarebit.heyarr.mobile.net
+import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
-
-import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.voidbind.auth.DeviceAuthPolicy
 import one.rarebit.voidbind.auth.DeviceCredential
 

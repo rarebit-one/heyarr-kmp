@@ -61,7 +61,9 @@ interface SettingsStore {
 /** Non-persistent store for tests and previews. */
 class InMemorySettingsStore(private var config: DesktopConfig = DesktopConfig()) : SettingsStore {
     override fun load(): DesktopConfig = config
-    override fun save(config: DesktopConfig) { this.config = config }
+    override fun save(config: DesktopConfig) {
+        this.config = config
+    }
 }
 
 /**
@@ -111,13 +113,15 @@ class FileSettingsStore(
     }
 
     private fun escape(s: String): String = buildString {
-        for (c in s) when (c) {
-            '"' -> append("\\\"")
-            '\\' -> append("\\\\")
-            '\n' -> append("\\n")
-            '\r' -> append("\\r")
-            '\t' -> append("\\t")
-            else -> append(c)
+        for (c in s) {
+            when (c) {
+                '"' -> append("\\\"")
+                '\\' -> append("\\\\")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                else -> append(c)
+            }
         }
     }
 

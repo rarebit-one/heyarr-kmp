@@ -1,11 +1,11 @@
 package one.rarebit.heyarr.desktop
 
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.net.HttpResponse
+import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.desktop.catalog.GroupingJson
 import one.rarebit.heyarr.desktop.music.MusicClient
 import one.rarebit.heyarr.desktop.music.TracksJson
-import one.rarebit.heyarr.core.net.HttpResponse
-import one.rarebit.heyarr.core.net.HttpTransport
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

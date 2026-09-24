@@ -1,20 +1,19 @@
 package one.rarebit.heyarr.mobile.music
 
-import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.mobile.library.Work
 
 object MusicJson {
 
     /** `GET /artists` rows: `{ name, work_count, artwork }`. */
-    fun parseArtists(body: String): List<Artist> =
-        JsonScan.objectsOf(body, listOf("items")).mapNotNull { obj ->
-            val name = JsonScan.stringField(obj, "name") ?: return@mapNotNull null
-            Artist(
-                name = name,
-                workCount = JsonScan.intField(obj, "work_count") ?: 0,
-                artworkPath = JsonScan.objectAt(obj, "artwork")?.let { JsonScan.stringField(it, "content_url") },
-            )
-        }
+    fun parseArtists(body: String): List<Artist> = JsonScan.objectsOf(body, listOf("items")).mapNotNull { obj ->
+        val name = JsonScan.stringField(obj, "name") ?: return@mapNotNull null
+        Artist(
+            name = name,
+            workCount = JsonScan.intField(obj, "work_count") ?: 0,
+            artworkPath = JsonScan.objectAt(obj, "artwork")?.let { JsonScan.stringField(it, "content_url") },
+        )
+    }
 
     /**
      * The client-side sibling of `GET /artists`: group music works on `attributes.artist`,

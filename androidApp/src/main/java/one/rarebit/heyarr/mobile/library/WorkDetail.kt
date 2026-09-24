@@ -48,7 +48,10 @@ data class WorkAsset(
             val units = arrayOf("KB", "MB", "GB", "TB")
             var value = bytes.toDouble()
             var unit = -1
-            while (value >= 1024 && unit < units.size - 1) { value /= 1024; unit++ }
+            while (value >= 1024 && unit < units.size - 1) {
+                value /= 1024
+                unit++
+            }
             return if (value >= 100) "${value.toLong()} ${units[unit]}" else String.format(java.util.Locale.ROOT, "%.1f %s", value, units[unit])
         }
     }
@@ -131,8 +134,7 @@ object WorkDetailJson {
     }
 
     /** `GET /blobs/{hash}` → `size`, or null. */
-    fun parseBlobSize(body: String): Long? =
-        JsonScan.rootObject(body)?.let { JsonScan.longField(it, "size") }
+    fun parseBlobSize(body: String): Long? = JsonScan.rootObject(body)?.let { JsonScan.longField(it, "size") }
 
     fun parseWants(body: String): List<Want> =
         JsonScan.objectsOf(body, listOf("items", "desired", "data")).mapNotNull { parseWantObject(it) }
@@ -205,13 +207,15 @@ data class WorkPatch(
 
     private fun quote(s: String): String {
         val sb = StringBuilder("\"")
-        for (c in s) when (c) {
-            '"' -> sb.append("\\\"")
-            '\\' -> sb.append("\\\\")
-            '\n' -> sb.append("\\n")
-            '\r' -> sb.append("\\r")
-            '\t' -> sb.append("\\t")
-            else -> sb.append(c)
+        for (c in s) {
+            when (c) {
+                '"' -> sb.append("\\\"")
+                '\\' -> sb.append("\\\\")
+                '\n' -> sb.append("\\n")
+                '\r' -> sb.append("\\r")
+                '\t' -> sb.append("\\t")
+                else -> sb.append(c)
+            }
         }
         return sb.append("\"").toString()
     }

@@ -1,21 +1,16 @@
 package one.rarebit.heyarr.desktop.heyarr
 
-import one.rarebit.heyarr.core.heyarr.*
-
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.feeds.FollowedSource
 import one.rarebit.heyarr.core.feeds.FollowedSourcesJson
-import one.rarebit.heyarr.desktop.library.LibraryClient
-import one.rarebit.heyarr.desktop.library.Work
-import one.rarebit.heyarr.desktop.library.WorkDetail
-import one.rarebit.heyarr.desktop.library.WorkDetailClient
-import one.rarebit.heyarr.desktop.library.WorksJson
+import one.rarebit.heyarr.core.heyarr.*
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.mcp.DiscoveryJson
 import one.rarebit.heyarr.core.mcp.Explanation
 import one.rarebit.heyarr.core.mcp.ExplanationJson
 import one.rarebit.heyarr.core.mcp.ExternalId
 import one.rarebit.heyarr.core.mcp.ExternalIdJson
+import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.mcp.McpClient
 import one.rarebit.heyarr.core.mcp.McpOutcome
 import one.rarebit.heyarr.core.mcp.McpTransportException
@@ -38,12 +33,16 @@ import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.mcp.WantCreated
 import one.rarebit.heyarr.core.mcp.WantCreatedJson
 import one.rarebit.heyarr.core.mcp.WantJson
-import one.rarebit.heyarr.desktop.music.Track
-import one.rarebit.heyarr.desktop.music.TracksJson
-import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.desktop.library.LibraryClient
+import one.rarebit.heyarr.desktop.library.Work
+import one.rarebit.heyarr.desktop.library.WorkDetail
+import one.rarebit.heyarr.desktop.library.WorkDetailClient
+import one.rarebit.heyarr.desktop.library.WorksJson
+import one.rarebit.heyarr.desktop.music.Track
+import one.rarebit.heyarr.desktop.music.TracksJson
 import java.io.IOException
 import java.net.URLEncoder
 
@@ -177,17 +176,23 @@ class HeyarrApi(
         // declared codecs would make the plan non-DIRECT (a TV that decodes more than it
         // advertises). Only added when set, so a normal cast keeps the honest refusal.
         val toolArgs = buildMap<String, Any?> {
-            put("asset_id", assetId); put("renderer", renderer)
+            put("asset_id", assetId)
+            put("renderer", renderer)
             if (forceDirect) put("force_direct", true)
         }
         val viaTool = mcp.call("play_here", toolArgs).map { }
         if (viaTool !is McpResult.Refused || udn == null || !viaTool.message.contains("tool failed")) return viaTool
-        val body = one.rarebit.heyarr.core.mcp.JsonWrite.obj(buildMap<String, Any?> {
-            put("asset_id", assetId); if (forceDirect) put("force_direct", true)
-        })
+        val body = one.rarebit.heyarr.core.mcp.JsonWrite.obj(
+            buildMap<String, Any?> {
+                put("asset_id", assetId)
+                if (forceDirect) put("force_direct", true)
+            },
+        )
         val resp = try {
             http.post("$baseUrl/api/v1/renderers/${enc(udn)}/play", body, "application/json", credential.asHeader())
-        } catch (e: IOException) { throw McpTransportException("heyarr is unreachable: ${e.message}", e) }
+        } catch (e: IOException) {
+            throw McpTransportException("heyarr is unreachable: ${e.message}", e)
+        }
         return when (resp.status) {
             200, 201, 202 -> McpResult.Ok(Unit)
             else -> McpResult.Refused(Problem.message(resp.body, resp.status, "play on renderer"), "renderers/play", resp.status)
@@ -286,7 +291,9 @@ class HeyarrApi(
     /** `GET /api/v1/works/{id}/assets` — a work's files (the music client's reader, reused). */
     fun assets(workId: String): List<Track> = pageAll(
         url = { c -> paged("$baseUrl/api/v1/works/${enc(workId)}/assets?limit=200", c) },
-        parse = TracksJson::parse, cursor = TracksJson::nextCursor, what = "GET /works/{id}/assets",
+        parse = TracksJson::parse,
+        cursor = TracksJson::nextCursor,
+        what = "GET /works/{id}/assets",
     )
 
     /**
@@ -298,7 +305,9 @@ class HeyarrApi(
         val body = one.rarebit.heyarr.core.mcp.JsonWrite.obj(linkedMapOf("scope" to "edition", "work_id" to workId, "edition_id" to editionId, "quality_profile" to qualityProfile, "monitor" to monitor, "reason" to reason))
         val resp = try {
             http.post("$baseUrl/api/v1/desired", body, "application/json", credential.asHeader())
-        } catch (e: IOException) { throw McpTransportException("heyarr is unreachable: ${e.message}", e) }
+        } catch (e: IOException) {
+            throw McpTransportException("heyarr is unreachable: ${e.message}", e)
+        }
         return when (resp.status) {
             200, 201 -> McpResult.Ok(DesiredItemJson.parseOne(resp.body))
             401, 403 -> throw McpTransportException("heyarr refused the credential (HTTP ${resp.status})", null, resp.status)
@@ -327,7 +336,9 @@ class HeyarrApi(
     /** `GET /api/v1/desired` — every want with its acquisition state (the library-status index). */
     fun desired(): List<DesiredItem> = pageAll(
         url = { c -> paged("$baseUrl/api/v1/desired?limit=200", c) },
-        parse = DesiredItemJson::list, cursor = DesiredItemJson::nextCursor, what = "GET /desired",
+        parse = DesiredItemJson::list,
+        cursor = DesiredItemJson::nextCursor,
+        what = "GET /desired",
     )
 
     /** `GET /api/v1/desired/{id}/candidates` — the releases the last search found, scored. */

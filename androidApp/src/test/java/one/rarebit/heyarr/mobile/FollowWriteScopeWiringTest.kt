@@ -94,9 +94,12 @@ class FollowWriteScopeWiringTest {
         private val get: HttpResponse = HttpResponse(405, ""),
         private val post: HttpResponse = HttpResponse(405, ""),
     ) : HttpTransport {
-        var lastGetUrl: String? = null; private set
-        var lastGetAuth: String? = null; private set
-        var lastPostBody: String? = null; private set
+        var lastGetUrl: String? = null
+            private set
+        var lastGetAuth: String? = null
+            private set
+        var lastPostBody: String? = null
+            private set
 
         override fun get(url: String, headers: Map<String, String>): HttpResponse {
             lastGetUrl = url

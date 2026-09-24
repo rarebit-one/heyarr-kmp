@@ -78,6 +78,9 @@ class PairDeepLinkTest {
     @Test fun `percent decoding keeps a plus literal and refuses non-ASCII`() {
         assertEquals("a+b c", PairDeepLink.percentDecode("a+b%20c"))
         assertEquals("é", PairDeepLink.percentDecode("%C3%A9"))
-        try { PairDeepLink.percentDecode("é"); throw AssertionError("expected refusal") } catch (_: IllegalArgumentException) {}
+        try {
+            PairDeepLink.percentDecode("é")
+            throw AssertionError("expected refusal")
+        } catch (_: IllegalArgumentException) {}
     }
 }

@@ -23,6 +23,7 @@ class ConsumptionClient(
 ) {
     sealed interface Outcome {
         data class Ok(val id: String?) : Outcome
+
         /** The node refused (a 409 is "you are out of date", a 403 "not yours to write"). */
         data class Refused(val status: Int, val message: String) : Outcome
     }
@@ -33,24 +34,33 @@ class ConsumptionClient(
     fun registerDevice(deviceKey: String, name: String, caps: ClientCapabilities?): Outcome {
         val h = headers() ?: return Outcome.Refused(401, "no credential")
         val resp = http.post(devicesUrl(baseUrl()), registerBody(deviceKey, name, caps), "application/json", h)
-        return if (resp.status == 200 || resp.status == 201) Outcome.Ok(JsonScan.rootObject(resp.body)?.let { JsonScan.stringField(it, "id") })
-        else Outcome.Refused(resp.status, ProblemDetail.message(resp.body, resp.status, "register device"))
+        return if (resp.status == 200 || resp.status == 201) {
+            Outcome.Ok(JsonScan.rootObject(resp.body)?.let { JsonScan.stringField(it, "id") })
+        } else {
+            Outcome.Refused(resp.status, ProblemDetail.message(resp.body, resp.status, "register device"))
+        }
     }
 
     /** `POST /consumption/sessions` — a fresh session in `created`; returns its id. */
     fun createSession(assetId: String, deviceId: String, verb: String): Outcome {
         val h = headers() ?: return Outcome.Refused(401, "no credential")
         val resp = http.post(sessionsUrl(baseUrl()), sessionBody(assetId, deviceId, verb), "application/json", h)
-        return if (resp.status == 201 || resp.status == 200) Outcome.Ok(JsonScan.rootObject(resp.body)?.let { JsonScan.stringField(it, "id") })
-        else Outcome.Refused(resp.status, ProblemDetail.message(resp.body, resp.status, "open session"))
+        return if (resp.status == 201 || resp.status == 200) {
+            Outcome.Ok(JsonScan.rootObject(resp.body)?.let { JsonScan.stringField(it, "id") })
+        } else {
+            Outcome.Refused(resp.status, ProblemDetail.message(resp.body, resp.status, "open session"))
+        }
     }
 
     /** `POST /consumption/sessions/{id}/transitions` — start/pause/resume/progress/stop/complete, with a position. */
     fun transition(sessionId: String, transition: String, pos: Position?): Outcome {
         val h = headers() ?: return Outcome.Refused(401, "no credential")
         val resp = http.post(transitionUrl(baseUrl(), sessionId), transitionBody(transition, pos), "application/json", h)
-        return if (resp.status == 200) Outcome.Ok(sessionId)
-        else Outcome.Refused(resp.status, ProblemDetail.message(resp.body, resp.status, transition))
+        return if (resp.status == 200) {
+            Outcome.Ok(sessionId)
+        } else {
+            Outcome.Refused(resp.status, ProblemDetail.message(resp.body, resp.status, transition))
+        }
     }
 
     companion object {

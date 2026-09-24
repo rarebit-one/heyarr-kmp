@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.mobile.playback
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.library.WorkAsset
 
 /**
  * The playback / blob-stream seam. heyarr serves content two ways (mobile-client
@@ -46,28 +46,26 @@ class PlaybackClient(
      * from the filename (a blob URL has no extension), falling back to the asset's own;
      * the language is read from the filename's tag. Assets with no blob are dropped.
      */
-    fun subtitleSidecars(assets: List<WorkAsset>): List<PlaybackTarget.Sidecar> =
-        assets.mapNotNull { a ->
-            val hash = a.blobHash?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-            PlaybackTarget.Sidecar(
-                url = blobContentUrl(baseUrl, hash),
-                mimeType = Subtitles.externalMimeType(a.filename) ?: a.mime,
-                language = Subtitles.languageTag(a.filename),
-                label = a.filename,
-            )
-        }
+    fun subtitleSidecars(assets: List<WorkAsset>): List<PlaybackTarget.Sidecar> = assets.mapNotNull { a ->
+        val hash = a.blobHash?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        PlaybackTarget.Sidecar(
+            url = blobContentUrl(baseUrl, hash),
+            mimeType = Subtitles.externalMimeType(a.filename) ?: a.mime,
+            language = Subtitles.languageTag(a.filename),
+            label = a.filename,
+        )
+    }
 
     /**
      * Build the direct-stream [PlaybackTarget] for a known blob hash: the range-capable
      * content URL under this client's credential.
      */
-    fun blobTarget(hash: String, isVideo: Boolean, mimeType: String? = null): PlaybackTarget =
-        PlaybackTarget(
-            contentUrl = blobContentUrl(baseUrl, hash),
-            credential = credential,
-            isVideo = isVideo,
-            mimeType = mimeType,
-        )
+    fun blobTarget(hash: String, isVideo: Boolean, mimeType: String? = null): PlaybackTarget = PlaybackTarget(
+        contentUrl = blobContentUrl(baseUrl, hash),
+        credential = credential,
+        isVideo = isVideo,
+        mimeType = mimeType,
+    )
 
     /**
      * `POST /api/v1/playback/plan` with [caps]. A 400 is an older node that rejects the
@@ -121,11 +119,13 @@ class PlaybackClient(
                 // Without this the scrubber has no total and every drag lands on zero.
                 sourceDurationSeconds = r.source?.durationSeconds,
             )
+
             is PlanResult.Direct -> direct.copy(
                 contentUrl = r.url ?: direct.contentUrl,
                 origin = PlaybackTarget.Origin.DIRECT_PLANNED,
                 reason = r.reason,
             )
+
             is PlanResult.Unavailable -> direct.copy(reason = r.why)
         }
     }
@@ -144,9 +144,11 @@ class PlaybackClient(
     }
 
     /** Resolve a possibly-relative plan `url` against the base origin. */
-    private fun absolute(url: String): String =
-        if (url.startsWith("http://") || url.startsWith("https://")) url
-        else baseUrl.trimEnd('/') + "/" + url.trimStart('/')
+    private fun absolute(url: String): String = if (url.startsWith("http://") || url.startsWith("https://")) {
+        url
+    } else {
+        baseUrl.trimEnd('/') + "/" + url.trimStart('/')
+    }
 
     companion object {
         /**
@@ -164,11 +166,9 @@ class PlaybackClient(
         private val BLOB_HASH = Regex("^blake3:[0-9a-f]{64}$")
 
         /** Pure, tested: the playback-negotiation endpoint (write path). */
-        fun playbackUrl(baseUrl: String): String =
-            baseUrl.trimEnd('/') + "/api/v1/playback"
+        fun playbackUrl(baseUrl: String): String = baseUrl.trimEnd('/') + "/api/v1/playback"
 
         /** Pure, tested: the playback-plan endpoint (read path). */
-        fun planUrl(baseUrl: String): String =
-            baseUrl.trimEnd('/') + "/api/v1/playback/plan"
+        fun planUrl(baseUrl: String): String = baseUrl.trimEnd('/') + "/api/v1/playback/plan"
     }
 }

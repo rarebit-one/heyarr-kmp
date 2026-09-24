@@ -22,12 +22,11 @@ data class ClientCapabilities(
         copy(video = video.filterNot { it == codec }, audio = audio.filterNot { it == codec })
 
     /** The plan request body: `{"asset_id", "client": {containers, video, audio, max_height}}`. */
-    fun planRequestBody(assetId: String): String =
-        "{\"asset_id\":${quote(assetId)},\"client\":{" +
-            "\"containers\":${array(containers)}," +
-            "\"video\":${array(video)}," +
-            "\"audio\":${array(audio)}," +
-            "\"max_height\":$maxHeight}}"
+    fun planRequestBody(assetId: String): String = "{\"asset_id\":${quote(assetId)},\"client\":{" +
+        "\"containers\":${array(containers)}," +
+        "\"video\":${array(video)}," +
+        "\"audio\":${array(audio)}," +
+        "\"max_height\":$maxHeight}}"
 
     companion object {
         /** The containers Media3's bundled extractors demux without a remux. */
@@ -71,8 +70,11 @@ data class ClientCapabilities(
             val audio = LinkedHashSet<String>()
             for (mime in mimes) {
                 val name = codecName(mime) ?: continue
-                if (mime.startsWith("video/", ignoreCase = true)) video.add(name)
-                else if (mime.startsWith("audio/", ignoreCase = true)) audio.add(name)
+                if (mime.startsWith("video/", ignoreCase = true)) {
+                    video.add(name)
+                } else if (mime.startsWith("audio/", ignoreCase = true)) {
+                    audio.add(name)
+                }
             }
             return ClientCapabilities(video = video.toList(), audio = audio.toList(), maxHeight = maxHeight)
         }
@@ -81,13 +83,15 @@ data class ClientCapabilities(
 
         internal fun quote(s: String): String {
             val sb = StringBuilder("\"")
-            for (c in s) when (c) {
-                '"' -> sb.append("\\\"")
-                '\\' -> sb.append("\\\\")
-                '\n' -> sb.append("\\n")
-                '\r' -> sb.append("\\r")
-                '\t' -> sb.append("\\t")
-                else -> sb.append(c)
+            for (c in s) {
+                when (c) {
+                    '"' -> sb.append("\\\"")
+                    '\\' -> sb.append("\\\\")
+                    '\n' -> sb.append("\\n")
+                    '\r' -> sb.append("\\r")
+                    '\t' -> sb.append("\\t")
+                    else -> sb.append(c)
+                }
             }
             return sb.append("\"").toString()
         }

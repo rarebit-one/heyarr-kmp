@@ -24,7 +24,8 @@ internal object PsJson {
         val n = json.length
         val sb = StringBuilder()
         while (i < n && json[i] in '0'..'9') {
-            sb.append(json[i]); i++
+            sb.append(json[i])
+            i++
         }
         return sb.toString().toULongOrNull()
     }
@@ -44,11 +45,15 @@ internal object PsJson {
         while (i < n) {
             when (val c = arraySlice[i]) {
                 '[', '{' -> {
-                    depth++; i++
+                    depth++
+                    i++
                 }
+
                 ']', '}' -> {
-                    depth--; i++
+                    depth--
+                    i++
                 }
+
                 '"' -> {
                     if (depth == 1) {
                         val sb = StringBuilder()
@@ -57,7 +62,8 @@ internal object PsJson {
                             i = if (arraySlice[i] == '\\') {
                                 JsonEscapes.append(sb, arraySlice, i)
                             } else {
-                                sb.append(arraySlice[i]); i + 1
+                                sb.append(arraySlice[i])
+                                i + 1
                             }
                         }
                         i++ // past closing quote
@@ -70,8 +76,10 @@ internal object PsJson {
                         i++
                     }
                 }
+
                 else -> {
-                    @Suppress("UNUSED_EXPRESSION") c
+                    @Suppress("UNUSED_EXPRESSION")
+                    c
                     i++
                 }
             }
@@ -114,14 +122,23 @@ internal object PsJson {
         for (ch in s) {
             when (ch) {
                 '"' -> sb.append("\\\"")
+
                 '\\' -> sb.append("\\\\")
+
                 '\u0007' -> sb.append("\\a")
+
                 '\b' -> sb.append("\\b")
+
                 '\u000B' -> sb.append("\\v")
+
                 '\u000C' -> sb.append("\\f")
+
                 '\n' -> sb.append("\\n")
+
                 '\r' -> sb.append("\\r")
+
                 '\t' -> sb.append("\\t")
+
                 else -> when {
                     ch.code in 0x20..0x7E -> sb.append(ch)
                     ch.code < 0x20 || ch.code == 0x7F -> sb.append("\\x").append(hex2(ch.code))

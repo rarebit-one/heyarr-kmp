@@ -52,7 +52,10 @@ class ReaderActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         val container = FrameLayout(this).apply { id = R.id.reader_container }
         setContentView(container)
-        val status = TextView(this).apply { text = "Opening…"; setPadding(48, 48, 48, 48) }
+        val status = TextView(this).apply {
+            text = "Opening…"
+            setPadding(48, 48, 48, 48)
+        }
         container.addView(status)
 
         val assetId = intent.getStringExtra(EXTRA_ASSET_ID) ?: return finish()
@@ -62,9 +65,14 @@ class ReaderActivity : FragmentActivity() {
         val positions = PrefsReadingPositionStore(this)
         val reporter = app.reporter
 
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() { finish() }
-        })
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    finish()
+                }
+            },
+        )
 
         lifecycleScope.launch {
             val http = ReaderHttp.client(baseUrl = { app.graph.baseUrl() }, header = { app.graph.authHeader.current() })
@@ -72,9 +80,18 @@ class ReaderActivity : FragmentActivity() {
             val opener = PublicationOpener(
                 publicationParser = DefaultPublicationParser(this@ReaderActivity, httpClient = http, assetRetriever = retriever, pdfFactory = PdfiumDocumentFactory(this@ReaderActivity)),
             )
-            val absolute = AbsoluteUrl(url) ?: run { status.text = "Not a URL: $url"; return@launch }
-            val asset = retriever.retrieve(absolute).getOrElse { status.text = "Could not fetch the file: $it"; return@launch }
-            val pub = opener.open(asset, allowUserInteraction = false).getOrElse { status.text = "Could not open the file: $it"; return@launch }
+            val absolute = AbsoluteUrl(url) ?: run {
+                status.text = "Not a URL: $url"
+                return@launch
+            }
+            val asset = retriever.retrieve(absolute).getOrElse {
+                status.text = "Could not fetch the file: $it"
+                return@launch
+            }
+            val pub = opener.open(asset, allowUserInteraction = false).getOrElse {
+                status.text = "Could not open the file: $it"
+                return@launch
+            }
             publication = pub
             container.removeView(status)
 
@@ -126,7 +143,9 @@ class ReaderFragment : Fragment() {
     private var onLocator: (Locator) -> Unit = {}
 
     fun setup(publication: Publication, initial: Locator?, onLocator: (Locator) -> Unit) {
-        this.publication = publication; this.initial = initial; this.onLocator = onLocator
+        this.publication = publication
+        this.initial = initial
+        this.onLocator = onLocator
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

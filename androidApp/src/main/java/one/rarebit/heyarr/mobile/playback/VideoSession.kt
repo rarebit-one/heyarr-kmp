@@ -88,6 +88,7 @@ class VideoSession(
         private set
     var state: State by mutableStateOf(State())
         private set
+
     /** The work's other playable episodes, for "next". */
     var queue: List<QueueEntry> by mutableStateOf(emptyList())
     var fullscreen: Boolean by mutableStateOf(false)
@@ -97,6 +98,7 @@ class VideoSession(
         private set
     private var trackSelector: DefaultTrackSelector? = null
     private var target: PlaybackTarget? = null
+
     /**
      * The source runtime the plan reported, for a stream whose own duration ExoPlayer
      * cannot know (no `Content-Length`, and the transcode is still being produced).
@@ -111,6 +113,7 @@ class VideoSession(
 
     /** Where playback reached, for the consumption reporter — set by the shell. */
     var onProgress: (PlaybackProgress) -> Unit = {}
+
     /** A renderer type Media3 cannot decode — the shell may re-plan for a stream. */
     var onIssue: (PlaybackDiagnostics.Issue) -> Unit = {}
 
@@ -120,7 +123,10 @@ class VideoSession(
     fun load(np: NowPlaying) {
         val same = current?.assetId != null && current?.assetId == np.assetId && target?.contentUrl == np.target.contentUrl
         current = np
-        if (same && player != null) { player?.play(); return }
+        if (same && player != null) {
+            player?.play()
+            return
+        }
         val t = np.target
         pinnedDurationMs = t.sourceDurationSeconds?.takeIf { it > 0 }?.let { (it * 1000).toLong() } ?: 0L
         streamStart = if (t.restartSeekable && np.startSeconds > 0) np.startSeconds else t.streamStartSeconds
@@ -154,7 +160,8 @@ class VideoSession(
                     .setUsage(C.USAGE_MEDIA)
                     .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
                     .build(),
-                /* handleAudioFocus = */ true,
+                /* handleAudioFocus = */
+                true,
             )
             .build()
         p.addListener(listener)
@@ -165,18 +172,20 @@ class VideoSession(
                 // External subtitle sidecars (ingested .srt/.vtt). Media3 pulls these through
                 // the same DefaultMediaSourceFactory data source as the video, so the auth
                 // header rides along; the first is flagged DEFAULT so captions show.
-                if (t.subtitles.isNotEmpty()) setSubtitleConfigurations(
-                    t.subtitles.mapIndexed { i, s ->
-                        MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(s.url))
-                            .apply {
-                                s.mimeType?.let { setMimeType(it) }
-                                s.language?.let { setLanguage(it) }
-                                s.label?.let { setLabel(it) }
-                                setSelectionFlags(if (i == 0) androidx.media3.common.C.SELECTION_FLAG_DEFAULT else 0)
-                            }
-                            .build()
-                    },
-                )
+                if (t.subtitles.isNotEmpty()) {
+                    setSubtitleConfigurations(
+                        t.subtitles.mapIndexed { i, s ->
+                            MediaItem.SubtitleConfiguration.Builder(android.net.Uri.parse(s.url))
+                                .apply {
+                                    s.mimeType?.let { setMimeType(it) }
+                                    s.language?.let { setLanguage(it) }
+                                    s.label?.let { setLabel(it) }
+                                    setSelectionFlags(if (i == 0) androidx.media3.common.C.SELECTION_FLAG_DEFAULT else 0)
+                                }
+                                .build()
+                        },
+                    )
+                }
             }
             .build()
         p.setMediaItem(item)
@@ -184,9 +193,11 @@ class VideoSession(
         p.playWhenReady = true
         player = p
         startTicker()
-        if (t.isVideo) scope.launch {
-            delay(PlaybackDiagnostics.NO_FRAME_GRACE_MS)
-            if (player === p && p.playbackState == Player.STATE_READY && !state.renderedFrame) state = state.copy(noFrame = true)
+        if (t.isVideo) {
+            scope.launch {
+                delay(PlaybackDiagnostics.NO_FRAME_GRACE_MS)
+                if (player === p && p.playbackState == Player.STATE_READY && !state.renderedFrame) state = state.copy(noFrame = true)
+            }
         }
     }
 
@@ -227,7 +238,10 @@ class VideoSession(
                 PlaybackDiagnostics.TrackGroup(type = g.type, supported = g.isSupported, sampleMime = f?.sampleMimeType, channels = f?.channelCount ?: 0)
             }
             val issue = PlaybackDiagnostics.assess(groups, t)
-            if (issue != null && state.issue == null) { state = state.copy(issue = issue.message); onIssue(issue) }
+            if (issue != null && state.issue == null) {
+                state = state.copy(issue = issue.message)
+                onIssue(issue)
+            }
             val collected = ArrayList<TextTrack>()
             var n = 0
             tracks.groups.forEachIndexed { gi, g ->
@@ -245,7 +259,9 @@ class VideoSession(
             target?.let { state = state.copy(error = PlaybackDiagnostics.describeError(error.errorCodeName, error.message, it), paused = true) }
         }
 
-        override fun onRenderedFirstFrame() { state = state.copy(renderedFrame = true, noFrame = false) }
+        override fun onRenderedFirstFrame() {
+            state = state.copy(renderedFrame = true, noFrame = false)
+        }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             val p = player ?: return
@@ -273,7 +289,10 @@ class VideoSession(
                 player?.let { p ->
                     state = state.copy(positionMs = positionMs(p), durationMs = durationMs(p), bufferedMs = bufferedMs(p))
                     val now = System.currentTimeMillis()
-                    if (p.isPlaying && now - lastReport >= PROGRESS_TICK_MS) { lastReport = now; onProgress(PlaybackProgress(sourceSeconds(), false, PlaybackProgress.Event.TICK)) }
+                    if (p.isPlaying && now - lastReport >= PROGRESS_TICK_MS) {
+                        lastReport = now
+                        onProgress(PlaybackProgress(sourceSeconds(), false, PlaybackProgress.Event.TICK))
+                    }
                 }
                 delay(500)
             }
@@ -282,13 +301,28 @@ class VideoSession(
 
     // ── transport ────────────────────────────────────────────────────────────────
 
-    fun togglePause() { val p = player ?: return; if (p.isPlaying) p.pause() else { if (p.playbackState == Player.STATE_ENDED) p.seekTo(0); p.play() } }
-    fun pause() { player?.pause() }
-    fun play() { player?.play() }
+    fun togglePause() {
+        val p = player ?: return
+        if (p.isPlaying) {
+            p.pause()
+        } else {
+            if (p.playbackState == Player.STATE_ENDED) p.seekTo(0)
+            p.play()
+        }
+    }
+    fun pause() {
+        player?.pause()
+    }
+    fun play() {
+        player?.play()
+    }
 
     fun seekTo(positionMs: Long) {
         val t = target ?: return
-        if (t.restartSeekable) { restartStream(positionMs / 1000.0); return }
+        if (t.restartSeekable) {
+            restartStream(positionMs / 1000.0)
+            return
+        }
         if (!t.seekable) return
         player?.seekTo(positionMs.coerceAtLeast(0))
     }
@@ -306,7 +340,10 @@ class VideoSession(
 
     fun seekBy(seconds: Double) {
         val t = target ?: return
-        if (t.restartSeekable) { restartStream(sourceSeconds() + seconds); return }
+        if (t.restartSeekable) {
+            restartStream(sourceSeconds() + seconds)
+            return
+        }
         if (!t.seekable) return
         val p = player ?: return
         p.seekTo((p.currentPosition + (seconds * 1000).toLong()).coerceAtLeast(0))
@@ -352,8 +389,12 @@ class VideoSession(
     }
 
     private fun release() {
-        ticker?.cancel(); ticker = null
-        player?.let { it.removeListener(listener); it.release() }
+        ticker?.cancel()
+        ticker = null
+        player?.let {
+            it.removeListener(listener)
+            it.release()
+        }
         player = null
         trackSelector = null
         target = null

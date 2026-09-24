@@ -3,9 +3,9 @@ package one.rarebit.heyarr.desktop.playback
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.sun.jna.Pointer
 import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.JsonScan
-import com.sun.jna.Pointer
 import java.io.File
 import java.io.IOException
 import java.net.StandardProtocolFamily
@@ -93,7 +93,10 @@ data class PlayerState(
 class EmbeddedPlayer(
     private val command: String = "mpv",
     private val spawn: (List<String>) -> Process = { argv ->
-        ProcessBuilder(argv).apply { redirectErrorStream(true); redirectOutput(ProcessBuilder.Redirect.DISCARD) }.start()
+        ProcessBuilder(argv).apply {
+            redirectErrorStream(true)
+            redirectOutput(ProcessBuilder.Redirect.DISCARD)
+        }.start()
     },
 ) {
     var state: PlayerState by mutableStateOf(PlayerState())
@@ -109,6 +112,7 @@ class EmbeddedPlayer(
     private var channel: SocketChannel? = null
     private var reader: Thread? = null
     private var socketPath: File? = null
+
     @Volatile private var closed = false
 
     /**
@@ -140,6 +144,7 @@ class EmbeddedPlayer(
     /** True when mpv runs in its own window rather than inside the app. */
     var poppedOut: Boolean = false
         private set
+
     /** Set when mpv went away on its own (the pop-out window was closed): the screen re-embeds and resumes. */
     var exited: Boolean by mutableStateOf(false)
         private set
@@ -147,8 +152,10 @@ class EmbeddedPlayer(
     private var lastUrl: String? = null
     private var lastToken: String? = null
     private var lastTitle: String? = null
+
     /** External subtitle URLs already `sub-add`ed to the current file, so re-applying is idempotent. */
     private val appliedSubs = mutableListOf<String>()
+
     /**
      * The sidecar URLs the session wants on this item, kept so a restart seek can put
      * them back: a re-cut is a whole new file to mpv and its `sub-add`s go with the old
@@ -157,6 +164,7 @@ class EmbeddedPlayer(
      * not straight after `loadfile`, because `sub-add` before the file is open is lost.
      */
     private var wantedSubs: List<String> = emptyList()
+
     @Volatile private var resubOnLoad = false
 
     /**
@@ -171,7 +179,9 @@ class EmbeddedPlayer(
         knownDuration = knownDurationSec?.takeIf { it > 0 }
         streamBase = streamBaseUrl
         poppedOut = !embedded
-        lastUrl = url; lastToken = token; lastTitle = title
+        lastUrl = url
+        lastToken = token
+        lastTitle = title
         val tmp = File(System.getProperty("java.io.tmpdir"))
         sweepStaleSockets(tmp)
         val sock = File(tmp, "heyarr-mpv-${ProcessHandle.current().pid()}-${System.nanoTime()}.sock")
@@ -186,19 +196,34 @@ class EmbeddedPlayer(
         val start = if (streamBaseUrl != null) null else resume
         exited = false
         val err = if (embedded) startInProcess(sock, token, title, start) else startProcess(sock, effectiveUrl, token, title, start)
-        if (err != null) { close(); return err }
+        if (err != null) {
+            close()
+            return err
+        }
         // The socket appears once mpv is up; a window under XWayland can take a moment.
         val deadline = System.currentTimeMillis() + 12_000
         var ch: SocketChannel? = null
         while (System.currentTimeMillis() < deadline && ch == null) {
-            if (!embedded && process?.isAlive != true) { close(); return "mpv exited before it opened its control socket." }
+            if (!embedded && process?.isAlive != true) {
+                close()
+                return "mpv exited before it opened its control socket."
+            }
             ch = try {
                 SocketChannel.open(StandardProtocolFamily.UNIX).also { it.connect(UnixDomainSocketAddress.of(sock.toPath())) }
-            } catch (e: IOException) { Thread.sleep(80); null }
+            } catch (e: IOException) {
+                Thread.sleep(80)
+                null
+            }
         }
-        channel = ch ?: run { close(); return "mpv started but its control socket never answered." }
+        channel = ch ?: run {
+            close()
+            return "mpv started but its control socket never answered."
+        }
         state = PlayerState(title = title, duration = knownDuration ?: 0.0, position = streamStart)
-        reader = Thread({ readLoop(ch) }, "mpv-ipc").apply { isDaemon = true; start() }
+        reader = Thread({ readLoop(ch) }, "mpv-ipc").apply {
+            isDaemon = true
+            start()
+        }
         for ((i, prop) in OBSERVED.withIndex()) send("observe_property", i + 1, prop)
         if (embedded) send("loadfile", effectiveUrl)
         return null
@@ -226,9 +251,17 @@ class EmbeddedPlayer(
         ) + listOfNotNull(start?.let { "start" to it.toString() })
         for ((k, v) in options) lib.mpv_set_option_string(h, k, v)
         val rc = lib.mpv_initialize(h)
-        if (rc < 0) { lib.mpv_terminate_destroy(h); return "libmpv: ${lib.mpv_error_string(rc)}" }
-        this.lib = lib; handle = h
-        renderer = try { MpvRenderer(lib, h) } catch (e: IllegalStateException) { return e.message }
+        if (rc < 0) {
+            lib.mpv_terminate_destroy(h)
+            return "libmpv: ${lib.mpv_error_string(rc)}"
+        }
+        this.lib = lib
+        handle = h
+        renderer = try {
+            MpvRenderer(lib, h)
+        } catch (e: IllegalStateException) {
+            return e.message
+        }
         return null
     }
 
@@ -251,18 +284,24 @@ class EmbeddedPlayer(
             add("--title=$title")
             add(url)
         }
-        process = try { spawn(argv) } catch (e: IOException) { return "mpv could not be started — is it installed and on PATH?" }
+        process = try {
+            spawn(argv)
+        } catch (e: IOException) {
+            return "mpv could not be started — is it installed and on PATH?"
+        }
         return null
     }
 
     /** Replace what is playing (the token was given at start; mpv keeps its header option). */
     fun load(url: String, title: String, knownDurationSec: Double? = null, streamBaseUrl: String? = null) {
-        lastUrl = url; lastTitle = title
+        lastUrl = url
+        lastTitle = title
         knownDuration = knownDurationSec?.takeIf { it > 0 }
         streamBase = streamBaseUrl
-        streamStart = 0.0     // a new item always begins at its own start
-        appliedSubs.clear()   // a new file drops the old file's external subtitles
-        wantedSubs = emptyList(); resubOnLoad = false   // and they belonged to the old item
+        streamStart = 0.0 // a new item always begins at its own start
+        appliedSubs.clear() // a new file drops the old file's external subtitles
+        wantedSubs = emptyList()
+        resubOnLoad = false // and they belonged to the old item
         state = state.copy(loaded = false, position = 0.0, duration = knownDuration ?: 0.0, eof = false, error = null, hasStarted = false, coreIdle = true, title = title, subtitles = emptyList(), audio = emptyList())
         send("set_property", "force-media-title", title)
         send("loadfile", streamBaseUrl ?: url)
@@ -295,6 +334,7 @@ class EmbeddedPlayer(
     fun togglePause() = send("cycle", "pause")
     fun play() = send("set_property", "pause", false)
     fun pause() = send("set_property", "pause", true)
+
     /**
      * Seek, in SOURCE seconds — the units the scrubber and the ±10 s buttons already
      * speak. For a direct blob this is mpv's own seek over HTTP ranges. For a
@@ -304,7 +344,10 @@ class EmbeddedPlayer(
      * works inside what has already buffered.
      */
     fun seekTo(seconds: Double) {
-        if (streamBase == null) { send("seek", seconds, "absolute"); return }
+        if (streamBase == null) {
+            send("seek", seconds, "absolute")
+            return
+        }
         // Inside what mpv has already demuxed there is nothing to re-cut: seek it
         // natively, in mpv's own clock. That keeps Back-10 and a small nudge forward
         // instant, and spends an ffmpeg only on the seek that actually needs one.
@@ -313,7 +356,10 @@ class EmbeddedPlayer(
 
     /** Relative seek. [state] carries source time, so the arithmetic is the same either way. */
     fun seekBy(seconds: Double) {
-        if (streamBase == null) { send("seek", seconds, "relative"); return }
+        if (streamBase == null) {
+            send("seek", seconds, "relative")
+            return
+        }
         seekTo(state.position + seconds)
     }
 
@@ -327,7 +373,9 @@ class EmbeddedPlayer(
     private fun withinCache(sourceSeconds: Double): Boolean =
         sourceSeconds >= streamStart && sourceSeconds <= state.bufferedTo - CACHE_SEEK_MARGIN
 
-    fun seekFraction(f: Double) { if (state.duration > 0) seekTo(f * state.duration) }
+    fun seekFraction(f: Double) {
+        if (state.duration > 0) seekTo(f * state.duration)
+    }
 
     /**
      * Re-cut a transcode stream from [atSeconds] into the source (ADR-0069): a new
@@ -347,7 +395,7 @@ class EmbeddedPlayer(
         val limit = (knownDuration ?: state.duration).takeIf { it > 0 }
         val at = atSeconds.coerceAtLeast(0.0).let { if (limit != null) it.coerceAtMost(limit) else it }
         streamStart = at
-        appliedSubs.clear()   // the re-cut is a new file to mpv; sidecars re-attach below
+        appliedSubs.clear() // the re-cut is a new file to mpv; sidecars re-attach below
         resubOnLoad = wantedSubs.isNotEmpty()
         state = state.copy(position = at, bufferedTo = at, loaded = false, eof = false, error = null, coreIdle = true)
         send("loadfile", StreamSeek.urlAt(base, at))
@@ -414,7 +462,13 @@ class EmbeddedPlayer(
         val buf = ByteBuffer.allocate(64 * 1024)
         val pending = StringBuilder()
         try {
-            while (!closed && ch.read(buf).also { if (it < 0) { onGone(); return } } >= 0) {
+            while (!closed && ch.read(buf).also {
+                    if (it < 0) {
+                        onGone()
+                        return
+                    }
+                } >= 0
+            ) {
                 buf.flip()
                 pending.append(StandardCharsets.UTF_8.decode(buf))
                 buf.clear()
@@ -428,7 +482,10 @@ class EmbeddedPlayer(
                         // own duration grows as it encodes, which would flicker the scrubber.
                         state = knownDuration?.let { next.copy(duration = it) } ?: next
                         // The re-cut is open: put the sidecars back on it.
-                        if (resubOnLoad && next.loaded) { resubOnLoad = false; addExternalSubtitles(wantedSubs) }
+                        if (resubOnLoad && next.loaded) {
+                            resubOnLoad = false
+                            addExternalSubtitles(wantedSubs)
+                        }
                     }
                 }
             }
@@ -513,12 +570,20 @@ object PlayerEvents {
         val event = JsonScan.stringField(obj, "event") ?: return state
         return when (event) {
             "property-change" -> onProperty(state, JsonScan.stringField(obj, "name") ?: return state, obj, sourceOffset)
+
             "file-loaded" -> state.copy(loaded = true, error = null, eof = false)
+
             "end-file" -> {
                 val reason = JsonScan.stringField(obj, "reason")
-                if (reason == "error") state.copy(error = JsonScan.stringField(obj, "file_error") ?: "playback failed", loaded = false)
-                else if (reason == "eof") state.copy(eof = true) else state
+                if (reason == "error") {
+                    state.copy(error = JsonScan.stringField(obj, "file_error") ?: "playback failed", loaded = false)
+                } else if (reason == "eof") {
+                    state.copy(eof = true)
+                } else {
+                    state
+                }
             }
+
             else -> state
         }
     }
@@ -529,28 +594,45 @@ object PlayerEvents {
         // test reads mpv's OWN clock (how far into this cut), not the shifted position,
         // so a seek far into a film still has to play half a second to count as started.
         "time-pos" -> num(obj)?.let { s.copy(position = it + offset, hasStarted = s.hasStarted || it > 0.5) } ?: s
+
         "duration" -> num(obj)?.let { s.copy(duration = it) } ?: s
+
         "pause" -> JsonScan.boolField(obj, "data")?.let { s.copy(paused = it) } ?: s
+
         "volume" -> num(obj)?.let { s.copy(volume = it) } ?: s
+
         "mute" -> JsonScan.boolField(obj, "data")?.let { s.copy(muted = it) } ?: s
+
         "paused-for-cache" -> JsonScan.boolField(obj, "data")?.let { s.copy(buffering = it) } ?: s
+
         "demuxer-cache-time" -> num(obj)?.let { s.copy(bufferedTo = it + offset) } ?: s
+
         "eof-reached" -> JsonScan.boolField(obj, "data")?.let { s.copy(eof = it) } ?: s
+
         // core-idle false means a frame is being shown: the first one ends warm-up for good.
         "core-idle" -> JsonScan.boolField(obj, "data")?.let { idle -> s.copy(coreIdle = idle, hasStarted = s.hasStarted || !idle) } ?: s
+
         "sid" -> s.copy(subtitleId = JsonScan.longField(obj, "data")?.toInt())
+
         "aid" -> s.copy(audioId = JsonScan.longField(obj, "data")?.toInt())
+
         "media-title" -> JsonScan.stringField(obj, "data")?.let { s.copy(title = it) } ?: s
+
         "track-list" -> {
             val tracks = JsonScan.objectsOf(JsonScan.arrayOf(obj, listOf("data")) ?: "[]", emptyList()).mapNotNull { t ->
                 val id = JsonScan.longField(t, "id")?.toInt() ?: return@mapNotNull null
                 MpvTrack(
-                    id = id, type = JsonScan.stringField(t, "type") ?: "?", title = JsonScan.stringField(t, "title"), lang = JsonScan.stringField(t, "lang"),
-                    selected = JsonScan.boolField(t, "selected") ?: false, external = JsonScan.boolField(t, "external") ?: false,
+                    id = id,
+                    type = JsonScan.stringField(t, "type") ?: "?",
+                    title = JsonScan.stringField(t, "title"),
+                    lang = JsonScan.stringField(t, "lang"),
+                    selected = JsonScan.boolField(t, "selected") ?: false,
+                    external = JsonScan.boolField(t, "external") ?: false,
                 )
             }
             s.copy(subtitles = tracks.filter { it.type == "sub" }, audio = tracks.filter { it.type == "audio" })
         }
+
         else -> s
     }
 

@@ -85,7 +85,9 @@ class DesktopSecretStore(
     /** The locally-held 32-byte wrap key, loaded from [keyFile] or minted (0600) on first use. */
     private fun wrapKey(): SecretKeySpec {
         val existing = runCatching { if (keyFile.exists()) keyFile.readBytes() else null }.getOrNull()
-        val raw = if (existing != null && existing.size == WRAP_KEY_BYTES) existing else {
+        val raw = if (existing != null && existing.size == WRAP_KEY_BYTES) {
+            existing
+        } else {
             val fresh = ByteArray(WRAP_KEY_BYTES).also { random.nextBytes(it) }
             keyFile.parentFile?.mkdirs()
             keyFile.writeBytes(fresh)
@@ -104,10 +106,14 @@ class DesktopSecretStore(
         val out = ByteArrayOutputStream()
         fun put(b: ByteArray) {
             val n = b.size
-            out.write(n ushr 24); out.write(n ushr 16); out.write(n ushr 8); out.write(n)
+            out.write(n ushr 24)
+            out.write(n ushr 16)
+            out.write(n ushr 8)
+            out.write(n)
             out.write(b)
         }
-        put(iv); put(ct)
+        put(iv)
+        put(ct)
         f.parentFile?.mkdirs()
         f.writeBytes(out.toByteArray())
         tighten(f)

@@ -25,19 +25,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.core.mcp.PlaybackStatus
 import one.rarebit.heyarr.core.mcp.Renderer
+import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
@@ -48,6 +46,8 @@ import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.Skeleton
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.Tokens
 
 class NowPlayingState {
     /** The session generation this state was loaded for. */
@@ -73,13 +73,21 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
         state.error = null
         scope.launch {
             session.io { a.renderers(refresh) }.fold(
-                onSuccess = { list -> state.renderers = list; if (state.selected == null) state.selected = list.firstOrNull() },
+                onSuccess = { list ->
+                    state.renderers = list
+                    if (state.selected == null) state.selected = list.firstOrNull()
+                },
                 onFailure = { state.error = it.message },
             )
         }
     }
     // Loaded once per node: a new URL or token (session.generation) throws the cached answer away.
-    LaunchedEffect(session.generation) { if (state.renderers == null || state.generation != session.generation) { state.generation = session.generation; load() } }
+    LaunchedEffect(session.generation) {
+        if (state.renderers == null || state.generation != session.generation) {
+            state.generation = session.generation
+            load()
+        }
+    }
     LaunchedEffect(state.selected?.udn, session.config) {
         val r = state.selected ?: return@LaunchedEffect
         val a = session.api ?: return@LaunchedEffect
@@ -105,21 +113,33 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
         })
         when {
             state.error != null && state.renderers == null -> ErrorState("Couldn't list renderers", state.error, { load() })
+
             state.renderers == null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
+
             state.renderers!!.isEmpty() -> EmptyState("No renderers found", detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again.", icon = Icons.Rounded.Cast)
+
             else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (r in state.renderers!!) FilterChip(r.name, state.selected?.udn == r.udn, { state.selected = r; state.status = null }, icon = Icons.Rounded.Cast)
+                for (r in state.renderers!!) {
+                    FilterChip(r.name, state.selected?.udn == r.udn, {
+                        state.selected = r
+                        state.status = null
+                    }, icon = Icons.Rounded.Cast)
+                }
             }
         }
         val r = state.selected
-        if (r != null) Panel(r.name) {
-            if (r.subtitle.isNotBlank()) Text(r.subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-            when (val s = state.status) {
-                null -> Skeleton(Modifier.fillMaxWidth().height(60.dp))
-                is McpResult.Refused -> Notice("playback_status: ${s.message}", tone = Tokens.danger)
-                is McpResult.Ok -> {
-                    val st = s.value
-                    if (st == null) Text("No status reported.", color = Tokens.textMuted) else Transport(st, state.busy, ::control)
+        if (r != null) {
+            Panel(r.name) {
+                if (r.subtitle.isNotBlank()) Text(r.subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+                when (val s = state.status) {
+                    null -> Skeleton(Modifier.fillMaxWidth().height(60.dp))
+
+                    is McpResult.Refused -> Notice("playback_status: ${s.message}", tone = Tokens.danger)
+
+                    is McpResult.Ok -> {
+                        val st = s.value
+                        if (st == null) Text("No status reported.", color = Tokens.textMuted) else Transport(st, state.busy, ::control)
+                    }
                 }
             }
         }
@@ -153,6 +173,8 @@ private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -> Un
 }
 
 private fun clock(s: Long): String {
-    val h = s / 3600; val m = (s % 3600) / 60; val sec = s % 60
+    val h = s / 3600
+    val m = (s % 3600) / 60
+    val sec = s % 60
     return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }

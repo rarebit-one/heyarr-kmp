@@ -32,12 +32,19 @@ object JdkEd25519 {
     fun publicKey(raw: ByteArray): PublicKey =
         KeyFactory.getInstance("Ed25519").generatePublic(X509EncodedKeySpec(SPKI_PREFIX + raw))
 
-    fun sign(seed: ByteArray, message: ByteArray): ByteArray =
-        Signature.getInstance("Ed25519").run { initSign(privateKey(seed)); update(message); sign() }
+    fun sign(seed: ByteArray, message: ByteArray): ByteArray = Signature.getInstance("Ed25519").run {
+        initSign(privateKey(seed))
+        update(message)
+        sign()
+    }
 
     val verifier = Ed25519Verifier { pub, message, sig ->
         runCatching {
-            Signature.getInstance("Ed25519").run { initVerify(publicKey(pub)); update(message); verify(sig) }
+            Signature.getInstance("Ed25519").run {
+                initVerify(publicKey(pub))
+                update(message)
+                verify(sig)
+            }
         }.getOrDefault(false)
     }
 
@@ -95,7 +102,8 @@ class PossessionProofTest {
         // The app's own Credential.Device renders through the library — same bytes.
         assertEquals(minted.headerValue, Credential.Device(minted.cert, minted.proof).headerValue())
         val (c, p) = DeviceCredential.parse(DeviceCredential.format(minted.cert, minted.proof))
-        assertEquals(certB, c); assertEquals(proofB, p)
+        assertEquals(certB, c)
+        assertEquals(proofB, p)
     }
 
     @Test fun certVectorsParseAndVerifyAgainstTheirUserKey() {

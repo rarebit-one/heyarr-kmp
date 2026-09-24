@@ -20,7 +20,8 @@ enum class MediaType(val apiName: String?, val label: String, val plural: String
     PODCAST(null, "Podcast", "Podcasts"),
     MUSIC("music", "Music", "Music"),
     FEED(null, "Feed", "Feeds & articles"),
-    UNKNOWN(null, "Other", "Other");
+    UNKNOWN(null, "Other", "Other"),
+    ;
 
     /** The kinds that are searchable server-side (a `content_type` value). */
     val searchable: Boolean get() = apiName != null

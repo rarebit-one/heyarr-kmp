@@ -1,9 +1,8 @@
 package one.rarebit.heyarr.desktop.ui.screens
 
-import one.rarebit.heyarr.ui.components.icon
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -39,7 +38,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
@@ -53,36 +51,37 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import one.rarebit.heyarr.desktop.heyarr.McpResult
-import one.rarebit.heyarr.core.mcp.DiscoveryHit
-import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.desktop.state.ArtworkLoader
 import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
+import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.state.LibraryStatus
-import one.rarebit.heyarr.desktop.state.SearchController
 import one.rarebit.heyarr.core.state.SearchFilter
 import one.rarebit.heyarr.core.state.SearchGrouping
 import one.rarebit.heyarr.core.state.SearchRow
 import one.rarebit.heyarr.core.state.SearchSection
 import one.rarebit.heyarr.core.state.Segment
-import one.rarebit.heyarr.desktop.ui.components.rememberCover
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.ui.theme.Tokens
+import one.rarebit.heyarr.desktop.heyarr.McpResult
+import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.desktop.state.ArtworkLoader
+import one.rarebit.heyarr.desktop.state.SearchController
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.desktop.ui.components.MediaRow
+import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Kbd
-import one.rarebit.heyarr.desktop.ui.components.MediaRow
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.icon
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.Tokens
 
 /**
  * Universal search — one box, every media kind, results grouped by type and streamed in
@@ -139,12 +138,22 @@ fun SearchScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             for (f in SearchFilter.entries) {
                 val count = if (f == SearchFilter.ALL) null else sections.firstOrNull { f.admits(it.type) }?.rows?.size?.takeIf { it > 0 }
-                MediaScope(f.type ?: MediaType.MOVIE) { FilterChip(f.label, search.filter == f, { search.filter = f; search.selected = -1 }, count = count) }
+                MediaScope(f.type ?: MediaType.MOVIE) {
+                    FilterChip(f.label, search.filter == f, {
+                        search.filter = f
+                        search.selected = -1
+                    }, count = count)
+                }
             }
         }
         when {
-            search.isIdle -> IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = { session.recent.clear(); recent = emptyList() })
+            search.isIdle -> IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = {
+                session.recent.clear()
+                recent = emptyList()
+            })
+
             SearchGrouping.empty(sections) -> EmptyState("Nothing in the library matches “${search.query}”", detail = "Discover can find titles to add from the metadata catalogue.", action = { SecondaryButton("Discover titles", { discovering = true }, icon = Icons.Rounded.TravelExplore) })
+
             else -> LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxSize()) {
                 var index = 0
                 for (section in sections) {
@@ -152,7 +161,9 @@ fun SearchScreen(
                     item(key = "h:" + section.type) { MediaScope(section.type) { SectionHeader(section.title, icon = section.type.icon(), modifier = Modifier.padding(top = 12.dp, bottom = 6.dp), subtitle = (section.segment as? Segment.Loaded)?.let { if (it.truncated) "Showing the first ${it.rows.size} — narrow the query for more." else null }) } }
                     when (val seg = section.segment) {
                         Segment.Pending -> item(key = "p:" + section.type) { MediaRowSkeleton(2) }
+
                         is Segment.Failed -> item(key = "f:" + section.type) { Notice("Couldn't search ${section.title.lowercase()}: ${seg.message}", tone = Tokens.danger) }
+
                         is Segment.Loaded -> {
                             val start = index
                             items(seg.rows, key = { it.key }) { row ->
@@ -188,17 +199,28 @@ private fun ResultRow(session: AppSession, row: SearchRow, selected: Boolean, on
                 },
             )
         }
+
         is SearchRow.EpisodeRow -> MediaRow(
-            title = row.hit.title, type = row.type, onOpen = onOpen, subtitle = row.hit.workTitle,
+            title = row.hit.title,
+            type = row.type,
+            onOpen = onOpen,
+            subtitle = row.hit.workTitle,
             meta = listOf(row.hit.kind, if (row.hit.blobHash != null) "file held" else "no file"),
-            status = if (row.hit.blobHash != null) LibraryStatus.IN_LIBRARY else null, selected = selected,
+            status = if (row.hit.blobHash != null) LibraryStatus.IN_LIBRARY else null,
+            selected = selected,
         )
+
         is SearchRow.SourceRow -> {
             val cover by rememberCover(session, row.type, row.source.title, null, feedRef = row.source.feedRef)
             MediaRow(
-                title = row.source.title, type = row.type, onOpen = onOpen, subtitle = row.source.feedRef,
+                title = row.source.title,
+                type = row.type,
+                onOpen = onOpen,
+                subtitle = row.source.feedRef,
                 meta = listOf(row.source.type, "${row.source.itemsArchived}/${row.source.itemsKnown} archived", row.source.health),
-                artwork = cover.bitmap, status = LibraryStatus.IN_LIBRARY, selected = selected,
+                artwork = cover.bitmap,
+                status = LibraryStatus.IN_LIBRARY,
+                selected = selected,
             )
         }
     }
@@ -215,7 +237,8 @@ private fun SearchBox(value: String, onValueChange: (String) -> Unit, onSubmit: 
             .background(Tokens.surface1, shape)
             .border(if (focused) 2.dp else Tokens.hairline, if (focused) accent else Tokens.border, shape)
             .padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(Icons.Rounded.Search, contentDescription = null, tint = if (focused) accent else Tokens.textMuted, modifier = Modifier.size(20.dp))
         Box(Modifier.weight(1f)) {
@@ -230,10 +253,26 @@ private fun SearchBox(value: String, onValueChange: (String) -> Unit, onSubmit: 
                     .onPreviewKeyEvent { e ->
                         if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                         when (e.key) {
-                            Key.DirectionDown -> { onMove(1); true }
-                            Key.DirectionUp -> { onMove(-1); true }
-                            Key.Enter -> { onSubmit(); true }
-                            Key.Escape -> { onClear(); true }
+                            Key.DirectionDown -> {
+                                onMove(1)
+                                true
+                            }
+
+                            Key.DirectionUp -> {
+                                onMove(-1)
+                                true
+                            }
+
+                            Key.Enter -> {
+                                onSubmit()
+                                true
+                            }
+
+                            Key.Escape -> {
+                                onClear()
+                                true
+                            }
+
                             else -> false
                         }
                     }
@@ -241,8 +280,15 @@ private fun SearchBox(value: String, onValueChange: (String) -> Unit, onSubmit: 
                 interactionSource = interaction,
             )
         }
-        if (value.isNotEmpty()) IconButtonRound(Icons.Rounded.Close, "Clear search", onClear, size = 28.dp)
-        else Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { Kbd("Ctrl+F"); Kbd("↑↓"); Kbd("↵") }
+        if (value.isNotEmpty()) {
+            IconButtonRound(Icons.Rounded.Close, "Clear search", onClear, size = 28.dp)
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                Kbd("Ctrl+F")
+                Kbd("↑↓")
+                Kbd("↵")
+            }
+        }
     }
 }
 
@@ -279,8 +325,11 @@ private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { SectionHeader("Discover", icon = Icons.Rounded.TravelExplore, subtitle = "Find titles to add — series, movies, books and music the node's metadata providers know about but the library doesn't hold yet.") }
         item {
-            if (query.isBlank()) Text("Enter a title above to explore the metadata catalogue.", color = Tokens.textMuted)
-            else DiscoveryResults(session, query, result, busy, onWantTitle)
+            if (query.isBlank()) {
+                Text("Enter a title above to explore the metadata catalogue.", color = Tokens.textMuted)
+            } else {
+                DiscoveryResults(session, query, result, busy, onWantTitle)
+            }
         }
     }
 }

@@ -3,20 +3,11 @@ package one.rarebit.heyarr.desktop.ui.screens
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.onPointerEvent
-import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.input.pointer.pointerInput
-import kotlinx.coroutines.delay
-import one.rarebit.heyarr.desktop.ui.components.VideoSurface
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,33 +55,39 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.PointerIcon
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.core.library.Series
-import one.rarebit.heyarr.desktop.playback.MpvTrack
 import one.rarebit.heyarr.core.mcp.Renderer
+import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
+import one.rarebit.heyarr.desktop.playback.MpvTrack
 import one.rarebit.heyarr.desktop.playback.PlayerState
 import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.desktop.state.rememberArtwork
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.MediaScope
-import one.rarebit.heyarr.ui.theme.MediaThemes
-import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
+import one.rarebit.heyarr.desktop.ui.components.VideoSurface
+import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
@@ -99,7 +96,10 @@ import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.Skeleton
-import one.rarebit.heyarr.desktop.ui.components.rememberCover
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.ui.theme.Tokens
 import java.awt.GraphicsEnvironment
 
 /** Per-visit state of the player screen; playback itself lives in [AppSession.playback]. */
@@ -111,15 +111,51 @@ class PlayerScreenState {
 /** The keys the player answers to, by Compose key; the window-level dispatcher maps AWT codes onto them. */
 object PlayerKeys {
     fun handle(key: Key, p: EmbeddedPlayer, onFullscreen: () -> Unit, onBack: () -> Unit, fullscreen: Boolean): Boolean = when (key) {
-        Key.Spacebar, Key.K -> { p.togglePause(); true }
-        Key.DirectionLeft, Key.J -> { p.seekBy(-10.0); true }
-        Key.DirectionRight, Key.L -> { p.seekBy(10.0); true }
-        Key.DirectionUp -> { p.setVolume(p.state.volume + 5); true }
-        Key.DirectionDown -> { p.setVolume(p.state.volume - 5); true }
-        Key.F -> { onFullscreen(); true }
-        Key.M -> { p.toggleMute(); true }
-        Key.S, Key.C -> { p.cycleSubtitle(); true }
-        Key.Escape -> { if (fullscreen) onFullscreen() else onBack(); true }
+        Key.Spacebar, Key.K -> {
+            p.togglePause()
+            true
+        }
+
+        Key.DirectionLeft, Key.J -> {
+            p.seekBy(-10.0)
+            true
+        }
+
+        Key.DirectionRight, Key.L -> {
+            p.seekBy(10.0)
+            true
+        }
+
+        Key.DirectionUp -> {
+            p.setVolume(p.state.volume + 5)
+            true
+        }
+
+        Key.DirectionDown -> {
+            p.setVolume(p.state.volume - 5)
+            true
+        }
+
+        Key.F -> {
+            onFullscreen()
+            true
+        }
+
+        Key.M -> {
+            p.toggleMute()
+            true
+        }
+
+        Key.S, Key.C -> {
+            p.cycleSubtitle()
+            true
+        }
+
+        Key.Escape -> {
+            if (fullscreen) onFullscreen() else onBack()
+            true
+        }
+
         else -> false
     }
 
@@ -162,23 +198,32 @@ fun PlayerScreen(session: AppSession, route: Route.Player, state: PlayerScreenSt
 
     DisposableEffect(Unit) {
         playback.onPlayerScreen = true
-        onDispose { playback.onPlayerScreen = false; if (fullscreen) onFullscreen(false) }
+        onDispose {
+            playback.onPlayerScreen = false
+            if (fullscreen) onFullscreen(false)
+        }
     }
     LaunchedEffect(item.workId) {
         val a = session.api ?: return@LaunchedEffect
         session.io { a.assets(item.workId) }.onSuccess { list ->
             playback.queue = Series.seasons(list).flatMap { it.episodes }
-            playback.refreshSubtitles()   // now the episode→sidecar map is known, attach captions to the running file
+            playback.refreshSubtitles() // now the episode→sidecar map is known, attach captions to the running file
         }
     }
     // Fullscreen: the transport shows on any activity and fades 3.5 s later while playing.
     var controlsVisible by remember { mutableStateOf(true) }
     LaunchedEffect(fullscreen, ps.paused, playback.controlsTick) {
         controlsVisible = true
-        if (fullscreen && !ps.paused) { delay(3500); controlsVisible = false }
+        if (fullscreen && !ps.paused) {
+            delay(3500)
+            controlsVisible = false
+        }
     }
     val overlayShowing = !fullscreen || controlsVisible || ps.paused
-    fun toggleFullscreen() { onFullscreen(!fullscreen); playback.wakeControls() }
+    fun toggleFullscreen() {
+        onFullscreen(!fullscreen)
+        playback.wakeControls()
+    }
     val blankCursor = remember {
         runCatching { PointerIcon(java.awt.Toolkit.getDefaultToolkit().createCustomCursor(java.awt.image.BufferedImage(1, 1, java.awt.image.BufferedImage.TYPE_INT_ARGB), java.awt.Point(0, 0), "blank")) }.getOrDefault(PointerIcon.Default)
     }
@@ -197,6 +242,7 @@ fun PlayerScreen(session: AppSession, route: Route.Player, state: PlayerScreenSt
                         Text("Playing in a separate mpv window", style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)
                         Text("The controls below still drive it; closing that window brings playback back in here.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
                     }
+
                     else -> {
                         VideoSurface(p, Modifier.fillMaxSize())
                         // Loading cover: opaque over the picture until the first frame plays
@@ -221,13 +267,19 @@ fun PlayerScreen(session: AppSession, route: Route.Player, state: PlayerScreenSt
                     IconButtonRound(Icons.Rounded.Forward10, "Forward 10 seconds (→)", { p.seekBy(10.0) }, size = 36.dp)
                     val next = playback.next()
                     if (next != null) IconButtonRound(Icons.Rounded.SkipNext, "Next: ${next.subtitle}", { playback.play(next) }, size = 36.dp)
-                    IconButtonRound(Icons.Rounded.Stop, "Stop and close the player", { playback.stop(); onBack() }, size = 36.dp)
+                    IconButtonRound(Icons.Rounded.Stop, "Stop and close the player", {
+                        playback.stop()
+                        onBack()
+                    }, size = 36.dp)
                     Spacer(Modifier.width(4.dp))
                     Text("${clock(ps.position)} / ${clock(ps.duration)}", style = MaterialTheme.typography.labelLarge, color = Tokens.textPrimary)
                     // Warm-up and mid-stream stalls read differently: "starting…" is the first
                     // fill (nothing shown yet); "buffering…" is a cache stall once it is going.
-                    if (ps.warmingUp) Text("starting…", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-                    else if (ps.buffering || ps.stalled) Text("buffering…", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+                    if (ps.warmingUp) {
+                        Text("starting…", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+                    } else if (ps.buffering || ps.stalled) {
+                        Text("buffering…", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+                    }
                     if (ps.eof) Text("finished", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
                     Spacer(Modifier.weight(1f))
                     TrackMenu(ps, p)
@@ -271,11 +323,17 @@ fun PlayerScreen(session: AppSession, route: Route.Player, state: PlayerScreenSt
                 }
                 SecondaryButton(if (playback.popout) "Pop back in" else "Pop out", {
                     scope.launch {
-                        if (playback.popout) { playback.popout = false; playback.pendingStart = true }
-                        else {
+                        if (playback.popout) {
+                            playback.popout = false
+                            playback.pendingStart = true
+                        } else {
                             playback.popout = true
                             val err = session.io { if (p.isRunning) p.switchTo(embedded = false) else playback.resolvePlaybackTarget(item).let { t -> p.start(false, t.url, playback.token, playback.title(item), t.durationSeconds, t.streamBaseUrl) } }.getOrNull()
-                            if (err != null) { session.toast(Toast.Kind.ERROR, "Couldn't pop out", err); playback.popout = false; playback.pendingStart = true }
+                            if (err != null) {
+                                session.toast(Toast.Kind.ERROR, "Couldn't pop out", err)
+                                playback.popout = false
+                                playback.pendingStart = true
+                            }
                         }
                     }
                 }, icon = if (playback.popout) Icons.Rounded.Fullscreen else Icons.Rounded.OpenInNew, compact = true)
@@ -299,7 +357,8 @@ fun PlayerScreen(session: AppSession, route: Route.Player, state: PlayerScreenSt
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).background(Tokens.surface1).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusInput))
                             .clickable(interactionSource = interaction, indication = null) { playback.play(next) }.padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Box(Modifier.width(120.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(thumb, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 18.dp) }
                         Column(Modifier.weight(1f)) {
@@ -323,7 +382,10 @@ private fun TrackMenu(ps: PlayerState, p: EmbeddedPlayer) {
     Box {
         SecondaryButton(
             if (ps.subtitles.isEmpty()) "No captions" else current?.let { trackLabel(it) } ?: "Captions off",
-            { open = !open }, icon = Icons.Rounded.ClosedCaption, compact = true, enabled = ps.subtitles.isNotEmpty() || ps.audio.size > 1,
+            { open = !open },
+            icon = Icons.Rounded.ClosedCaption,
+            compact = true,
+            enabled = ps.subtitles.isNotEmpty() || ps.audio.size > 1,
         )
         if (ps.subtitles.isNotEmpty() && ps.subtitles.size > 1) Text("+${ps.subtitles.size - 1}", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted, modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 4.dp))
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.background(Tokens.surface3)) {
@@ -371,7 +433,8 @@ private fun SeekBar(ps: PlayerState, onSeek: (Float) -> Unit) {
             LinearProgressIndicator(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(4.dp).clip(RoundedCornerShape(Tokens.radiusCard))
                     .semantics { contentDescription = "Starting…" },
-                color = theme.accent, trackColor = Tokens.surface3,
+                color = theme.accent,
+                trackColor = Tokens.surface3,
             )
         } else {
             // Behind the Slider: the inactive rail, and over it a lighter band as far
@@ -387,7 +450,12 @@ private fun SeekBar(ps: PlayerState, onSeek: (Float) -> Unit) {
                 }
             }
             Slider(
-                value = dragging ?: ps.fraction, onValueChange = { dragging = it }, onValueChangeFinished = { dragging?.let(onSeek); dragging = null },
+                value = dragging ?: ps.fraction,
+                onValueChange = { dragging = it },
+                onValueChangeFinished = {
+                    dragging?.let(onSeek)
+                    dragging = null
+                },
                 modifier = Modifier.fillMaxWidth().height(24.dp).semantics { contentDescription = "Position ${clock(ps.position)} of ${clock(ps.duration)}, buffered ${(buffered * 100).toInt()} percent" },
                 colors = SliderDefaults.colors(thumbColor = theme.accentGradientEnd, activeTrackColor = theme.accent, inactiveTrackColor = Color.Transparent), enabled = ps.duration > 0 && ps.hasStarted,
             )
@@ -413,27 +481,33 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
         val r = state.renderers
         when {
             r == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
+
             r.isEmpty() -> Text("No renderers found — a device that is off is not listed.", style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted)
+
             else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (x in r) FilterChip(x.name, false, {
-                    val a = session.api ?: return@FilterChip
-                    state.castOpen = false
-                    // On the SESSION scope, not this row's: closing the picker (above) removes
-                    // CastRow from composition, which would cancel a row-scoped coroutine — and
-                    // its toast — before the cast finished. A codec refusal offers "Cast anyway"
-                    // (force_direct); forcing again is shown as a plain refusal, so no loop.
-                    fun cast(force: Boolean) {
-                        session.launch {
-                            session.playback.player.pause()
-                            session.io { a.playHere(item.assetId, x.name, x.udn, forceDirect = force) }
-                                .onSuccess { res -> when (res) {
-                                    is McpResult.Ok -> session.toast(Toast.Kind.SUCCESS, "Playing on ${x.name}", item.title)
-                                    is McpResult.Refused -> if (force) session.refused(res) else session.castRefused(res, x.name) { cast(true) }
-                                } }
+                for (x in r) {
+                    FilterChip(x.name, false, {
+                        val a = session.api ?: return@FilterChip
+                        state.castOpen = false
+                        // On the SESSION scope, not this row's: closing the picker (above) removes
+                        // CastRow from composition, which would cancel a row-scoped coroutine — and
+                        // its toast — before the cast finished. A codec refusal offers "Cast anyway"
+                        // (force_direct); forcing again is shown as a plain refusal, so no loop.
+                        fun cast(force: Boolean) {
+                            session.launch {
+                                session.playback.player.pause()
+                                session.io { a.playHere(item.assetId, x.name, x.udn, forceDirect = force) }
+                                    .onSuccess { res ->
+                                        when (res) {
+                                            is McpResult.Ok -> session.toast(Toast.Kind.SUCCESS, "Playing on ${x.name}", item.title)
+                                            is McpResult.Refused -> if (force) session.refused(res) else session.castRefused(res, x.name) { cast(true) }
+                                        }
+                                    }
+                            }
                         }
-                    }
-                    cast(false)
-                }, icon = Icons.Rounded.Cast)
+                        cast(false)
+                    }, icon = Icons.Rounded.Cast)
+                }
             }
         }
         GhostButton("Search the network again", { scope.launch { session.api?.let { a -> session.io { a.renderers(refresh = true) }.onSuccess { state.renderers = it } } } })
@@ -445,6 +519,8 @@ internal fun accentHex(c: Color): String = "#%02X%02X%02X".format((c.red * 255).
 
 internal fun clock(s: Double): String {
     val t = s.toLong().coerceAtLeast(0)
-    val h = t / 3600; val m = (t % 3600) / 60; val sec = t % 60
+    val h = t / 3600
+    val m = (t % 3600) / 60
+    val sec = t % 60
     return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }

@@ -61,12 +61,11 @@ object Epub {
         return entries.keys.firstOrNull { it.endsWith(".opf", ignoreCase = true) }
     }
 
-    private fun manifest(opf: String): Map<String, String> =
-        RE_ITEM.findAll(opf).mapNotNull { m ->
-            val id = attr(m.value, "id") ?: return@mapNotNull null
-            val href = attr(m.value, "href") ?: return@mapNotNull null
-            id to href
-        }.toMap()
+    private fun manifest(opf: String): Map<String, String> = RE_ITEM.findAll(opf).mapNotNull { m ->
+        val id = attr(m.value, "id") ?: return@mapNotNull null
+        val href = attr(m.value, "href") ?: return@mapNotNull null
+        id to href
+    }.toMap()
 
     private fun spine(opf: String): List<String> {
         val spine = RE_SPINE.find(opf)?.value ?: return emptyList()

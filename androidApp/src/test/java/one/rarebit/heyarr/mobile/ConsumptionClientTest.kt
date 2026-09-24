@@ -1,16 +1,16 @@
 package one.rarebit.heyarr.mobile
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.mobile.consumption.ConsumptionClient
 import one.rarebit.heyarr.mobile.consumption.ConsumptionReporter
 import one.rarebit.heyarr.mobile.consumption.InMemoryDeviceIdStore
 import one.rarebit.heyarr.mobile.consumption.Position
 import one.rarebit.heyarr.mobile.consumption.ProgressThrottle
-import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.mobile.playback.ClientCapabilities
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -40,11 +40,13 @@ class ConsumptionClientTest {
     }
 
     @Test fun registerSessionAndTransitionReadTheIds() {
-        val t = RoutedTransport(mapOf(
-            "POST /devices" to HttpResponse(201, """{"id":"d1","device_key":"k"}"""),
-            "POST /consumption/sessions" to HttpResponse(201, """{"id":"s1","state":"created"}"""),
-            "POST /consumption/sessions/s1/transitions" to HttpResponse(200, """{"id":"s1","state":"playing"}"""),
-        ))
+        val t = RoutedTransport(
+            mapOf(
+                "POST /devices" to HttpResponse(201, """{"id":"d1","device_key":"k"}"""),
+                "POST /consumption/sessions" to HttpResponse(201, """{"id":"s1","state":"created"}"""),
+                "POST /consumption/sessions/s1/transitions" to HttpResponse(200, """{"id":"s1","state":"playing"}"""),
+            ),
+        )
         val c = ConsumptionClient(t, { base }, { cred })
         assertEquals(ConsumptionClient.Outcome.Ok("d1"), c.registerDevice("k", "n", null))
         assertEquals(ConsumptionClient.Outcome.Ok("s1"), c.createSession("a1", "d1", "watch"))
@@ -114,7 +116,9 @@ class ConsumptionReporterTest {
     @Test fun readOnlyCredentialStaysSilent() {
         val t = RoutedTransport(routes)
         val r = reporter(t, canWrite = false)
-        r.begin("a1", "watch"); r.progress(10.0); r.end(20.0, false)
+        r.begin("a1", "watch")
+        r.progress(10.0)
+        r.end(20.0, false)
         assertTrue(t.calls.isEmpty())
         assertNull(r.sessionId)
     }
@@ -124,12 +128,17 @@ class ConsumptionReporterTest {
         val r = reporter(t)
         r.begin("a1", "watch")
         val before = t.calls.size
-        now = 1.0; r.progress(5.0)   // first tick goes
-        now = 2.0; r.progress(10.0)  // too soon
-        now = 30.0; r.progress(11.0) // not moved enough
-        now = 31.0; r.progress(60.0) // goes
+        now = 1.0
+        r.progress(5.0) // first tick goes
+        now = 2.0
+        r.progress(10.0) // too soon
+        now = 30.0
+        r.progress(11.0) // not moved enough
+        now = 31.0
+        r.progress(60.0) // goes
         assertEquals(before + 2, t.calls.size)
-        r.pause(61.0); r.resume(61.0)
+        r.pause(61.0)
+        r.resume(61.0)
         assertEquals(before + 4, t.calls.size)
         assertTrue(t.calls.last().third!!.contains("\"resume\""))
         r.end(600.0, completed = true)

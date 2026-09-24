@@ -1,6 +1,7 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.nav.Decisions
@@ -9,7 +10,6 @@ import one.rarebit.heyarr.mobile.nav.detailRoute
 import one.rarebit.heyarr.mobile.playback.AudioItem
 import one.rarebit.heyarr.mobile.playback.NowPlaying
 import one.rarebit.heyarr.mobile.playback.PlaybackTarget
-import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.ui.components.NavSection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

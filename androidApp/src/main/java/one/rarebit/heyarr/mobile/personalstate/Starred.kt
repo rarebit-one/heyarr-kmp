@@ -64,6 +64,7 @@ internal class StarSet {
                 adds[c.tag] = adds[c.tag]?.let { lesser(it, rec) } ?: rec
                 if (c.at > counter) counter = c.at
             }
+
             StarOp.UNSTAR -> c.observed.forEach { tombstones.add(it) }
         }
     }
@@ -84,8 +85,7 @@ internal class StarSet {
     private fun liveTags(itemId: String): List<String> =
         adds.filter { (tag, rec) -> rec.itemId == itemId && tag !in tombstones }.keys.sorted()
 
-    fun isStarred(itemId: String): Boolean =
-        adds.any { (tag, rec) -> rec.itemId == itemId && tag !in tombstones }
+    fun isStarred(itemId: String): Boolean = adds.any { (tag, rec) -> rec.itemId == itemId && tag !in tombstones }
 
     /** Starred item ids, most-recently-starred first. */
     fun ids(): List<String> {

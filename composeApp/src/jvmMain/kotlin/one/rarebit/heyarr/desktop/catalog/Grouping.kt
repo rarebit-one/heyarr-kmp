@@ -30,8 +30,7 @@ object GroupingJson {
     private val ENVELOPE_KEYS = listOf("items", "artists", "authors", "data")
 
     /** Parse a grouped-browse response body into [Grouping]s, skipping any nameless row. */
-    fun parse(body: String): List<Grouping> =
-        JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
+    fun parse(body: String): List<Grouping> = JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
 
     /** The page's `next_cursor`, when the server says there is another page. */
     fun nextCursor(body: String): String? =

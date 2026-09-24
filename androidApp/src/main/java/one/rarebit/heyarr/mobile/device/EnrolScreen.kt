@@ -29,7 +29,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +36,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 /** UI state for the "Enrol this device" screen. */
 sealed interface EnrolUiState {
@@ -228,10 +228,12 @@ fun EnrolScreen(
                 CircularProgressIndicator()
                 Text("Creating this phone's device key… confirm the prompt if asked.")
             }
+
             is EnrolUiState.Registering -> {
                 CircularProgressIndicator()
                 Text("Admission received. Registering with the node… confirm the prompt if asked.")
             }
+
             EnrolUiState.Unprovisioned -> {
                 // With a parked invite the key is being created without a tap; the Loading
                 // state follows at once, so this branch only matters on the manual path.
@@ -243,6 +245,7 @@ fun EnrolScreen(
                 )
                 Button(onClick = onCreateKey) { Text("Create device key") }
             }
+
             is EnrolUiState.Ready -> {
                 Text("Pair with your identity", style = MaterialTheme.typography.titleMedium)
                 Text(
@@ -252,6 +255,7 @@ fun EnrolScreen(
                 )
                 OtherDeviceEntry(onJoinInvite)
             }
+
             is EnrolUiState.Joining -> {
                 Text(
                     if (state.sameDevice) "Joining Cruciform's invite…" else "Joining the pairing…",
@@ -270,12 +274,14 @@ fun EnrolScreen(
                 if (state.deadlineMillis > 0) {
                     CountdownLine(
                         (if (state.sameDevice) "Cruciform" else "The other device") + " has ",
-                        state.deadlineMillis, now,
+                        state.deadlineMillis,
+                        now,
                         " left to answer — this keeps waiting even if you switch apps.",
                     )
                 }
                 OutlinedButton(onClick = onCancelPairing) { Text("Cancel pairing") }
             }
+
             is EnrolUiState.CompareSas -> if (state.handedOff) {
                 // ADR-0008: the apps compared. One question, in Cruciform, behind its
                 // fingerprint — no code on this screen unless it goes quiet.
@@ -342,6 +348,7 @@ fun EnrolScreen(
                     }
                 }
             }
+
             is EnrolUiState.Enrolled -> {
                 val settled = !state.needsAdmin && !state.retriable
                 if (settled && !manage) {
@@ -372,6 +379,7 @@ fun EnrolScreen(
                     }
                 }
             }
+
             is EnrolUiState.Removed -> {
                 Text("This device was removed", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
                 Text(state.message, style = MaterialTheme.typography.bodySmall)
@@ -383,6 +391,7 @@ fun EnrolScreen(
                 )
                 OutlinedButton(onClick = onForget) { Text("Forget enrolment") }
             }
+
             is EnrolUiState.Error -> {
                 Text(failureTitle(state.kind), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
                 Text(state.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
@@ -525,6 +534,7 @@ private fun InviteEntry(onJoin: (String) -> Unit) {
             onJoin(r.inviteQr)
             true
         }
+
         is PairInvite.Invalid -> {
             problem = r.message
             false
@@ -550,7 +560,10 @@ private fun InviteEntry(onJoin: (String) -> Unit) {
         )
         OutlinedButton(onClick = { scanning = false }) { Text("Stop scanning") }
     } else {
-        Button(onClick = { problem = null; scanning = true }) { Text("Scan invite QR") }
+        Button(onClick = {
+            problem = null
+            scanning = true
+        }) { Text("Scan invite QR") }
     }
     OutlinedTextField(
         value = invite,

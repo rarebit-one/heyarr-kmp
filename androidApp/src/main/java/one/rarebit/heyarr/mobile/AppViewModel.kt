@@ -16,6 +16,13 @@ import one.rarebit.heyarr.core.discovery.DiscoverySource
 import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.discovery.NodeDiscovery
+import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.catalog.ContinueClient
+import one.rarebit.heyarr.mobile.consumption.ConsumptionClient
+import one.rarebit.heyarr.mobile.consumption.ConsumptionReporter
+import one.rarebit.heyarr.mobile.consumption.DeviceIdStore
+import one.rarebit.heyarr.mobile.consumption.InMemoryDeviceIdStore
+import one.rarebit.heyarr.mobile.device.DeviceEnrolment
 import one.rarebit.heyarr.mobile.device.DeviceKeyring
 import one.rarebit.heyarr.mobile.device.EnrolClient
 import one.rarebit.heyarr.mobile.device.EnrolUiState
@@ -29,13 +36,7 @@ import one.rarebit.heyarr.mobile.login.LoginUiState
 import one.rarebit.heyarr.mobile.login.QrLoginClient
 import one.rarebit.heyarr.mobile.login.VoidbindLogin
 import one.rarebit.heyarr.mobile.net.DeviceAuthTransport
-import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.net.OkHttpTransport
-import one.rarebit.heyarr.mobile.catalog.ContinueClient
-import one.rarebit.heyarr.mobile.consumption.ConsumptionClient
-import one.rarebit.heyarr.mobile.consumption.ConsumptionReporter
-import one.rarebit.heyarr.mobile.consumption.DeviceIdStore
-import one.rarebit.heyarr.mobile.consumption.InMemoryDeviceIdStore
 import one.rarebit.heyarr.mobile.playback.AudioPlayer
 import one.rarebit.heyarr.mobile.playback.AudioSessionBridge
 import one.rarebit.heyarr.mobile.playback.PlaybackCoordinator
@@ -46,7 +47,6 @@ import one.rarebit.heyarr.mobile.settings.SettingsStore
 import one.rarebit.voidbind.auth.DeviceCredential
 import one.rarebit.voidbind.flow.PairingFailureKind
 import one.rarebit.voidbind.flow.PairingOutcome
-import one.rarebit.heyarr.mobile.device.DeviceEnrolment
 
 /** The steps of a ViewModel built without the app's holder (tests): every pairing fails honestly. */
 private object UnavailablePairingSteps : PairingSteps {
@@ -250,8 +250,7 @@ class AppViewModel internal constructor(
     private var discoveredBaseUrl: String? = null
 
     /** Resolve the server to default to, using the current effective URL as the manual fallback. Off `Dispatchers.IO`. */
-    suspend fun discoverServer(): DiscoveredServer =
-        withContext(Dispatchers.IO) { discovery.discover(config.baseUrl) }
+    suspend fun discoverServer(): DiscoveredServer = withContext(Dispatchers.IO) { discovery.discover(config.baseUrl) }
 
     /**
      * On launch, before any node was hand-picked: if an `_heyarr._tcp` advertiser is
@@ -365,7 +364,9 @@ class AppViewModel internal constructor(
                     loadSessionAuthority()
                     loadLibrary()
                 }
+
                 is VoidbindLogin.Result.Denied -> _loginState.value = LoginUiState.Error(result.reason)
+
                 is VoidbindLogin.Result.Failed -> _loginState.value = LoginUiState.Error(result.error)
             }
         }

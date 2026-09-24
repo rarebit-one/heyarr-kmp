@@ -14,16 +14,16 @@ import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.auth.mode
-import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
-import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.core.heyarr.QualityProfile
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
-import one.rarebit.heyarr.mobile.settings.SettingsStore
-import one.rarebit.heyarr.ui.theme.Appearance
+import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.core.state.LibraryIndex
 import one.rarebit.heyarr.core.state.Toast
-import one.rarebit.heyarr.core.state.ExternalMetadata
+import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
+import one.rarebit.heyarr.mobile.heyarr.McpResult
+import one.rarebit.heyarr.mobile.settings.SettingsStore
+import one.rarebit.heyarr.ui.theme.Appearance
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
 enum class Connection { UNKNOWN, ONLINE, OFFLINE, UNAUTHORIZED }
@@ -120,7 +120,13 @@ class AppSession(
         val ok = withContext(Dispatchers.IO) { runCatching { api.ping() }.getOrDefault(false) }
         probes++
         lastLatencyMs = (System.nanoTime() - t0) / 1_000_000
-        if (ok) { lastOkAt = System.currentTimeMillis(); connection = Connection.ONLINE } else { failures++; connection = Connection.OFFLINE }
+        if (ok) {
+            lastOkAt = System.currentTimeMillis()
+            connection = Connection.ONLINE
+        } else {
+            failures++
+            connection = Connection.OFFLINE
+        }
     }
 
     /** Called by any screen whose call died on the transport — flips the banner immediately. */
@@ -130,14 +136,21 @@ class AppSession(
         connection = if (e.status == 401 || e.status == 403) Connection.UNAUTHORIZED else Connection.OFFLINE
     }
 
-    fun noteSuccess() { lastOkAt = System.currentTimeMillis(); if (connection != Connection.ONLINE) connection = Connection.ONLINE }
+    fun noteSuccess() {
+        lastOkAt = System.currentTimeMillis()
+        if (connection != Connection.ONLINE) connection = Connection.ONLINE
+    }
 
     // ── library index + profiles ─────────────────────────────────────────────────
 
     fun refreshIndex() {
         // The want index (In library / Wanted / Missing) is owner state a guest cannot read;
         // asking for it would only earn a 403. Guests browse without it.
-        if (isGuest) { index = LibraryIndex.EMPTY; profiles = emptyList(); return }
+        if (isGuest) {
+            index = LibraryIndex.EMPTY
+            profiles = emptyList()
+            return
+        }
         scope.launch {
             indexLoading = true
             val result = io { api.desired() }
@@ -151,16 +164,29 @@ class AppSession(
     fun want(workId: String, title: String, profile: String, onDone: (McpResult<*>?) -> Unit = {}) {
         // Wanting is an enrolled surface; the UI routes a guest to "Sign in to save" first,
         // but guard here too so a stray call never fires an unauthenticated write at the node.
-        if (isGuest) { onDone(null); return }
+        if (isGuest) {
+            onDone(null)
+            return
+        }
         val before = index
         index = index.withPendingWant(workId, profiles.firstOrNull { it.name == profile }?.id)
         scope.launch {
             val result = io { api.wantWork(workId, profile) }
-            result.onFailure { index = before; onDone(null) }
+            result.onFailure {
+                index = before
+                onDone(null)
+            }
             result.onSuccess { r ->
                 when (r) {
-                    is McpResult.Ok -> { toast(Toast.Kind.SUCCESS, "Wanted “$title”", "Measured against the $profile profile."); refreshIndex() }
-                    is McpResult.Refused -> { index = before; refused(r) }
+                    is McpResult.Ok -> {
+                        toast(Toast.Kind.SUCCESS, "Wanted “$title”", "Measured against the $profile profile.")
+                        refreshIndex()
+                    }
+
+                    is McpResult.Refused -> {
+                        index = before
+                        refused(r)
+                    }
                 }
                 onDone(r)
             }
@@ -179,8 +205,14 @@ class AppSession(
                 // play keep working; the UI hides those surfaces for guests, this guards the
                 // ones that slip through (the existing "Guest → 403" call sites).
                 isGuest && e is McpTransportException && (e.status == 401 || e.status == 403) -> {}
-                e is McpTransportException -> { noteTransportFailure(e); toast(Toast.Kind.ERROR, "Can't reach heyarr", e.message) }
+
+                e is McpTransportException -> {
+                    noteTransportFailure(e)
+                    toast(Toast.Kind.ERROR, "Can't reach heyarr", e.message)
+                }
+
                 e is McpRefusedException -> toast(Toast.Kind.REFUSED, "heyarr refused", e.error.message, e.error.tool)
+
                 else -> toast(Toast.Kind.ERROR, "Something went wrong", e.message ?: e.javaClass.simpleName)
             }
         }
@@ -191,8 +223,13 @@ class AppSession(
     fun toast(kind: Toast.Kind, title: String, detail: String? = null, tool: String? = null) {
         val t = Toast(++toastSeq, kind, title, detail, tool)
         toasts.add(t)
-        scope.launch { delay(if (kind == Toast.Kind.REFUSED || kind == Toast.Kind.ERROR) 9_000 else 4_500); toasts.remove(t) }
+        scope.launch {
+            delay(if (kind == Toast.Kind.REFUSED || kind == Toast.Kind.ERROR) 9_000 else 4_500)
+            toasts.remove(t)
+        }
     }
 
-    fun dismiss(toast: Toast) { toasts.remove(toast) }
+    fun dismiss(toast: Toast) {
+        toasts.remove(toast)
+    }
 }

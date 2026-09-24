@@ -116,13 +116,21 @@ object SearchResultsJson {
         while (i < s.length) {
             val c = s[i]
             if (inStr) {
-                if (c == '\\') { i += 2; continue }
+                if (c == '\\') {
+                    i += 2
+                    continue
+                }
                 if (c == '"') inStr = false
             } else {
                 when (c) {
                     '"' -> inStr = true
+
                     open -> depth++
-                    close -> { depth--; if (depth == 0) return s.substring(start, i + 1) }
+
+                    close -> {
+                        depth--
+                        if (depth == 0) return s.substring(start, i + 1)
+                    }
                 }
             }
             i++
@@ -142,8 +150,13 @@ object SearchResultsJson {
                 c == '\\' && i + 1 < json.length -> {
                     i = JsonEscapes.append(sb, json, i)
                 }
+
                 c == '"' -> return sb.toString()
-                else -> { sb.append(c); i++ }
+
+                else -> {
+                    sb.append(c)
+                    i++
+                }
             }
         }
         return null

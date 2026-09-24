@@ -126,7 +126,8 @@ class VaultSpaceClientTest {
         fake.responses["POST $url"] = HttpResponse(201, """{"id":"space-7","kind":"personal","created_at":"t"}""")
 
         val id = VaultSpaceClient(fake, base, cred).createSpace(
-            "space-7", "personal",
+            "space-7",
+            "personal",
             listOf(WrappedKey("x25519:aa", w1), WrappedKey("x25519:bb", w2)),
         )
 

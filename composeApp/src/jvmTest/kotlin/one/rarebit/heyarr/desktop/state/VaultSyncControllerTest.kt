@@ -32,10 +32,16 @@ class VaultSyncControllerTest {
     private class FakeChanges : SyncChanges {
         private val ch = Channel<Unit>(Channel.UNLIMITED)
         val closed = AtomicBoolean(false)
-        fun signal() { ch.trySend(Unit) }
-        override suspend fun awaitChange(timeoutMs: Long): Boolean =
-            withTimeoutOrNull(timeoutMs) { ch.receive(); true } ?: false
-        override fun close() { closed.set(true) }
+        fun signal() {
+            ch.trySend(Unit)
+        }
+        override suspend fun awaitChange(timeoutMs: Long): Boolean = withTimeoutOrNull(timeoutMs) {
+            ch.receive()
+            true
+        } ?: false
+        override fun close() {
+            closed.set(true)
+        }
     }
 
     private class FakeSync(private val body: () -> VaultSyncEngine.Stats) : VaultSync {

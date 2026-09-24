@@ -37,13 +37,12 @@ object Subtitles {
      * deliberately: they are bitmap/paired formats a SubtitleConfiguration can't take
      * from a lone URL, so we let them fall through rather than promise a MIME.
      */
-    fun externalMimeType(filename: String?): String? =
-        when (filename?.substringAfterLast('.', "")?.lowercase()) {
-            "srt" -> "application/x-subrip"
-            "vtt" -> "text/vtt"
-            "ass", "ssa" -> "text/x-ssa"
-            else -> null
-        }
+    fun externalMimeType(filename: String?): String? = when (filename?.substringAfterLast('.', "")?.lowercase()) {
+        "srt" -> "application/x-subrip"
+        "vtt" -> "text/vtt"
+        "ass", "ssa" -> "text/x-ssa"
+        else -> null
+    }
 
     /** The BCP-47 language a sidecar filename carries (`…S04E01.en.srt` → "en"), or null. */
     fun languageTag(filename: String?): String? {

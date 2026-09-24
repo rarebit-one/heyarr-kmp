@@ -15,8 +15,7 @@ object HandoffLauncher {
 
     private fun intent(uri: String) = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
 
-    fun canOpen(context: Context, uri: String): Boolean =
-        intent(uri).resolveActivity(context.packageManager) != null
+    fun canOpen(context: Context, uri: String): Boolean = intent(uri).resolveActivity(context.packageManager) != null
 
     /** Open the URI; returns false if no activity took it. */
     fun open(context: Context, uri: String): Boolean = try {

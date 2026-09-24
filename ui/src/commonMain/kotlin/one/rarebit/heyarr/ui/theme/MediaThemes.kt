@@ -34,6 +34,7 @@ data class MediaTheme(
     val ctaStart: Color? = null,
 ) {
     val ctaGradientStart: Color get() = ctaStart ?: accent
+
     /** A translucent accent for tints (chips, focus glows, progress tracks). */
     fun tint(alpha: Float = 0.16f): Color = accent.copy(alpha = alpha)
 }
@@ -46,20 +47,38 @@ data class MediaTheme(
  */
 object MediaThemes {
     private val MOVIE = MediaTheme(
-        MediaType.MOVIE, Color(0xFF00935E), Color(0xFF12A96E), Color(0xFF21C063), CardAspect.WIDE,
-        ctaLabel = "Play", ctaSecondaryLabel = null, metadataKeys = listOf("runtime", "year", "rating", "genre"),
+        MediaType.MOVIE,
+        Color(0xFF00935E),
+        Color(0xFF12A96E),
+        Color(0xFF21C063),
+        CardAspect.WIDE,
+        ctaLabel = "Play",
+        ctaSecondaryLabel = null,
+        metadataKeys = listOf("runtime", "year", "rating", "genre"),
     )
     private val SERIES = MediaTheme(
-        MediaType.SERIES, Color(0xFF7C5CFF), Color(0xFF8F73FF), Color(0xFFA48BFF), CardAspect.WIDE,
-        ctaLabel = "Play", ctaSecondaryLabel = "Next episode", metadataKeys = listOf("season", "episode", "air_status", "year"),
+        MediaType.SERIES,
+        Color(0xFF7C5CFF),
+        Color(0xFF8F73FF),
+        Color(0xFFA48BFF),
+        CardAspect.WIDE,
+        ctaLabel = "Play",
+        ctaSecondaryLabel = "Next episode",
+        metadataKeys = listOf("season", "episode", "air_status", "year"),
     )
     private val BOOK = MediaTheme(
         MediaType.BOOK, Color(0xFFE0A458), Color(0xFFE8B672), Color(0xFFF0C88C), CardAspect.POSTER,
         ctaLabel = "Read", ctaSecondaryLabel = null, metadataKeys = listOf("author", "pages", "series"), spineShadow = true,
     )
     private val AUDIOBOOK = MediaTheme(
-        MediaType.AUDIOBOOK, Color(0xFF2DB3A6), Color(0xFF43C3B7), Color(0xFF5CD3C8), CardAspect.SQUARE,
-        ctaLabel = "Listen", ctaSecondaryLabel = null, metadataKeys = listOf("narrator", "duration", "author"),
+        MediaType.AUDIOBOOK,
+        Color(0xFF2DB3A6),
+        Color(0xFF43C3B7),
+        Color(0xFF5CD3C8),
+        CardAspect.SQUARE,
+        ctaLabel = "Listen",
+        ctaSecondaryLabel = null,
+        metadataKeys = listOf("narrator", "duration", "author"),
     )
     private val PODCAST = MediaTheme(
         MediaType.PODCAST, Color(0xFFC13BAD), Color(0xFFD052BD), Color(0xFFDE6ACD), CardAspect.SQUARE,
@@ -67,21 +86,45 @@ object MediaThemes {
         ctaStart = Color(0xFFD052BD),
     )
     private val MUSIC = MediaTheme(
-        MediaType.MUSIC, Color(0xFFFF4D6D), Color(0xFFFF6682), Color(0xFFFF7F98), CardAspect.SQUARE,
-        ctaLabel = "Play", ctaSecondaryLabel = null, metadataKeys = listOf("artist", "album", "track_count", "year"),
+        MediaType.MUSIC,
+        Color(0xFFFF4D6D),
+        Color(0xFFFF6682),
+        Color(0xFFFF7F98),
+        CardAspect.SQUARE,
+        ctaLabel = "Play",
+        ctaSecondaryLabel = null,
+        metadataKeys = listOf("artist", "album", "track_count", "year"),
     )
     private val FEED = MediaTheme(
-        MediaType.FEED, Tokens.slate, Tokens.slateHover, Tokens.slateGradEnd, CardAspect.SQUARE,
-        ctaLabel = "Open", ctaSecondaryLabel = null, metadataKeys = listOf("source", "date"),
+        MediaType.FEED,
+        Tokens.slate,
+        Tokens.slateHover,
+        Tokens.slateGradEnd,
+        CardAspect.SQUARE,
+        ctaLabel = "Open",
+        ctaSecondaryLabel = null,
+        metadataKeys = listOf("source", "date"),
     )
     private val UNKNOWN = MediaTheme(
-        MediaType.UNKNOWN, Tokens.slate, Tokens.slateHover, Tokens.slateGradEnd, CardAspect.POSTER,
-        ctaLabel = "Open", ctaSecondaryLabel = null, metadataKeys = listOf("year"),
+        MediaType.UNKNOWN,
+        Tokens.slate,
+        Tokens.slateHover,
+        Tokens.slateGradEnd,
+        CardAspect.POSTER,
+        ctaLabel = "Open",
+        ctaSecondaryLabel = null,
+        metadataKeys = listOf("year"),
     )
 
     val all: Map<MediaType, MediaTheme> = mapOf(
-        MediaType.MOVIE to MOVIE, MediaType.SERIES to SERIES, MediaType.BOOK to BOOK, MediaType.AUDIOBOOK to AUDIOBOOK,
-        MediaType.PODCAST to PODCAST, MediaType.MUSIC to MUSIC, MediaType.FEED to FEED, MediaType.UNKNOWN to UNKNOWN,
+        MediaType.MOVIE to MOVIE,
+        MediaType.SERIES to SERIES,
+        MediaType.BOOK to BOOK,
+        MediaType.AUDIOBOOK to AUDIOBOOK,
+        MediaType.PODCAST to PODCAST,
+        MediaType.MUSIC to MUSIC,
+        MediaType.FEED to FEED,
+        MediaType.UNKNOWN to UNKNOWN,
     )
 
     fun of(type: MediaType): MediaTheme = all[type] ?: UNKNOWN

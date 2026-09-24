@@ -1,11 +1,11 @@
 package one.rarebit.heyarr.desktop
 
-import java.nio.file.Files
-import java.security.MessageDigest
 import kotlinx.coroutines.runBlocking
-import one.rarebit.heyarr.desktop.state.DesktopExternalMetadata
 import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.desktop.state.DesktopExternalMetadata
+import java.nio.file.Files
+import java.security.MessageDigest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -28,6 +28,8 @@ class LandscapeMetadataTest {
             assertEquals(2, calls.size)
             val cached = DesktopExternalMetadata.create(cacheDir = dir, fetch = { error("Fresh disk cache must avoid network") }).lookup(key)!!
             assertEquals(result, cached)
-        } finally { dir.deleteRecursively() }
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 }

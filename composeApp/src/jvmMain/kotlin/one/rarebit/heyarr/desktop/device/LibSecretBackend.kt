@@ -86,16 +86,27 @@ private const val SECRET_SCHEMA_ATTRIBUTE_STRING = 0
 private interface LibSecret : Library {
     // The trailing attribute name/value pairs are passed as varargs, NULL-terminated.
     fun secret_password_store_sync(
-        schema: SecretSchema, collection: String?, label: String, password: String,
-        cancellable: Pointer?, error: PointerByReference?, vararg attributes: Any?,
+        schema: SecretSchema,
+        collection: String?,
+        label: String,
+        password: String,
+        cancellable: Pointer?,
+        error: PointerByReference?,
+        vararg attributes: Any?,
     ): Boolean
 
     fun secret_password_lookup_sync(
-        schema: SecretSchema, cancellable: Pointer?, error: PointerByReference?, vararg attributes: Any?,
+        schema: SecretSchema,
+        cancellable: Pointer?,
+        error: PointerByReference?,
+        vararg attributes: Any?,
     ): Pointer?
 
     fun secret_password_clear_sync(
-        schema: SecretSchema, cancellable: Pointer?, error: PointerByReference?, vararg attributes: Any?,
+        schema: SecretSchema,
+        cancellable: Pointer?,
+        error: PointerByReference?,
+        vararg attributes: Any?,
     ): Boolean
 
     fun secret_password_free(password: Pointer)
@@ -131,6 +142,7 @@ private fun clearError(err: PointerByReference): Boolean {
 @Structure.FieldOrder("name", "type")
 internal open class SecretSchemaAttribute : Structure() {
     @JvmField var name: String? = null
+
     @JvmField var type: Int = 0
 }
 
@@ -140,6 +152,7 @@ internal open class SecretSchemaAttribute : Structure() {
 )
 internal open class SecretSchema : Structure() {
     @JvmField var name: String? = null
+
     @JvmField var flags: Int = 0
 
     @JvmField
@@ -149,11 +162,18 @@ internal open class SecretSchema : Structure() {
 
     // Private reserved fields (gint + 7 gpointer) — declared so the struct size/layout match.
     @JvmField var reserved: Int = 0
+
     @JvmField var reserved1: Pointer? = null
+
     @JvmField var reserved2: Pointer? = null
+
     @JvmField var reserved3: Pointer? = null
+
     @JvmField var reserved4: Pointer? = null
+
     @JvmField var reserved5: Pointer? = null
+
     @JvmField var reserved6: Pointer? = null
+
     @JvmField var reserved7: Pointer? = null
 }

@@ -45,7 +45,9 @@ class ProbeRecoveryTest {
             return HttpResponse(200, """{"works":[]}""")
         }
         override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse = HttpResponse(405, "")
-        override fun reset() { resets++ }
+        override fun reset() {
+            resets++
+        }
     }
 
     private fun session(transport: HttpTransport): AppSession = AppSession(
@@ -79,7 +81,9 @@ class ProbeRecoveryTest {
             var resets = 0
             override fun get(url: String, headers: Map<String, String>): HttpResponse = throw IOException("no route to host")
             override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse = HttpResponse(405, "")
-            override fun reset() { resets++ }
+            override fun reset() {
+                resets++
+            }
         }
         val s = session(transport)
 
@@ -93,7 +97,10 @@ class ProbeRecoveryTest {
     @Test
     fun aCancelledProbeLeavesNothingBehind() = runBlocking {
         val transport = object : HttpTransport {
-            override fun get(url: String, headers: Map<String, String>): HttpResponse { Thread.sleep(10_000); return HttpResponse(200, "") }
+            override fun get(url: String, headers: Map<String, String>): HttpResponse {
+                Thread.sleep(10_000)
+                return HttpResponse(200, "")
+            }
             override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse = HttpResponse(405, "")
         }
         val s = session(transport)

@@ -32,8 +32,13 @@ object ProblemDetail {
                 c == '\\' && i + 1 < body.length -> {
                     i = JsonEscapes.append(sb, body, i)
                 }
+
                 c == '"' -> return sb.toString().ifBlank { null }
-                else -> { sb.append(c); i++ }
+
+                else -> {
+                    sb.append(c)
+                    i++
+                }
             }
         }
         return null

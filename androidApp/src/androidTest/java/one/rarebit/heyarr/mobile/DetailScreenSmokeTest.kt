@@ -4,10 +4,10 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.CoroutineScope
@@ -46,7 +46,9 @@ class DetailScreenSmokeTest {
 
     private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    @After fun stopSession() { sessionScope.cancel() }
+    @After fun stopSession() {
+        sessionScope.cancel()
+    }
 
     private fun session(): AppSession {
         val ctx = InstrumentationRegistry.getInstrumentation().targetContext
@@ -54,7 +56,10 @@ class DetailScreenSmokeTest {
         return AppSession(
             api = api,
             defaultProfile = "everyday",
-            settings = InMemorySettingsStore().apply { reduceMotion = true; externalMetadata = false },
+            settings = InMemorySettingsStore().apply {
+                reduceMotion = true
+                externalMetadata = false
+            },
             external = PhoneExternalMetadata.none(),
             recent = RecentSearches(File(ctx.cacheDir, "smoke-recent")),
             scope = sessionScope,

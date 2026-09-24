@@ -22,7 +22,9 @@ class DesktopDeviceStoreTest {
 
     private val tmp: File = Files.createTempDirectory("heyarr-device-test").toFile()
 
-    @AfterTest fun cleanup() { tmp.deleteRecursively() }
+    @AfterTest fun cleanup() {
+        tmp.deleteRecursively()
+    }
 
     private fun keyFile() = File(tmp, "device.key")
     private fun dataDir() = File(tmp, "device")
@@ -88,9 +90,14 @@ class DesktopDeviceStoreTest {
             val items = HashMap<String, ByteArray>()
             override val label = "fake"
             override fun isAvailable() = true
-            override fun store(account: String, secret: ByteArray): Boolean { items[account] = secret.copyOf(); return true }
+            override fun store(account: String, secret: ByteArray): Boolean {
+                items[account] = secret.copyOf()
+                return true
+            }
             override fun retrieve(account: String): ByteArray? = items[account]?.copyOf()
-            override fun remove(account: String) { items.remove(account) }
+            override fun remove(account: String) {
+                items.remove(account)
+            }
         }
         val ring = DesktopDeviceKeyring(dataDir(), keyFile(), secrets = KeychainSecretStore(backend))
         assertEquals(KeyTier.KEYCHAIN, ring.info().tier)

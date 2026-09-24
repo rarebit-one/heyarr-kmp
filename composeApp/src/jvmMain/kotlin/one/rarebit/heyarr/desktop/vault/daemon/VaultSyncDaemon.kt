@@ -49,11 +49,17 @@ class VaultSyncDaemon(
     )
 
     @Volatile private var recorder: RecordingSync? = null
+
     @Volatile private var watch: SyncChanges? = null
+
     @Volatile private var device: String = ""
+
     @Volatile private var watching: Boolean = false
+
     @Volatile private var paused: Boolean = false
+
     @Volatile private var resolveError: String? = null
+
     @Volatile private var started: Boolean = false
 
     // The engine seam gates on [paused]: a paused daemon feeds the controller a null engine, so its
@@ -126,18 +132,25 @@ class VaultSyncDaemon(
             ?: return err("malformed request")
         return when (cmd) {
             "status" -> statusSnapshot().toJson()
-            "sync-now" -> { controller.syncNow(); JsonWrite.obj(linkedMapOf("ok" to true)) }
+
+            "sync-now" -> {
+                controller.syncNow()
+                JsonWrite.obj(linkedMapOf("ok" to true))
+            }
+
             "pause" -> {
                 paused = true
                 writeStatus()
                 JsonWrite.obj(linkedMapOf("ok" to true, "phase" to "paused"))
             }
+
             "resume" -> {
                 paused = false
                 controller.syncNow()
                 writeStatus()
                 JsonWrite.obj(linkedMapOf("ok" to true, "phase" to "running"))
             }
+
             else -> err("unknown cmd: $cmd")
         }
     }
@@ -208,7 +221,9 @@ private class RecordingSync(
     private val clock: () -> Long,
 ) : VaultSync {
     @Volatile var lastStats: VaultSyncEngine.Stats? = null
+
     @Volatile var lastMs: Long = 0
+
     @Volatile var lastAtMs: Long? = null
 
     override fun syncOnce(): VaultSyncEngine.Stats {

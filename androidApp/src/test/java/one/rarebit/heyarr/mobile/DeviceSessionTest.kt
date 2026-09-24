@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.net.DeviceAuthTransport
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.net.DeviceAuthTransport
 import one.rarebit.voidbind.Ed25519Signer
 import one.rarebit.voidbind.auth.DeviceCredential
 import one.rarebit.voidbind.auth.PossessionProof
@@ -26,7 +26,10 @@ class DeviceSessionTest {
     private val seed = ByteArray(32) { 0x02 }
     private val cert = "eyJ2IjoyfQ.c2ln" // any opaque token — the proof hashes it as presented
     private var signs = 0
-    private val signer = Ed25519Signer { signs++; JdkEd25519.sign(seed, it) }
+    private val signer = Ed25519Signer {
+        signs++
+        JdkEd25519.sign(seed, it)
+    }
 
     private fun session(clock: () -> Long, ttl: Long = 120) =
         DeviceCredential(cert, signer, clock, ttlSeconds = ttl, reuseForSeconds = ttl - PossessionProof.SKEW_SECONDS)
@@ -132,7 +135,11 @@ class DeviceSessionTest {
         var calls = 0
         var signsWhenCalled = -1
         val inner = Scripted(401, 200)
-        val t = DeviceAuthTransport(inner, { s }, onUnauthorized = { calls++; signsWhenCalled = signs; false })
+        val t = DeviceAuthTransport(inner, { s }, onUnauthorized = {
+            calls++
+            signsWhenCalled = signs
+            false
+        })
         val resp = t.get("u", Credential.Device(cert, "x").asHeader())
         assertEquals(401, resp.status)
         assertEquals(1, inner.seen.size) // vetoed: no retry
@@ -146,7 +153,10 @@ class DeviceSessionTest {
         val s = session({ now++ })
         var calls = 0
         val inner = Scripted(401, 401)
-        val resp = DeviceAuthTransport(inner, { s }, onUnauthorized = { calls++; true }).get("u", Credential.Device(cert, "x").asHeader())
+        val resp = DeviceAuthTransport(inner, { s }, onUnauthorized = {
+            calls++
+            true
+        }).get("u", Credential.Device(cert, "x").asHeader())
         assertEquals(401, resp.status)
         assertEquals(2, inner.seen.size)
         assertEquals(1, calls) // a second 401 is final — the hook is not consulted again
@@ -159,7 +169,10 @@ class DeviceSessionTest {
         val s = session({ now++ })
         var ops = "old.op"
         val inner = Scripted(401, 200)
-        val t = DeviceAuthTransport(inner, { s }, membership = { ops }, onUnauthorized = { ops = "old.op,new.op"; true })
+        val t = DeviceAuthTransport(inner, { s }, membership = { ops }, onUnauthorized = {
+            ops = "old.op,new.op"
+            true
+        })
         assertEquals(200, t.get("u", Credential.Device(cert, "x").asHeader()).status)
         assertEquals("old.op", inner.seen[0][DeviceAuthTransport.MEMBERSHIP_HEADER])
         assertEquals("old.op,new.op", inner.seen[1][DeviceAuthTransport.MEMBERSHIP_HEADER])

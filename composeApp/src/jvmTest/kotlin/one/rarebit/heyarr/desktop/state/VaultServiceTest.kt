@@ -75,7 +75,10 @@ class VaultServiceTest {
                 scope,
                 config = { cfg },
                 rememberFolder = { cfg = cfg.copy(vaultFolder = it) },
-                rememberSpaceId = { savedSpaceId = it; cfg = cfg.copy(vaultSpaceId = it) },
+                rememberSpaceId = {
+                    savedSpaceId = it
+                    cfg = cfg.copy(vaultSpaceId = it)
+                },
                 openCustody = { VaultCustody.Result(opened("s"), minted = true) },
                 engineFor = { _, _ -> sync },
                 watchFor = { PeriodicOnlyChanges },
@@ -104,8 +107,11 @@ class VaultServiceTest {
                 rememberSpaceId = { cfg = cfg.copy(vaultSpaceId = it) },
                 openCustody = {
                     // Not enrolled the first two attempts, then it comes good.
-                    if (attempts.incrementAndGet() < 3) VaultCustody.Result(null, minted = false, error = "not enrolled")
-                    else VaultCustody.Result(opened("s"), minted = true)
+                    if (attempts.incrementAndGet() < 3) {
+                        VaultCustody.Result(null, minted = false, error = "not enrolled")
+                    } else {
+                        VaultCustody.Result(opened("s"), minted = true)
+                    }
                 },
                 engineFor = { _, _ -> sync },
                 watchFor = { PeriodicOnlyChanges },

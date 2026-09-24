@@ -32,8 +32,7 @@ enum class Surface(val requiresEnrolment: Boolean) {
 
 object GuestGate {
     /** True when [surface] must be hidden or disabled for a client acting in [mode]. */
-    fun isGated(mode: ClientMode, surface: Surface): Boolean =
-        mode == ClientMode.GUEST && surface.requiresEnrolment
+    fun isGated(mode: ClientMode, surface: Surface): Boolean = mode == ClientMode.GUEST && surface.requiresEnrolment
 
     /** True when [surface] may be offered to a client acting in [mode]. */
     fun allows(mode: ClientMode, surface: Surface): Boolean = !isGated(mode, surface)

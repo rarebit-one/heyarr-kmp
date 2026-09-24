@@ -11,7 +11,7 @@ import java.util.Base64
 /** One opaque encrypted CRDT change as it rides the wire (§72, ADR-0049). */
 data class EncryptedChange(
     val spaceId: String,
-    val changeId: String,      // "blake3:<hex>" of the ciphertext (content-addressed)
+    val changeId: String, // "blake3:<hex>" of the ciphertext (content-addressed)
     val parents: List<String>, // causal parents, sorted
     val ciphertext: ByteArray,
 )
@@ -82,7 +82,8 @@ class VaultSpaceClient(
     private val http: HttpTransport,
     private val baseUrl: String,
     private val credential: Credential,
-) : VaultSpace, VaultKeys {
+) : VaultSpace,
+    VaultKeys {
     /** Pull every opaque change the server holds for [spaceId]. */
     override fun pullChanges(spaceId: String): List<EncryptedChange> = pullChangesSince(spaceId, 0).changes
 
@@ -203,7 +204,13 @@ class VaultSpaceClient(
                 val sb = StringBuilder()
                 i++
                 while (i < array.length && array[i] != '"') {
-                    if (array[i] == '\\' && i + 1 < array.length) { sb.append(array[i + 1]); i += 2 } else { sb.append(array[i]); i++ }
+                    if (array[i] == '\\' && i + 1 < array.length) {
+                        sb.append(array[i + 1])
+                        i += 2
+                    } else {
+                        sb.append(array[i])
+                        i++
+                    }
                 }
                 out.add(sb.toString())
             }

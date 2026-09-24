@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.mobile
 
-import one.rarebit.heyarr.mobile.login.QrLoginClient
-import one.rarebit.heyarr.mobile.login.VoidbindLogin
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.login.QrLoginClient
+import one.rarebit.heyarr.mobile.login.VoidbindLogin
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,7 +13,8 @@ private class FakeTransport(
     private val createBody: String,
     private val pollBodies: List<String>,
 ) : HttpTransport {
-    var pollCount = 0; private set
+    var pollCount = 0
+        private set
     override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
         assertTrue("post should hit /login", url.endsWith("/login"))
         return HttpResponse(200, createBody)

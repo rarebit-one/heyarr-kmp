@@ -175,8 +175,7 @@ class AcquireClient(
         }
 
         /** Read an `id` (or `desired_id` / `source_id`) from a small JSON response body. */
-        private fun idFromBody(body: String): String? =
-            SearchResultsJson.parse("[$body]").firstOrNull()?.workId
+        private fun idFromBody(body: String): String? = SearchResultsJson.parse("[$body]").firstOrNull()?.workId
 
         /** Minimal JSON string escaping for the flat bodies this builds. */
         internal fun jsonString(s: String): String {

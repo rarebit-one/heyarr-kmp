@@ -2,8 +2,8 @@ package one.rarebit.heyarr.mobile.login
 
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.net.VoidbindTransportAdapter
-import one.rarebit.voidbind.net.HttpTransport as VoidbindHttpTransport
 import one.rarebit.voidbind.net.WebLoginClient
+import one.rarebit.voidbind.net.HttpTransport as VoidbindHttpTransport
 
 /**
  * The initiator (RP) half of a QR web-login against heyarr's weblogin broker, driven
@@ -66,7 +66,9 @@ class QrLoginClient(
                         ?: return VoidbindLogin.Result.Failed("approved without a token")
                     return VoidbindLogin.Result.Approved(sessionToken = token, user = poll.user)
                 }
+
                 "denied" -> return VoidbindLogin.Result.Denied("declined on the authenticator")
+
                 "expired" -> return VoidbindLogin.Result.Denied("login challenge expired")
                 // "pending" → keep polling
             }

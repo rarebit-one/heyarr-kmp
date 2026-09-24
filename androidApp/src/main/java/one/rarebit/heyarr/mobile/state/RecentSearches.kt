@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.mobile.state
 
-import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.JsonArrays
+import one.rarebit.heyarr.core.net.JsonScan
 import java.io.File
 
 /**

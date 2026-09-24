@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.mobile
 
 import android.app.Application
-import androidx.media3.common.util.UnstableApi
 import android.content.Intent
+import androidx.media3.common.util.UnstableApi
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import kotlinx.coroutines.CoroutineScope
@@ -15,8 +15,8 @@ import kotlinx.coroutines.launch
 import one.rarebit.heyarr.mobile.device.CruciformAnnouncer
 import one.rarebit.heyarr.mobile.device.CruciformPairCallback
 import one.rarebit.heyarr.mobile.device.DeviceKeyring
-import one.rarebit.heyarr.mobile.device.HandoffLauncher
 import one.rarebit.heyarr.mobile.device.DevicePairingSteps
+import one.rarebit.heyarr.mobile.device.HandoffLauncher
 import one.rarebit.heyarr.mobile.device.PairingCoordinator
 import one.rarebit.heyarr.mobile.device.PairingForegroundService
 import one.rarebit.heyarr.mobile.device.PairingState
@@ -32,7 +32,9 @@ import one.rarebit.heyarr.mobile.net.OkHttpVoidbindTransport
  * killed. The Activity's ViewModel only observes it.
  */
 @UnstableApi
-class HeyarrApp : Application(), ImageLoaderFactory {
+class HeyarrApp :
+    Application(),
+    ImageLoaderFactory {
 
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -94,12 +96,11 @@ class HeyarrApp : Application(), ImageLoaderFactory {
      * would otherwise defeat the disk cache on every scroll — the blob target is
      * immutable by hash, and a changed poster is a changed URL.
      */
-    override fun newImageLoader(): ImageLoader =
-        ImageLoader.Builder(this)
-            .okHttpClient { graph.okHttp }
-            .crossfade(true)
-            .respectCacheHeaders(false)
-            .build()
+    override fun newImageLoader(): ImageLoader = ImageLoader.Builder(this)
+        .okHttpClient { graph.okHttp }
+        .crossfade(true)
+        .respectCacheHeaders(false)
+        .build()
 
     override fun onCreate() {
         super.onCreate()

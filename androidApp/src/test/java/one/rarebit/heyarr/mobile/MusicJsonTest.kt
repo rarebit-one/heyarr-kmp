@@ -2,9 +2,9 @@ package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
-import one.rarebit.heyarr.mobile.music.Tracks
 import one.rarebit.heyarr.mobile.music.MusicClient
 import one.rarebit.heyarr.mobile.music.MusicJson
+import one.rarebit.heyarr.mobile.music.Tracks
 import one.rarebit.heyarr.mobile.music.trackTitle
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

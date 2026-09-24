@@ -64,8 +64,7 @@ object FollowedSourcesJson {
     fun parse(body: String): List<FollowedSource> =
         JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
 
-    fun parseOne(body: String): FollowedSource? =
-        JsonScan.rootObject(body)?.let { parseObject(it) }
+    fun parseOne(body: String): FollowedSource? = JsonScan.rootObject(body)?.let { parseObject(it) }
 
     private fun parseObject(obj: String): FollowedSource? {
         val id = JsonScan.firstString(obj, listOf("id", "source_id")) ?: return null
@@ -88,8 +87,7 @@ object FollowedItemsJson {
 
     private val ENVELOPE_KEYS = listOf("items", "followed_items", "data")
 
-    fun parse(body: String): List<FollowedItem> =
-        JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
+    fun parse(body: String): List<FollowedItem> = JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
 
     fun nextCursor(body: String): String? =
         JsonScan.rootObject(body)?.let { JsonScan.stringField(it, "next_cursor") }?.takeIf { it.isNotBlank() }

@@ -21,7 +21,8 @@ object JsonArrays {
                     if (array[i] == '\\' && i + 1 < array.length) {
                         i = JsonEscapes.append(sb, array, i)
                     } else {
-                        sb.append(array[i]); i++
+                        sb.append(array[i])
+                        i++
                     }
                 }
                 out.add(sb.toString())

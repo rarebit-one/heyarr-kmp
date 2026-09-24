@@ -85,14 +85,12 @@
     <ID>MaxLineLength:Blake3Test.kt$Blake3Test$assertEquals("blake3:af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262", Blake3.hashHex(ByteArray(0)))</ID>
     <ID>MaxLineLength:Continue.kt$ContinueEntry$unit == "seconds" || unit == "s" -&gt; clock(v.toLong()) + (durationSeconds?.let { " / " + clock(it.toLong()) } ?: "")</ID>
     <ID>MaxLineLength:Continue.kt$ContinueJson$while (j &lt; json.length &amp;&amp; (json[j].isDigit() || json[j] == '.' || json[j] == '-' || json[j] == '+' || json[j] == 'e' || json[j] == 'E')) j++</ID>
-    <ID>MaxLineLength:DriveCrdt.kt$Drive$.</ID>
     <ID>MaxLineLength:DriveCrdtVectorsTest.kt$DriveCrdtVectorsTest$.</ID>
     <ID>MaxLineLength:DriveCrdtVectorsTest.kt$DriveCrdtVectorsTest$DriveChange(op = DriveOp.DELETE, path = "x", blob = "blake3:" + "0".repeat(64), at = 2, writer = "w")</ID>
     <ID>MaxLineLength:DriveCrdtVectorsTest.kt$DriveCrdtVectorsTest$DriveChange(op = DriveOp.PUT, path = "bad", blob = "not-a-hash", at = 1, writer = "w")</ID>
     <ID>MaxLineLength:DriveCrdtVectorsTest.kt$DriveCrdtVectorsTest$DriveChange(op = DriveOp.PUT, path = "ok", blob = "blake3:" + "a".repeat(64), size = 1, at = 3, writer = "w")</ID>
     <ID>MaxLineLength:DriveCrdtVectorsTest.kt$DriveCrdtVectorsTest$assertEquals(expectedResolved, d.resolved().map { Live(it.path, it.blob, it.conflicted) }, "[$name] resolved tree")</ID>
     <ID>MaxLineLength:DriveCrdtVectorsTest.kt$DriveCrdtVectorsTest$val</ID>
-    <ID>MaxLineLength:DriveRetainTest.kt$DriveRetainTest$if (array[i] == '\\' &amp;&amp; i + 1 &lt; array.length) { sb.append(array[i + 1]); i += 2 } else { sb.append(array[i]); i++ }</ID>
     <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$assertEquals("e75c0549-ad55-39e3-8025-c72c5d4a3c5d", ExternalParsers.musicBrainzReleaseGroup("""{"release-groups":[{"id":"e75c0549-ad55-39e3-8025-c72c5d4a3c5d","title":"Kid A"}]}"""))</ID>
     <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$assertEquals("https://blog.cloudflare.com/favicon.ico", ExternalParsers.feedImage(plain), "a favicon is a last resort but still an image")</ID>
     <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val atom = """&lt;feed xmlns="http://www.w3.org/2005/Atom"&gt;&lt;title&gt;Blog&lt;/title&gt;&lt;subtitle&gt;Notes on things&lt;/subtitle&gt;&lt;logo&gt;https://blog/logo.png&lt;/logo&gt;&lt;/feed&gt;"""</ID>
@@ -119,7 +117,6 @@
     <ID>MaxLineLength:JsonScan.kt$JsonScan$while (j &lt; obj.length &amp;&amp; (obj[j] == ' ' || obj[j] == '\t' || obj[j] == '\n' || obj[j] == '\r' || obj[j] == ':')) j++</ID>
     <ID>MaxLineLength:LandscapeArtwork.kt$LandscapeArtwork$}</ID>
     <ID>MaxLineLength:LandscapeArtworkTest.kt$LandscapeArtworkTest$for</ID>
-    <ID>MaxLineLength:LibraryStatus.kt$LibraryIndex$id = "pending:$workId"</ID>
     <ID>MaxLineLength:LibraryStatus.kt$LibraryIndex$state = "SELECTED"</ID>
     <ID>MaxLineLength:LibraryStatusTest.kt$LibraryStatusTest$assertEquals(LibraryStatus.IN_LIBRARY, LibraryStatus.combine(listOf(LibraryStatus.MISSING, LibraryStatus.IN_LIBRARY)))</ID>
     <ID>MaxLineLength:McpClient.kt$McpClient$throw McpTransportException("heyarr refused the credential (HTTP $status) — check the token in Settings", null, status)</ID>

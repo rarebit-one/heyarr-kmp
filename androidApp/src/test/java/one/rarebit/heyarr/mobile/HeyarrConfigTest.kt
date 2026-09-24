@@ -50,8 +50,8 @@ class HeyarrConfigTest {
         assertNull(HeyarrConfig.normalizeBaseUrl(null))
         assertNull(HeyarrConfig.normalizeBaseUrl(""))
         assertNull(HeyarrConfig.normalizeBaseUrl("192.168.16.224:7777")) // no scheme
-        assertNull(HeyarrConfig.normalizeBaseUrl("http://"))              // no host
-        assertNull(HeyarrConfig.normalizeBaseUrl("http://bad host/"))     // unparsable
+        assertNull(HeyarrConfig.normalizeBaseUrl("http://")) // no host
+        assertNull(HeyarrConfig.normalizeBaseUrl("http://bad host/")) // unparsable
     }
 
     @Test fun resolvesFromASettingsStoreDefaultThenOverride() {
@@ -73,8 +73,12 @@ class HeyarrConfigTest {
 
     @Test fun sessionSubtitleReportsIdentityAndScope() {
         val ro = one.rarebit.heyarr.mobile.search.SessionAuthority(
-            kind = "session", principalId = "ed25519:0123456789abcdef", deviceKey = "",
-            scopes = listOf("read"), canWrite = false, managementAuthorized = false,
+            kind = "session",
+            principalId = "ed25519:0123456789abcdef",
+            deviceKey = "",
+            scopes = listOf("read"),
+            canWrite = false,
+            managementAuthorized = false,
         )
         assertEquals(
             "Signed in as ed25519:01234567… · read-only · http://n:1",

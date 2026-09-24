@@ -77,7 +77,10 @@ class EnrolClient(
             // (ADR-0049; issue #41 part 2) so new spaces are wrapped for recovery at once.
             // Absent/blank (204, an older node) → null; recovery wraps for devices only.
             200, 201, 204 -> return Outcome.Registered("POST /enrol", recoveryKey(self.body))
-            404, 405 -> Unit // not mounted on this node — fall through to the admin lane
+
+            404, 405 -> Unit
+
+            // not mounted on this node — fall through to the admin lane
             else -> return Outcome.Failed(ProblemDetail.message(self.body, self.status, "self-enrol"))
         }
 
@@ -85,7 +88,9 @@ class EnrolClient(
         val adminBody = MiniJson.encodeObject(listOf("cert" to certToken, "name" to name))
         val admin = runCatching {
             http.post(
-                adminEnrolUrl(baseUrl), adminBody, "application/json",
+                adminEnrolUrl(baseUrl),
+                adminBody,
+                "application/json",
                 credential.asHeader() + ("Content-Type" to "application/json"),
             )
         }.getOrElse { return Outcome.Failed("register: ${it.message}") }
@@ -109,14 +114,13 @@ class EnrolClient(
         fun adminEnrolUrl(baseUrl: String) = baseUrl.trimEnd('/') + "/api/v1/identities/devices"
 
         /** The `POST /enrol` body: `cert`, `proof`, `name`, and `ops` only when there are any. */
-        fun selfBody(certToken: String, proof: String, name: String, ops: List<String>): String =
-            MiniJson.encodeObject(
-                buildList<Pair<String, Any>> {
-                    add("cert" to certToken)
-                    add("proof" to proof)
-                    add("name" to name)
-                    if (ops.isNotEmpty()) add("ops" to ops)
-                },
-            )
+        fun selfBody(certToken: String, proof: String, name: String, ops: List<String>): String = MiniJson.encodeObject(
+            buildList<Pair<String, Any>> {
+                add("cert" to certToken)
+                add("proof" to proof)
+                add("name" to name)
+                if (ops.isNotEmpty()) add("ops" to ops)
+            },
+        )
     }
 }

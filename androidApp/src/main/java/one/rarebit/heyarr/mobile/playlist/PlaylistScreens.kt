@@ -35,10 +35,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.personalstate.PersonalStateCoordinator
-import one.rarebit.heyarr.ui.theme.MediaScope
-import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.Field
@@ -51,6 +50,7 @@ import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.theme.MediaScope
 
 /** The playlists list — device-side encrypted state, folded on this device, in the music accent. */
 @Composable
@@ -74,13 +74,18 @@ internal fun PlaylistsScreen(
             item { SectionHeader("Playlists", subtitle = "Encrypted personal state, decrypted on this phone — the node never reads it") }
             when {
                 state.notEnrolled -> item { Notice("Enrol this device to keep playlists — they are encrypted and only readable here.") }
+
                 state.loading -> item { MediaRowSkeleton(3) }
+
                 state.error != null -> item { Notice(state.error, tone = Tokens.danger) }
+
                 state.playlists.isEmpty() -> item { EmptyState("No playlists yet", detail = "Make one here, or add from any card's long-press menu.", icon = Icons.Rounded.PlaylistPlay) }
+
                 else -> items(state.playlists, key = { it.spaceId }) { pl ->
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).background(Tokens.surface1).clickable { onOpen(pl.spaceId, pl.name) }.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         MediaBadge(MediaType.MUSIC)
                         Column(Modifier.weight(1f)) {
@@ -93,7 +98,12 @@ internal fun PlaylistsScreen(
             item { GatewaySyncFooter(state.starredSpaceId, state.historySpaceId) }
         }
     }
-    if (creating) NameDialog(title = "New playlist", confirm = "Create", onConfirm = { creating = false; onCreate(it) }, onDismiss = { creating = false })
+    if (creating) {
+        NameDialog(title = "New playlist", confirm = "Create", onConfirm = {
+            creating = false
+            onCreate(it)
+        }, onDismiss = { creating = false })
+    }
 }
 
 /** One playlist's items, resolved to browsable works. */
@@ -121,15 +131,19 @@ internal fun PlaylistScreen(
             item { SectionHeader(state.name.ifEmpty { "Playlist" }, subtitle = "${state.items.size} item${if (state.items.size == 1) "" else "s"}") }
             when {
                 state.loading -> item { MediaRowSkeleton(3) }
+
                 state.error != null -> item { Notice(state.error, tone = Tokens.danger) }
+
                 state.items.isEmpty() -> item { EmptyState("This playlist is empty", detail = "Add from any card's long-press menu, or a track's ⋯ menu.", icon = Icons.Rounded.PlaylistPlay) }
+
                 // Keyed by the stored entry id (not the work id) so per-track entries stay distinct,
                 // and Remove observes exactly that entry — a track removes the track, not the album.
                 else -> items(state.items, key = { it.itemId }) { row ->
                     val work = row.work
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).background(Tokens.surface1).clickable { onOpenWork(work) }.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         MediaBadge(MediaType.from(work.kind))
                         Column(Modifier.weight(1f)) {
@@ -142,7 +156,12 @@ internal fun PlaylistScreen(
             }
         }
     }
-    if (renaming) NameDialog(title = "Rename playlist", confirm = "Rename", initial = state.name, onConfirm = { renaming = false; it?.let(onRename) }, onDismiss = { renaming = false })
+    if (renaming) {
+        NameDialog(title = "Rename playlist", confirm = "Rename", initial = state.name, onConfirm = {
+            renaming = false
+            it?.let(onRename)
+        }, onDismiss = { renaming = false })
+    }
 }
 
 /** A dialog that picks a playlist to add an item to, or makes a new one. */
@@ -155,7 +174,10 @@ internal fun AddToPlaylistDialog(
 ) {
     var naming by remember { mutableStateOf(false) }
     if (naming) {
-        NameDialog(title = "New playlist", confirm = "Create & add", onConfirm = { naming = false; onCreateNew(it) }, onDismiss = onDismiss)
+        NameDialog(title = "New playlist", confirm = "Create & add", onConfirm = {
+            naming = false
+            onCreateNew(it)
+        }, onDismiss = onDismiss)
         return
     }
     AlertDialog(
