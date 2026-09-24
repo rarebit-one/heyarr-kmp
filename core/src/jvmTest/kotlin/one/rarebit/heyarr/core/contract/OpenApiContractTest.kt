@@ -106,31 +106,12 @@ class OpenApiContractTest {
             put("FakeHeyarrTransport", "preview fake: reads the REQUEST it is sent, not a response")
         }
 
-        const val SPEC_GAP = "SPEC GAP — heyarr-core sends this but api/openapi.yaml does not declare it"
-
+        // Every spec gap and client drift the test first found (#88) is fixed: the spec gaps in heyarr-core
+        // (declared since the vendored commit) and the dead client reads deleted. What remains is
+        // structurally unverifiable: keys inside free-form objects.
         val ALLOWANCES: List<Allowance> = listOf(
-            Allowance("QualityProfileJson", listOf("content_types"), "$SPEC_GAP (QualityProfile.content_types)"),
-            Allowance(
-                "VaultSpaceClient",
-                listOf("cursor"),
-                "$SPEC_GAP (GET /spaces/{id}/changes returns `cursor` and takes `?since`)",
-            ),
-            Allowance("HeyarrApi", listOf("duration_seconds"), "$SPEC_GAP (PlaybackSource.duration_seconds)"),
-            Allowance("PlaybackJson", listOf("duration_seconds"), "$SPEC_GAP (PlaybackSource.duration_seconds)"),
-            Allowance(
-                "CandidateJson",
-                listOf("size_bytes"),
-                "CLIENT DRIFT — the server's CandidateView has never had size_bytes, so Candidate.sizeBytes is " +
-                    "always null (nothing renders it; only a hand-written fixture sets it)",
-            ),
             Allowance("WorksJson", listOf("artist", "author"), ATTRS),
             Allowance("ContinueClient", listOf("season", "episode"), ATTRS),
-            Allowance(
-                "SearchResultsJson",
-                listOf("poster_url", "poster"),
-                "CLIENT DRIFT — WorkSummary has no poster_url/poster (the poster is the `artwork` embed, " +
-                    "ADR-0075, which this parser also reads), so SearchResult.posterUrl is always null",
-            ),
             Allowance(
                 "McpClient",
                 listOf("content", "text", "isError", "tool"),

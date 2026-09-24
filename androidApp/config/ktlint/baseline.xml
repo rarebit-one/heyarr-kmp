@@ -729,18 +729,18 @@
         <error line="3" column="1" source="standard:import-ordering" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/search/SearchResultsJson.kt">
-        <error line="55" column="59" source="standard:function-signature" />
-        <error line="119" column="34" source="standard:statement-wrapping" />
-        <error line="119" column="41" source="standard:statement-wrapping" />
-        <error line="119" column="51" source="standard:statement-wrapping" />
-        <error line="125" column="32" source="standard:statement-wrapping" />
-        <error line="125" column="40" source="standard:statement-wrapping" />
-        <error line="125" column="90" source="standard:statement-wrapping" />
-        <error line="145" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="146" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="146" column="27" source="standard:statement-wrapping" />
-        <error line="146" column="40" source="standard:statement-wrapping" />
-        <error line="146" column="45" source="standard:statement-wrapping" />
+        <error line="50" column="59" source="standard:function-signature" />
+        <error line="114" column="34" source="standard:statement-wrapping" />
+        <error line="114" column="41" source="standard:statement-wrapping" />
+        <error line="114" column="51" source="standard:statement-wrapping" />
+        <error line="120" column="32" source="standard:statement-wrapping" />
+        <error line="120" column="40" source="standard:statement-wrapping" />
+        <error line="120" column="90" source="standard:statement-wrapping" />
+        <error line="140" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="141" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="141" column="27" source="standard:statement-wrapping" />
+        <error line="141" column="40" source="standard:statement-wrapping" />
+        <error line="141" column="45" source="standard:statement-wrapping" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/search/SessionJson.kt">
         <error line="43" column="1" source="standard:blank-line-between-when-conditions" />
@@ -1445,8 +1445,8 @@
     </file>
     <file name="src/test/java/one/rarebit/heyarr/mobile/McpModelsTest.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="127" column="1" source="standard:spacing-between-declarations-with-annotations" />
-        <error line="127" column="36" source="standard:annotation" />
+        <error line="126" column="1" source="standard:spacing-between-declarations-with-annotations" />
+        <error line="126" column="36" source="standard:annotation" />
     </file>
     <file name="src/test/java/one/rarebit/heyarr/mobile/MediaThemeTest.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -1585,11 +1585,11 @@
         <error line="3" column="1" source="standard:import-ordering" />
     </file>
     <file name="src/test/java/one/rarebit/heyarr/mobile/SearchResultsJsonTest.kt">
-        <error line="84" column="42" source="standard:statement-wrapping" />
-        <error line="84" column="75" source="standard:statement-wrapping" />
-        <error line="84" column="107" source="standard:statement-wrapping" />
-        <error line="87" column="41" source="standard:statement-wrapping" />
-        <error line="87" column="79" source="standard:statement-wrapping" />
+        <error line="79" column="42" source="standard:statement-wrapping" />
+        <error line="79" column="75" source="standard:statement-wrapping" />
+        <error line="79" column="107" source="standard:statement-wrapping" />
+        <error line="82" column="41" source="standard:statement-wrapping" />
+        <error line="82" column="79" source="standard:statement-wrapping" />
     </file>
     <file name="src/test/java/one/rarebit/heyarr/mobile/SeriesTest.kt">
         <error line="23" column="205" source="standard:function-signature" />

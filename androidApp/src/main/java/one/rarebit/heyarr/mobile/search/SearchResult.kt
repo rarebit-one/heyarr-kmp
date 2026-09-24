@@ -5,8 +5,7 @@ package one.rarebit.heyarr.mobile.search
  * (a show, a movie, a podcast, a channel); heyarr resolves it against the catalogue
  * and returns works — this is a thin projection of one, deliberately mirroring
  * [one.rarebit.heyarr.mobile.library.Work] but carrying the extra fields a "what do I
- * want to acquire" list needs (a [year] to disambiguate, a [posterUrl] when the
- * server has one).
+ * want to acquire" list needs (a [year] to disambiguate, the [artworkPath] poster).
  *
  * Crucially there is **no indexer/source field**: the user expresses intent, the
  * server routes to sources. A result is something you can then **Get once** (a
@@ -21,7 +20,6 @@ data class SearchResult(
     val title: String,
     val type: String? = null,
     val year: Int? = null,
-    val posterUrl: String? = null,
     /**
      * The work's stored TVDB external id, when the server has one (heyarr-core
      * `WorkSummary.tvdb_id`, ADR-0050/0061). This is the **feed identity** a follow

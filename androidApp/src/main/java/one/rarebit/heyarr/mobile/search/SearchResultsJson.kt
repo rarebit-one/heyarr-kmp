@@ -14,19 +14,15 @@ import one.rarebit.heyarr.core.net.JsonScan
  * this mirrors. It tolerates a bare top-level array or an object wrapping one under
  * `items` / `works` / `data`, and per element extracts a `work_id` (or `id`), a
  * display title (`title` → `name` → `sort_title`), an optional `content_type` (→
- * `type` / `media_type` / `kind`), an optional numeric `year`, and an optional
- * poster URL (`poster_url` / `poster`).
- *
- * Poster URLs are not in heyarr's search result today (they would come from a
- * metadata provider, §M3-deferred), so [SearchResult.posterUrl] is parsed
- * tolerantly and is usually null. When a generated client lands (kotlinx.serialization
- * against the published OpenAPI), swap this for it.
+ * `type` / `media_type` / `kind`), and an optional numeric `year`.
+ * The poster is the `artwork` embed (ADR-0075); `WorkSummary` has no poster URL, so
+ * none is read (docs/proposals/0001: the parsers stay hand-written, held to the spec
+ * by `OpenApiContractTest`).
  */
 object SearchResultsJson {
 
     private val TITLE_KEYS = listOf("title", "name", "sort_title")
     private val TYPE_KEYS = listOf("content_type", "type", "media_type", "kind")
-    private val POSTER_KEYS = listOf("poster_url", "poster")
 
     /** Parse a works-list response body into [SearchResult]s, skipping elements missing an id. */
     fun parse(body: String): List<SearchResult> {
@@ -38,7 +34,6 @@ object SearchResultsJson {
                 title = firstString(obj, TITLE_KEYS) ?: id,
                 type = firstString(obj, TYPE_KEYS),
                 year = firstInt(obj, listOf("year")),
-                posterUrl = firstString(obj, POSTER_KEYS),
                 // The feed identity a one-tap follow needs (heyarr-core WorkSummary.tvdb_id,
                 // omitempty — absent for a work with no stored external id).
                 tvdbId = firstString(obj, listOf("tvdb_id", "feed_ref")),
