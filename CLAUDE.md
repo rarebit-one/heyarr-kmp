@@ -46,7 +46,15 @@ GitHub Packages, so builds need `gpr.user`/`gpr.token` in `~/.gradle/gradle.prop
 ./gradlew :composeApp:run                        # desktop app (display + libmpv)
 ./gradlew :composeApp:screenshots                # off-screen render of every screen
 ./gradlew :androidApp:testDebugUnitTest :androidApp:assembleDebug   # what android CI runs
+./gradlew ktlintCheck detekt                     # lint every module (also part of `check`)
 ```
+
+- **Lint:** ktlint (`intellij_idea` style, see `.editorconfig`) and detekt run on every module,
+  in CI via `desktop.yml` (root, `:core`, `:ui`, `:composeApp`) and `android.yml` (`:androidApp`).
+  Findings that predate the linters are frozen in each module's `config/ktlint/baseline.xml` and
+  `config/detekt/baseline.xml`, so only NEW violations fail. Fix new findings instead of
+  regenerating a baseline. ktlint's baseline is keyed by line, so shifting lines above a
+  baselined finding can surface it; `./gradlew :<module>:ktlintFormat` clears most of those.
 
 - Name the tasks you need. A bare `./gradlew build` also builds `:androidApp` when an SDK is present.
 - **The Android SDK is optional.** `settings.gradle.kts` detects it once (`ANDROID_HOME`,

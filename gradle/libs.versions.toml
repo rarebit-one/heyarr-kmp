@@ -17,6 +17,12 @@ compose-bom = "2024.09.03"
 camerax = "1.3.4"
 media3 = "1.4.1"
 readium = "3.1.1"
+# Lint. detekt 1.23.8 embeds the Kotlin 2.0.21 compiler; its own `detekt` classpath is
+# pinned to that (root build.gradle.kts), independent of the project's Kotlin.
+ktlintGradle = "14.2.0"
+ktlint = "1.8.0"
+detekt = "1.23.8"
+detektKotlin = "2.0.21"
 
 [libraries]
 voidbind-client = { module = "one.rarebit.voidbind:voidbind-client", version.ref = "voidbind-client" }
@@ -85,3 +91,5 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
