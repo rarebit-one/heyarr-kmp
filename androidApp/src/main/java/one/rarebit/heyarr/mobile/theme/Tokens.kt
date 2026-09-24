@@ -69,7 +69,7 @@ object Tokens {
     val squareWidth: Dp = 148.dp
     val screenPadding: Dp = 16.dp
 
-    // Type scale (Montserrat display / Inter body).
+    // Type scale (every slot is Rubik; see `:ui`'s HeyarrTheme).
     object Type {
         val h1 = 26.sp
         val h2 = 22.sp

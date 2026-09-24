@@ -8,7 +8,7 @@ seams for **device-side personal state** (decrypt-on-device) that make this the 
 client rather than a generic Subsonic app.
 
 It wears the **Heyarr Desktop design language** — the same tokens, media-keyed accents
-(shared through `:ui` / `:core`), self-hosted Inter / Montserrat / Rubik faces and components
+(shared through `:ui` / `:core`), the self-hosted Rubik face and components
 as the desktop client (`:composeApp`) in this repo — on a
 phone's bottom bar (a rail on a tablet), consumption first with curation one tab away.
 
@@ -93,9 +93,9 @@ type scale) — and the media table in `:ui`'s `MediaThemes` (over `:core`'s `Me
 
 The accent swaps the CTA gradient, pressed/focus states, the active nav tile, progress
 bars and the section underline; surfaces and text stay constant. Wrap any subtree in
-`MediaScope(type) { … }` to re-skin it. Fonts are self-hosted (OFL): **Inter** for UI
-and body, **Montserrat** for display headings, **Rubik** for the technical voice —
-`app/src/main/res/font`, licences in `app/src/main/assets/fonts`. `MediaThemeTest` pins
+`MediaScope(type) { … }` to re-skin it. Fonts are self-hosted (OFL): **Rubik** in every
+type slot, shipped once by `:ui` (`ui/src/commonMain/composeResources/font`, exposed as
+`HeyarrFonts`). `MediaThemeTest` pins
 the table and AA contrast; `preview/Fixtures.kt` carries the live-node shapes the JVM
 tests and previews share with the desktop.
 

@@ -62,7 +62,7 @@ adopt it together.
 - **Design tokens** (`theme/Tokens.kt`) and the **media-accent table** (`theme/MediaType.kt`)
   are **identical** across both repos (verified: every accent hex matches; only expected
   platform layout constants differ — desktop `navWidth 92dp` / `compactBreakpoint 900dp`
-  vs mobile `railBreakpoint 600dp`). Both self-host Inter / Montserrat / Rubik.
+  vs mobile `railBreakpoint 600dp`). Both self-host Rubik (from `:ui`).
 - **The API door** `heyarr/HeyarrApi.kt` shares **45 identical method names**. The one
   divergence: desktop has `playbackTarget(...)` (plan resolution inlined in the API);
   mobile factors plan resolution into `playback/PlaybackClient` + `PlaybackCoordinator`
