@@ -1,6 +1,8 @@
 package one.rarebit.heyarr.desktop.state
 
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
+import one.rarebit.heyarr.core.state.ExternalMeta
+import one.rarebit.heyarr.core.state.MetaKey
 
 object MovieArtwork {
     fun select(key: MetaKey, hits: List<DiscoveryHit>): ExternalMeta? {

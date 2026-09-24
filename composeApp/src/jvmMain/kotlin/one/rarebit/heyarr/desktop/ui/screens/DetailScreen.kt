@@ -89,9 +89,9 @@ import one.rarebit.heyarr.core.mcp.Satisfaction
 import one.rarebit.heyarr.desktop.music.Track
 import one.rarebit.heyarr.desktop.playback.PlayResult
 import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.desktop.state.ExternalEpisode
-import one.rarebit.heyarr.desktop.state.ExternalMeta
-import one.rarebit.heyarr.desktop.state.MetaKey
+import one.rarebit.heyarr.core.state.ExternalEpisode
+import one.rarebit.heyarr.core.state.ExternalMeta
+import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
@@ -442,7 +442,7 @@ private fun SynopsisBlock(detail: WorkDetail, type: MediaType, seasons: List<Sea
         when {
             own != null -> Text(own, style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary)
             ext?.synopsis != null -> {
-                Text(ext.synopsis, style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary, maxLines = 6, overflow = TextOverflow.Ellipsis)
+                Text(ext.synopsis.orEmpty(), style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary, maxLines = 6, overflow = TextOverflow.Ellipsis)
                 Text("Synopsis${if (ext.imageUrl != null && detail.artworkPath == null) " and cover" else ""} via ${ext.source} — not from your library. The node has no metadata provider (TVDB, ADR-0058).", style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled)
             }
             else -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -566,7 +566,7 @@ private fun EpisodeRow(session: AppSession, detail: WorkDetail, ep: Episode, sta
     val theme = LocalMediaTheme.current
     val thumb by rememberCover(session, MediaType.SERIES, "", ep.thumbnailPath).let { c -> androidx.compose.runtime.derivedStateOf { c.value.bitmap } }
     val extThumb by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, ext?.imageUrl, ep.thumbnailPath) {
-        if (ep.thumbnailPath == null && ext?.imageUrl != null && session.config.externalMetadata) value = session.artwork.load(ext.imageUrl)
+        if (ep.thumbnailPath == null && ext?.imageUrl != null && session.config.externalMetadata) value = session.artwork.load(ext.imageUrl.orEmpty())
     }
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
@@ -625,7 +625,8 @@ private fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, 
     val scope = rememberCoroutineScope()
     val code = "S%02dE%02d".format(season.number ?: 0, number)
     val extThumb by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(null, ext?.imageUrl) {
-        if (ext?.imageUrl != null && session.config.externalMetadata) value = session.artwork.load(ext.imageUrl)
+        val extImage = ext?.imageUrl
+        if (extImage != null && session.config.externalMetadata) value = session.artwork.load(extImage)
     }
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).border(Tokens.hairline, Tokens.border.copy(alpha = 0.6f), RoundedCornerShape(Tokens.radiusInput)).padding(8.dp)

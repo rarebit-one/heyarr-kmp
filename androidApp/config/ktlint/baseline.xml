@@ -13,7 +13,7 @@
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/AppGraph.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="54" column="28" source="standard:function-signature" />
+        <error line="55" column="28" source="standard:function-signature" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/AppViewModel.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -787,67 +787,42 @@
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/state/AppSession.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="122" column="19" source="standard:statement-wrapping" />
-        <error line="122" column="57" source="standard:statement-wrapping" />
-        <error line="122" column="89" source="standard:statement-wrapping" />
-        <error line="122" column="98" source="standard:statement-wrapping" />
-        <error line="122" column="109" source="standard:statement-wrapping" />
-        <error line="122" column="142" source="standard:statement-wrapping" />
-        <error line="132" column="25" source="standard:statement-wrapping" />
-        <error line="132" column="63" source="standard:statement-wrapping" />
-        <error line="132" column="132" source="standard:statement-wrapping" />
-        <error line="139" column="24" source="standard:statement-wrapping" />
-        <error line="139" column="51" source="standard:statement-wrapping" />
-        <error line="139" column="75" source="standard:statement-wrapping" />
-        <error line="139" column="83" source="standard:statement-wrapping" />
-        <error line="153" column="24" source="standard:statement-wrapping" />
-        <error line="153" column="37" source="standard:statement-wrapping" />
-        <error line="153" column="45" source="standard:statement-wrapping" />
-        <error line="158" column="32" source="standard:statement-wrapping" />
-        <error line="158" column="47" source="standard:statement-wrapping" />
-        <error line="158" column="61" source="standard:statement-wrapping" />
-        <error line="161" column="42" source="standard:statement-wrapping" />
-        <error line="161" column="129" source="standard:statement-wrapping" />
-        <error line="161" column="145" source="standard:statement-wrapping" />
-        <error line="162" column="47" source="standard:statement-wrapping" />
-        <error line="162" column="62" source="standard:statement-wrapping" />
-        <error line="162" column="74" source="standard:statement-wrapping" />
-        <error line="181" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="181" column="49" source="standard:statement-wrapping" />
-        <error line="181" column="73" source="standard:statement-wrapping" />
-        <error line="181" column="131" source="standard:statement-wrapping" />
+        <error line="123" column="19" source="standard:statement-wrapping" />
+        <error line="123" column="57" source="standard:statement-wrapping" />
+        <error line="123" column="89" source="standard:statement-wrapping" />
+        <error line="123" column="98" source="standard:statement-wrapping" />
+        <error line="123" column="109" source="standard:statement-wrapping" />
+        <error line="123" column="142" source="standard:statement-wrapping" />
+        <error line="133" column="25" source="standard:statement-wrapping" />
+        <error line="133" column="63" source="standard:statement-wrapping" />
+        <error line="133" column="132" source="standard:statement-wrapping" />
+        <error line="140" column="24" source="standard:statement-wrapping" />
+        <error line="140" column="51" source="standard:statement-wrapping" />
+        <error line="140" column="75" source="standard:statement-wrapping" />
+        <error line="140" column="83" source="standard:statement-wrapping" />
+        <error line="154" column="24" source="standard:statement-wrapping" />
+        <error line="154" column="37" source="standard:statement-wrapping" />
+        <error line="154" column="45" source="standard:statement-wrapping" />
+        <error line="159" column="32" source="standard:statement-wrapping" />
+        <error line="159" column="47" source="standard:statement-wrapping" />
+        <error line="159" column="61" source="standard:statement-wrapping" />
+        <error line="162" column="42" source="standard:statement-wrapping" />
+        <error line="162" column="129" source="standard:statement-wrapping" />
+        <error line="162" column="145" source="standard:statement-wrapping" />
+        <error line="163" column="47" source="standard:statement-wrapping" />
+        <error line="163" column="62" source="standard:statement-wrapping" />
+        <error line="163" column="74" source="standard:statement-wrapping" />
         <error line="182" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="182" column="49" source="standard:statement-wrapping" />
+        <error line="182" column="73" source="standard:statement-wrapping" />
+        <error line="182" column="131" source="standard:statement-wrapping" />
         <error line="183" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="193" column="24" source="standard:statement-wrapping" />
-        <error line="193" column="108" source="standard:statement-wrapping" />
-        <error line="193" column="126" source="standard:statement-wrapping" />
-        <error line="196" column="33" source="standard:statement-wrapping" />
-        <error line="196" column="54" source="standard:statement-wrapping" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/state/ExternalMetadata.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="82" column="139" source="standard:statement-wrapping" />
-        <error line="82" column="157" source="standard:statement-wrapping" />
-        <error line="82" column="174" source="standard:statement-wrapping" />
-        <error line="94" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="95" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="96" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="97" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="98" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="99" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="103" column="67" source="standard:string-template" />
-        <error line="116" column="31" source="standard:statement-wrapping" />
-        <error line="116" column="66" source="standard:statement-wrapping" />
-        <error line="116" column="118" source="standard:statement-wrapping" />
-        <error line="151" column="44" source="standard:statement-wrapping" />
-        <error line="154" column="58" source="standard:argument-list-wrapping" />
-        <error line="154" column="122" source="standard:argument-list-wrapping" />
-        <error line="154" column="170" source="standard:argument-list-wrapping" />
-        <error line="155" column="64" source="standard:argument-list-wrapping" />
-        <error line="155" column="111" source="standard:argument-list-wrapping" />
-        <error line="198" column="62" source="standard:function-signature" />
-        <error line="227" column="57" source="standard:function-signature" />
-        <error line="239" column="48" source="standard:function-signature" />
+        <error line="184" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="194" column="24" source="standard:statement-wrapping" />
+        <error line="194" column="108" source="standard:statement-wrapping" />
+        <error line="194" column="126" source="standard:statement-wrapping" />
+        <error line="197" column="33" source="standard:statement-wrapping" />
+        <error line="197" column="54" source="standard:statement-wrapping" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/state/RecentSearches.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -1434,11 +1409,6 @@
         <error line="3" column="1" source="standard:import-ordering" />
         <error line="92" column="112" source="standard:function-signature" />
         <error line="103" column="112" source="standard:function-signature" />
-    </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/ExternalParsersTest.kt">
-        <error line="19" column="51" source="standard:statement-wrapping" />
-        <error line="19" column="110" source="standard:statement-wrapping" />
-        <error line="20" column="37" source="standard:statement-wrapping" />
     </file>
     <file name="src/test/java/one/rarebit/heyarr/mobile/Fakes.kt">
         <error line="33" column="71" source="standard:statement-wrapping" />

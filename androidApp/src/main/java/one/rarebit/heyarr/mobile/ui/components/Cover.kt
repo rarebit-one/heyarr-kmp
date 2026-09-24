@@ -5,8 +5,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.state.AppSession
-import one.rarebit.heyarr.mobile.state.ExternalMeta
-import one.rarebit.heyarr.mobile.state.MetaKey
+import one.rarebit.heyarr.core.state.ExternalMeta
+import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.theme.MediaType
 
 /** A cover and where it came from. [external] is set only when a public source supplied it. */

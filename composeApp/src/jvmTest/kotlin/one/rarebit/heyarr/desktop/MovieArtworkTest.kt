@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.desktop
 
 import one.rarebit.heyarr.core.mcp.DiscoveryJson
+import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.desktop.state.MetaKey
 import one.rarebit.heyarr.desktop.state.MovieArtwork
 import kotlin.test.*
 

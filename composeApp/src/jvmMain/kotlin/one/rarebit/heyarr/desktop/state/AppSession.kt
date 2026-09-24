@@ -148,7 +148,7 @@ class AppSession(
     val playback = PlaybackSession()
 
     val artwork: ArtworkLoader = artworkLoader ?: ArtworkLoader({ config.baseUrl }, { config.bearerToken.trim() })
-    val external: ExternalMetadata = externalMetadata ?: ExternalMetadata(enabled = { config.externalMetadata }, movieLookup = { key ->
+    val external: ExternalMetadata = externalMetadata ?: DesktopExternalMetadata.create(enabled = { config.externalMetadata }, movieLookup = { key ->
         val hits = api?.discover(key.title)?.getOrNull().orEmpty()
         one.rarebit.heyarr.desktop.state.MovieArtwork.select(key, hits)
     })

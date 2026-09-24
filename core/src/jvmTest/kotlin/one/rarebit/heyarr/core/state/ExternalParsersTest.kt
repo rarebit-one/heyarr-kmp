@@ -1,9 +1,8 @@
-package one.rarebit.heyarr.mobile
+package one.rarebit.heyarr.core.state
 
-import one.rarebit.heyarr.mobile.state.ExternalParsers
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 /** The readers over each public source's answer, against the shapes observed live. */
 class ExternalParsersTest {
@@ -16,8 +15,11 @@ class ExternalParsersTest {
         assertEquals("TVmaze", show.source)
         val eps = ExternalParsers.tvmazeEpisodes("""[{"id":1,"season":4,"number":2,"name":"Phantom Pain","airdate":"2021-11-07","image":{"medium":"https://static.tvmaze.com/e.jpg"},"summary":"<p>The Yellowstone recovers.</p>"},{"id":2,"season":5,"number":8,"name":"Desire Is All You Need","airdate":"2022-12-31","image":null,"summary":null}]""")
         assertEquals(2, eps.size)
-        assertEquals("Phantom Pain", eps[0].name); assertEquals("The Yellowstone recovers.", eps[0].summary); assertEquals("https://static.tvmaze.com/e.jpg", eps[0].imageUrl)
-        assertNull(eps[1].imageUrl); assertEquals(8, eps[1].number)
+        assertEquals("Phantom Pain", eps[0].name)
+        assertEquals("The Yellowstone recovers.", eps[0].summary)
+        assertEquals("https://static.tvmaze.com/e.jpg", eps[0].imageUrl)
+        assertNull(eps[1].imageUrl)
+        assertEquals(8, eps[1].number)
     }
 
     @Test fun wikipediaOpenLibraryItunesMusicBrainz() {
@@ -40,7 +42,7 @@ class ExternalParsersTest {
         assertEquals("https://cdn/atp.jpg", ExternalParsers.feedImage(rss))
         assertEquals("Three nerds discussing tech.", ExternalParsers.feedDescription(rss))
         val plain = """<rss><channel><title>Cloudflare</title><image><url>https://blog.cloudflare.com/favicon.ico</url><title>Cloudflare</title></image></channel></rss>"""
-        assertEquals("a favicon is a last resort but still an image", "https://blog.cloudflare.com/favicon.ico", ExternalParsers.feedImage(plain))
+        assertEquals("https://blog.cloudflare.com/favicon.ico", ExternalParsers.feedImage(plain), "a favicon is a last resort but still an image")
         val atom = """<feed xmlns="http://www.w3.org/2005/Atom"><title>Blog</title><subtitle>Notes on things</subtitle><logo>https://blog/logo.png</logo></feed>"""
         assertEquals("https://blog/logo.png", ExternalParsers.feedImage(atom))
         assertEquals("Notes on things", ExternalParsers.feedDescription(atom))

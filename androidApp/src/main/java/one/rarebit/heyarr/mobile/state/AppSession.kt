@@ -23,6 +23,7 @@ import one.rarebit.heyarr.mobile.settings.SettingsStore
 import one.rarebit.heyarr.ui.theme.Appearance
 import one.rarebit.heyarr.core.state.LibraryIndex
 import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.state.ExternalMetadata
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
 enum class Connection { UNKNOWN, ONLINE, OFFLINE, UNAUTHORIZED }

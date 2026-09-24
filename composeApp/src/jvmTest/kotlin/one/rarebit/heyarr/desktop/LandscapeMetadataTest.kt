@@ -3,8 +3,8 @@ package one.rarebit.heyarr.desktop
 import java.nio.file.Files
 import java.security.MessageDigest
 import kotlinx.coroutines.runBlocking
-import one.rarebit.heyarr.desktop.state.ExternalMetadata
-import one.rarebit.heyarr.desktop.state.MetaKey
+import one.rarebit.heyarr.desktop.state.DesktopExternalMetadata
+import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.theme.MediaType
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,7 +16,7 @@ class LandscapeMetadataTest {
             val oldKey = MessageDigest.getInstance("SHA-256").digest("SERIES|example|2025||".toByteArray()).joinToString("") { "%02x".format(it) }.take(32)
             dir.resolve("$oldKey.json").writeText("""{"image":"https://art/old","source":"TVmaze","fetched_at":${System.currentTimeMillis()}}""")
             val calls = mutableListOf<String>()
-            val metadata = ExternalMetadata(cacheDir = dir, fetch = { url ->
+            val metadata = DesktopExternalMetadata.create(cacheDir = dir, fetch = { url ->
                 calls += url
                 if (url.endsWith("/images")) """[{"type":"background","resolutions":{"original":{"width":1920,"height":1080,"url":"https://art/wide"}}}]"""
                 else """{"id":123,"image":{"original":"https://art/poster"},"summary":"Example"}"""
@@ -26,7 +26,7 @@ class LandscapeMetadataTest {
             assertEquals("https://art/wide", result.landscapeImageUrl)
             assertEquals("https://art/poster", result.imageUrl)
             assertEquals(2, calls.size)
-            val cached = ExternalMetadata(cacheDir = dir, fetch = { error("Fresh disk cache must avoid network") }).lookup(key)!!
+            val cached = DesktopExternalMetadata.create(cacheDir = dir, fetch = { error("Fresh disk cache must avoid network") }).lookup(key)!!
             assertEquals(result, cached)
         } finally { dir.deleteRecursively() }
     }

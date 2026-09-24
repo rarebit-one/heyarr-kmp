@@ -244,8 +244,8 @@ app/src/main/java/one/rarebit/heyarr/mobile/
                 AudioQueueScreen · WantSheet (a bottom sheet: profile, monitor, reason)
   state/        AppSession (per node+credential: HeyarrApi, heartbeat/connection, the want-derived LibraryIndex, quality
                 profiles, appearance prefs, toasts, optimistic want; LibraryStatus/LibraryIndex come from `:core`) · SearchController + SearchGrouping (the fan-out and the pure grouping) ·
-                RecentSearches (a local file, labelled local) · ExternalMetadata (keyless public covers/synopses behind an
-                OkHttp seam, disk-cached; ExternalParsers pure)
+                RecentSearches (a local file, labelled local) · PhoneExternalMetadata (the OkHttp fetcher + User-Agent for
+                `:core`'s shared ExternalMetadata: keyless public covers/synopses, disk-cached; ExternalParsers pure)
   mcp/          McpClient (JSON-RPC tools/call → Ok text | Refused error, transport failures thrown) · McpModels (Reason,
                 Want, Satisfaction, Explanation, Renderer, PlaybackStatus, Peer, Replica, SearchHit/EpisodeHit, …)
   heyarr/       HeyarrApi (the one typed door: every MCP tool + the REST reads) · RestModels (QualityProfile, DesiredItem,

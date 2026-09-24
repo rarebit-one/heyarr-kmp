@@ -21,7 +21,7 @@ import one.rarebit.heyarr.mobile.preview.FakeHeyarrTransport
 import one.rarebit.heyarr.mobile.preview.Fixtures
 import one.rarebit.heyarr.mobile.settings.InMemorySettingsStore
 import one.rarebit.heyarr.mobile.state.AppSession
-import one.rarebit.heyarr.mobile.state.ExternalMetadata
+import one.rarebit.heyarr.mobile.state.PhoneExternalMetadata
 import one.rarebit.heyarr.mobile.state.RecentSearches
 import one.rarebit.heyarr.mobile.theme.HeyarrTheme
 import one.rarebit.heyarr.mobile.ui.screens.DetailPlayback
@@ -55,7 +55,7 @@ class DetailScreenSmokeTest {
             api = api,
             defaultProfile = "everyday",
             settings = InMemorySettingsStore().apply { reduceMotion = true; externalMetadata = false },
-            external = ExternalMetadata.none(),
+            external = PhoneExternalMetadata.none(),
             recent = RecentSearches(File(ctx.cacheDir, "smoke-recent")),
             scope = sessionScope,
             credential = Credential.Session("tok"),
