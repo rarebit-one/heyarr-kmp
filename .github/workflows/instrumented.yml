@@ -22,19 +22,10 @@ on:
       - "gradlew"
       - "gradlew.bat"
       - ".github/workflows/instrumented.yml"
-  pull_request:
-    branches: [main]
-    paths:
-      - "androidApp/**"
-      - "core/**"
-      - "ui/**"
-      - "build.gradle.kts"
-      - "settings.gradle.kts"
-      - "gradle.properties"
-      - "gradle/**"
-      - "gradlew"
-      - "gradlew.bat"
-      - ".github/workflows/instrumented.yml"
+  # Pull requests run this via ci.yml (workflow_call), which applies the same path
+  # filter and reports one always-present `ci` check that branch protection requires.
+  # Keep the path lists here and in ci.yml's `changes` job in sync.
+  workflow_call:
   workflow_dispatch:
 
 concurrency:

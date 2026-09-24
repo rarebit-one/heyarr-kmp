@@ -1,0 +1,126 @@
+name: ci
+
+# The one PR check branch protection requires. It runs on EVERY pull request (no
+# `paths:` filter), decides from the diff which of the real, path-filtered builds the
+# change can affect, calls just those as reusable workflows, and ends in the `ci` job,
+# which fails if any build that ran failed or was cancelled and passes when they were
+# all skipped. The builds' own `push: main` triggers are unchanged.
+#
+# Keep each path list below in sync with the `push.paths` of the workflow it gates.
+on:
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      android: ${{ steps.filter.outputs.android }}
+      desktop: ${{ steps.filter.outputs.desktop }}
+      instrumented: ${{ steps.filter.outputs.instrumented }}
+      openapi: ${{ steps.filter.outputs.openapi }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Which builds does this change touch?
+        id: filter
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          # Three-dot: only what the PR itself changed since it forked from the base.
+          git diff --name-only "$BASE_SHA...$HEAD_SHA" >"$RUNNER_TEMP/changed.txt"
+          echo "Changed files:"; cat "$RUNNER_TEMP/changed.txt"
+
+          android=false desktop=false instrumented=false openapi=false
+          while IFS= read -r f; do
+            # Shared modules, the Gradle build itself, and this workflow: everything.
+            case "$f" in
+              core/*|ui/*|build.gradle.kts|settings.gradle.kts|gradle.properties|gradle/*|gradlew|gradlew.bat|.github/workflows/ci.yml)
+                android=true desktop=true instrumented=true ;;
+            esac
+            case "$f" in
+              androidApp/*|.editorconfig|.github/workflows/android.yml) android=true ;;
+            esac
+            case "$f" in
+              composeApp/*|deploy/*|scripts/*|.editorconfig|config/*|.github/workflows/desktop.yml) desktop=true ;;
+            esac
+            case "$f" in
+              androidApp/*|.github/workflows/instrumented.yml) instrumented=true ;;
+            esac
+            case "$f" in
+              core/*|composeApp/*|androidApp/*|ui/*|scripts/refresh-openapi-spec.sh|.github/workflows/openapi-contract.yml|.github/workflows/ci.yml)
+                openapi=true ;;
+            esac
+          done <"$RUNNER_TEMP/changed.txt"
+
+          {
+            echo "android=$android"
+            echo "desktop=$desktop"
+            echo "instrumented=$instrumented"
+            echo "openapi=$openapi"
+          } | tee -a "$GITHUB_OUTPUT"
+
+  android:
+    needs: changes
+    if: needs.changes.outputs.android == 'true'
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/android.yml
+
+  desktop:
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/desktop.yml
+
+  instrumented:
+    needs: changes
+    if: needs.changes.outputs.instrumented == 'true'
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/instrumented.yml
+
+  openapi-contract:
+    needs: changes
+    if: needs.changes.outputs.openapi == 'true'
+    permissions:
+      contents: read
+      packages: read
+    uses: ./.github/workflows/openapi-contract.yml
+
+  # Aggregate status so branch protection can require exactly one check.
+  ci:
+    name: ci
+    if: always()
+    needs: [changes, android, desktop, instrumented, openapi-contract]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Fail if any build failed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS"
+          if echo "$NEEDS" | grep -q '"result": *"\(failure\|cancelled\)"'; then
+            echo "one or more ci jobs failed or were cancelled"; exit 1
+          fi
+          echo "all ci jobs passed or were skipped"
