@@ -1,18 +1,15 @@
 import com.android.build.gradle.LibraryExtension
 
 plugins {
-    id("org.jetbrains.kotlin.multiplatform")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.compose")
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.compose.multiplatform)
 }
 
 // Android target is registered only when an SDK is present — see the same note in
 // :core/build.gradle.kts. On an SDK-less desktop box this module stays JVM-only and the
 // desktop app builds unaffected; CI (setup-android) builds the android variant.
-val hasAndroidSdk =
-    System.getenv("ANDROID_HOME") != null ||
-    System.getenv("ANDROID_SDK_ROOT") != null ||
-    rootProject.file("local.properties").takeIf { it.exists() }?.readText()?.contains("sdk.dir") == true
+val hasAndroidSdk = extra["hasAndroidSdk"] as Boolean
 
 if (hasAndroidSdk) apply(plugin = "com.android.library")
 
