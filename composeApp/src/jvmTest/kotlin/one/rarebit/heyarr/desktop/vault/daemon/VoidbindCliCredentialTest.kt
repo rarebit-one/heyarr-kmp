@@ -47,10 +47,14 @@ class VoidbindCliCredentialTest {
             deviceDir = "/dev/null",
             ttlMs = 1_000,
             clock = { now },
-            runner = { calls.incrementAndGet(); sampleOutput },
+            runner = {
+                calls.incrementAndGet()
+                sampleOutput
+            },
         ).credential()
 
-        cred.asHeader(); cred.asHeader()
+        cred.asHeader()
+        cred.asHeader()
         assertEquals(1, calls.get(), "second call within TTL must hit the cache")
 
         now = 2_000 // past the TTL

@@ -1,14 +1,14 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.mcp.McpClient
 import one.rarebit.heyarr.core.mcp.McpOutcome
 import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.heyarr.core.net.JsonScan
-import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.JsonArrays
+import one.rarebit.heyarr.core.net.JsonScan
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -19,10 +19,14 @@ import org.junit.Test
 class McpClientTest {
 
     private class Capture(val status: Int = 200, val body: String) : HttpTransport {
-        var url: String? = null; var sent: String? = null; var headers: Map<String, String> = emptyMap()
+        var url: String? = null
+        var sent: String? = null
+        var headers: Map<String, String> = emptyMap()
         override fun get(url: String, headers: Map<String, String>) = HttpResponse(405, "")
         override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
-            this.url = url; this.sent = body; this.headers = headers
+            this.url = url
+            this.sent = body
+            this.headers = headers
             return HttpResponse(status, this.body)
         }
     }
@@ -72,8 +76,13 @@ class McpClientTest {
     }
 
     private fun transportFailure(block: () -> Unit): McpTransportException {
-        try { block() } catch (e: McpTransportException) { return e }
-        fail("expected a transport failure"); throw IllegalStateException()
+        try {
+            block()
+        } catch (e: McpTransportException) {
+            return e
+        }
+        fail("expected a transport failure")
+        throw IllegalStateException()
     }
 
     @Test

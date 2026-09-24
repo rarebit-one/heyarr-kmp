@@ -1,16 +1,15 @@
 package one.rarebit.heyarr.mobile.net
-import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.heyarr.core.net.HttpResponse
-
 import android.util.Log
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import one.rarebit.voidbind.net.HttpResponse as VoidbindResponse
-import one.rarebit.voidbind.net.HttpTransport as VoidbindHttpTransport
+import one.rarebit.heyarr.core.net.HttpResponse
+import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.BuildConfig
 import java.util.concurrent.TimeUnit
+import one.rarebit.voidbind.net.HttpResponse as VoidbindResponse
+import one.rarebit.voidbind.net.HttpTransport as VoidbindHttpTransport
 
 /**
  * The app's actual of voidbind-client's blocking [VoidbindHttpTransport] seam — OkHttp,
@@ -26,8 +25,7 @@ class OkHttpVoidbindTransport(
         .build(),
 ) : VoidbindHttpTransport {
 
-    override fun get(url: String): VoidbindResponse =
-        execute(Request.Builder().url(url).get().build())
+    override fun get(url: String): VoidbindResponse = execute(Request.Builder().url(url).get().build())
 
     override fun post(url: String, body: ByteArray?, contentType: String?): VoidbindResponse {
         val rb = (body ?: ByteArray(0)).toRequestBody(contentType?.toMediaTypeOrNull())
@@ -52,14 +50,13 @@ class OkHttpVoidbindTransport(
         }
     }
 
-    private fun execute(request: Request): VoidbindResponse =
-        client.newCall(request).execute().use { resp ->
-            // Debug builds only: the method + URL + status of every voidbind wire call
-            // (never a body — a relay slot carries the sealed cert), so the composed
-            // relay/broker paths can be checked in logcat against the node's mounts.
-            if (BuildConfig.DEBUG) Log.d(TAG, "${request.method} ${request.url} -> ${resp.code}")
-            VoidbindResponse(resp.code, resp.body?.bytes() ?: ByteArray(0))
-        }
+    private fun execute(request: Request): VoidbindResponse = client.newCall(request).execute().use { resp ->
+        // Debug builds only: the method + URL + status of every voidbind wire call
+        // (never a body — a relay slot carries the sealed cert), so the composed
+        // relay/broker paths can be checked in logcat against the node's mounts.
+        if (BuildConfig.DEBUG) Log.d(TAG, "${request.method} ${request.url} -> ${resp.code}")
+        VoidbindResponse(resp.code, resp.body?.bytes() ?: ByteArray(0))
+    }
 
     private companion object {
         const val TAG = "heyarr.voidbind"

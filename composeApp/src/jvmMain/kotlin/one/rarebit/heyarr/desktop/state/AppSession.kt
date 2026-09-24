@@ -1,7 +1,5 @@
 package one.rarebit.heyarr.desktop.state
 
-import one.rarebit.heyarr.core.state.*
-
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -23,16 +21,17 @@ import one.rarebit.heyarr.core.discovery.DiscoveredServer
 import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.discovery.NodeDiscovery
-import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
-import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.core.heyarr.QualityProfile
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.state.*
 import one.rarebit.heyarr.desktop.device.DesktopDeviceEnroller
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DevicePairingSteps
 import one.rarebit.heyarr.desktop.device.PairingCoordinator
+import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
+import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.login.BearerTokenLogin
 import one.rarebit.heyarr.desktop.login.DeviceEnroller
 import one.rarebit.heyarr.desktop.login.DeviceLogin
@@ -41,7 +40,6 @@ import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
-import one.rarebit.heyarr.ui.theme.Appearance
 import one.rarebit.heyarr.desktop.vault.FileSyncIndexStore
 import one.rarebit.heyarr.desktop.vault.JdkVaultBlobStore
 import one.rarebit.heyarr.desktop.vault.RealVaultFolder
@@ -49,14 +47,24 @@ import one.rarebit.heyarr.desktop.vault.VaultCustody
 import one.rarebit.heyarr.desktop.vault.VaultSpaceClient
 import one.rarebit.heyarr.desktop.vault.VaultSyncEngine
 import one.rarebit.heyarr.desktop.vault.WatchedFolder
+import one.rarebit.heyarr.ui.theme.Appearance
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
 enum class Connection {
-    UNKNOWN, ONLINE, OFFLINE, UNAUTHORIZED, UNCONFIGURED;
+    UNKNOWN,
+    ONLINE,
+    OFFLINE,
+    UNAUTHORIZED,
+    UNCONFIGURED,
+    ;
 
     companion object {
         /** What one liveness probe says: its HTTP status, or 0 when the transport failed. A refused credential is not "offline". */
-        fun fromProbe(status: Int): Connection = when (status) { 200 -> ONLINE; 401, 403 -> UNAUTHORIZED; else -> OFFLINE }
+        fun fromProbe(status: Int): Connection = when (status) {
+            200 -> ONLINE
+            401, 403 -> UNAUTHORIZED
+            else -> OFFLINE
+        }
     }
 }
 
@@ -66,6 +74,7 @@ enum class Connection {
  * Plain Compose state (the org's stance for this app; a ViewModel layer comes with the
  * shared module). Network work is launched on [Dispatchers.IO] through [io].
  */
+
 /** How long one liveness probe may take before it counts as no answer. */
 private const val PROBE_TIMEOUT_MS = 6_000L
 
@@ -216,7 +225,10 @@ class AppSession(
     var generation: Int by mutableStateOf(0)
         private set
 
-    fun catalogChanged() { generation++; refreshIndex() }
+    fun catalogChanged() {
+        generation++
+        refreshIndex()
+    }
 
     fun save(updated: DesktopConfig) {
         settings.save(updated)
@@ -224,7 +236,11 @@ class AppSession(
         config = updated
         artwork.reset()
         connection = if (updated.baseUrl.isBlank()) Connection.UNCONFIGURED else Connection.UNKNOWN
-        if (otherNode) { profiles = emptyList(); index = LibraryIndex.EMPTY; generation++ }
+        if (otherNode) {
+            profiles = emptyList()
+            index = LibraryIndex.EMPTY
+            generation++
+        }
         refreshIndex()
         startHeartbeat()
     }
@@ -288,34 +304,50 @@ class AppSession(
      */
     suspend fun probe() {
         val a = api
-        if (a == null) { connection = Connection.UNCONFIGURED; return }
+        if (a == null) {
+            connection = Connection.UNCONFIGURED
+            return
+        }
         val t0 = System.nanoTime()
         var status = attempt(a)
-        if (status == 0) { transport.reset(); status = attempt(a) }
+        if (status == 0) {
+            transport.reset()
+            status = attempt(a)
+        }
         probes++
         lastLatencyMs = (System.nanoTime() - t0) / 1_000_000
         connection = Connection.fromProbe(status)
         when (status) {
-            200 -> { lastOkAt = System.currentTimeMillis(); lastFailure = null }
+            200 -> {
+                lastOkAt = System.currentTimeMillis()
+                lastFailure = null
+            }
+
             0 -> failures++
-            else -> { failures++; lastFailure = "HTTP $status from the node" }
+
+            else -> {
+                failures++
+                lastFailure = "HTTP $status from the node"
+            }
         }
     }
 
     // A cancelled probe (the heartbeat restarting on a new configuration) is not a failure
     // and must not leave its message behind for the probe that replaced it: cancellation
     // propagates, everything else is the transport's answer.
-    private suspend fun attempt(a: HeyarrApi): Int =
-        withTimeoutOrNull(PROBE_TIMEOUT_MS) {
-            try {
-                runInterruptible(Dispatchers.IO) { a.ping() }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                lastFailure = e.message ?: e.javaClass.simpleName
-                0
-            }
-        } ?: run { lastFailure = "no answer within ${PROBE_TIMEOUT_MS / 1000} s"; 0 }
+    private suspend fun attempt(a: HeyarrApi): Int = withTimeoutOrNull(PROBE_TIMEOUT_MS) {
+        try {
+            runInterruptible(Dispatchers.IO) { a.ping() }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            lastFailure = e.message ?: e.javaClass.simpleName
+            0
+        }
+    } ?: run {
+        lastFailure = "no answer within ${PROBE_TIMEOUT_MS / 1000} s"
+        0
+    }
 
     /**
      * Called by any screen whose call died on the transport — flips the banner
@@ -329,15 +361,25 @@ class AppSession(
         connection = if (e.status == 401 || e.status == 403) Connection.UNAUTHORIZED else Connection.OFFLINE
     }
 
-    fun noteSuccess() { lastOkAt = System.currentTimeMillis(); if (connection != Connection.ONLINE) connection = Connection.ONLINE }
+    fun noteSuccess() {
+        lastOkAt = System.currentTimeMillis()
+        if (connection != Connection.ONLINE) connection = Connection.ONLINE
+    }
 
     // ── library index + profiles ─────────────────────────────────────────────────
 
     fun refreshIndex() {
         // The want index (In library / Wanted / Missing) is owner state a guest cannot read;
         // asking for it would only earn a 403. Guests browse without it.
-        if (isGuest) { index = LibraryIndex.EMPTY; profiles = emptyList(); return }
-        val a = api ?: run { index = LibraryIndex.EMPTY; return }
+        if (isGuest) {
+            index = LibraryIndex.EMPTY
+            profiles = emptyList()
+            return
+        }
+        val a = api ?: run {
+            index = LibraryIndex.EMPTY
+            return
+        }
         scope.launch {
             indexLoading = true
             val result = io { a.desired() }
@@ -351,17 +393,30 @@ class AppSession(
     fun want(workId: String, title: String, profile: String, monitor: Boolean = true, reason: String? = null, onDone: (McpResult<*>?) -> Unit = {}) {
         // Wanting is an enrolled surface; the UI routes a guest to "Sign in to save" first,
         // but guard here too so a stray call never fires an unauthenticated write at the node.
-        if (isGuest) { onDone(null); return }
+        if (isGuest) {
+            onDone(null)
+            return
+        }
         val a = api ?: return
         val before = index
         index = index.withPendingWant(workId, profiles.firstOrNull { it.name == profile }?.id)
         scope.launch {
             val result = io { a.wantWork(workId, profile, monitor, reason) }
-            result.onFailure { index = before; onDone(null) }
+            result.onFailure {
+                index = before
+                onDone(null)
+            }
             result.onSuccess { r ->
                 when (r) {
-                    is McpResult.Ok -> { toast(Toast.Kind.SUCCESS, "Wanted “$title”", "Measured against the ${profile} profile."); refreshIndex() }
-                    is McpResult.Refused -> { index = before; refused(r) }
+                    is McpResult.Ok -> {
+                        toast(Toast.Kind.SUCCESS, "Wanted “$title”", "Measured against the $profile profile.")
+                        refreshIndex()
+                    }
+
+                    is McpResult.Refused -> {
+                        index = before
+                        refused(r)
+                    }
                 }
                 onDone(r)
             }
@@ -380,8 +435,14 @@ class AppSession(
                 // stays "online" and the caller just sees an empty result. The UI hides those
                 // surfaces for guests anyway; this guards the ones that slip through.
                 isGuest && e is McpTransportException && (e.status == 401 || e.status == 403) -> {}
-                e is McpTransportException -> { noteTransportFailure(e); toast(Toast.Kind.ERROR, "Can't reach heyarr", e.message) }
+
+                e is McpTransportException -> {
+                    noteTransportFailure(e)
+                    toast(Toast.Kind.ERROR, "Can't reach heyarr", e.message)
+                }
+
                 e is McpRefusedException -> toast(Toast.Kind.REFUSED, "heyarr refused", e.error.message, e.error.tool)
+
                 else -> toast(Toast.Kind.ERROR, "Something went wrong", e.message ?: e.javaClass.simpleName)
             }
         }
@@ -400,17 +461,27 @@ class AppSession(
      * no loop, since the retry path shows the plain refusal.
      */
     fun castRefused(r: McpResult.Refused, deviceName: String, retry: () -> Unit) {
-        toast(Toast.Kind.REFUSED, "Couldn't cast to $deviceName", r.message, r.tool,
-            action = ToastAction("Cast anyway") { retry() })
+        toast(
+            Toast.Kind.REFUSED,
+            "Couldn't cast to $deviceName",
+            r.message,
+            r.tool,
+            action = ToastAction("Cast anyway") { retry() },
+        )
     }
 
     fun toast(kind: Toast.Kind, title: String, detail: String? = null, tool: String? = null, action: ToastAction? = null) {
         val t = Toast(++toastSeq, kind, title, detail, tool, action)
         toasts.add(t)
-        scope.launch { delay(if (kind == Toast.Kind.REFUSED || kind == Toast.Kind.ERROR) 9_000 else 4_500); toasts.remove(t) }
+        scope.launch {
+            delay(if (kind == Toast.Kind.REFUSED || kind == Toast.Kind.ERROR) 9_000 else 4_500)
+            toasts.remove(t)
+        }
     }
 
-    fun dismiss(toast: Toast) { toasts.remove(toast) }
+    fun dismiss(toast: Toast) {
+        toasts.remove(toast)
+    }
 
     /**
      * Launch [block] on the session's own scope, so it outlives the screen or menu that

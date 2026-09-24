@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.desktop.music
 
-import one.rarebit.heyarr.desktop.library.PrimaryAsset
-import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.core.library.EpisodeFile
+import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.desktop.library.PrimaryAsset
 
 /**
  * One asset of a work — heyarr-core `WorkAsset` from `GET /api/v1/works/{id}/assets`
@@ -76,8 +76,7 @@ object TracksJson {
 
     private val ENVELOPE_KEYS = listOf("items", "assets", "data")
 
-    fun parse(body: String): List<Track> =
-        JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
+    fun parse(body: String): List<Track> = JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
 
     fun nextCursor(body: String): String? =
         JsonScan.rootObject(body)?.let { JsonScan.stringField(it, "next_cursor") }?.takeIf { it.isNotBlank() }

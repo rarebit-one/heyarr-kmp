@@ -58,8 +58,7 @@ data class Want(
 )
 
 object WantJson {
-    fun list(body: String): List<Want> =
-        JsonScan.objectsOf(body, listOf("wants", "items")).mapNotNull { parse(it) }
+    fun list(body: String): List<Want> = JsonScan.objectsOf(body, listOf("wants", "items")).mapNotNull { parse(it) }
 
     fun parse(obj: String): Want? {
         val id = JsonScan.firstString(obj, listOf("desired_item_id", "id")) ?: return null
@@ -228,16 +227,15 @@ data class Renderer(
 }
 
 object RendererJson {
-    fun list(body: String): List<Renderer> =
-        JsonScan.objectsOf(body, listOf("renderers", "items")).mapNotNull { r ->
-            val name = JsonScan.stringField(r, "name") ?: return@mapNotNull null
-            Renderer(
-                udn = JsonScan.stringField(r, "udn") ?: name,
-                name = name,
-                manufacturer = JsonScan.stringField(r, "manufacturer"),
-                model = JsonScan.stringField(r, "model"),
-            )
-        }
+    fun list(body: String): List<Renderer> = JsonScan.objectsOf(body, listOf("renderers", "items")).mapNotNull { r ->
+        val name = JsonScan.stringField(r, "name") ?: return@mapNotNull null
+        Renderer(
+            udn = JsonScan.stringField(r, "udn") ?: name,
+            name = name,
+            manufacturer = JsonScan.stringField(r, "manufacturer"),
+            model = JsonScan.stringField(r, "model"),
+        )
+    }
 }
 
 /**

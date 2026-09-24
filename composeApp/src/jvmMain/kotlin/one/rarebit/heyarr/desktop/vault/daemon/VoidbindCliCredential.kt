@@ -29,6 +29,7 @@ class VoidbindCliCredential(
     private val runner: (List<String>) -> String = ::runProcess,
 ) {
     @Volatile private var cached: Map<String, String>? = null
+
     @Volatile private var cachedAt: Long = 0
 
     /** The credential to hand the vault clients: fresh headers per request, cached for [ttlMs]. */

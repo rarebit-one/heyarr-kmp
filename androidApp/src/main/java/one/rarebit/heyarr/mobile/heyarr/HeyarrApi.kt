@@ -1,24 +1,28 @@
 package one.rarebit.heyarr.mobile.heyarr
-import one.rarebit.heyarr.core.heyarr.CandidateList
-import one.rarebit.heyarr.core.heyarr.CandidateJson
-import one.rarebit.heyarr.core.heyarr.QualityProfileJson
-import one.rarebit.heyarr.core.heyarr.QualityProfile
-import one.rarebit.heyarr.core.heyarr.DesiredItemJson
-import one.rarebit.heyarr.core.heyarr.DesiredItem
-
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.catalog.ContinueClient
-import one.rarebit.heyarr.mobile.catalog.ContinueEntry
-import one.rarebit.heyarr.mobile.library.LibraryClient
-import one.rarebit.heyarr.mobile.library.Work
-import one.rarebit.heyarr.mobile.library.WorkAsset
-import one.rarebit.heyarr.mobile.library.WorkDetailClient
+import one.rarebit.heyarr.core.heyarr.CandidateJson
+import one.rarebit.heyarr.core.heyarr.CandidateList
+import one.rarebit.heyarr.core.heyarr.Capabilities
+import one.rarebit.heyarr.core.heyarr.CapabilitiesJson
+import one.rarebit.heyarr.core.heyarr.DesiredItem
+import one.rarebit.heyarr.core.heyarr.DesiredItemJson
+import one.rarebit.heyarr.core.heyarr.JobInfo
+import one.rarebit.heyarr.core.heyarr.JobJson
+import one.rarebit.heyarr.core.heyarr.LibraryInfo
+import one.rarebit.heyarr.core.heyarr.LibraryInfoJson
+import one.rarebit.heyarr.core.heyarr.ProviderInfo
+import one.rarebit.heyarr.core.heyarr.ProviderJson
+import one.rarebit.heyarr.core.heyarr.QualityProfile
+import one.rarebit.heyarr.core.heyarr.QualityProfileJson
+import one.rarebit.heyarr.core.heyarr.SessionInfo
+import one.rarebit.heyarr.core.heyarr.SessionInfoJson
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.mcp.DiscoveryJson
 import one.rarebit.heyarr.core.mcp.Explanation
 import one.rarebit.heyarr.core.mcp.ExplanationJson
 import one.rarebit.heyarr.core.mcp.ExternalId
 import one.rarebit.heyarr.core.mcp.ExternalIdJson
+import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.mcp.McpClient
 import one.rarebit.heyarr.core.mcp.McpOutcome
 import one.rarebit.heyarr.core.mcp.McpTransportException
@@ -42,25 +46,20 @@ import one.rarebit.heyarr.core.mcp.WantCreated
 import one.rarebit.heyarr.core.mcp.WantCreatedJson
 import one.rarebit.heyarr.core.mcp.WantJson
 import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.heyarr.core.mcp.JsonWrite
+import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.catalog.ContinueClient
+import one.rarebit.heyarr.mobile.catalog.ContinueEntry
+import one.rarebit.heyarr.mobile.library.LibraryClient
+import one.rarebit.heyarr.mobile.library.Work
+import one.rarebit.heyarr.mobile.library.WorkAsset
+import one.rarebit.heyarr.mobile.library.WorkDetailClient
 import one.rarebit.heyarr.mobile.net.ProblemDetail
 import one.rarebit.heyarr.mobile.search.FollowedItem
 import one.rarebit.heyarr.mobile.search.FollowedSource
 import one.rarebit.heyarr.mobile.search.FollowedSourceClient
 import one.rarebit.heyarr.mobile.search.FollowedSourcesJson
-import one.rarebit.heyarr.core.theme.MediaType
 import java.io.IOException
 import java.net.URLEncoder
-import one.rarebit.heyarr.core.heyarr.Capabilities
-import one.rarebit.heyarr.core.heyarr.CapabilitiesJson
-import one.rarebit.heyarr.core.heyarr.JobInfo
-import one.rarebit.heyarr.core.heyarr.JobJson
-import one.rarebit.heyarr.core.heyarr.LibraryInfo
-import one.rarebit.heyarr.core.heyarr.LibraryInfoJson
-import one.rarebit.heyarr.core.heyarr.ProviderInfo
-import one.rarebit.heyarr.core.heyarr.ProviderJson
-import one.rarebit.heyarr.core.heyarr.SessionInfo
-import one.rarebit.heyarr.core.heyarr.SessionInfoJson
 
 /**
  * The one typed door to heyarr for every screen — ported from heyarr-desktop's
@@ -176,7 +175,9 @@ class HeyarrApi(
         if (viaTool !is McpResult.Refused || udn == null || !viaTool.message.contains("tool failed")) return viaTool
         val resp = try {
             http.post("$baseUrl/api/v1/renderers/${enc(udn)}/play", JsonWrite.obj(mapOf("asset_id" to assetId)), "application/json", credential.asHeader())
-        } catch (e: IOException) { throw McpTransportException("heyarr is unreachable: ${e.message}", e) }
+        } catch (e: IOException) {
+            throw McpTransportException("heyarr is unreachable: ${e.message}", e)
+        }
         return when (resp.status) {
             200, 201, 202 -> McpResult.Ok(Unit)
             else -> McpResult.Refused(ProblemDetail.message(resp.body, resp.status, "play on renderer"), "renderers/play", resp.status)
@@ -238,7 +239,9 @@ class HeyarrApi(
         val body = JsonWrite.obj(linkedMapOf("scope" to "edition", "work_id" to workId, "edition_id" to editionId, "quality_profile" to qualityProfile, "monitor" to monitor, "reason" to reason))
         val resp = try {
             http.post("$baseUrl/api/v1/desired", body, "application/json", credential.asHeader() + ("Content-Type" to "application/json"))
-        } catch (e: IOException) { throw McpTransportException("heyarr is unreachable: ${e.message}", e) }
+        } catch (e: IOException) {
+            throw McpTransportException("heyarr is unreachable: ${e.message}", e)
+        }
         return when (resp.status) {
             200, 201 -> McpResult.Ok(DesiredItemJson.parseOne(resp.body))
             401, 403 -> throw McpTransportException("heyarr refused the credential (HTTP ${resp.status})", null, resp.status)
@@ -275,7 +278,9 @@ class HeyarrApi(
     /** `GET /api/v1/desired` — every want with its acquisition state (the library-status index). */
     fun desired(): List<DesiredItem> = pageAll(
         url = { c -> paged("$baseUrl/api/v1/desired?limit=200", c) },
-        parse = DesiredItemJson::list, cursor = DesiredItemJson::nextCursor, what = "GET /desired",
+        parse = DesiredItemJson::list,
+        cursor = DesiredItemJson::nextCursor,
+        what = "GET /desired",
     )
 
     /** `GET /api/v1/desired/{id}/candidates` — the releases the last search found, scored. */

@@ -26,10 +26,12 @@ class AudioSessionBridge(audio: AudioPlayer, private val reporter: ProgressRepor
                         lastPlaying = s.playing
                         if (asset != null) reporter.begin(asset, "listen")
                     }
+
                     asset != null && s.playing != lastPlaying -> {
                         lastPlaying = s.playing
                         if (s.playing) reporter.resume(pos) else reporter.pause(pos)
                     }
+
                     asset != null && s.playing -> reporter.progress(pos)
                 }
             }

@@ -34,8 +34,7 @@ object PersonalStateId {
      * SAME canonical list it hashed, or the peer's re-derivation (which canonicalises again) won't
      * agree.
      */
-    fun canonical(refs: List<String>): List<String> =
-        refs.filter { it.isNotEmpty() }.distinct().sorted()
+    fun canonical(refs: List<String>): List<String> = refs.filter { it.isNotEmpty() }.distinct().sorted()
 
     private fun id(domain: String, spaceId: String, refs: List<String>, ciphertext: ByteArray): String {
         val buf = ByteBuf()
@@ -59,9 +58,16 @@ object PersonalStateId {
             buf = buf.copyOf(n)
         }
 
-        fun byte(b: Int) { ensure(1); buf[len++] = b.toByte() }
+        fun byte(b: Int) {
+            ensure(1)
+            buf[len++] = b.toByte()
+        }
 
-        fun bytes(b: ByteArray) { ensure(b.size); b.copyInto(buf, len); len += b.size }
+        fun bytes(b: ByteArray) {
+            ensure(b.size)
+            b.copyInto(buf, len)
+            len += b.size
+        }
 
         /** LEB128 unsigned varint, byte-identical to Go's `binary.PutUvarint`. */
         fun uvarint(value: Long) {
@@ -69,11 +75,19 @@ object PersonalStateId {
             while (true) {
                 val low = (v and 0x7F).toInt()
                 v = v ushr 7
-                if (v != 0L) byte(low or 0x80) else { byte(low); return }
+                if (v != 0L) {
+                    byte(low or 0x80)
+                } else {
+                    byte(low)
+                    return
+                }
             }
         }
 
-        fun field(b: ByteArray) { uvarint(b.size.toLong()); bytes(b) }
+        fun field(b: ByteArray) {
+            uvarint(b.size.toLong())
+            bytes(b)
+        }
 
         fun toByteArray(): ByteArray = buf.copyOf(len)
     }

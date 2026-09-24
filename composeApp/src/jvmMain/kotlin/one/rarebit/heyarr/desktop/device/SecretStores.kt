@@ -22,8 +22,7 @@ object SecretStores {
         LazySecretStore { select(DesktopSecretStore(sealedDir, keyFile)) }
 
     /** OS pick + availability probe, with [fallback] both as the migration source and the degrade target. */
-    private fun select(fallback: DesktopSecretStore): SecretStore =
-        selectWith(defaultBackend(), fallback)
+    private fun select(fallback: DesktopSecretStore): SecretStore = selectWith(defaultBackend(), fallback)
 
     /** The selection rule, isolated from OS/native detection so it is unit-testable with a fake backend. */
     internal fun selectWith(backend: KeychainBackend?, fallback: DesktopSecretStore): SecretStore {

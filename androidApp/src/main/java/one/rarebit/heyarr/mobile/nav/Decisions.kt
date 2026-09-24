@@ -32,12 +32,19 @@ object Decisions {
     /** The nav tile a route lights: a detail lights the section it was opened from. */
     fun section(route: Route?): NavSection? = when (route) {
         Route.Home -> NavSection.HOME
+
         Route.Discover -> NavSection.DISCOVER
+
         Route.Search -> NavSection.SEARCH
+
         Route.Library, Route.Playlists, is Route.Playlist -> NavSection.LIBRARY
+
         Route.Missing -> NavSection.MISSING
+
         Route.Cast -> NavSection.CAST
+
         Route.Settings, Route.Telemetry, Route.Device -> NavSection.SETTINGS
+
         is Route.Detail -> when (route.from) {
             "Home" -> NavSection.HOME
             "Discover" -> NavSection.DISCOVER
@@ -45,6 +52,7 @@ object Decisions {
             "Missing" -> NavSection.MISSING
             else -> NavSection.LIBRARY
         }
+
         Route.Player, null -> null
     }
 
@@ -69,9 +77,14 @@ object Decisions {
         val playable = tracks.filter { !it.blobHash.isNullOrBlank() }
         val items = playable.map { t ->
             AudioItem(
-                assetId = t.id, workId = work.id, title = trackTitle(t), artist = work.artist ?: work.author, album = work.title,
+                assetId = t.id,
+                workId = work.id,
+                title = trackTitle(t),
+                artist = work.artist ?: work.author,
+                album = work.title,
                 artworkUrl = Artwork.posterUrl(baseUrl, work),
-                contentUrl = PlaybackClient.blobContentUrl(baseUrl, t.blobHash!!), mime = t.mime,
+                contentUrl = PlaybackClient.blobContentUrl(baseUrl, t.blobHash!!),
+                mime = t.mime,
             )
         }
         val wanted = tracks.getOrNull(start)?.id

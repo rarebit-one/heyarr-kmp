@@ -6,9 +6,9 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.personalstate.FakeDeviceKey
 import one.rarebit.heyarr.mobile.personalstate.FakeServer
 import one.rarebit.heyarr.mobile.personalstate.IdentityCrypto
@@ -31,6 +31,7 @@ class PlaylistFlowTest {
     private val dispatcher = UnconfinedTestDispatcher()
 
     @Before fun main() = Dispatchers.setMain(dispatcher)
+
     @After fun reset() = Dispatchers.resetMain()
 
     /** A transport that 404s everything — the library resolves no works, isolating the personal-state path. */

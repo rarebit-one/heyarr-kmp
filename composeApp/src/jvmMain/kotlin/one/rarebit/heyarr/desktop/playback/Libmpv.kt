@@ -39,7 +39,9 @@ internal interface MpvLib : Library {
     fun mpv_render_context_free(ctx: Pointer)
 
     /** `mpv_render_update_fn`: mpv has a new frame (or wants attention). Called on mpv's thread; must return at once. */
-    fun interface UpdateCallback : Callback { fun invoke(ctx: Pointer?) }
+    fun interface UpdateCallback : Callback {
+        fun invoke(ctx: Pointer?)
+    }
 
     companion object {
         const val FORMAT_INT64 = 4
@@ -63,7 +65,9 @@ internal interface MpvLib : Library {
 }
 
 /** `setlocale(3)`: LC_NUMERIC is 1 on glibc and 4 on macOS, the BSDs and MSVC. */
-internal interface CLib : Library { fun setlocale(category: Int, locale: String?): String? }
+internal interface CLib : Library {
+    fun setlocale(category: Int, locale: String?): String?
+}
 
 /** One rendered picture: an immutable Skia image plus its pixel size. Owned by [MpvRenderer]; never closed while a draw holds it. */
 class VideoFrame internal constructor(internal val image: Image, val width: Int, val height: Int)
@@ -83,7 +87,9 @@ class VideoFrame internal constructor(internal val image: Image, val width: Int,
 internal class MpvRenderer(private val lib: MpvLib, private val handle: Pointer) : AutoCloseable {
     private val ctx: Pointer
     private val wake = Semaphore(0)
+
     @Volatile private var running = true
+
     // Strong reference: JNA only keeps the native trampoline alive while this object is.
     private val callback = MpvLib.UpdateCallback { wake.release() }
     private val apiName = Memory(8).apply { setString(0, "sw") }
@@ -103,13 +109,17 @@ internal class MpvRenderer(private val lib: MpvLib, private val handle: Pointer)
         private set
 
     init {
-        param(0, MpvLib.PARAM_API_TYPE, apiName); param(1, 0, null)
+        param(0, MpvLib.PARAM_API_TYPE, apiName)
+        param(1, 0, null)
         val out = PointerByReference()
         val rc = lib.mpv_render_context_create(out, handle, params)
         if (rc < 0) throw IllegalStateException("libmpv render context: ${lib.mpv_error_string(rc)}")
         ctx = out.value
         lib.mpv_render_context_set_update_callback(ctx, callback, null)
-        thread = Thread(::loop, "mpv-render").apply { isDaemon = true; start() }
+        thread = Thread(::loop, "mpv-render").apply {
+            isDaemon = true
+            start()
+        }
     }
 
     /** Run [block] with the current frame while no frame can be freed underneath it. */
@@ -133,17 +143,24 @@ internal class MpvRenderer(private val lib: MpvLib, private val handle: Pointer)
             // (a partial or pre-roll frame during warm-up) would otherwise show as garbage —
             // the cycling blue/green at stream start. Start it opaque black.
             it.erase(0xFF000000.toInt())
-            pool[poolIndex]?.close(); pool[poolIndex] = it
+            pool[poolIndex]?.close()
+            pool[poolIndex] = it
         }
         val pix = bmp.peekPixels() ?: return
         try {
-            sizeArg.setInt(0, w); sizeArg.setInt(4, h)
+            sizeArg.setInt(0, w)
+            sizeArg.setInt(4, h)
             strideArg.setLong(0, pix.rowBytes.toLong())
-            param(0, MpvLib.PARAM_SW_SIZE, sizeArg); param(1, MpvLib.PARAM_SW_FORMAT, format)
-            param(2, MpvLib.PARAM_SW_STRIDE, strideArg); param(3, MpvLib.PARAM_SW_POINTER, Pointer(pix.addr)); param(4, 0, null)
+            param(0, MpvLib.PARAM_SW_SIZE, sizeArg)
+            param(1, MpvLib.PARAM_SW_FORMAT, format)
+            param(2, MpvLib.PARAM_SW_STRIDE, strideArg)
+            param(3, MpvLib.PARAM_SW_POINTER, Pointer(pix.addr))
+            param(4, 0, null)
             // Blocks until the frame is due: mpv paces this thread, the UI just draws what is current.
             if (lib.mpv_render_context_render(ctx, params) < 0) return
-        } finally { pix.close() }
+        } finally {
+            pix.close()
+        }
         val image = Image.makeFromBitmap(bmp) // a copy, so the pool bitmap can take the next frame at once
         synchronized(lock) {
             frame?.let { retired.addLast(it.image) }
@@ -170,9 +187,12 @@ internal class MpvRenderer(private val lib: MpvLib, private val handle: Pointer)
         lib.mpv_render_context_set_update_callback(ctx, null, null)
         lib.mpv_render_context_free(ctx)
         synchronized(lock) {
-            frame?.image?.close(); frame = null
-            retired.forEach { it.close() }; retired.clear()
-            pool.forEach { it?.close() }; pool.fill(null)
+            frame?.image?.close()
+            frame = null
+            retired.forEach { it.close() }
+            retired.clear()
+            pool.forEach { it?.close() }
+            pool.fill(null)
         }
     }
 

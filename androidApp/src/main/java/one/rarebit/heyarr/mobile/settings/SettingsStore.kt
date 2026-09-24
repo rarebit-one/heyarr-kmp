@@ -14,8 +14,10 @@ interface SettingsStore {
 
     /** Appearance: the accent follows the media in focus (default on). */
     var adaptiveAccents: Boolean
+
     /** Appearance: no shimmer, no fades (default off). */
     var reduceMotion: Boolean
+
     /** Fetch cover art and synopses from keyless public sources where the node holds none (default on). */
     var externalMetadata: Boolean
 }

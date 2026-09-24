@@ -49,6 +49,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import kotlinx.coroutines.launch
+import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.AppGraph
 import one.rarebit.heyarr.mobile.AppViewModel
 import one.rarebit.heyarr.mobile.device.EnrolScreen
@@ -65,19 +67,11 @@ import one.rarebit.heyarr.mobile.playlist.PlaylistsScreen
 import one.rarebit.heyarr.mobile.playlist.PlaylistsViewModel
 import one.rarebit.heyarr.mobile.reader.ReaderActivity
 import one.rarebit.heyarr.mobile.state.Connection
-import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.mobile.theme.HeyarrTheme
-import one.rarebit.heyarr.ui.theme.LocalAppearance
-import one.rarebit.heyarr.ui.theme.MediaThemes
-import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.HeyarrBottomBar
 import one.rarebit.heyarr.mobile.ui.components.HeyarrNavRail
-import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.mobile.ui.components.NowPlayingBar
-import one.rarebit.heyarr.ui.components.OfflineBanner
-import one.rarebit.heyarr.ui.components.PrimaryButton
-import one.rarebit.heyarr.ui.components.ToastCard
 import one.rarebit.heyarr.mobile.ui.screens.AudioQueueScreen
 import one.rarebit.heyarr.mobile.ui.screens.CastScreen
 import one.rarebit.heyarr.mobile.ui.screens.DetailPersonal
@@ -93,6 +87,12 @@ import one.rarebit.heyarr.mobile.ui.screens.SettingsScreen
 import one.rarebit.heyarr.mobile.ui.screens.TelemetryScreen
 import one.rarebit.heyarr.mobile.ui.screens.WantRequest
 import one.rarebit.heyarr.mobile.ui.screens.WantSheet
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.OfflineBanner
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.ToastCard
+import one.rarebit.heyarr.ui.theme.LocalAppearance
+import one.rarebit.heyarr.ui.theme.MediaThemes
 
 /**
  * The signed-in app: the design system's shell — a bottom bar on a phone, a left rail
@@ -144,8 +144,16 @@ fun HeyarrNavHost(
     var signInPrompt by remember { mutableStateOf<String?>(null) }
     var openPlayerOnAudio by remember { mutableStateOf(false) }
 
-    LaunchedEffect(session) { session.startHeartbeat(); session.refreshIndex() }
-    LaunchedEffect(playbackNotice) { playbackNotice?.let { session.toast(Toast.Kind.INFO, it); vm.playback.clearNotice() } }
+    LaunchedEffect(session) {
+        session.startHeartbeat()
+        session.refreshIndex()
+    }
+    LaunchedEffect(playbackNotice) {
+        playbackNotice?.let {
+            session.toast(Toast.Kind.INFO, it)
+            vm.playback.clearNotice()
+        }
+    }
     LaunchedEffect(video) {
         video.onProgress = { p ->
             when (p.event) {
@@ -162,13 +170,23 @@ fun HeyarrNavHost(
     var lastStartedAsset by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(nowPlaying) {
         val np = nowPlaying
-        if (np == null) { video.stop(); lastStartedAsset = null; return@LaunchedEffect }
+        if (np == null) {
+            video.stop()
+            lastStartedAsset = null
+            return@LaunchedEffect
+        }
         audio.stop()
         video.load(np)
-        if (np.assetId != lastStartedAsset) { lastStartedAsset = np.assetId; navController.navigate(Route.Player) { launchSingleTop = true } }
+        if (np.assetId != lastStartedAsset) {
+            lastStartedAsset = np.assetId
+            navController.navigate(Route.Player) { launchSingleTop = true }
+        }
     }
     LaunchedEffect(audioState.item?.assetId) {
-        if (openPlayerOnAudio && audioState.item != null) { openPlayerOnAudio = false; navController.navigate(Route.Player) { launchSingleTop = true } }
+        if (openPlayerOnAudio && audioState.item != null) {
+            openPlayerOnAudio = false
+            navController.navigate(Route.Player) { launchSingleTop = true }
+        }
     }
     // Fullscreen is first-class: landscape and no system bars while it is on.
     LaunchedEffect(video.fullscreen) {
@@ -226,7 +244,9 @@ fun HeyarrNavHost(
     val addTarget by personalActions.addTarget.collectAsStateWithLifecycle()
     val playlistsForAdd by personalActions.playlists.collectAsStateWithLifecycle()
     val personalRows = PersonalRows(
-        starred = starredWorks, recentlyPlayed = recentWorks, starredIds = starredIds,
+        starred = starredWorks,
+        recentlyPlayed = recentWorks,
+        starredIds = starredIds,
         // A work card's id is a bare work id — i.e. ItemRef.work(id).encode() — so it round-trips as-is.
         onToggleStar = if (personalActions.enabled) ({ w: Work -> personalActions.toggleStar(w.id) }) else null,
         onAddToPlaylist = if (personalActions.enabled) ({ w: Work -> personalActions.openAddToPlaylist(w.id) }) else null,
@@ -256,7 +276,10 @@ fun HeyarrNavHost(
             personalActions.recordPlay(work.id)
             vm.playback.stop()
             val (items, index) = Decisions.queueFor(env.baseUrl, work, tracks, start)
-            if (items.isNotEmpty()) { openPlayerOnAudio = true; audio.playQueue(items, index) }
+            if (items.isNotEmpty()) {
+                openPlayerOnAudio = true
+                audio.playQueue(items, index)
+            }
         },
         read = { work, asset ->
             asset.blobHash?.let { hash ->
@@ -266,20 +289,32 @@ fun HeyarrNavHost(
             }
         },
     )
+
     /** Play a playlist (its playable works) as an audio queue. */
     val playPlaylist: (List<Work>) -> Unit = { works ->
         val items = works.filter { !it.blobHash.isNullOrBlank() }.map { w ->
             one.rarebit.heyarr.mobile.playback.AudioItem(
-                assetId = w.primaryAssetId ?: w.id, workId = w.id, title = w.title, artist = w.artist, album = null,
+                assetId = w.primaryAssetId ?: w.id,
+                workId = w.id,
+                title = w.title,
+                artist = w.artist,
+                album = null,
                 artworkUrl = one.rarebit.heyarr.mobile.catalog.Artwork.posterUrl(env.baseUrl, w),
-                contentUrl = PlaybackClient.blobContentUrl(env.baseUrl, w.blobHash!!), mime = w.mime,
+                contentUrl = PlaybackClient.blobContentUrl(env.baseUrl, w.blobHash!!),
+                mime = w.mime,
             )
         }
-        if (items.isNotEmpty()) { vm.playback.stop(); openPlayerOnAudio = true; audio.playQueue(items, 0) }
+        if (items.isNotEmpty()) {
+            vm.playback.stop()
+            openPlayerOnAudio = true
+            audio.playQueue(items, 0)
+        }
     }
     fun go(section: one.rarebit.heyarr.mobile.ui.components.NavSection) = navController.navigateTab(Decisions.routeOf(section))
     fun open(route: Route) = navController.navigate(route)
-    fun back() { navController.popBackStack() }
+    fun back() {
+        navController.popBackStack()
+    }
     val deviceSummary = when (enrolState) {
         is EnrolUiState.Enrolled -> "This phone is enrolled as a device and signs in with its own key."
         is EnrolUiState.Ready -> "A device key exists; this phone is not enrolled yet."
@@ -292,17 +327,23 @@ fun HeyarrNavHost(
             BoxWithConstraints(Modifier.fillMaxSize().background(Tokens.bgBase)) {
                 val wide = maxWidth >= Tokens.railBreakpoint
                 Row(Modifier.fillMaxSize()) {
-                    if (wide && !fullScreen) HeyarrNavRail(
-                        currentSection, onGo = ::go, connection = session.connection,
-                        connectionDetail = session.lastLatencyMs?.let { "$it ms" },
-                        onConnection = { open(Route.Telemetry) },
-                    )
+                    if (wide && !fullScreen) {
+                        HeyarrNavRail(
+                            currentSection,
+                            onGo = ::go,
+                            connection = session.connection,
+                            connectionDetail = session.lastLatencyMs?.let { "$it ms" },
+                            onConnection = { open(Route.Telemetry) },
+                        )
+                    }
                     Column(Modifier.fillMaxSize()) {
-                        if (!fullScreen) Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-                            when (session.connection) {
-                                Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.baseUrl, onRetry = { scope.launch { session.probe() } }, onSettings = { go(one.rarebit.heyarr.mobile.ui.components.NavSection.SETTINGS) })
-                                Connection.UNAUTHORIZED -> OfflineBanner("heyarr refused the credential", "Sign in again, or re-check this device's authorisation in Settings.", onRetry = { scope.launch { session.probe() } }, onSettings = { go(one.rarebit.heyarr.mobile.ui.components.NavSection.SETTINGS) })
-                                else -> {}
+                        if (!fullScreen) {
+                            Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
+                                when (session.connection) {
+                                    Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.baseUrl, onRetry = { scope.launch { session.probe() } }, onSettings = { go(one.rarebit.heyarr.mobile.ui.components.NavSection.SETTINGS) })
+                                    Connection.UNAUTHORIZED -> OfflineBanner("heyarr refused the credential", "Sign in again, or re-check this device's authorisation in Settings.", onRetry = { scope.launch { session.probe() } }, onSettings = { go(one.rarebit.heyarr.mobile.ui.components.NavSection.SETTINGS) })
+                                    else -> {}
+                                }
                             }
                         }
                         Box(Modifier.weight(1f)) {
@@ -359,45 +400,82 @@ fun HeyarrNavHost(
                                         val plVm: PlaylistViewModel = viewModel(key = "playlist:${r.spaceId}:${env.key}", factory = viewModelFactory { initializer { PlaylistViewModel(r.spaceId, r.title, ps, LibraryClient(env.transport, env.baseUrl, env.credential)) } })
                                         val st by plVm.state.collectAsStateWithLifecycle()
                                         PlaylistScreen(
-                                            state = st, onBack = ::back,
+                                            state = st,
+                                            onBack = ::back,
                                             onPlayAll = playPlaylist,
                                             onOpenWork = { w -> open(detailRoute(w.id, MediaType.from(w.kind), w.title, from = "Library")) },
-                                            onRemove = plVm::remove, onRename = plVm::rename, modifier = content,
+                                            onRemove = plVm::remove,
+                                            onRename = plVm::rename,
+                                            modifier = content,
                                         )
                                     }
                                 }
                                 composable<Route.Player> {
                                     when (Decisions.playerContent(nowPlaying, audioState.item)) {
                                         Decisions.PlayerContent.VIDEO -> PlayerScreen(
-                                            session, video, holder.player, onBack = ::back,
+                                            session,
+                                            video,
+                                            holder.player,
+                                            onBack = ::back,
                                             onNext = { e -> vm.playback.playFile(e.title, e.assetId, e.blobHash, e.mime, e.kind, artworkUrl = video.current?.artworkUrl) },
-                                            onStop = { vm.playback.stop(); back() }, modifier = content,
+                                            onStop = {
+                                                vm.playback.stop()
+                                                back()
+                                            },
+                                            modifier = content,
                                         )
+
                                         Decisions.PlayerContent.AUDIO -> AudioQueueScreen(
                                             state = audioState, onBack = ::back,
                                             onTogglePlay = audio::togglePlayPause, onNext = audio::next, onPrevious = audio::previous,
                                             onSeek = audio::seekTo, onSkipTo = audio::skipTo,
-                                            onStop = { audio.stop(); back() }, modifier = content,
+                                            onStop = {
+                                                audio.stop()
+                                                back()
+                                            }, modifier = content,
                                         )
+
                                         Decisions.PlayerContent.NONE -> LaunchedEffect(Unit) { back() }
                                     }
                                 }
                             }
                         }
-                        if (Decisions.showNowPlayingBar(fullScreen, video.active, audioState.item)) NowPlayingBar(
-                            video = video, audio = audioState,
-                            onOpen = { navController.navigate(Route.Player) { launchSingleTop = true } },
-                            onAudioToggle = audio::togglePlayPause, onAudioNext = audio::next, onAudioSeek = audio::seekTo, onAudioStop = audio::stop,
-                            onVideoNext = video.next()?.let { e -> { vm.playback.playFile(e.title, e.assetId, e.blobHash, e.mime, e.kind, artworkUrl = video.current?.artworkUrl) } },
-                        )
+                        if (Decisions.showNowPlayingBar(fullScreen, video.active, audioState.item)) {
+                            NowPlayingBar(
+                                video = video,
+                                audio = audioState,
+                                onOpen = { navController.navigate(Route.Player) { launchSingleTop = true } },
+                                onAudioToggle = audio::togglePlayPause,
+                                onAudioNext = audio::next,
+                                onAudioSeek = audio::seekTo,
+                                onAudioStop = audio::stop,
+                                onVideoNext = video.next()?.let { e -> { vm.playback.playFile(e.title, e.assetId, e.blobHash, e.mime, e.kind, artworkUrl = video.current?.artworkUrl) } },
+                            )
+                        }
                         if (!wide && !fullScreen) HeyarrBottomBar(currentSection, onGo = ::go)
                     }
                 }
-                Column(Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp).padding(bottom = if (fullScreen) 16.dp else if (wide) 24.dp else 96.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(
+                    Modifier.align(Alignment.BottomCenter).padding(horizontal = 16.dp).padding(
+                        bottom = if (fullScreen) {
+                            16.dp
+                        } else if (wide) {
+                            24.dp
+                        } else {
+                            96.dp
+                        },
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     for (t in session.toasts.takeLast(3)) ToastCard(t, onDismiss = { session.dismiss(t) })
                 }
                 want?.let { req -> WantSheet(session, req, onClose = { want = null }) }
-                signInPrompt?.let { GuestUpsellSheet(onSignIn = { signInPrompt = null; onSignInToSave() }, onDismiss = { signInPrompt = null }) }
+                signInPrompt?.let {
+                    GuestUpsellSheet(onSignIn = {
+                        signInPrompt = null
+                        onSignInToSave()
+                    }, onDismiss = { signInPrompt = null })
+                }
                 addTarget?.let {
                     AddToPlaylistDialog(
                         playlists = playlistsForAdd,
@@ -428,7 +506,8 @@ private fun GuestUpsellSheet(onSignIn: () -> Unit, onDismiss: () -> Unit) {
             Text("Sign in to save", style = MaterialTheme.typography.headlineSmall, color = Tokens.textPrimary)
             Text(
                 "You're browsing as a guest — watch, listen and read freely. To keep wants, follows, playlists and your place across devices, sign in with Cruciform or enrol this phone.",
-                style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Tokens.textMuted,
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PrimaryButton("Sign in to save", onSignIn)

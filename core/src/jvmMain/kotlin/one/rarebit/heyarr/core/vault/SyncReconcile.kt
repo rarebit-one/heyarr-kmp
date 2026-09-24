@@ -52,7 +52,11 @@ fun reconcile(
     index: Map<String, SyncIndexEntry>,
 ): List<SyncAction> {
     val actions = ArrayList<SyncAction>()
-    val paths = LinkedHashSet<String>().apply { addAll(local.keys); addAll(resolved.keys); addAll(index.keys) }
+    val paths = LinkedHashSet<String>().apply {
+        addAll(local.keys)
+        addAll(resolved.keys)
+        addAll(index.keys)
+    }
 
     for (path in paths.sorted()) {
         val l = local[path]

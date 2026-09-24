@@ -95,40 +95,35 @@ internal class SpaceSession(
 
     // --- writes (optimistic: return the locally-applied state) --------------------
 
-    fun addToPlaylist(spaceId: String, itemId: String): Playlist? =
-        openKey(spaceId)?.let { key ->
-            val f = foldPlaylist(spaceId, key)
-            post(spaceId, key, f, f.state.add(itemId, newTag()).encode())
-            f.state
-        }
+    fun addToPlaylist(spaceId: String, itemId: String): Playlist? = openKey(spaceId)?.let { key ->
+        val f = foldPlaylist(spaceId, key)
+        post(spaceId, key, f, f.state.add(itemId, newTag()).encode())
+        f.state
+    }
 
-    fun removeFromPlaylist(spaceId: String, itemId: String): Playlist? =
-        openKey(spaceId)?.let { key ->
-            val f = foldPlaylist(spaceId, key)
-            post(spaceId, key, f, f.state.remove(itemId).encode())
-            f.state
-        }
+    fun removeFromPlaylist(spaceId: String, itemId: String): Playlist? = openKey(spaceId)?.let { key ->
+        val f = foldPlaylist(spaceId, key)
+        post(spaceId, key, f, f.state.remove(itemId).encode())
+        f.state
+    }
 
-    fun star(spaceId: String, itemId: String): StarSet? =
-        openKey(spaceId)?.let { key ->
-            val f = foldStarred(spaceId, key)
-            post(spaceId, key, f, f.state.star(itemId, newTag()).encode())
-            f.state
-        }
+    fun star(spaceId: String, itemId: String): StarSet? = openKey(spaceId)?.let { key ->
+        val f = foldStarred(spaceId, key)
+        post(spaceId, key, f, f.state.star(itemId, newTag()).encode())
+        f.state
+    }
 
-    fun unstar(spaceId: String, itemId: String): StarSet? =
-        openKey(spaceId)?.let { key ->
-            val f = foldStarred(spaceId, key)
-            post(spaceId, key, f, f.state.unstar(itemId).encode())
-            f.state
-        }
+    fun unstar(spaceId: String, itemId: String): StarSet? = openKey(spaceId)?.let { key ->
+        val f = foldStarred(spaceId, key)
+        post(spaceId, key, f, f.state.unstar(itemId).encode())
+        f.state
+    }
 
-    fun recordPlay(spaceId: String, itemId: String): PlayLog? =
-        openKey(spaceId)?.let { key ->
-            val f = foldHistory(spaceId, key)
-            post(spaceId, key, f, f.state.record(itemId, newTag()).encode())
-            f.state
-        }
+    fun recordPlay(spaceId: String, itemId: String): PlayLog? = openKey(spaceId)?.let { key ->
+        val f = foldHistory(spaceId, key)
+        post(spaceId, key, f, f.state.record(itemId, newTag()).encode())
+        f.state
+    }
 
     fun setReadingPosition(spaceId: String, pubId: String, position: String): ReadingPositions? =
         openKey(spaceId)?.let { key ->

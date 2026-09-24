@@ -47,14 +47,24 @@ internal class InMemorySpaceRegistry : SpaceRegistry {
     private val names = HashMap<String, String>()
 
     override fun starredSpace(): String? = starred
-    override fun setStarredSpace(id: String) { starred = id }
+    override fun setStarredSpace(id: String) {
+        starred = id
+    }
     override fun historySpace(): String? = history
-    override fun setHistorySpace(id: String) { history = id }
+    override fun setHistorySpace(id: String) {
+        history = id
+    }
     override fun readingSpace(): String? = reading
-    override fun setReadingSpace(id: String) { reading = id }
+    override fun setReadingSpace(id: String) {
+        reading = id
+    }
     override fun playlistName(id: String): String? = names[id]
-    override fun setPlaylistName(id: String, name: String) { names[id] = name }
-    override fun clearPlaylistName(id: String) { names.remove(id) }
+    override fun setPlaylistName(id: String, name: String) {
+        names[id] = name
+    }
+    override fun clearPlaylistName(id: String) {
+        names.remove(id)
+    }
 }
 
 /** SharedPreferences-backed registry (the real device store). */

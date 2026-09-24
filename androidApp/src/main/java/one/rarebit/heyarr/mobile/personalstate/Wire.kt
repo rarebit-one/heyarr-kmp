@@ -35,9 +35,8 @@ internal data class EncryptedChange(
         append('}')
     }
 
-    fun validate(): Boolean =
-        changeId.isNotEmpty() && spaceId.isNotEmpty() && ciphertext.isNotEmpty() &&
-            changeId == PersonalStateId.changeId(spaceId, parents, ciphertext)
+    fun validate(): Boolean = changeId.isNotEmpty() && spaceId.isNotEmpty() && ciphertext.isNotEmpty() &&
+        changeId == PersonalStateId.changeId(spaceId, parents, ciphertext)
 
     companion object {
         /** Mint a change at the given causal [parents] (the space's current heads). */
@@ -61,9 +60,8 @@ internal data class EncryptedSnapshot(
     val frontier: List<String>,
     val ciphertext: ByteArray,
 ) {
-    fun validate(): Boolean =
-        snapshotId.isNotEmpty() && spaceId.isNotEmpty() && ciphertext.isNotEmpty() &&
-            snapshotId == PersonalStateId.snapshotId(spaceId, frontier, ciphertext)
+    fun validate(): Boolean = snapshotId.isNotEmpty() && spaceId.isNotEmpty() && ciphertext.isNotEmpty() &&
+        snapshotId == PersonalStateId.snapshotId(spaceId, frontier, ciphertext)
 
     companion object {
         fun parse(obj: String): EncryptedSnapshot = EncryptedSnapshot(
@@ -93,5 +91,4 @@ internal object Reconcile {
 private fun jsonStringArray(xs: List<String>): String =
     if (xs.isEmpty()) "[]" else xs.joinToString(",", "[", "]") { PsJson.goJsonString(it) }
 
-private fun decodeB64(s: String?): ByteArray =
-    if (s.isNullOrEmpty()) ByteArray(0) else Base64.getDecoder().decode(s)
+private fun decodeB64(s: String?): ByteArray = if (s.isNullOrEmpty()) ByteArray(0) else Base64.getDecoder().decode(s)

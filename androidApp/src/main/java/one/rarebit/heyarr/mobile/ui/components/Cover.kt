@@ -3,11 +3,11 @@ package one.rarebit.heyarr.mobile.ui.components
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
-import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
-import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.core.state.ExternalMeta
 import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
+import one.rarebit.heyarr.mobile.state.AppSession
 
 /** A cover and where it came from. [external] is set only when a public source supplied it. */
 data class Cover(val url: String?, val external: ExternalMeta? = null)

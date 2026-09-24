@@ -28,8 +28,7 @@ interface HttpTransport {
     ): HttpResponse
 
     /** DELETE — defaulted to a 405 so fakes that never delete keep compiling. */
-    fun delete(url: String, headers: Map<String, String> = emptyMap()): HttpResponse =
-        HttpResponse(405, "")
+    fun delete(url: String, headers: Map<String, String> = emptyMap()): HttpResponse = HttpResponse(405, "")
 
     /**
      * DELETE with a request body — some endpoints (e.g. the vault's placement unpin,

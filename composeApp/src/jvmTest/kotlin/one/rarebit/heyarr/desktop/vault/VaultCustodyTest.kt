@@ -28,7 +28,9 @@ class VaultCustodyTest {
 
     private val tmp: File = Files.createTempDirectory("vault-custody-test").toFile()
 
-    @AfterTest fun cleanup() { tmp.deleteRecursively() }
+    @AfterTest fun cleanup() {
+        tmp.deleteRecursively()
+    }
 
     /** A hermetic sealed-file keyring under a per-device temp subdir (no OS keychain, no network). */
     private fun keyring(sub: String = "d"): DesktopDeviceKeyring {
@@ -98,7 +100,7 @@ class VaultCustodyTest {
     fun openReturnsNullWhenThisDeviceIsNotARecipient() {
         val keys = FakeKeys()
         VaultCustody(keyring("a"), keys, newSpaceId = { "s" }).bootstrap() // wrapped for A only
-        assertNull(VaultCustody(keyring("b"), keys).open("s"))             // B holds no readable copy
+        assertNull(VaultCustody(keyring("b"), keys).open("s")) // B holds no readable copy
     }
 
     @Test

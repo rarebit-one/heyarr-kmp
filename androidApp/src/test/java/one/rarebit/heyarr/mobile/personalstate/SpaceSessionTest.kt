@@ -113,7 +113,8 @@ class SpaceSessionTest {
         s.addToPlaylist(id, "y")
         assertEquals(2, server.changeCount(id))
         // Folding twice does not create changes; the read is pure.
-        s.playlist(id); s.playlist(id)
+        s.playlist(id)
+        s.playlist(id)
         assertEquals(2, server.changeCount(id))
     }
 

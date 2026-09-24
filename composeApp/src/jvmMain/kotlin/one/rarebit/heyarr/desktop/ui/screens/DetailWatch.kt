@@ -36,10 +36,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -47,21 +47,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.DesiredItem
+import one.rarebit.heyarr.core.library.Series
+import one.rarebit.heyarr.core.state.ExternalEpisode
+import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.library.Episode
 import one.rarebit.heyarr.desktop.library.PrimaryAsset
 import one.rarebit.heyarr.desktop.library.Season
-import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.desktop.library.WorkDetail
 import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.core.state.ExternalEpisode
-import one.rarebit.heyarr.desktop.ui.components.rememberCover
-import one.rarebit.heyarr.core.state.Toast
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
+import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
@@ -72,6 +70,8 @@ import one.rarebit.heyarr.ui.components.RuleCode
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.focusRing
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.core.library.Episode as CoreEpisode
 
 /** The synopsis: the node's when it has one, else a public source's (labelled), else an honest line. */
@@ -82,10 +82,12 @@ internal fun SynopsisBlock(detail: WorkDetail, type: MediaType, seasons: List<Se
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         when {
             own != null -> Text(own, style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary)
+
             ext?.synopsis != null -> {
                 Text(ext.synopsis.orEmpty(), style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary, maxLines = 6, overflow = TextOverflow.Ellipsis)
                 Text("Synopsis${if (ext.imageUrl != null && detail.artworkPath == null) " and cover" else ""} via ${ext.source} — not from your library. The node has no metadata provider (TVDB, ADR-0058).", style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled)
             }
+
             else -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(Icons.Rounded.Info, contentDescription = null, tint = Tokens.textDisabled, modifier = Modifier.size(14.dp))
                 Text("No synopsis — the node has no metadata provider and no public source knew this title. Titles, seasons and episodes below come from the files themselves.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
@@ -98,7 +100,10 @@ internal fun SynopsisBlock(detail: WorkDetail, type: MediaType, seasons: List<Se
 @Composable
 internal fun SeasonsBlock(session: AppSession, detail: WorkDetail, seasons: List<Season>, state: DetailState, wants: List<DesiredItem>) {
     val scope = rememberCoroutineScope()
-    if (state.assets == null) { MediaRowSkeleton(5); return }
+    if (state.assets == null) {
+        MediaRowSkeleton(5)
+        return
+    }
     // The calendar: the library's seasons, plus any TVmaze knows that the library has never seen.
     val ext = state.externalEpisodes
     val extSeasons = ext.map { it.season }.distinct().filter { n -> seasons.none { it.number == n } }.sorted()
@@ -121,9 +126,11 @@ internal fun SeasonsBlock(session: AppSession, detail: WorkDetail, seasons: List
             addAll(selected.episodes.filter { it.number.let { n -> n == null || n > known } })
         }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            for (row in rows) when (row) {
-                is CoreEpisode<*> -> EpisodeRow(session, detail, row.desktop(), state, extForSeason[row.number])
-                is Int -> MissingEpisodeRow(session, selected, row, wants, state, extForSeason[row])
+            for (row in rows) {
+                when (row) {
+                    is CoreEpisode<*> -> EpisodeRow(session, detail, row.desktop(), state, extForSeason[row.number])
+                    is Int -> MissingEpisodeRow(session, selected, row, wants, state, extForSeason[row])
+                }
             }
         }
     }
@@ -172,7 +179,9 @@ private fun WantSeasonsPanel(session: AppSession, detail: WorkDetail, seasons: L
                             }
                         }
                     },
-                    icon = Icons.Rounded.Add, compact = true, enabled = editionId != null && !already && profile.isNotBlank(),
+                    icon = Icons.Rounded.Add,
+                    compact = true,
+                    enabled = editionId != null && !already && profile.isNotBlank(),
                 )
             }
         }
@@ -191,6 +200,7 @@ private fun WantSeasonsPanel(session: AppSession, detail: WorkDetail, seasons: L
                                 session.toast(Toast.Kind.SUCCESS, "Wanting ${detail.work.title}", "Wanting a series follows it — every episode, past and future, becomes a want.")
                                 session.refreshIndex()
                             }
+
                             is McpResult.Refused -> session.refused(r)
                         }
                     }
@@ -220,7 +230,8 @@ private fun EpisodeRow(session: AppSession, detail: WorkDetail, ep: Episode, sta
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, enabled = ep.isPlayable, onClick = { ep.asset.blobHash?.let { playLocal(session, state, it, Series.playTitle(detail.work, ep), scope, assetId = ep.asset.id, type = MediaType.SERIES) } })
             .semantics { contentDescription = "${ep.label}${if (!ep.isPlayable) ", file missing" else ""}" }
             .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(Modifier.width(152.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard))) {
             Artwork(thumb ?: extThumb, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 22.dp)
@@ -272,7 +283,8 @@ private fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, 
     Row(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).border(Tokens.hairline, Tokens.border.copy(alpha = 0.6f), RoundedCornerShape(Tokens.radiusInput)).padding(8.dp)
             .semantics { contentDescription = "$code not held" },
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         Box(Modifier.width(152.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard)).background(Tokens.surface1), contentAlignment = Alignment.Center) {
             if (extThumb != null) androidx.compose.foundation.Image(extThumb!!, contentDescription = null, contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize().alpha(0.45f))
@@ -296,7 +308,10 @@ private fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, 
 @Composable
 internal fun TracksBlock(session: AppSession, detail: WorkDetail, state: DetailState) {
     val assets = state.assets
-    if (assets == null) { MediaRowSkeleton(5); return }
+    if (assets == null) {
+        MediaRowSkeleton(5)
+        return
+    }
     val tracks = assets.filter { it.isAudio && it.isPrimaryRole }.sortedWith(compareBy({ it.filename?.lowercase() ?: "" }, { it.id }))
     val playable = tracks.filter { it.isPlayable }.mapNotNull { track ->
         track.blobHash?.let { Route.Player(detail.work.id, track.id, it, detail.work.title, track.title, MediaType.from(detail.work.kind), "Listen") }
@@ -326,6 +341,7 @@ internal fun ArchiveBlock(session: AppSession, state: DetailState) {
         SectionHeader("Archive", subtitle = items?.let { "${it.count { i -> i.archived }} of ${it.size} archived" })
         when {
             items == null -> MediaRowSkeleton(4)
+
             items.isEmpty() -> Notice("Nothing archived yet — the node polls this source on its schedule.")
             else -> for (item in items) Row(Modifier.fillMaxWidth().background(Tokens.surface1, RoundedCornerShape(Tokens.radiusInput)).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusInput)).padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Column(Modifier.weight(1f)) {

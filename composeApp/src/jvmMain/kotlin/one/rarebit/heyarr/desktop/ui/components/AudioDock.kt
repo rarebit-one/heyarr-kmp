@@ -36,8 +36,11 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
     }
     val cover by rememberCover(session, playback.type, item.title, work?.artworkPath, work?.work?.year, work?.work?.artist ?: work?.work?.author)
     val accent = LocalMediaTheme.current.accentGradientEnd
-    Column(modifier.width(280.dp).fillMaxHeight().background(Tokens.surface1).border(Tokens.hairline, Tokens.border)
-        .verticalScroll(rememberScrollState()).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        modifier.width(280.dp).fillMaxHeight().background(Tokens.surface1).border(Tokens.hairline, Tokens.border)
+            .verticalScroll(rememberScrollState()).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Headphones, null, tint = accent, modifier = Modifier.size(20.dp))
             Text("Listening now", style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, modifier = Modifier.weight(1f).padding(start = 8.dp))
@@ -49,15 +52,19 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
             Text(item.title, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
         }
         val error = playback.startError ?: ps.error
-        if (error != null) Notice(error)
-        else if (ps.buffering || playback.pendingStart) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ArchiveActivity(LocalAppearance.current.reduceMotion)
-            Text("Buffering…", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
+        if (error != null) {
+            Notice(error)
+        } else if (ps.buffering || playback.pendingStart) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ArchiveActivity(LocalAppearance.current.reduceMotion)
+                Text("Buffering…", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
+            }
         }
         var dragging by remember(item.assetId) { mutableStateOf<Float?>(null) }
         Column {
             Slider(value = dragging ?: ps.fraction, onValueChange = { dragging = it }, onValueChangeFinished = {
-                dragging?.let { playback.player.seekFraction(it.toDouble()) }; dragging = null
+                dragging?.let { playback.player.seekFraction(it.toDouble()) }
+                dragging = null
             }, enabled = ps.duration > 0, modifier = Modifier.semantics { contentDescription = "Audio position" })
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(clockShort(ps.position), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
@@ -73,17 +80,23 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.VolumeUp, null, tint = Tokens.textMuted, modifier = Modifier.size(20.dp))
-            Slider(value = ps.volume.toFloat().coerceIn(0f, 100f), onValueChange = { playback.player.setVolume(it.toDouble()) }, valueRange = 0f..100f,
-                modifier = Modifier.weight(1f).semantics { contentDescription = "Audio volume" })
+            Slider(
+                value = ps.volume.toFloat().coerceIn(0f, 100f),
+                onValueChange = { playback.player.setVolume(it.toDouble()) },
+                valueRange = 0f..100f,
+                modifier = Modifier.weight(1f).semantics { contentDescription = "Audio volume" },
+            )
         }
         GhostButton("Player details", onOpen, icon = Icons.Rounded.OpenInFull)
         val currentIndex = playback.audioQueue.indexOfFirst { it.assetId == item.assetId }
         val upcoming = if (currentIndex >= 0) playback.audioQueue.drop(currentIndex + 1) else emptyList()
         Text("Up next", style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary)
         if (upcoming.isEmpty()) Text("End of queue", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-        for (track in upcoming) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(track.subtitle ?: track.title, style = MaterialTheme.typography.bodyMedium, color = Tokens.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            IconButtonRound(Icons.Rounded.PlayArrow, "Play ${track.subtitle ?: track.title}", { playback.play(track) })
+        for (track in upcoming) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(track.subtitle ?: track.title, style = MaterialTheme.typography.bodyMedium, color = Tokens.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                IconButtonRound(Icons.Rounded.PlayArrow, "Play ${track.subtitle ?: track.title}", { playback.play(track) })
+            }
         }
     }
 }

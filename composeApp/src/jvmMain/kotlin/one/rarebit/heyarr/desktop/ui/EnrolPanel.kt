@@ -16,14 +16,14 @@ import one.rarebit.heyarr.desktop.device.DeviceKeyInfo
 import one.rarebit.heyarr.desktop.device.KeyTier
 import one.rarebit.heyarr.desktop.device.PairingState
 import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.ui.theme.Tokens
+import one.rarebit.heyarr.desktop.ui.screens.Field
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.KeyValue
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
-import one.rarebit.heyarr.desktop.ui.screens.Field
+import one.rarebit.heyarr.ui.theme.Tokens
 
 /**
  * The desktop "Sign in to save" enrol panel — the device-credential upgrade over the
@@ -46,7 +46,8 @@ fun EnrolPanel(session: AppSession) {
             Text(
                 "Device sign-in runs in the packaged desktop app. You are browsing as a guest; " +
                     "paste a bearer token in the connection panel above to save wants and follows.",
-                style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted,
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
             )
         }
         return
@@ -71,7 +72,8 @@ fun EnrolPanel(session: AppSession) {
             "Saving wants, follows and your place needs a signed-in device. Add this desktop from " +
                 "Cruciform → \"Add a device\": it shows a pairing invite; paste it below, then compare the " +
                 "security code on both screens.",
-            style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted,
+            style = MaterialTheme.typography.bodySmall,
+            color = Tokens.textMuted,
         )
 
         info?.let { i ->
@@ -119,13 +121,19 @@ fun EnrolPanel(session: AppSession) {
 
             is PairingState.Enrolled -> {
                 Notice(
-                    if (s.registered) "This device is enrolled. You're signed in — wants and follows will be saved."
-                    else s.registration,
+                    if (s.registered) {
+                        "This device is enrolled. You're signed in — wants and follows will be saved."
+                    } else {
+                        s.registration
+                    },
                     tone = if (s.registered) Tokens.success else Tokens.warning,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (!s.registered && s.retriable) SecondaryButton("Register again", { coordinator.retryRegister() }, compact = true)
-                    GhostButton("Done", { coordinator.dismiss(); info = keyring.info() })
+                    GhostButton("Done", {
+                        coordinator.dismiss()
+                        info = keyring.info()
+                    })
                 }
             }
 
@@ -141,7 +149,8 @@ fun EnrolPanel(session: AppSession) {
             "The device signing key is generated on this machine and kept in the OS keychain " +
                 "where one is available, else sealed at rest under ~/.local/share/heyarr-desktop; " +
                 "it never leaves. A possession proof is signed per session.",
-            style = MaterialTheme.typography.bodySmall, color = Tokens.textDisabled,
+            style = MaterialTheme.typography.bodySmall,
+            color = Tokens.textDisabled,
         )
     }
 }

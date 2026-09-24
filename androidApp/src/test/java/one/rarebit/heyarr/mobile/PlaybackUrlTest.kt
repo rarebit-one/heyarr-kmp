@@ -9,8 +9,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private class RangeTransport(private val status: Int) : HttpTransport {
-    var lastRange: String? = null; private set
-    var lastAuth: String? = null; private set
+    var lastRange: String? = null
+        private set
+    var lastAuth: String? = null
+        private set
     override fun get(url: String, headers: Map<String, String>): HttpResponse {
         lastRange = headers["Range"]
         lastAuth = headers["Authorization"]

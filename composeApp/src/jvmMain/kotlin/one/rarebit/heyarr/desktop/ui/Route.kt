@@ -46,13 +46,19 @@ class Nav(start: Route = Route.Consume(Experience.WATCH)) {
 
     fun go(route: Route) {
         if (route == current) return
-        if (route is Route.Player) stack.removeAll { it is Route.Player }
-        else if (route !is Route.Detail) stack.removeAll { it !is Route.Detail && it !is Route.Player && it.section == route.section }
+        if (route is Route.Player) {
+            stack.removeAll { it is Route.Player }
+        } else if (route !is Route.Detail) {
+            stack.removeAll { it !is Route.Detail && it !is Route.Player && it.section == route.section }
+        }
         stack.add(route)
         current = route
     }
 
     fun back() {
-        if (stack.size > 1) { stack.removeAt(stack.lastIndex); current = stack.last() }
+        if (stack.size > 1) {
+            stack.removeAt(stack.lastIndex)
+            current = stack.last()
+        }
     }
 }

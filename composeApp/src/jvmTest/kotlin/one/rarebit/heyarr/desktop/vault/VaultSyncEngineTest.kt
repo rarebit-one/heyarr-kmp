@@ -57,8 +57,14 @@ class VaultSyncEngineTest {
         override fun scan(index: Map<String, SyncIndexEntry>): Map<String, LocalFile> =
             files.mapValues { (p, b) -> LocalFile(b.size.toLong(), mtimes[p] ?: 0, Blake3.hashHex(b)) }
         override fun read(path: String): ByteArray = files.getValue(path)
-        override fun write(path: String, bytes: ByteArray, mtimeEpochSec: Long) { files[path] = bytes; mtimes[path] = mtimeEpochSec }
-        override fun trash(path: String) { files.remove(path); mtimes.remove(path) }
+        override fun write(path: String, bytes: ByteArray, mtimeEpochSec: Long) {
+            files[path] = bytes
+            mtimes[path] = mtimeEpochSec
+        }
+        override fun trash(path: String) {
+            files.remove(path)
+            mtimes.remove(path)
+        }
     }
 
     private val key = ByteArray(32) { it.toByte() }
@@ -100,7 +106,8 @@ class VaultSyncEngineTest {
         val eng = VaultSyncEngine(folder, blobs, space, store, "http://x", Credential.Guest, "s", key)
         assertEquals(1, eng.syncOnce().uploaded)
         // Edit the file → next sync re-uploads (a new change).
-        folder.files["a.txt"] = "v2-longer".encodeToByteArray(); folder.mtimes["a.txt"] = 2L
+        folder.files["a.txt"] = "v2-longer".encodeToByteArray()
+        folder.mtimes["a.txt"] = 2L
         val before = space.changes.size
         assertEquals(1, eng.syncOnce().uploaded)
         assertTrue(space.changes.size > before, "the edit pushed another change")
@@ -123,8 +130,8 @@ class VaultSyncEngineTest {
             mutableMapOf("a.txt" to 1L, "b.txt" to 2L),
         )
         val eng = engine(folder, blobs, space)
-        assertEquals(2, eng.syncOnce().uploaded)  // pushes 2 changes (the log was empty before this)
-        eng.syncOnce()                            // folds its own 2 changes back in
+        assertEquals(2, eng.syncOnce().uploaded) // pushes 2 changes (the log was empty before this)
+        eng.syncOnce() // folds its own 2 changes back in
 
         val baseline = space.served
         assertTrue(baseline > 0, "the engine must actually have read the log by now")
@@ -150,13 +157,15 @@ class VaultSyncEngineTest {
         val writer = MemFolder(mutableMapOf("x.txt" to "v1".encodeToByteArray()), mutableMapOf("x.txt" to 1L))
         val other = engine(writer, blobs, space)
 
-        other.syncOnce()                       // push x.txt v1
-        incremental.syncOnce()                 // fold it
-        writer.files["x.txt"] = "v2-longer".encodeToByteArray(); writer.mtimes["x.txt"] = 2L
-        other.syncOnce()                       // push v2
-        writer.files["y.txt"] = "why".encodeToByteArray(); writer.mtimes["y.txt"] = 3L
-        other.syncOnce()                       // push y.txt
-        incremental.syncOnce()                 // fold the tail
+        other.syncOnce() // push x.txt v1
+        incremental.syncOnce() // fold it
+        writer.files["x.txt"] = "v2-longer".encodeToByteArray()
+        writer.mtimes["x.txt"] = 2L
+        other.syncOnce() // push v2
+        writer.files["y.txt"] = "why".encodeToByteArray()
+        writer.mtimes["y.txt"] = 3L
+        other.syncOnce() // push y.txt
+        incremental.syncOnce() // fold the tail
 
         // A cold engine replaying the entire log from scratch.
         val coldFolder = MemFolder()

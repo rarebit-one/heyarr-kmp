@@ -7,12 +7,12 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.mobile.consumption.ConsumptionClient
 import one.rarebit.heyarr.mobile.consumption.ConsumptionReporter
 import one.rarebit.heyarr.mobile.consumption.InMemoryDeviceIdStore
 import one.rarebit.heyarr.mobile.consumption.Position
 import one.rarebit.heyarr.mobile.consumption.ProgressReporter
-import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.mobile.playback.AudioItem
 import one.rarebit.heyarr.mobile.playback.AudioSessionBridge
 import one.rarebit.heyarr.mobile.playback.AudioState
@@ -21,11 +21,21 @@ import org.junit.Test
 
 private class RecordingReporter : ProgressReporter {
     val events = ArrayList<String>()
-    override fun begin(assetId: String, verb: String) { events.add("begin:$assetId:$verb") }
-    override fun progressAt(pos: Position) { events.add("progress:${pos.locator}") }
-    override fun pauseAt(pos: Position) { events.add("pause:${pos.locator}") }
-    override fun resumeAt(pos: Position) { events.add("resume:${pos.locator}") }
-    override fun endAt(pos: Position, completed: Boolean) { events.add("end:${pos.locator}:$completed") }
+    override fun begin(assetId: String, verb: String) {
+        events.add("begin:$assetId:$verb")
+    }
+    override fun progressAt(pos: Position) {
+        events.add("progress:${pos.locator}")
+    }
+    override fun pauseAt(pos: Position) {
+        events.add("pause:${pos.locator}")
+    }
+    override fun resumeAt(pos: Position) {
+        events.add("resume:${pos.locator}")
+    }
+    override fun endAt(pos: Position, completed: Boolean) {
+        events.add("end:${pos.locator}:$completed")
+    }
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -58,11 +68,13 @@ class ConsumptionReporterOrderingTest {
     /** Commands enqueued faster than the worker runs still reach the node one at a time, in order. */
     @Test fun transitionsArriveInOrderUnderAStandardDispatcher() = runTest {
         val std = StandardTestDispatcher(testScheduler)
-        val t = RoutedTransport(mapOf(
-            "POST /devices" to HttpResponse(201, """{"id":"d1"}"""),
-            "POST /consumption/sessions" to HttpResponse(201, """{"id":"s1"}"""),
-            "POST /consumption/sessions/s1/transitions" to HttpResponse(200, """{"id":"s1"}"""),
-        ))
+        val t = RoutedTransport(
+            mapOf(
+                "POST /devices" to HttpResponse(201, """{"id":"d1"}"""),
+                "POST /consumption/sessions" to HttpResponse(201, """{"id":"s1"}"""),
+                "POST /consumption/sessions/s1/transitions" to HttpResponse(200, """{"id":"s1"}"""),
+            ),
+        )
         var now = 0.0
         val r = ConsumptionReporter(
             client = ConsumptionClient(t, { base }, { Credential.Session("tok") }),
@@ -73,9 +85,11 @@ class ConsumptionReporterOrderingTest {
         r.begin("a1", "watch")
         // Nothing has run yet; queue a burst that must land after the session exists, in order.
         advanceUntilIdle()
-        now = 20.0; r.progress(10.0)
+        now = 20.0
+        r.progress(10.0)
         r.pause(11.0)
-        now = 40.0; r.resume(11.0)
+        now = 40.0
+        r.resume(11.0)
         r.end(12.0, completed = false)
         advanceUntilIdle()
         val transitions = t.calls.filter { it.second.endsWith("/transitions") }.map { c ->

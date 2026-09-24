@@ -38,13 +38,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.playback.AudioState
 import one.rarebit.heyarr.mobile.playback.VideoSession
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.MediaScope
-import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 
 /**
  * The persistent transport above the bottom bar while something plays and the player
@@ -93,17 +93,36 @@ fun NowPlayingBar(
 
 @Composable
 private fun Bar(
-    title: String, subtitle: String, artwork: String?, type: MediaType, fraction: Float, seekable: Boolean, paused: Boolean,
-    onOpen: () -> Unit, onSeekFraction: (Float) -> Unit, onBack: () -> Unit, onToggle: () -> Unit, onForward: () -> Unit,
-    onNext: (() -> Unit)?, nextLabel: String?, onStop: () -> Unit, modifier: Modifier,
+    title: String,
+    subtitle: String,
+    artwork: String?,
+    type: MediaType,
+    fraction: Float,
+    seekable: Boolean,
+    paused: Boolean,
+    onOpen: () -> Unit,
+    onSeekFraction: (Float) -> Unit,
+    onBack: () -> Unit,
+    onToggle: () -> Unit,
+    onForward: () -> Unit,
+    onNext: (() -> Unit)?,
+    nextLabel: String?,
+    onStop: () -> Unit,
+    modifier: Modifier,
 ) {
     val theme = LocalMediaTheme.current
     val interaction = remember { MutableInteractionSource() }
     Column(modifier.fillMaxWidth().background(Tokens.surface1).border(Tokens.hairline, Tokens.border)) {
         var dragging by remember { mutableStateOf<Float?>(null) }
         Slider(
-            value = dragging ?: fraction, onValueChange = { dragging = it }, onValueChangeFinished = { dragging?.let(onSeekFraction); dragging = null },
-            modifier = Modifier.fillMaxWidth().height(18.dp).semantics { contentDescription = "Position" }, enabled = seekable,
+            value = dragging ?: fraction,
+            onValueChange = { dragging = it },
+            onValueChangeFinished = {
+                dragging?.let(onSeekFraction)
+                dragging = null
+            },
+            modifier = Modifier.fillMaxWidth().height(18.dp).semantics { contentDescription = "Position" },
+            enabled = seekable,
             colors = SliderDefaults.colors(thumbColor = theme.accentGradientEnd, activeTrackColor = theme.accent, inactiveTrackColor = Tokens.surface3),
         )
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -126,6 +145,8 @@ private fun Bar(
 /** `1:23:45` / `12:34` from milliseconds. */
 fun clockShort(ms: Long): String {
     val t = (ms / 1000).coerceAtLeast(0)
-    val h = t / 3600; val m = (t % 3600) / 60; val sec = t % 60
+    val h = t / 3600
+    val m = (t % 3600) / 60
+    val sec = t % 60
     return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }

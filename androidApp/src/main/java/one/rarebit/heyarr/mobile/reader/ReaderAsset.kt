@@ -2,7 +2,12 @@ package one.rarebit.heyarr.mobile.reader
 
 /** What a book-shaped file is, decided from its MIME first and its filename second. Pure, unit-tested. */
 enum class ReaderFormat(val label: String) {
-    EPUB("EPUB"), PDF("PDF"), CBZ("Comic (CBZ)"), CBR("Comic (CBR)"), AUDIOBOOK("Audiobook");
+    EPUB("EPUB"),
+    PDF("PDF"),
+    CBZ("Comic (CBZ)"),
+    CBR("Comic (CBR)"),
+    AUDIOBOOK("Audiobook"),
+    ;
 
     companion object {
         fun of(mime: String?, filename: String?): ReaderFormat? {

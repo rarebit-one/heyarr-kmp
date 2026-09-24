@@ -1,10 +1,10 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.library.ItemResolver
-import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.library.ItemResolver
+import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.personalstate.ItemKind
 import one.rarebit.heyarr.mobile.personalstate.ItemRef
 import org.junit.Assert.assertEquals

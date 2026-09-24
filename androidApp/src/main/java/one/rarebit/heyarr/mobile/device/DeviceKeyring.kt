@@ -100,10 +100,9 @@ class DeviceKeyring(
      * ever the joining device in a pairing, mints possession proofs, and enrols), so no
      * separate strict-window alias is needed.
      */
-    fun keyStore(): DeviceKeyStore =
-        gate.gated("Set up this device", "Confirm it's you to create the device key") {
-            DeviceKeyStore.getOrCreate(alias, userAuthValiditySeconds = USER_AUTH_VALIDITY_SECONDS)
-        }
+    fun keyStore(): DeviceKeyStore = gate.gated("Set up this device", "Confirm it's you to create the device key") {
+        DeviceKeyStore.getOrCreate(alias, userAuthValiditySeconds = USER_AUTH_VALIDITY_SECONDS)
+    }
 
     /** The sealed X25519 keypair, generated once on first use. */
     fun encryptionKey(): DeviceIdentity.EncryptionKey {
@@ -182,8 +181,7 @@ class DeviceKeyring(
      * is a recipient a new space is also wrapped for, so state survives losing every
      * device; it is a public key only — no secret is ever stored here.
      */
-    fun recoveryRecipient(): String? =
-        recoveryFile().takeIf { it.exists() }?.readText()?.trim()?.ifEmpty { null }
+    fun recoveryRecipient(): String? = recoveryFile().takeIf { it.exists() }?.readText()?.trim()?.ifEmpty { null }
 
     /** Persist the recovery encryption public key delivered by `/enrol` (a blank value clears it). */
     fun saveRecoveryRecipient(key: String) {

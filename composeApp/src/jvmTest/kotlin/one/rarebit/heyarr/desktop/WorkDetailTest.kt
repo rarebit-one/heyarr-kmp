@@ -1,10 +1,10 @@
 package one.rarebit.heyarr.desktop
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.desktop.library.WorkDetailClient
-import one.rarebit.heyarr.desktop.library.WorkDetailJson
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.desktop.library.WorkDetailClient
+import one.rarebit.heyarr.desktop.library.WorkDetailJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -90,8 +90,11 @@ class WorkDetailTest {
         val transport = object : HttpTransport {
             override fun get(url: String, headers: Map<String, String>): HttpResponse {
                 seenAuth += headers["Authorization"].orEmpty()
-                return if (url.endsWith("/missing")) HttpResponse(404, "")
-                else HttpResponse(200, """{"id":"w1","title":"One","primary_asset":{"blob_hash":"$HASH"}}""")
+                return if (url.endsWith("/missing")) {
+                    HttpResponse(404, "")
+                } else {
+                    HttpResponse(200, """{"id":"w1","title":"One","primary_asset":{"blob_hash":"$HASH"}}""")
+                }
             }
             override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
                 HttpResponse(405, "")

@@ -20,7 +20,11 @@ class EpubTest {
     private fun zip(vararg files: Pair<String, String>): ByteArray {
         val out = ByteArrayOutputStream()
         ZipOutputStream(out).use { z ->
-            for ((name, body) in files) { z.putNextEntry(ZipEntry(name)); z.write(body.toByteArray()); z.closeEntry() }
+            for ((name, body) in files) {
+                z.putNextEntry(ZipEntry(name))
+                z.write(body.toByteArray())
+                z.closeEntry()
+            }
         }
         return out.toByteArray()
     }
@@ -56,7 +60,7 @@ class EpubTest {
         assertNotNull(book)
         assertEquals("The Placeholder", book.title)
         assertEquals(2, book.chapters.size)
-        assertEquals("Two", book.chapters[0].title)   // spine ordered c2 before c1
+        assertEquals("Two", book.chapters[0].title) // spine ordered c2 before c1
         assertTrue(book.chapters[0].text.contains("Second body."))
         assertEquals("One", book.chapters[1].title)
     }

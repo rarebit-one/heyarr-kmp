@@ -12,7 +12,11 @@ import org.junit.Test
 class PlaybackDiagnosticsTest {
 
     private fun target(origin: PlaybackTarget.Origin, mime: String? = "video/mp4") = PlaybackTarget(
-        contentUrl = "https://h/x", credential = Credential.Session("t"), isVideo = true, mimeType = mime, origin = origin,
+        contentUrl = "https://h/x",
+        credential = Credential.Session("t"),
+        isVideo = true,
+        mimeType = mime,
+        origin = origin,
     )
 
     private val h264 = TrackGroup(PlaybackDiagnostics.TYPE_VIDEO, supported = true, sampleMime = "video/avc")

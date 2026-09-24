@@ -2,11 +2,11 @@ package one.rarebit.heyarr.core
 
 import one.rarebit.heyarr.core.feeds.FollowedSourcesJson
 import one.rarebit.heyarr.core.mcp.SearchHitsJson
-import one.rarebit.heyarr.core.testfixtures.Fixtures
 import one.rarebit.heyarr.core.state.SearchFilter
 import one.rarebit.heyarr.core.state.SearchGrouping
 import one.rarebit.heyarr.core.state.SearchRow
 import one.rarebit.heyarr.core.state.Segment
+import one.rarebit.heyarr.core.testfixtures.Fixtures
 import one.rarebit.heyarr.core.theme.MediaType
 import kotlin.test.Test
 import kotlin.test.assertEquals

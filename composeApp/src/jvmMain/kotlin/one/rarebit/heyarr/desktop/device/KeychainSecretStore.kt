@@ -23,8 +23,7 @@ class KeychainSecretStore(
 
     override val tier: KeyTier get() = KeyTier.KEYCHAIN
 
-    override fun exists(name: String): Boolean =
-        backend.retrieve(key(name)) != null || legacy?.exists(name) == true
+    override fun exists(name: String): Boolean = backend.retrieve(key(name)) != null || legacy?.exists(name) == true
 
     override fun seal(name: String, secret: ByteArray) {
         check(backend.store(key(name), secret)) { "keychain rejected the write for '$name'" }

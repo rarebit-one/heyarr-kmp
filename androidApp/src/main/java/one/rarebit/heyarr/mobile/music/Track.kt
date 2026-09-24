@@ -31,7 +31,6 @@ object Tracks {
             .sortedWith(compareBy({ it.filename?.lowercase() ?: "" }, { it.id }))
 
     /** Every audio track, playable or not, in the same order — what the track list shows. */
-    fun all(assets: List<WorkAsset>): List<WorkAsset> =
-        assets.filter { it.isPrimaryRole && it.isAudio }
-            .sortedWith(compareBy({ it.filename?.lowercase() ?: "" }, { it.id }))
+    fun all(assets: List<WorkAsset>): List<WorkAsset> = assets.filter { it.isPrimaryRole && it.isAudio }
+        .sortedWith(compareBy({ it.filename?.lowercase() ?: "" }, { it.id }))
 }

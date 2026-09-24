@@ -66,9 +66,11 @@ class SealedSecretStore(private val context: Context) {
 
         val gen = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE)
         return try {
-            gen.init(spec(strongBox = true)); gen.generateKey()
+            gen.init(spec(strongBox = true))
+            gen.generateKey()
         } catch (_: StrongBoxUnavailableException) {
-            gen.init(spec(strongBox = false)); gen.generateKey()
+            gen.init(spec(strongBox = false))
+            gen.generateKey()
         }
     }
 
@@ -86,10 +88,14 @@ class SealedSecretStore(private val context: Context) {
         val out = java.io.ByteArrayOutputStream()
         fun put(b: ByteArray) {
             val n = b.size
-            out.write(n ushr 24); out.write(n ushr 16); out.write(n ushr 8); out.write(n)
+            out.write(n ushr 24)
+            out.write(n ushr 16)
+            out.write(n ushr 8)
+            out.write(n)
             out.write(b)
         }
-        put(iv); put(ct)
+        put(iv)
+        put(ct)
         f.writeBytes(out.toByteArray())
     }
 

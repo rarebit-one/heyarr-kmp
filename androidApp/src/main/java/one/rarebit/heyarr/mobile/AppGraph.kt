@@ -4,12 +4,13 @@ import android.app.Application
 import androidx.media3.common.util.UnstableApi
 import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
+import one.rarebit.heyarr.core.discovery.MdnsResolver
+import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.mobile.consumption.DeviceIdStore
 import one.rarebit.heyarr.mobile.consumption.PrefsDeviceIdStore
-import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.mobile.net.AuthHeaderSource
 import one.rarebit.heyarr.mobile.net.AuthInterceptor
-import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.net.NsdMdnsResolver
 import one.rarebit.heyarr.mobile.net.OkHttpTransport
 import one.rarebit.heyarr.mobile.playback.AudioPlayer
@@ -17,11 +18,10 @@ import one.rarebit.heyarr.mobile.playback.SessionAudioPlayer
 import one.rarebit.heyarr.mobile.playback.VideoSession
 import one.rarebit.heyarr.mobile.settings.PrefsSettingsStore
 import one.rarebit.heyarr.mobile.settings.SettingsStore
-import one.rarebit.heyarr.core.state.ExternalMetadata
+import one.rarebit.heyarr.mobile.state.PhoneExternalMetadata
 import one.rarebit.heyarr.mobile.state.RecentSearches
 import java.io.File
 import java.util.concurrent.TimeUnit
-import one.rarebit.heyarr.mobile.state.PhoneExternalMetadata
 
 /**
  * The process-wide object graph — by hand, on purpose. A container would add a
@@ -52,8 +52,7 @@ class AppGraph(app: Application, scope: CoroutineScope) {
     val authHeader = AuthHeaderSource()
 
     /** The configured node, resolved fresh each time so a Settings change applies. */
-    fun baseUrl(): String =
-        HeyarrConfig.resolve(settings.baseUrlOverride, settings.qualityProfileOverride).baseUrl
+    fun baseUrl(): String = HeyarrConfig.resolve(settings.baseUrlOverride, settings.qualityProfileOverride).baseUrl
 
     val okHttp: OkHttpClient = OkHttpClient.Builder()
         .callTimeout(30, TimeUnit.SECONDS)

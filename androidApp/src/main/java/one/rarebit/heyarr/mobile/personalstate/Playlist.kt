@@ -27,8 +27,7 @@ internal enum class PlaylistOp(val wire: Int) {
 
 /** A Lamport counter with the add's tag as a deterministic tie-break. */
 internal data class OrderKey(val counter: ULong, val tag: String) {
-    fun less(other: OrderKey): Boolean =
-        if (counter != other.counter) counter < other.counter else tag < other.tag
+    fun less(other: OrderKey): Boolean = if (counter != other.counter) counter < other.counter else tag < other.tag
 }
 
 internal data class PlaylistChange(
@@ -77,6 +76,7 @@ internal class Playlist {
                 adds[c.tag] = adds[c.tag]?.let { lesser(it, rec) } ?: rec
                 if (c.order.counter > counter) counter = c.order.counter
             }
+
             PlaylistOp.REMOVE -> c.observed.forEach { tombstones.add(it) }
         }
     }

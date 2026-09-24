@@ -65,15 +65,22 @@ class SeriesTest {
 
     @Test fun readsTheOtherFilenameShapesTheNodeAccepts() {
         val dirSeason = Series.episode(file("a", "05 - Home.mkv", label = "Season 02"))!!
-        assertEquals(2, dirSeason.season); assertEquals(5, dirSeason.number); assertEquals("Home", dirSeason.title)
+        assertEquals(2, dirSeason.season)
+        assertEquals(5, dirSeason.number)
+        assertEquals("Home", dirSeason.title)
         val nxnn = Series.episode(file("b", "The Expanse - 2x05 - Home.mkv", label = null, path = "/m/The Expanse (2015)/Season 02/The Expanse - 2x05 - Home.mkv"))!!
-        assertEquals(2, nxnn.season); assertEquals(5, nxnn.number)
+        assertEquals(2, nxnn.season)
+        assertEquals(5, nxnn.number)
         val multi = Series.episode(file("d", "Show.s02e05e06.1080p.mkv", label = "Season 02"))!!
-        assertEquals(5, multi.number); assertNull(multi.title); assertEquals("S02E05", multi.label)
+        assertEquals(5, multi.number)
+        assertNull(multi.title)
+        assertEquals("S02E05", multi.label)
         assertEquals("Pilot", Series.episodeTitle(".Pilot.[1080p].x265-GRP"))
         assertNull(Series.episodeTitle(".PROPER.1080p.WEB.H264-GROUP"))
         assertEquals(listOf("HDTV-1080P", "AC3", "X264"), Series.qualityTags(file("q", "Yellowstone (2018) - S04E02 - Phantom Pain [HDTV-1080p][AC3 5.1][x264].mp4")))
-        assertTrue(Series.isSeries("tv_series")); assertTrue(Series.isSeries("series")); assertFalse(Series.isSeries("movie"))
+        assertTrue(Series.isSeries("tv_series"))
+        assertTrue(Series.isSeries("series"))
+        assertFalse(Series.isSeries("movie"))
     }
 
     @Test fun theLiveFixtureShapeParsesIntoTwoSeasonsWithThumbnails() {

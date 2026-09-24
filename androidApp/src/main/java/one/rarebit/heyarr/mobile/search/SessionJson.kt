@@ -40,8 +40,13 @@ object SessionJson {
                 c == '\\' && i + 1 < json.length -> {
                     i = JsonEscapes.append(sb, json, i)
                 }
+
                 c == '"' -> return sb.toString()
-                else -> { sb.append(c); i++ }
+
+                else -> {
+                    sb.append(c)
+                    i++
+                }
             }
         }
         return null
@@ -68,15 +73,23 @@ object SessionJson {
         while (i < json.length) {
             when (json[i]) {
                 ']' -> return out
+
                 '"' -> {
                     val sb = StringBuilder()
                     i++
                     while (i < json.length && json[i] != '"') {
-                        if (json[i] == '\\' && i + 1 < json.length) { sb.append(json[i + 1]); i += 2 } else { sb.append(json[i]); i++ }
+                        if (json[i] == '\\' && i + 1 < json.length) {
+                            sb.append(json[i + 1])
+                            i += 2
+                        } else {
+                            sb.append(json[i])
+                            i++
+                        }
                     }
                     out.add(sb.toString())
                     i++
                 }
+
                 else -> i++
             }
         }

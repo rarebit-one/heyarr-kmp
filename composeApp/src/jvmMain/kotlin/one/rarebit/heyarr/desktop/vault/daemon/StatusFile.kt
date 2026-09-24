@@ -51,16 +51,29 @@ data class StatusSnapshot(
         val pass = lastPass ?: PassStats()
         val sb = StringBuilder()
         sb.append('{')
-        key(sb, "schema"); sb.append(SCHEMA); sb.append(',')
-        strKey(sb, "ts", rfc3339(nowMs)); sb.append(',')
-        strKey(sb, "phase", phase); sb.append(',')
-        strKey(sb, "folder", folder); sb.append(',')
-        strKey(sb, "space_id", spaceId); sb.append(',')
-        strKey(sb, "controller", controller); sb.append(',')
-        strKey(sb, "device", device); sb.append(',')
-        key(sb, "watching"); sb.append(if (watching) "true" else "false"); sb.append(',')
-        key(sb, "last_sync_at"); if (lastSyncAtMs != null) JsonWrite.writeString(sb, rfc3339(lastSyncAtMs)) else sb.append("null"); sb.append(',')
-        key(sb, "last_pass"); sb.append(
+        key(sb, "schema")
+        sb.append(SCHEMA)
+        sb.append(',')
+        strKey(sb, "ts", rfc3339(nowMs))
+        sb.append(',')
+        strKey(sb, "phase", phase)
+        sb.append(',')
+        strKey(sb, "folder", folder)
+        sb.append(',')
+        strKey(sb, "space_id", spaceId)
+        sb.append(',')
+        strKey(sb, "controller", controller)
+        sb.append(',')
+        strKey(sb, "device", device)
+        sb.append(',')
+        key(sb, "watching")
+        sb.append(if (watching) "true" else "false")
+        sb.append(',')
+        key(sb, "last_sync_at")
+        if (lastSyncAtMs != null) JsonWrite.writeString(sb, rfc3339(lastSyncAtMs)) else sb.append("null")
+        sb.append(',')
+        key(sb, "last_pass")
+        sb.append(
             JsonWrite.obj(
                 linkedMapOf(
                     "pushed" to pass.pushed,
@@ -70,15 +83,25 @@ data class StatusSnapshot(
                     "ms" to pass.ms,
                 ),
             ),
-        ); sb.append(',')
-        key(sb, "conflicts"); sb.append(JsonWrite.value(conflicts.map { linkedMapOf("path" to it) })); sb.append(',')
-        key(sb, "last_error"); if (lastError != null) JsonWrite.writeString(sb, lastError) else sb.append("null")
+        )
+        sb.append(',')
+        key(sb, "conflicts")
+        sb.append(JsonWrite.value(conflicts.map { linkedMapOf("path" to it) }))
+        sb.append(',')
+        key(sb, "last_error")
+        if (lastError != null) JsonWrite.writeString(sb, lastError) else sb.append("null")
         sb.append('}')
         return sb.toString()
     }
 
-    private fun key(sb: StringBuilder, k: String) { JsonWrite.writeString(sb, k); sb.append(':') }
-    private fun strKey(sb: StringBuilder, k: String, v: String) { key(sb, k); JsonWrite.writeString(sb, v) }
+    private fun key(sb: StringBuilder, k: String) {
+        JsonWrite.writeString(sb, k)
+        sb.append(':')
+    }
+    private fun strKey(sb: StringBuilder, k: String, v: String) {
+        key(sb, k)
+        JsonWrite.writeString(sb, v)
+    }
 
     companion object {
         const val SCHEMA = 1

@@ -1,15 +1,17 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.library.LibraryClient
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 private class CapturingTransport(private val body: String, private val status: Int = 200) : HttpTransport {
-    var lastUrl: String? = null; private set
-    var lastAuth: String? = null; private set
+    var lastUrl: String? = null
+        private set
+    var lastAuth: String? = null
+        private set
     override fun get(url: String, headers: Map<String, String>): HttpResponse {
         lastUrl = url
         lastAuth = headers["Authorization"]

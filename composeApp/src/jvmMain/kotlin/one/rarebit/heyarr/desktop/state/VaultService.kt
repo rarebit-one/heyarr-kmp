@@ -58,6 +58,7 @@ class VaultService(
     private val retryMs: Long = 15_000,
 ) {
     @Volatile private var engine: VaultSync? = null
+
     @Volatile private var watch: SyncChanges? = null
     private var resolveJob: Job? = null
 
@@ -107,7 +108,10 @@ class VaultService(
         resolveJob = scope.launch {
             while (isActive) {
                 val folder = config().vaultFolder
-                if (folder.isNullOrBlank()) { phase = VaultPhase.Off; return@launch }
+                if (folder.isNullOrBlank()) {
+                    phase = VaultPhase.Off
+                    return@launch
+                }
                 val resolved = withContext(Dispatchers.IO) {
                     runCatching {
                         val result = openCustody(config().vaultSpaceId)
@@ -118,7 +122,11 @@ class VaultService(
                     }
                 }
                 resolved
-                    .onSuccess { phase = VaultPhase.Running; controller.start(); return@launch }
+                    .onSuccess {
+                        phase = VaultPhase.Running
+                        controller.start()
+                        return@launch
+                    }
                     .onFailure { phase = VaultPhase.Preparing(it.message ?: "not ready") }
                 delay(retryMs)
             }

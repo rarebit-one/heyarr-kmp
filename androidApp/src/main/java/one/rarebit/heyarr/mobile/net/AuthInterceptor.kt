@@ -46,10 +46,9 @@ class AuthInterceptor(
             return (req.path ?: "").startsWith(API_PREFIX)
         }
 
-        private fun sameOrigin(a: URI, b: URI): Boolean =
-            a.scheme.equals(b.scheme, ignoreCase = true) &&
-                a.host.equals(b.host, ignoreCase = true) &&
-                effectivePort(a) == effectivePort(b)
+        private fun sameOrigin(a: URI, b: URI): Boolean = a.scheme.equals(b.scheme, ignoreCase = true) &&
+            a.host.equals(b.host, ignoreCase = true) &&
+            effectivePort(a) == effectivePort(b)
 
         private fun effectivePort(u: URI): Int = when {
             u.port != -1 -> u.port

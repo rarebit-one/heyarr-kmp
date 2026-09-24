@@ -1,7 +1,5 @@
 package one.rarebit.heyarr.desktop.state
 
-import one.rarebit.heyarr.core.state.*
-
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
@@ -12,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import one.rarebit.heyarr.core.state.*
 import org.jetbrains.skia.Image
 import java.io.File
 import java.net.URI
@@ -69,7 +68,9 @@ class ArtworkLoader(
     fun peek(contentPath: String): ImageBitmap? = memory[contentPath]
 
     /** Forget failures (e.g. after the token changed) so cards retry. */
-    fun reset() { failed.clear() }
+    fun reset() {
+        failed.clear()
+    }
 
     private fun fetch(contentPath: String): ByteArray? = runCatching {
         fetcher?.let { return it(contentPath) }
@@ -99,7 +100,10 @@ class ArtworkLoader(
         runCatching { diskFile(contentPath).takeIf { it.isFile }?.readBytes() }.getOrNull()
 
     private fun writeDisk(contentPath: String, bytes: ByteArray) {
-        runCatching { cacheDir.mkdirs(); diskFile(contentPath).writeBytes(bytes) }
+        runCatching {
+            cacheDir.mkdirs()
+            diskFile(contentPath).writeBytes(bytes)
+        }
     }
 
     companion object {

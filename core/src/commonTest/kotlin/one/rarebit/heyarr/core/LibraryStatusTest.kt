@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.core
 
 import one.rarebit.heyarr.core.heyarr.DesiredItemJson
-import one.rarebit.heyarr.core.testfixtures.Fixtures
 import one.rarebit.heyarr.core.state.LibraryIndex
 import one.rarebit.heyarr.core.state.LibraryStatus
+import one.rarebit.heyarr.core.testfixtures.Fixtures
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

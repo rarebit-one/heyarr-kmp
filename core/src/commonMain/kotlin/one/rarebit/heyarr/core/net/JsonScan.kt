@@ -72,8 +72,13 @@ object JsonScan {
             val c = json[i]
             when {
                 c == '\\' && i + 1 < json.length -> i = JsonEscapes.append(sb, json, i)
+
                 c == '"' -> return sb.toString()
-                else -> { sb.append(c); i++ }
+
+                else -> {
+                    sb.append(c)
+                    i++
+                }
             }
         }
         return null
@@ -106,7 +111,9 @@ object JsonScan {
                         i = j + 1
                     }
                 }
+
                 c == '}' -> return out
+
                 else -> i++
             }
         }
@@ -147,8 +154,13 @@ object JsonScan {
             val c = json[i]
             when {
                 c == '\\' && i + 1 < json.length -> i = JsonEscapes.append(sb, json, i)
+
                 c == '"' -> return sb.toString() to (i + 1)
-                else -> { sb.append(c); i++ }
+
+                else -> {
+                    sb.append(c)
+                    i++
+                }
             }
         }
         return null
@@ -215,14 +227,19 @@ object JsonScan {
         while (i < json.length) {
             val c = json[i]
             if (inStr) {
-                if (c == '\\') { i += 2; continue }
+                if (c == '\\') {
+                    i += 2
+                    continue
+                }
                 if (c == '"') inStr = false
                 i++
                 continue
             }
             when (c) {
                 '{', '[' -> depth++
+
                 '}', ']' -> depth--
+
                 '"' -> {
                     if (depth == 1 && json.startsWith(needle, i)) {
                         var j = i + needle.length
@@ -248,13 +265,21 @@ object JsonScan {
         while (i < s.length) {
             val c = s[i]
             if (inStr) {
-                if (c == '\\') { i += 2; continue }
+                if (c == '\\') {
+                    i += 2
+                    continue
+                }
                 if (c == '"') inStr = false
             } else {
                 when (c) {
                     '"' -> inStr = true
+
                     open -> depth++
-                    close -> { depth--; if (depth == 0) return s.substring(start, i + 1) }
+
+                    close -> {
+                        depth--
+                        if (depth == 0) return s.substring(start, i + 1)
+                    }
                 }
             }
             i++

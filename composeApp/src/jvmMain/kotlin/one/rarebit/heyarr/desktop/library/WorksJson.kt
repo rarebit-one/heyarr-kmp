@@ -18,8 +18,7 @@ object WorksJson {
     private val ENVELOPE_KEYS = listOf("items", "works", "data")
 
     /** Parse a works-list response body into [Work]s, skipping any element missing an id. */
-    fun parse(body: String): List<Work> =
-        JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
+    fun parse(body: String): List<Work> = JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
 
     /** Parse one `Work` object body (`GET /works/{id}`), or null if it has no id. */
     fun parseOne(body: String): Work? = JsonScan.rootObject(body)?.let { parseObject(it) }

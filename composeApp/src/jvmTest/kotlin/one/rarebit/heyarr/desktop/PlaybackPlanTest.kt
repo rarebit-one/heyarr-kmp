@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.desktop
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -21,14 +21,13 @@ class PlaybackPlanTest {
 
     private fun api(t: HttpTransport) = HeyarrApi(t, base, Credential.Bearer("heyarr_1_secret"))
 
-    private fun transport(status: Int, body: String, seen: (String?) -> Unit = {}) =
-        object : HttpTransport {
-            override fun get(url: String, headers: Map<String, String>) = HttpResponse(405, "")
-            override fun post(url: String, body2: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
-                seen(body2)
-                return HttpResponse(status, body)
-            }
+    private fun transport(status: Int, body: String, seen: (String?) -> Unit = {}) = object : HttpTransport {
+        override fun get(url: String, headers: Map<String, String>) = HttpResponse(405, "")
+        override fun post(url: String, body2: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
+            seen(body2)
+            return HttpResponse(status, body)
         }
+    }
 
     @Test
     fun aStreamPlanIsPlayedAsAnAbsoluteStreamUrl() {

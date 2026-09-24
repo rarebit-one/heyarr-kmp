@@ -78,8 +78,7 @@ class EnrolUpgrade(
     private val bearer: LoginProvider,
 ) {
     /** The credential to present; never null — falls back to [Credential.Guest]. */
-    fun credential(): Credential =
-        device.credential() ?: bearer.credential() ?: Credential.Guest
+    fun credential(): Credential = device.credential() ?: bearer.credential() ?: Credential.Guest
 
     /** True when a real enrolment (device or bearer) is configured — i.e. not a guest. */
     fun isEnrolled(): Boolean = credential() !is Credential.Guest

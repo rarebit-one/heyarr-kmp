@@ -32,9 +32,15 @@ data class PrimaryAsset(
             val units = arrayOf("KB", "MB", "GB", "TB")
             var value = bytes.toDouble()
             var unit = -1
-            while (value >= 1024 && unit < units.size - 1) { value /= 1024; unit++ }
-            return if (value >= 100) "${value.toLong()} ${units[unit]}"
-            else String.format(java.util.Locale.ROOT, "%.1f %s", value, units[unit])
+            while (value >= 1024 && unit < units.size - 1) {
+                value /= 1024
+                unit++
+            }
+            return if (value >= 100) {
+                "${value.toLong()} ${units[unit]}"
+            } else {
+                String.format(java.util.Locale.ROOT, "%.1f %s", value, units[unit])
+            }
         }
     }
 }
@@ -72,7 +78,8 @@ object WorkDetailJson {
         val obj = JsonScan.rootObject(body) ?: return WorkDetail(work)
         val artwork = JsonScan.objectAt(obj, "artwork")
         return WorkDetail(
-            work, parsePrimaryAsset(obj),
+            work,
+            parsePrimaryAsset(obj),
             artworkPath = artwork?.let { JsonScan.stringField(it, "content_url") },
             artworkHash = artwork?.let { JsonScan.stringField(it, "blob_hash") },
             attributes = JsonScan.objectAt(obj, "attributes")?.let { a -> listOf("overview", "synopsis", "description", "summary", "author", "artist", "narrator", "genre").mapNotNull { k -> JsonScan.stringField(a, k)?.let { k to it } }.toMap() } ?: emptyMap(),

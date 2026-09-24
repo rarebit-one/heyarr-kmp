@@ -67,19 +67,18 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import one.rarebit.heyarr.core.mcp.Renderer
+import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.library.WorkAsset
-import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.mobile.playback.PlaybackTarget
 import one.rarebit.heyarr.mobile.playback.QueueEntry
 import one.rarebit.heyarr.mobile.playback.VideoSession
 import one.rarebit.heyarr.mobile.state.AppSession
-import one.rarebit.heyarr.core.state.Toast
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.MediaScope
-import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Artwork
+import one.rarebit.heyarr.mobile.ui.components.clockShort
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
@@ -88,7 +87,8 @@ import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.Skeleton
-import one.rarebit.heyarr.mobile.ui.components.clockShort
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 
 /** Per-visit state of the player screen; playback itself lives in [VideoSession]. */
 class PlayerScreenState {
@@ -107,7 +107,10 @@ class PlayerScreenState {
 @UnstableApi
 @Composable
 fun PlayerScreen(session: AppSession, video: VideoSession, state: PlayerScreenState, onBack: () -> Unit, onNext: (QueueEntry) -> Unit, onStop: () -> Unit, modifier: Modifier = Modifier) {
-    val item = video.current ?: run { LaunchedEffect(Unit) { onBack() }; return }
+    val item = video.current ?: run {
+        LaunchedEffect(Unit) { onBack() }
+        return
+    }
     val ps = video.state
     val type = MediaType.from(item.kind ?: "movie")
     val fullscreen = video.fullscreen
@@ -117,7 +120,10 @@ fun PlayerScreen(session: AppSession, video: VideoSession, state: PlayerScreenSt
 
     BackHandler { if (fullscreen) video.fullscreen = false else onBack() }
     LaunchedEffect(immersive, ps.paused, state.controlsVisible) {
-        if (immersive && !ps.paused && state.controlsVisible) { delay(3500); state.controlsVisible = false }
+        if (immersive && !ps.paused && state.controlsVisible) {
+            delay(3500)
+            state.controlsVisible = false
+        }
         if (!immersive) state.controlsVisible = true
     }
 
@@ -149,8 +155,11 @@ fun PlayerScreen(session: AppSession, video: VideoSession, state: PlayerScreenSt
             }
             if (state.castOpen) Box(Modifier.padding(horizontal = 12.dp)) { CastRow(session, state, item.assetId, video) }
             Box(Modifier.fillMaxWidth().padding(horizontal = 12.dp).let { if (item.target.isVideo) it.aspectRatio(16f / 9f) else it.height(200.dp) }.clip(RoundedCornerShape(Tokens.radiusCard)).background(Color.Black)) {
-                if (item.target.isVideo) Surface(video, item.target, Modifier.fillMaxSize())
-                else Artwork(item.artworkUrl, type, Modifier.fillMaxSize(), glyphSize = 64.dp)
+                if (item.target.isVideo) {
+                    Surface(video, item.target, Modifier.fillMaxSize())
+                } else {
+                    Artwork(item.artworkUrl, type, Modifier.fillMaxSize(), glyphSize = 64.dp)
+                }
                 if (ps.error != null) Box(Modifier.fillMaxSize().background(Tokens.bgBase.copy(alpha = 0.85f)), contentAlignment = Alignment.Center) { Notice(ps.error, tone = Tokens.danger, modifier = Modifier.padding(24.dp)) }
             }
             Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -173,7 +182,8 @@ fun PlayerScreen(session: AppSession, video: VideoSession, state: PlayerScreenSt
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).background(Tokens.surface1).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusInput))
                             .clickable(interactionSource = interaction, indication = null) { onNext(next) }.padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Box(Modifier.width(112.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(next.thumbnailPath, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 18.dp) }
                         Column(Modifier.weight(1f)) {
@@ -193,7 +203,13 @@ fun PlayerScreen(session: AppSession, video: VideoSession, state: PlayerScreenSt
 @Composable
 private fun Surface(video: VideoSession, target: PlaybackTarget, modifier: Modifier) {
     AndroidView(
-        factory = { ctx -> PlayerView(ctx).apply { useController = false; player = video.player; setShutterBackgroundColor(android.graphics.Color.BLACK) } },
+        factory = { ctx ->
+            PlayerView(ctx).apply {
+                useController = false
+                player = video.player
+                setShutterBackgroundColor(android.graphics.Color.BLACK)
+            }
+        },
         update = { view -> if (view.player !== video.player) view.player = video.player },
         modifier = modifier.semantics { contentDescription = if (target.isVideo) "Video" else "Audio" },
     )
@@ -221,7 +237,12 @@ private fun Transport(video: VideoSession, ps: VideoSession.State, target: Playb
             }
         }
         Slider(
-            value = dragging ?: ps.fraction, onValueChange = { dragging = it }, onValueChangeFinished = { dragging?.let { video.seekFraction(it) }; dragging = null },
+            value = dragging ?: ps.fraction,
+            onValueChange = { dragging = it },
+            onValueChangeFinished = {
+                dragging?.let { video.seekFraction(it) }
+                dragging = null
+            },
             modifier = Modifier.fillMaxWidth().height(24.dp).semantics { contentDescription = "Position ${clockShort(ps.positionMs)} of ${clockShort(ps.durationMs)}, buffered ${(buffered * 100).toInt()} percent" },
             colors = SliderDefaults.colors(thumbColor = theme.accentGradientEnd, activeTrackColor = theme.accent, inactiveTrackColor = Color.Transparent), enabled = seekable,
         )
@@ -265,8 +286,11 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, assetId: Stri
         val r = state.renderers
         when {
             assetId == null -> Text("This item has no asset id to hand to a renderer.", style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted)
+
             r == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
+
             r.isEmpty() -> Text("No renderers found — a device that is off is not listed.", style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted)
+
             else -> Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (x in r) FilterChip(x.name, false, {
                     state.castOpen = false

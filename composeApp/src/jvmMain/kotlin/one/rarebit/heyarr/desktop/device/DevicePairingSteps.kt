@@ -7,8 +7,8 @@ import one.rarebit.voidbind.auth.PossessionProof
 import one.rarebit.voidbind.flow.DevicePairing
 import one.rarebit.voidbind.flow.PairingFailureKind
 import one.rarebit.voidbind.flow.PairingOutcome
-import one.rarebit.voidbind.net.JdkHttpTransport as VoidbindJdkHttpTransport
 import one.rarebit.voidbind.net.HttpTransport as VoidbindHttpTransport
+import one.rarebit.voidbind.net.JdkHttpTransport as VoidbindJdkHttpTransport
 
 /**
  * The real [PairingSteps]: voidbind-client's `DevicePairing` (this desktop as the relay
@@ -46,6 +46,7 @@ class DevicePairingSteps(
         pairing = p
         return when (val o = p.beginCatching(inviteQr)) {
             is PairingOutcome.Failed -> o
+
             is PairingOutcome.Ready -> {
                 handshake = o.value
                 PairingOutcome.Ready(
@@ -63,6 +64,7 @@ class DevicePairingSteps(
         val h = handshake ?: return notReady()
         return when (val o = p.confirmCatching(h)) {
             is PairingOutcome.Failed -> o
+
             is PairingOutcome.Ready -> try {
                 keyring.saveAdmission(o.value)
                 PairingOutcome.Ready(o.value.op)
@@ -79,7 +81,10 @@ class DevicePairingSteps(
             return EnrolClient.Outcome.Failed("could not sign with the device key (${e.message})")
         }
         val outcome = EnrolClient(nodeTransport, baseUrl()).register(
-            op, proof, deviceName(), credential(),
+            op,
+            proof,
+            deviceName(),
+            credential(),
             ops = MembershipOps.presentable(keyring.knownOps(), op),
         )
         // Persist the identity's recovery encryption PUBLIC key when `/enrol` delivered one, so a

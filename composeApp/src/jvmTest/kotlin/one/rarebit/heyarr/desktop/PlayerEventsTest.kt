@@ -19,7 +19,10 @@ class PlayerEventsTest {
         s = PlayerEvents.apply(s, """{"event":"property-change","id":1,"name":"time-pos","data":1425.25}""")
         s = PlayerEvents.apply(s, """{"event":"property-change","id":3,"name":"pause","data":false}""")
         s = PlayerEvents.apply(s, """{"event":"property-change","id":4,"name":"volume","data":80}""")
-        assertEquals(3312.5, s.duration); assertEquals(1425.25, s.position); assertFalse(s.paused); assertEquals(80.0, s.volume)
+        assertEquals(3312.5, s.duration)
+        assertEquals(1425.25, s.position)
+        assertFalse(s.paused)
+        assertEquals(80.0, s.volume)
         assertEquals(0.43, s.fraction.toDouble(), 0.01)
     }
 
@@ -33,19 +36,23 @@ class PlayerEventsTest {
 
     @Test fun warmUpEndsAtTheFirstFrameAndDoesNotReturn() {
         var s = PlayerState()
-        assertTrue(s.warmingUp)                       // nothing on screen yet
+        assertTrue(s.warmingUp) // nothing on screen yet
         s = PlayerEvents.apply(s, """{"event":"file-loaded"}""")
-        assertTrue(s.warmingUp); assertFalse(s.hasStarted)  // loaded, but still no frame
+        assertTrue(s.warmingUp)
+        assertFalse(s.hasStarted) // loaded, but still no frame
         s = PlayerEvents.apply(s, """{"event":"property-change","id":9,"name":"core-idle","data":false}""")
-        assertTrue(s.hasStarted); assertFalse(s.warmingUp)  // first frame is up
+        assertTrue(s.hasStarted)
+        assertFalse(s.warmingUp) // first frame is up
         // A later pause (core-idle true again) is a pause, not warm-up.
         s = PlayerEvents.apply(s, """{"event":"property-change","id":9,"name":"core-idle","data":true}""")
-        assertTrue(s.hasStarted); assertFalse(s.warmingUp)
+        assertTrue(s.hasStarted)
+        assertFalse(s.warmingUp)
     }
 
     @Test fun timePastTheFirstSecondAlsoCountsAsStarted() {
         val s = PlayerEvents.apply(PlayerState(), """{"event":"property-change","id":1,"name":"time-pos","data":2.0}""")
-        assertTrue(s.hasStarted); assertFalse(s.warmingUp)
+        assertTrue(s.hasStarted)
+        assertFalse(s.warmingUp)
     }
 
     @Test fun eofAndErrorAreNotWarmUp() {
@@ -56,11 +63,13 @@ class PlayerEventsTest {
     @Test fun aStallAfterStartIsNotWarmUpButShowsLoading() {
         var s = PlayerEvents.apply(PlayerState(), """{"event":"property-change","id":9,"name":"core-idle","data":false}""")
         s = PlayerEvents.apply(s, """{"event":"property-change","id":3,"name":"pause","data":false}""")
-        assertFalse(s.stalled); assertFalse(s.warmingUp)                 // playing
+        assertFalse(s.stalled)
+        assertFalse(s.warmingUp) // playing
         s = PlayerEvents.apply(s, """{"event":"property-change","id":9,"name":"core-idle","data":true}""")
-        assertTrue(s.stalled); assertFalse(s.warmingUp)                  // stuck mid-stream
+        assertTrue(s.stalled)
+        assertFalse(s.warmingUp) // stuck mid-stream
         val paused = PlayerEvents.apply(s, """{"event":"property-change","id":3,"name":"pause","data":true}""")
-        assertFalse(paused.stalled)                                       // a deliberate pause is not a stall
+        assertFalse(paused.stalled) // a deliberate pause is not a stall
     }
 
     @Test fun trackListSplitsSubtitlesAndAudio() {
@@ -76,9 +85,11 @@ class PlayerEventsTest {
 
     @Test fun endOfFileAndErrorsAreDistinct() {
         val eof = PlayerEvents.apply(PlayerState(loaded = true), """{"event":"end-file","reason":"eof"}""")
-        assertTrue(eof.eof); assertNull(eof.error)
+        assertTrue(eof.eof)
+        assertNull(eof.error)
         val err = PlayerEvents.apply(PlayerState(loaded = true), """{"event":"end-file","reason":"error","file_error":"loading failed"}""")
-        assertEquals("loading failed", err.error); assertFalse(err.loaded)
+        assertEquals("loading failed", err.error)
+        assertFalse(err.loaded)
         assertEquals(PlayerState(), PlayerEvents.apply(PlayerState(), "not json"))
     }
 }

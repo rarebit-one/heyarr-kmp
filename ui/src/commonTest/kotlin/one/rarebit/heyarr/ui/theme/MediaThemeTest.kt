@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.ui.theme.MediaThemes
-import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.Tokens
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -55,10 +55,17 @@ class MediaThemeTest {
     @Test
     fun textOnSurfacesMeetsAaContrast() {
         fun lum(c: Color): Double {
-            fun ch(v: Float): Double { val s = v.toDouble(); return if (s <= 0.03928) s / 12.92 else Math.pow((s + 0.055) / 1.055, 2.4) }
+            fun ch(v: Float): Double {
+                val s = v.toDouble()
+                return if (s <= 0.03928) s / 12.92 else Math.pow((s + 0.055) / 1.055, 2.4)
+            }
             return 0.2126 * ch(c.red) + 0.7152 * ch(c.green) + 0.0722 * ch(c.blue)
         }
-        fun ratio(a: Color, b: Color): Double { val l1 = lum(a); val l2 = lum(b); return (maxOf(l1, l2) + 0.05) / (minOf(l1, l2) + 0.05) }
+        fun ratio(a: Color, b: Color): Double {
+            val l1 = lum(a)
+            val l2 = lum(b)
+            return (maxOf(l1, l2) + 0.05) / (minOf(l1, l2) + 0.05)
+        }
         assertTrue(ratio(Tokens.textPrimary, Tokens.bgBase) >= 4.5)
         assertTrue(ratio(Tokens.textPrimary, Tokens.surface3) >= 4.5)
         assertTrue(ratio(Tokens.textMuted, Tokens.surface1) >= 4.5)

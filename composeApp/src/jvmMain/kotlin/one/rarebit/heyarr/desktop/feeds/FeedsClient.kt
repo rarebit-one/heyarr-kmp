@@ -1,8 +1,7 @@
 package one.rarebit.heyarr.desktop.feeds
 
-import one.rarebit.heyarr.core.feeds.*
-
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.feeds.*
 import one.rarebit.heyarr.core.net.HttpTransport
 import java.net.URLEncoder
 
@@ -49,8 +48,7 @@ class FeedsClient(
 
         private fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
 
-        fun sourcesUrl(baseUrl: String): String =
-            baseUrl.trimEnd('/') + "/api/v1/followed-sources"
+        fun sourcesUrl(baseUrl: String): String = baseUrl.trimEnd('/') + "/api/v1/followed-sources"
 
         fun itemsUrl(baseUrl: String, sourceId: String, cursor: String? = null): String {
             val base = baseUrl.trimEnd('/') + "/api/v1/followed-sources/" + enc(sourceId) + "/items?limit=" + PAGE_LIMIT

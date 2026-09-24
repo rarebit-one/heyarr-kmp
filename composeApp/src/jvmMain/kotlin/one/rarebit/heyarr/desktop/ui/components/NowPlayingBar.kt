@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,13 +40,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.desktop.ui.isListening
-import androidx.compose.runtime.produceState
 import one.rarebit.heyarr.desktop.state.PlaybackSession
+import one.rarebit.heyarr.desktop.ui.isListening
+import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.Tokens
-import one.rarebit.heyarr.ui.components.IconButtonRound
 
 /**
  * The persistent transport at the foot of the window while something plays and the
@@ -65,8 +65,14 @@ fun NowPlayingBar(session: AppSession, onOpen: () -> Unit, modifier: Modifier = 
         Column(modifier.fillMaxWidth().background(Tokens.surface1).border(Tokens.hairline, Tokens.border)) {
             var dragging by remember { mutableStateOf<Float?>(null) }
             Slider(
-                value = dragging ?: ps.fraction, onValueChange = { dragging = it }, onValueChangeFinished = { dragging?.let { playback.player.seekFraction(it.toDouble()) }; dragging = null },
-                modifier = Modifier.fillMaxWidth().height(14.dp).semantics { contentDescription = "Position" }, enabled = ps.duration > 0,
+                value = dragging ?: ps.fraction,
+                onValueChange = { dragging = it },
+                onValueChangeFinished = {
+                    dragging?.let { playback.player.seekFraction(it.toDouble()) }
+                    dragging = null
+                },
+                modifier = Modifier.fillMaxWidth().height(14.dp).semantics { contentDescription = "Position" },
+                enabled = ps.duration > 0,
                 colors = SliderDefaults.colors(thumbColor = theme.accentGradientEnd, activeTrackColor = theme.accent, inactiveTrackColor = Tokens.surface3),
             )
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -97,6 +103,9 @@ fun NowPlayingBar(session: AppSession, onOpen: () -> Unit, modifier: Modifier = 
 }
 
 internal fun clockShort(s: Double): String {
-    val t = s.toLong().coerceAtLeast(0); val h = t / 3600; val m = (t % 3600) / 60; val sec = t % 60
+    val t = s.toLong().coerceAtLeast(0)
+    val h = t / 3600
+    val m = (t % 3600) / 60
+    val sec = t % 60
     return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }

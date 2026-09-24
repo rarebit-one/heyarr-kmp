@@ -6,7 +6,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
 import one.rarebit.heyarr.mobile.playback.ClientCapabilities
 
 /**
@@ -19,6 +18,7 @@ interface ProgressReporter {
     fun progress(seconds: Double) = progressAt(Position.seconds(seconds))
     fun pause(seconds: Double) = pauseAt(Position.seconds(seconds))
     fun resume(seconds: Double) = resumeAt(Position.seconds(seconds))
+
     /** Playback ended: [completed] when the end was reached, else a stop that keeps the position. */
     fun end(seconds: Double, completed: Boolean) = endAt(Position.seconds(seconds), completed)
 
@@ -56,18 +56,25 @@ class ProgressThrottle(private val intervalSeconds: Double = 15.0, private val m
     private var lastAt = Double.NEGATIVE_INFINITY
     private var lastPos = Double.NEGATIVE_INFINITY
 
-    fun reset() { lastAt = Double.NEGATIVE_INFINITY; lastPos = Double.NEGATIVE_INFINITY }
+    fun reset() {
+        lastAt = Double.NEGATIVE_INFINITY
+        lastPos = Double.NEGATIVE_INFINITY
+    }
 
     /** True when a tick at wall-clock [nowSeconds] with position [pos] should be sent (and records it). */
     fun accept(nowSeconds: Double, pos: Double): Boolean {
         if (nowSeconds - lastAt < intervalSeconds) return false
         if (kotlin.math.abs(pos - lastPos) < minDeltaSeconds) return false
-        lastAt = nowSeconds; lastPos = pos
+        lastAt = nowSeconds
+        lastPos = pos
         return true
     }
 
     /** A state change (pause/resume/end) always sends, and re-anchors the throttle. */
-    fun mark(nowSeconds: Double, pos: Double) { lastAt = nowSeconds; lastPos = pos }
+    fun mark(nowSeconds: Double, pos: Double) {
+        lastAt = nowSeconds
+        lastPos = pos
+    }
 }
 
 /**
@@ -141,6 +148,7 @@ class ConsumptionReporter(
                 val id = (out as? ConsumptionClient.Outcome.Ok)?.id ?: return
                 if (runCatching { client.transition(id, "start", null) }.getOrNull() is ConsumptionClient.Outcome.Ok) sessionId = id
             }
+
             is Cmd.Move -> {
                 val id = sessionId ?: return
                 val out = runCatching { client.transition(id, cmd.transition, cmd.pos) }.getOrNull()

@@ -86,8 +86,11 @@ class McpClient(
         val text = JsonScan.objectsOf(result, listOf("content"))
             .firstNotNullOfOrNull { c -> JsonScan.stringField(c, "text") }
             ?: ""
-        return if (isError) McpOutcome.Refused(McpError(-1, text.ifBlank { "refused without a reason" }, tool))
-        else McpOutcome.Ok(text)
+        return if (isError) {
+            McpOutcome.Refused(McpError(-1, text.ifBlank { "refused without a reason" }, tool))
+        } else {
+            McpOutcome.Ok(text)
+        }
     }
 
     companion object {

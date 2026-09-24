@@ -28,6 +28,7 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
                     "{\"id\":${q(id)},\"kind\":${q(sp.kind)},\"created_at\":\"2026-09-05T00:00:00Z\"}"
                 } + "]}",
             )
+
             path.endsWith("/keys") -> {
                 val sp = spaces[spaceId(path)] ?: return notFound()
                 ok(
@@ -37,6 +38,7 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
                         } + "]}",
                 )
             }
+
             path.endsWith("/changes") -> {
                 val sp = spaces[spaceId(path)] ?: return notFound()
                 ok(
@@ -44,7 +46,10 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
                         sp.changes.joinToString(",") { it.encode() } + "]}",
                 )
             }
-            path.endsWith("/snapshot") -> notFound() // no snapshots in the fake
+
+            path.endsWith("/snapshot") -> notFound()
+
+            // no snapshots in the fake
             else -> notFound()
         }
     }
@@ -64,6 +69,7 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
                 spaces[id] = sp
                 HttpResponse(201, "{\"id\":${q(id)},\"kind\":${q(kind)},\"created_at\":\"2026-09-05T00:00:00Z\"}")
             }
+
             path.endsWith("/changes") -> {
                 val sp = spaces[spaceId(path)] ?: return notFound()
                 val ch = EncryptedChange.parse(b)
@@ -74,6 +80,7 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
                 if (sp.changes.none { it.changeId == ch.changeId }) sp.changes.add(ch)
                 HttpResponse(201, "{\"change_id\":${q(ch.changeId)}}")
             }
+
             else -> notFound()
         }
     }
@@ -83,8 +90,7 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
 
     fun changeCount(spaceId: String): Int = spaces[spaceId]?.changes?.size ?: 0
 
-    private fun spaceId(path: String): String =
-        path.removePrefix("/api/v1/spaces/").substringBefore('/')
+    private fun spaceId(path: String): String = path.removePrefix("/api/v1/spaces/").substringBefore('/')
 
     private fun ok(body: String) = HttpResponse(200, body)
     private fun notFound() = HttpResponse(404, "{\"detail\":\"not found\"}")

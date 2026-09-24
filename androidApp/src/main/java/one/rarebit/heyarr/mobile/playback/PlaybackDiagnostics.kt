@@ -71,10 +71,15 @@ object PlaybackDiagnostics {
             errorCodeName.startsWith("ERROR_CODE_DECODER_INIT_FAILED") ||
                 errorCodeName.startsWith("ERROR_CODE_DECODING_FORMAT_UNSUPPORTED") ->
                 "This phone has no working decoder for this file — ${remedy(target)}"
+
             errorCodeName.startsWith("ERROR_CODE_DECODING") -> "The decoder failed part-way through this file."
+
             errorCodeName.startsWith("ERROR_CODE_PARSING") -> "This file's container couldn't be read (${containerName(target.mimeType ?: "")})."
+
             errorCodeName.startsWith("ERROR_CODE_IO_BAD_HTTP_STATUS") -> "The node refused the stream (HTTP error)."
+
             errorCodeName.startsWith("ERROR_CODE_IO") -> "The stream from the node broke off."
+
             else -> "Playback failed."
         }
         val detail = message?.takeIf { it.isNotBlank() }

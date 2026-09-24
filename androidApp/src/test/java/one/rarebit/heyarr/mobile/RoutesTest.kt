@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.mobile
 
 import kotlinx.serialization.json.Json
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
-import one.rarebit.heyarr.core.theme.MediaType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

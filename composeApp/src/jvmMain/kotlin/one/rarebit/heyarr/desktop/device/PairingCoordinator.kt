@@ -47,7 +47,8 @@ class PairingCoordinator(
         if (checked.isFailure) {
             cancelLive()
             _state.value = PairingState.Failed(
-                invite, PairingFailure.INVALID,
+                invite,
+                PairingFailure.INVALID,
                 checked.exceptionOrNull()?.message ?: "That is not a voidbind pairing invite.",
             )
             return
@@ -72,7 +73,8 @@ class PairingCoordinator(
         if (!matched) {
             return finish(
                 PairingState.Failed(
-                    inviteQr, PairingFailure.MISMATCH,
+                    inviteQr,
+                    PairingFailure.MISMATCH,
                     "Security codes differed — pairing aborted. Nothing was exchanged.",
                 ),
             )
@@ -90,19 +92,28 @@ class PairingCoordinator(
         val out = runInterruptible(Dispatchers.IO) { s.register(op) }
         _state.value = when (out) {
             is EnrolClient.Outcome.Registered -> PairingState.Enrolled(
-                op, registered = true,
-                registration = "Registered with the node via ${out.via}.", needsAdmin = false, retriable = false,
+                op,
+                registered = true,
+                registration = "Registered with the node via ${out.via}.",
+                needsAdmin = false,
+                retriable = false,
             )
+
             is EnrolClient.Outcome.NeedsAdmin -> PairingState.Enrolled(
-                op, registered = false,
+                op,
+                registered = false,
                 registration = "The admission is stored, but the node does not know it yet (${out.reason}). " +
                     "An admin must register it.",
-                needsAdmin = true, retriable = false,
+                needsAdmin = true,
+                retriable = false,
             )
+
             is EnrolClient.Outcome.Failed -> PairingState.Enrolled(
-                op, registered = false,
+                op,
+                registered = false,
                 registration = "The admission is stored, but registering it with the node failed: ${out.message}",
-                needsAdmin = false, retriable = true,
+                needsAdmin = false,
+                retriable = true,
             )
         }
     }
@@ -159,6 +170,7 @@ class PairingCoordinator(
                 live = null
                 _state.value = PairingState.Idle
             }
+
             else -> Unit
         }
     }

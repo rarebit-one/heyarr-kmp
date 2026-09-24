@@ -86,11 +86,10 @@ class WorkDetailClient(
         classify(http.delete(wantUrl(baseUrl, wantId), credential.asHeader()), "cancel")
 
     /** `PATCH /desired/{id} {"monitor": …}` — pause (`false`) or resume (`true`) monitoring. */
-    fun setMonitor(wantId: String, monitor: Boolean): Outcome =
-        classify(
-            http.patch(wantUrl(baseUrl, wantId), monitorBody(monitor), "application/json", jsonHeaders),
-            if (monitor) "resume" else "pause",
-        )
+    fun setMonitor(wantId: String, monitor: Boolean): Outcome = classify(
+        http.patch(wantUrl(baseUrl, wantId), monitorBody(monitor), "application/json", jsonHeaders),
+        if (monitor) "resume" else "pause",
+    )
 
     /** `POST /desired/{id}/reconcile` — queue a reconciliation ("retry"). */
     fun reconcile(wantId: String): Outcome =

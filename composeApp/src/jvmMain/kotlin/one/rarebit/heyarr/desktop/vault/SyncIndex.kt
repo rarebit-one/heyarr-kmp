@@ -24,7 +24,9 @@ interface SyncIndexStore {
 /** For tests. */
 class InMemorySyncIndexStore(private var state: Map<String, SyncIndexEntry> = emptyMap()) : SyncIndexStore {
     override fun load(): Map<String, SyncIndexEntry> = state
-    override fun save(index: Map<String, SyncIndexEntry>) { state = index }
+    override fun save(index: Map<String, SyncIndexEntry>) {
+        state = index
+    }
 }
 
 class FileSyncIndexStore(private val file: File = defaultIndexFile()) : SyncIndexStore {
@@ -59,8 +61,14 @@ class FileSyncIndexStore(private val file: File = defaultIndexFile()) : SyncInde
         val json = JsonWrite.obj(linkedMapOf("entries" to entries))
         file.parentFile?.mkdirs()
         file.writeText(json)
-        runCatching { file.setReadable(false, false); file.setReadable(true, true) } // best-effort 0600-ish
-        runCatching { file.setWritable(false, false); file.setWritable(true, true) }
+        runCatching {
+            file.setReadable(false, false)
+            file.setReadable(true, true)
+        } // best-effort 0600-ish
+        runCatching {
+            file.setWritable(false, false)
+            file.setWritable(true, true)
+        }
     }
 
     companion object {

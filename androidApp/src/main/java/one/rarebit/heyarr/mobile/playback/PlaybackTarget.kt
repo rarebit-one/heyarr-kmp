@@ -80,8 +80,10 @@ data class PlaybackTarget(
     enum class Origin {
         /** The blob, without asking the node (no asset id, or the node predates the plan contract). */
         DIRECT_UNPLANNED,
+
         /** The node judged the blob playable as-is against this phone's capabilities. */
         DIRECT_PLANNED,
+
         /** The node is repackaging the asset into a phone-friendly stream. */
         STREAM,
     }

@@ -41,7 +41,9 @@ class NsdMdnsResolver(
         val type = Discovery.SERVICE_TYPE + "."
 
         val resolveListener = object : NsdManager.ResolveListener {
-            override fun onResolveFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) { done.countDown() }
+            override fun onResolveFailed(serviceInfo: NsdServiceInfo?, errorCode: Int) {
+                done.countDown()
+            }
             override fun onServiceResolved(serviceInfo: NsdServiceInfo?) {
                 hit.set(serviceInfo?.let { NsdMdns.hitOf(it) })
                 done.countDown()
@@ -50,7 +52,9 @@ class NsdMdnsResolver(
 
         val discoveryListener = object : NsdManager.DiscoveryListener {
             @Volatile var resolving = false
-            override fun onStartDiscoveryFailed(serviceType: String?, errorCode: Int) { done.countDown() }
+            override fun onStartDiscoveryFailed(serviceType: String?, errorCode: Int) {
+                done.countDown()
+            }
             override fun onStopDiscoveryFailed(serviceType: String?, errorCode: Int) {}
             override fun onDiscoveryStarted(serviceType: String?) {}
             override fun onDiscoveryStopped(serviceType: String?) {}
@@ -99,7 +103,10 @@ object NsdMdns {
     /** Adapt a resolved [NsdServiceInfo] — its host literal, port and TXT `tls`/`path`. */
     fun hitOf(info: NsdServiceInfo): MdnsHit? {
         val attrs: Map<String, ByteArray?> = runCatching { info.attributes }.getOrNull() ?: emptyMap()
-        val host = runCatching { @Suppress("DEPRECATION") info.host?.hostAddress }.getOrNull()
+        val host = runCatching {
+            @Suppress("DEPRECATION")
+            info.host?.hostAddress
+        }.getOrNull()
         return hitFrom(host = host, port = info.port, tls = txt(attrs, "tls"), path = txt(attrs, "path"))
     }
 }

@@ -50,7 +50,13 @@ class DriveRetainTest {
                 val sb = StringBuilder()
                 i++
                 while (i < array.length && array[i] != '"') {
-                    if (array[i] == '\\' && i + 1 < array.length) { sb.append(array[i + 1]); i += 2 } else { sb.append(array[i]); i++ }
+                    if (array[i] == '\\' && i + 1 < array.length) {
+                        sb.append(array[i + 1])
+                        i += 2
+                    } else {
+                        sb.append(array[i])
+                        i++
+                    }
                 }
                 out.add(sb.toString())
             }

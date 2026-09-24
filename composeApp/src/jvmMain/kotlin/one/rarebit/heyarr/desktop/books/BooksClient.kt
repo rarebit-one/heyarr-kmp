@@ -1,11 +1,11 @@
 package one.rarebit.heyarr.desktop.books
 
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.desktop.catalog.Grouping
 import one.rarebit.heyarr.desktop.catalog.GroupingJson
 import one.rarebit.heyarr.desktop.library.Work
 import one.rarebit.heyarr.desktop.library.WorksJson
-import one.rarebit.heyarr.core.net.HttpTransport
 import java.net.URLEncoder
 
 /**
@@ -71,11 +71,10 @@ class BooksClient(
         fun authorsUrl(baseUrl: String, cursor: String? = null): String =
             page(baseUrl.trimEnd('/') + "/api/v1/authors?limit=" + PAGE_LIMIT, cursor)
 
-        fun booksUrl(baseUrl: String, author: String, cursor: String? = null): String =
-            page(
-                baseUrl.trimEnd('/') + "/api/v1/works?limit=" + PAGE_LIMIT +
-                    "&content_type=book&author=" + enc(author) + "&sort=title&include=" + INCLUDE,
-                cursor,
-            )
+        fun booksUrl(baseUrl: String, author: String, cursor: String? = null): String = page(
+            baseUrl.trimEnd('/') + "/api/v1/works?limit=" + PAGE_LIMIT +
+                "&content_type=book&author=" + enc(author) + "&sort=title&include=" + INCLUDE,
+            cursor,
+        )
     }
 }

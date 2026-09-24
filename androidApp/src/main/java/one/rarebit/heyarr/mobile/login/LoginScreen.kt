@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 /** UI state for the QR login screen. */
 sealed interface LoginUiState {
     data object Idle : LoginUiState
+
     /** A login has started; [qrTuple] is the `voidbind:login?…` string to render as a QR. */
     data class AwaitingScan(val qrTuple: String) : LoginUiState
     data class Approved(val user: String?) : LoginUiState
@@ -85,6 +86,7 @@ fun LoginScreen(
                     }
                 }
             }
+
             is LoginUiState.AwaitingScan -> {
                 CircularProgressIndicator()
                 if (onApproveOnThisPhone != null) {
@@ -105,6 +107,7 @@ fun LoginScreen(
                     modifier = Modifier.padding(top = 12.dp),
                 )
             }
+
             is LoginUiState.Approved -> {
                 Text("Signed in${state.user?.let { " as $it" } ?: ""}.")
             }

@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.desktop
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.desktop.books.BooksClient
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.desktop.books.BooksClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

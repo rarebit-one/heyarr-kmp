@@ -1,7 +1,6 @@
 package one.rarebit.heyarr.desktop.net
 
 import one.rarebit.heyarr.core.net.*
-
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -33,7 +32,9 @@ class JdkHttpTransport(
 ) : HttpTransport {
     @Volatile private var client: HttpClient = newClient()
 
-    override fun reset() { client = newClient() }
+    override fun reset() {
+        client = newClient()
+    }
 
     override fun get(url: String, headers: Map<String, String>): HttpResponse =
         send(baseRequest(url, headers).GET().build())

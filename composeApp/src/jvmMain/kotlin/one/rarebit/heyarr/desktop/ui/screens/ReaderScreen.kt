@@ -35,18 +35,18 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.library.Epub
 import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.core.state.Toast
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.MediaScope
-import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.Tokens
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -70,10 +70,17 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
     var book by remember(route.assetId) { mutableStateOf<Epub.Book?>(null) }
 
     LaunchedEffect(route.assetId) {
-        loading = true; error = null; unsupported = false; book = null
+        loading = true
+        error = null
+        unsupported = false
+        book = null
         val looksEpub = route.mime?.contains("epub", ignoreCase = true) == true ||
             route.filename?.endsWith(".epub", ignoreCase = true) == true
-        if (!looksEpub) { unsupported = true; loading = false; return@LaunchedEffect }
+        if (!looksEpub) {
+            unsupported = true
+            loading = false
+            return@LaunchedEffect
+        }
         val bytes = withContext(Dispatchers.IO) {
             runCatching {
                 val req = HttpRequest.newBuilder(URI.create(HeyarrApi.blobUrl(session.config.baseUrl, route.blobHash)))
@@ -82,7 +89,11 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                 resp.takeIf { it.statusCode() == 200 }?.body()
             }.getOrNull()
         }
-        if (bytes == null) { error = "Couldn't fetch this book from the library."; loading = false; return@LaunchedEffect }
+        if (bytes == null) {
+            error = "Couldn't fetch this book from the library."
+            loading = false
+            return@LaunchedEffect
+        }
         val parsed = withContext(Dispatchers.Default) { Epub.parse(bytes) }
         if (parsed == null) unsupported = true else book = parsed
         loading = false
@@ -116,26 +127,33 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                 when {
                     loading -> Centered("Opening…")
+
                     error != null -> Box(Modifier.padding(24.dp)) { Notice(error!!) }
+
                     unsupported -> Column(
-                        Modifier.fillMaxSize().padding(32.dp), verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+                        Modifier.fillMaxSize().padding(32.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text("In-app reading isn’t available for this format yet.", style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary, textAlign = TextAlign.Center)
                         Text("Open it in your default reader instead.", style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted, textAlign = TextAlign.Center)
                         PrimaryButton("Open externally", ::openExternally, icon = Icons.Rounded.MenuBook)
                     }
+
                     book != null -> {
                         val listState = rememberLazyListState()
                         LazyColumn(
-                            Modifier.fillMaxSize(), state = listState,
+                            Modifier.fillMaxSize(),
+                            state = listState,
                             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 28.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
                             book!!.chapters.forEachIndexed { i, ch ->
                                 item(key = "h$i") {
                                     Text(
-                                        ch.title, style = MaterialTheme.typography.titleLarge, color = accent,
+                                        ch.title,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = accent,
                                         modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth().padding(top = if (i == 0) 0.dp else 28.dp, bottom = 10.dp),
                                     )
                                 }

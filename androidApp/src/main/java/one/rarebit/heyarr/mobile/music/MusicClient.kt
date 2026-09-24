@@ -1,10 +1,10 @@
 package one.rarebit.heyarr.mobile.music
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.catalog.CatalogClient
-import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.mobile.catalog.CatalogClient
+import one.rarebit.heyarr.mobile.library.Work
 import java.net.URLEncoder
 
 /** One artist: a grouping over music works keyed by name (heyarr-core ADR-0075), never an entity. */

@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.discover.DiscoverClient
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.discover.DiscoverClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -13,7 +13,9 @@ private class PostTransport(private val response: HttpResponse) : HttpTransport 
     var lastUrl: String? = null
     override fun get(url: String, headers: Map<String, String>) = HttpResponse(405, "")
     override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
-        lastUrl = url; lastBody = body; return response
+        lastUrl = url
+        lastBody = body
+        return response
     }
 }
 

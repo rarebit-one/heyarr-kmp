@@ -44,7 +44,9 @@ class MembershipOpsTest {
 
     @Test fun theOpsAreRealAndEvaluate() {
         val view = Membership.evaluate(usr, listOf(addA, addB, addC), now + 30)
-        assertTrue(view.isMember(a.id)); assertTrue(view.isMember(b.id)); assertTrue(view.isMember(c.id))
+        assertTrue(view.isMember(a.id))
+        assertTrue(view.isMember(b.id))
+        assertTrue(view.isMember(c.id))
         assertTrue(view.rejected.isEmpty())
     }
 
