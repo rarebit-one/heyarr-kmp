@@ -60,8 +60,7 @@ class MpvPlayer(
             "mpv was not found. Install it (e.g. `pacman -S mpv`) and make sure it is on your PATH."
 
         /** Single-URL argv — the one-track case, kept for callers and tests that pass a lone URL. */
-        fun argv(command: String, url: String, token: String): List<String> =
-            argv(command, listOf(url), token)
+        fun argv(command: String, url: String, token: String): List<String> = argv(command, listOf(url), token)
 
         /**
          * The exact argv [playAll] spawns — pure, so a test asserts it without launching.

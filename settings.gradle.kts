@@ -60,7 +60,7 @@ include(":composeApp")
 // result as the `hasAndroidSdk` extra property (see :core/:ui), so the guards cannot drift.
 val hasAndroidSdk =
     System.getenv("ANDROID_HOME") != null ||
-    System.getenv("ANDROID_SDK_ROOT") != null ||
-    file("local.properties").takeIf { it.exists() }?.readText()?.contains("sdk.dir") == true
+        System.getenv("ANDROID_SDK_ROOT") != null ||
+        file("local.properties").takeIf { it.exists() }?.readText()?.contains("sdk.dir") == true
 if (hasAndroidSdk) include(":androidApp")
 gradle.beforeProject { extensions.extraProperties["hasAndroidSdk"] = hasAndroidSdk }

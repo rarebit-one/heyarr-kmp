@@ -120,7 +120,10 @@ internal class MacKeychainBackend(
     /** A mutable CoreFoundation dictionary that tracks and releases the CF values it created. */
     private class CFDict {
         val ref: Pointer = CF.CFDictionaryCreateMutable(
-            null, NativeLong(0), CF_DICT_KEY_CALLBACKS, CF_DICT_VALUE_CALLBACKS,
+            null,
+            NativeLong(0),
+            CF_DICT_KEY_CALLBACKS,
+            CF_DICT_VALUE_CALLBACKS,
         ) ?: error("CFDictionaryCreateMutable returned null")
 
         private val owned = ArrayList<Pointer>()

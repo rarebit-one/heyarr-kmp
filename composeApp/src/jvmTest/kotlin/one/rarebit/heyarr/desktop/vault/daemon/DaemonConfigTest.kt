@@ -52,7 +52,7 @@ class DaemonConfigTest {
                 args = arrayOf("--folder", "/from/args"),
                 env = { env[it] },
             )
-            assertEquals("/from/args", c.folder)   // arg beats env
+            assertEquals("/from/args", c.folder) // arg beats env
             assertEquals("https://env", c.controller) // env beats file
         } finally {
             dir.toFile().deleteRecursively()

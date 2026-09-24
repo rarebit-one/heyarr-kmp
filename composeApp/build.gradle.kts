@@ -104,7 +104,6 @@ compose.desktop {
     }
 }
 
-
 // Off-screen screenshots of every screen with fixture data — the "show the running app"
 // artefact for a headless container. Renders through Compose's ImageComposeScene (no
 // display needed) into build/screenshots/*.png.

@@ -8,8 +8,7 @@ package one.rarebit.heyarr.mobile.personalstate
  * heyarr-core's `internal/deviceauth` uses for the voidbind-go membership vectors.
  */
 internal object Vectors {
-    fun load(name: String): String =
-        Vectors::class.java.getResourceAsStream("/personalstate/vectors/$name")
-            ?.readBytes()?.decodeToString()
-            ?: error("missing parity vector resource: $name")
+    fun load(name: String): String = Vectors::class.java.getResourceAsStream("/personalstate/vectors/$name")
+        ?.readBytes()?.decodeToString()
+        ?: error("missing parity vector resource: $name")
 }

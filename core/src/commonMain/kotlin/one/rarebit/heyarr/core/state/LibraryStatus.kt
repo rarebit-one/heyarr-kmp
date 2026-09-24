@@ -15,7 +15,8 @@ enum class LibraryStatus(val label: String) {
     IN_LIBRARY("In library"),
     WANTED("Wanted"),
     MISSING("Missing"),
-    NOT_TRACKED("Not tracked");
+    NOT_TRACKED("Not tracked"),
+    ;
 
     companion object {
         private val SATISFIED = setOf("AVAILABLE", "FULLY_SATISFIED", "SATISFIED")
@@ -53,13 +54,12 @@ class LibraryIndex(val items: List<DesiredItem>) {
     fun wantsFor(workId: String): List<DesiredItem> = byWork[workId].orEmpty()
 
     /** An optimistic copy that shows [workId] as wanted before the server confirms. */
-    fun withPendingWant(workId: String, qualityProfileId: String?): LibraryIndex =
-        LibraryIndex(
-            items + DesiredItem(
-                id = "pending:$workId", workId = workId, qualityProfileId = qualityProfileId, monitor = true, reason = null,
-                state = "SELECTED", phase = "pending", content = null, placement = null, detail = "Sending…", updatedAt = null,
-            ),
-        )
+    fun withPendingWant(workId: String, qualityProfileId: String?): LibraryIndex = LibraryIndex(
+        items + DesiredItem(
+            id = "pending:$workId", workId = workId, qualityProfileId = qualityProfileId, monitor = true, reason = null,
+            state = "SELECTED", phase = "pending", content = null, placement = null, detail = "Sending…", updatedAt = null,
+        ),
+    )
 
     companion object {
         val EMPTY = LibraryIndex(emptyList())

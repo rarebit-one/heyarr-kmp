@@ -22,16 +22,17 @@ object WorksJson {
 
     private val TITLE_KEYS = listOf("title", "name", "sort_title")
     private val KIND_KEYS = listOf("content_type", "kind", "type", "media_type")
+
     // Playback handles, tolerantly read when a browse row inlines a primary asset.
     private val HASH_KEYS = listOf("blob_hash", "content_hash", "hash")
     private val MIME_KEYS = listOf("mime", "mime_type")
     private val ENVELOPE_KEYS = listOf("items", "works", "data")
+
     // The string attributes worth carrying to a detail screen (a provider's synopsis, the creator, a genre).
     private val ATTRIBUTE_KEYS = listOf("overview", "synopsis", "description", "summary", "author", "artist", "narrator", "genre", "runtime", "pages", "album", "series", "host")
 
     /** Parse a works-list response body into [Work]s, skipping any element missing an id. */
-    fun parse(body: String): List<Work> =
-        JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
+    fun parse(body: String): List<Work> = JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
 
     /** Parse one `Work` object body (`GET /works/{id}`), or null if it has no id. */
     fun parseOne(body: String): Work? = JsonScan.rootObject(body)?.let { parseObject(it) }

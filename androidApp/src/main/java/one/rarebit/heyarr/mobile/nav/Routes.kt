@@ -17,11 +17,17 @@ sealed interface Route {
 
     // ── Top level (the bottom bar / rail): Home · Discover · Search · Library · Missing · Cast · Settings ──
     @Serializable data object Home : Route
+
     @Serializable data object Discover : Route
+
     @Serializable data object Search : Route
+
     @Serializable data object Library : Route
+
     @Serializable data object Missing : Route
+
     @Serializable data object Cast : Route
+
     @Serializable data object Settings : Route
 
     /**
@@ -34,16 +40,20 @@ sealed interface Route {
     }
 
     // ── Settings' sub-screens ────────────────────────────────────────────────────
+
     /** The connection telemetry sheet (`/session`, `/providers`, `/capabilities`, peers, libraries, jobs). */
     @Serializable data object Telemetry : Route
+
     /** This phone's Voidbind device enrolment. */
     @Serializable data object Device : Route
 
     // ── Playlists (encrypted personal state, decrypted on this device) ───────────
     @Serializable data object Playlists : Route
+
     @Serializable data class Playlist(val spaceId: String, val title: String? = null) : Route
 
     // ── Full-screen ──────────────────────────────────────────────────────────────
+
     /** The player. Argless: the item lives in the video session or the audio queue. */
     @Serializable data object Player : Route
 

@@ -9,16 +9,16 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
-import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.core.feeds.FollowedSource
+import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.core.state.SearchFilter
 import one.rarebit.heyarr.core.state.SearchGrouping
 import one.rarebit.heyarr.core.state.SearchRow
 import one.rarebit.heyarr.core.state.SearchSection
 import one.rarebit.heyarr.core.state.Segment
-import one.rarebit.heyarr.mobile.search.asFeedSource
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
+import one.rarebit.heyarr.mobile.search.asFeedSource
 
 /**
  * Universal search: one query, every media kind at once — ported from heyarr-desktop's
@@ -58,13 +58,28 @@ class SearchController(
     fun updateQuery(q: String) {
         query = q
         debounce?.cancel()
-        if (q.isBlank()) { cancelInFlight(); segments = emptyMap(); episodes = Segment.Loaded(emptyList()); sources = Segment.Loaded(emptyList()); return }
-        debounce = scope.launch { delay(debounceMs); run(q) }
+        if (q.isBlank()) {
+            cancelInFlight()
+            segments = emptyMap()
+            episodes = Segment.Loaded(emptyList())
+            sources = Segment.Loaded(emptyList())
+            return
+        }
+        debounce = scope.launch {
+            delay(debounceMs)
+            run(q)
+        }
     }
 
-    fun submit() { debounce?.cancel(); if (query.isNotBlank()) run(query) }
+    fun submit() {
+        debounce?.cancel()
+        if (query.isNotBlank()) run(query)
+    }
 
-    private fun cancelInFlight() { inFlight.forEach { it.cancel() }; inFlight = emptyList() }
+    private fun cancelInFlight() {
+        inFlight.forEach { it.cancel() }
+        inFlight = emptyList()
+    }
 
     private fun run(q: String) {
         val a = api()
@@ -92,8 +107,11 @@ class SearchController(
         }
         jobs += scope.launch {
             val list = followed ?: fetch { a.followed().map { it.asFeedSource() } }.getOrNull()?.also { followed = it }
-            val seg = if (list == null) Segment.Failed("followed sources unavailable")
-            else Segment.Loaded(SearchGrouping.matchSources(q, list))
+            val seg = if (list == null) {
+                Segment.Failed("followed sources unavailable")
+            } else {
+                Segment.Loaded(SearchGrouping.matchSources(q, list))
+            }
             if (gen == generation) sources = seg
         }
         inFlight = jobs
@@ -103,5 +121,7 @@ class SearchController(
         withContext(Dispatchers.IO) { runCatching(block) }.onFailure { if (it is McpTransportException) onTransportFailure(it) }
 
     /** Forget the cached followed list (after a follow/unfollow). */
-    fun invalidateSources() { followed = null }
+    fun invalidateSources() {
+        followed = null
+    }
 }

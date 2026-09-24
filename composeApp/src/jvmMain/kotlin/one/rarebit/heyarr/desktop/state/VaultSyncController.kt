@@ -110,7 +110,10 @@ class VaultSyncController(
 
     /** Wake the loop for an immediate pass (e.g. a manual "Sync now" button) without waiting for the tick. */
     fun syncNow() {
-        if (!isRunning) { start(); return }
+        if (!isRunning) {
+            start()
+            return
+        }
         scope.launch { runPass() }
     }
 

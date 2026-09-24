@@ -41,30 +41,36 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import one.rarebit.heyarr.mobile.catalog.ContinueEntry
 import one.rarebit.heyarr.core.heyarr.Candidate
 import one.rarebit.heyarr.core.heyarr.DesiredItem
-import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
-import one.rarebit.heyarr.mobile.heyarr.McpResult
-import one.rarebit.heyarr.mobile.library.Season
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.library.Variants
-import one.rarebit.heyarr.mobile.library.Work
-import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.core.mcp.ExternalId
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.Replica
 import one.rarebit.heyarr.core.mcp.Satisfaction
+import one.rarebit.heyarr.core.state.ExternalEpisode
+import one.rarebit.heyarr.core.state.ExternalMeta
+import one.rarebit.heyarr.core.state.LibraryStatus
+import one.rarebit.heyarr.core.state.MetaKey
+import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.catalog.ContinueEntry
+import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
+import one.rarebit.heyarr.mobile.heyarr.McpResult
+import one.rarebit.heyarr.mobile.library.Season
+import one.rarebit.heyarr.mobile.library.Work
+import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.music.Tracks
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.personalstate.ItemRef
@@ -72,21 +78,13 @@ import one.rarebit.heyarr.mobile.playback.QueueEntry
 import one.rarebit.heyarr.mobile.reader.ReaderFormat
 import one.rarebit.heyarr.mobile.search.FollowedItem
 import one.rarebit.heyarr.mobile.state.AppSession
-import one.rarebit.heyarr.core.state.ExternalEpisode
-import one.rarebit.heyarr.core.state.ExternalMeta
-import one.rarebit.heyarr.core.state.LibraryStatus
-import one.rarebit.heyarr.core.state.MetaKey
-import one.rarebit.heyarr.core.state.Toast
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.MediaScope
-import one.rarebit.heyarr.ui.theme.MediaThemes
-import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
+import one.rarebit.heyarr.mobile.ui.components.Hero
+import one.rarebit.heyarr.mobile.ui.components.HeroSkeleton
+import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
-import one.rarebit.heyarr.mobile.ui.components.Hero
-import one.rarebit.heyarr.mobile.ui.components.HeroSkeleton
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
@@ -94,7 +92,9 @@ import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.Skeleton
 import one.rarebit.heyarr.ui.components.focusRing
-import one.rarebit.heyarr.mobile.ui.components.rememberCover
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.MediaThemes
 
 /** The two faces of a work: what you came to watch, and the tooling that keeps it that way. */
 enum class DetailTab(val label: String) { WATCH("Watch"), CURATE("Curate") }
@@ -114,13 +114,16 @@ class DetailState(val workId: String) {
     var candidates by mutableStateOf<Map<String, List<Candidate>>>(emptyMap())
     var replicas by mutableStateOf<McpResult<List<Replica>>?>(null)
     var renderers by mutableStateOf<List<Renderer>?>(null)
+
     /** The asset a "Play on…" picker is open for, if any. */
     var castAssetId by mutableStateOf<String?>(null)
     var busy by mutableStateOf<String?>(null)
     var wantMenu by mutableStateOf(false)
+
     /** What a public source said about this work (cover, synopsis, TVmaze id) — labelled as external wherever shown. */
     var external by mutableStateOf<ExternalMeta?>(null)
     var externalEpisodes by mutableStateOf<List<ExternalEpisode>>(emptyList())
+
     /** Works the scanner minted for the same title's download folders (heyarr-core#470), folded under this one. */
     var variants by mutableStateOf<List<Work>>(emptyList())
 }
@@ -158,7 +161,8 @@ internal fun AssetPersonalActions(personal: DetailPersonal, assetId: String, tit
     IconButtonRound(
         if (starred) Icons.Rounded.Star else Icons.Rounded.StarBorder,
         if (starred) "Unstar $title" else "Star $title",
-        { personal.onToggleStar(entryId) }, size = 36.dp,
+        { personal.onToggleStar(entryId) },
+        size = 36.dp,
     )
     IconButtonRound(Icons.Rounded.PlaylistAdd, "Add $title to a playlist", { personal.onAddToPlaylist(entryId) }, size = 36.dp)
 }
@@ -181,10 +185,14 @@ fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, p
 
     fun load() {
         val a = session.api
-        state.loading = true; state.detailError = null
+        state.loading = true
+        state.detailError = null
         scope.launch {
             session.io { a.work(route.workId) }.fold(
-                onSuccess = { d -> state.detail = d; state.detailError = if (d == null) "This work no longer exists." else null },
+                onSuccess = { d ->
+                    state.detail = d
+                    state.detailError = if (d == null) "This work no longer exists." else null
+                },
                 onFailure = { state.detailError = it.message },
             )
             state.loading = false
@@ -210,7 +218,10 @@ fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, p
             scope.launch { session.io { a.candidates(w.id) }.onSuccess { c -> state.candidates = state.candidates + (w.id to (c?.candidates ?: emptyList())) } }
         }
     }
-    LaunchedEffect(route.workId) { if (route.curate) state.tab = DetailTab.CURATE; if (state.detail == null) load() }
+    LaunchedEffect(route.workId) {
+        if (route.curate) state.tab = DetailTab.CURATE
+        if (state.detail == null) load()
+    }
     LaunchedEffect(wants.map { it.id }) { loadWants() }
     LaunchedEffect(detail?.blobHash) {
         val hash = detail?.blobHash ?: return@LaunchedEffect
@@ -273,7 +284,8 @@ private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -> Unit) {
                     .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = { onSelect(t) })
                     .semantics { contentDescription = t.label + if (active) ", selected" else "" }
                     .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Icon(if (t == DetailTab.WATCH) Icons.Rounded.PlayArrow else Icons.Rounded.Build, contentDescription = null, tint = if (active) theme.accentGradientEnd else Tokens.textMuted, modifier = Modifier.size(14.dp))
                 Text(t.label.uppercase(), style = MaterialTheme.typography.labelLarge, color = if (active) Tokens.textPrimary else Tokens.textMuted)
@@ -316,14 +328,19 @@ private fun DetailHero(session: AppSession, work: Work, type: MediaType, wants: 
                 when {
                     cont?.blobHash != null && type != MediaType.BOOK && type != MediaType.MUSIC && type != MediaType.AUDIOBOOK ->
                         PrimaryButton("Continue", { play.playVideo(work, cont.assetId, cont.blobHash, cont.mime ?: work.mime, "${work.title} — ${cont.subtitle ?: cont.editionLabel ?: ""}".trimEnd(' ', '—'), cont.positionSeconds, queueOf(work, seasons, session), art, emptyList()) }, icon = Icons.Rounded.PlayArrow, enabled = state.busy == null)
+
                     type == MediaType.SERIES && first != null ->
                         PrimaryButton("Play ${first.code ?: ""}".trim(), { play.playVideo(work, first.asset.id, first.asset.blobHash!!, first.asset.mime ?: work.mime, Series.playTitle(work, first), null, queueOf(work, seasons, session), art, first.subtitles) }, icon = Icons.Rounded.PlayArrow, enabled = state.busy == null)
+
                     (type == MediaType.MUSIC || type == MediaType.AUDIOBOOK) && audioTracks.isNotEmpty() ->
                         PrimaryButton(theme.ctaLabel, { play.playAudio(work, audioTracks, 0) }, icon = if (type == MediaType.AUDIOBOOK) Icons.Rounded.Headphones else Icons.Rounded.PlayArrow)
+
                     type == MediaType.BOOK && readable != null ->
                         PrimaryButton("Read", { play.read(work, readable) }, icon = Icons.Rounded.MenuBook)
+
                     type == MediaType.BOOK && audioTracks.isNotEmpty() ->
                         PrimaryButton("Listen", { play.playAudio(work, audioTracks, 0) }, icon = Icons.Rounded.Headphones)
+
                     hash == null && wants.isNotEmpty() -> PrimaryButton("Look for it", {
                         val w = wants.first()
                         scope.launch {
@@ -332,9 +349,12 @@ private fun DetailHero(session: AppSession, work: Work, type: MediaType, wants: 
                             state.busy = null
                         }
                     }, icon = Icons.Rounded.Search, enabled = state.busy == null)
+
                     hash == null -> PrimaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add, enabled = status == LibraryStatus.NOT_TRACKED)
+
                     // Reached only past the `hash == null` branches above.
                     type == MediaType.FEED || type == MediaType.PODCAST -> PrimaryButton(theme.ctaLabel, { play.playVideo(work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList()) }, icon = Icons.Rounded.OpenInNew, enabled = state.busy == null)
+
                     else -> PrimaryButton(theme.ctaLabel, { play.playVideo(work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList()) }, icon = Icons.Rounded.PlayArrow, enabled = state.busy == null)
                 }
             },
@@ -362,7 +382,12 @@ private fun CastPicker(session: AppSession, state: DetailState) {
         state.castAssetId = null
         scope.launch {
             state.busy = "cast"
-            session.io { session.api.playHere(assetId, renderer.name, renderer.udn) }.onSuccess { r -> when (r) { is McpResult.Ok -> session.toast(Toast.Kind.SUCCESS, "Playing on ${renderer.name}"); is McpResult.Refused -> session.refused(r) } }
+            session.io { session.api.playHere(assetId, renderer.name, renderer.udn) }.onSuccess { r ->
+                when (r) {
+                    is McpResult.Ok -> session.toast(Toast.Kind.SUCCESS, "Playing on ${renderer.name}")
+                    is McpResult.Refused -> session.refused(r)
+                }
+            }
             state.busy = null
         }
     }

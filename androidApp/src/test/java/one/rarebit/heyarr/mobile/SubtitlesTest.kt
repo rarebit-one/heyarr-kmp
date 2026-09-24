@@ -44,7 +44,7 @@ class SubtitlesTest {
 
     @Test fun languageTagReadsTheFilenameSuffix() {
         assertEquals("en", Subtitles.languageTag("Show.S04E01.en.srt"))
-        assertEquals("en", Subtitles.languageTag("Show.S04E01.eng.srt"))       // 3-letter → 2
+        assertEquals("en", Subtitles.languageTag("Show.S04E01.eng.srt")) // 3-letter → 2
         assertEquals("en", Subtitles.languageTag("Show.S04E01.en.forced.srt"))
         assertEquals("fr", Subtitles.languageTag("Show.fra.vtt"))
         // No language tag, or a non-language trailing token → null (not a false code).

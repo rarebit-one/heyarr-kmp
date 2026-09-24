@@ -1,10 +1,10 @@
 package one.rarebit.heyarr.desktop
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.desktop.library.LibraryClient
-import one.rarebit.heyarr.desktop.library.WorksJson
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.desktop.library.LibraryClient
+import one.rarebit.heyarr.desktop.library.WorksJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

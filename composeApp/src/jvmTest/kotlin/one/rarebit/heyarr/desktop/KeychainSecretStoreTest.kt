@@ -28,7 +28,9 @@ class KeychainSecretStoreTest {
 
     private val tmp: File = Files.createTempDirectory("heyarr-keychain-test").toFile()
 
-    @AfterTest fun cleanup() { tmp.deleteRecursively() }
+    @AfterTest fun cleanup() {
+        tmp.deleteRecursively()
+    }
 
     /** An in-memory [KeychainBackend] standing in for macOS Keychain / libsecret. */
     private class FakeKeychain(
@@ -44,7 +46,9 @@ class KeychainSecretStoreTest {
             return true
         }
         override fun retrieve(account: String): ByteArray? = items[account]?.copyOf()
-        override fun remove(account: String) { items.remove(account) }
+        override fun remove(account: String) {
+            items.remove(account)
+        }
     }
 
     private fun sealed() = DesktopSecretStore(File(tmp, "sealed"), File(tmp, "device.key"))
@@ -82,7 +86,7 @@ class KeychainSecretStoreTest {
     @Test fun unseal_migrates_a_legacy_sealed_secret_into_the_keychain_once() {
         val legacy = sealed()
         val seed = "legacy-device-seed".encodeToByteArray()
-        legacy.seal("sign", seed)                       // enrolled under #35, sealed file only
+        legacy.seal("sign", seed) // enrolled under #35, sealed file only
         assertTrue(legacy.exists("sign"))
 
         val backend = FakeKeychain()

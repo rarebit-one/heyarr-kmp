@@ -25,7 +25,10 @@ object JsonEscapes {
         }
         sb.append(
             when (n) {
-                'n' -> '\n'; 't' -> '\t'; 'r' -> '\r'; 'b' -> '\b'
+                'n' -> '\n'
+                't' -> '\t'
+                'r' -> '\r'
+                'b' -> '\b'
                 else -> n
             },
         )

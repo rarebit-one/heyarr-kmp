@@ -23,32 +23,32 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import one.rarebit.heyarr.core.feeds.FollowedSource
-import one.rarebit.heyarr.core.heyarr.ContinueEntry
-import one.rarebit.heyarr.ui.theme.CardAspect as Aspect
-import one.rarebit.heyarr.desktop.library.Work
-import one.rarebit.heyarr.core.mcp.SearchHit
-import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
-import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.core.feeds.FollowedSource
+import one.rarebit.heyarr.core.heyarr.ContinueEntry
+import one.rarebit.heyarr.core.mcp.SearchHit
+import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.state.LibraryStatus
-import one.rarebit.heyarr.desktop.ui.components.rememberCover
-import one.rarebit.heyarr.ui.theme.CardAspect
-import one.rarebit.heyarr.ui.theme.MediaScope
-import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.ui.theme.Tokens
+import one.rarebit.heyarr.desktop.library.Work
+import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.ui.Route
-import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.desktop.ui.components.Hero
 import one.rarebit.heyarr.desktop.ui.components.HeroSkeleton
 import one.rarebit.heyarr.desktop.ui.components.MediaCard
+import one.rarebit.heyarr.desktop.ui.components.Rail
+import one.rarebit.heyarr.desktop.ui.components.rememberCover
+import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
-import one.rarebit.heyarr.desktop.ui.components.Rail
 import one.rarebit.heyarr.ui.components.RailState
 import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.theme.CardAspect
+import one.rarebit.heyarr.ui.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.ui.theme.Tokens
+import one.rarebit.heyarr.ui.theme.CardAspect as Aspect
 
 /** Everything the Home screen shows, loaded rail by rail so a slow one never blanks the page. */
 class HomeState {
@@ -85,12 +85,17 @@ fun HomeScreen(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, o
                     state.recent = RailState.Loaded(works.filter { it.kind != "document" }.take(24))
                     state.spotlight = RailState.Loaded(works.filter { it.kind != "document" && it.kind != "unknown" }.take(6))
                 },
-                onFailure = { state.recent = RailState.Failed(it.message ?: "failed"); state.spotlight = RailState.Failed(it.message ?: "failed") },
+                onFailure = {
+                    state.recent = RailState.Failed(it.message ?: "failed")
+                    state.spotlight = RailState.Failed(it.message ?: "failed")
+                },
             )
         }
-        for (t in MediaType.SEARCHABLE) scope.launch {
-            val r = session.io { a.listByType(t, limit = 40) }.fold(onSuccess = { RailState.Loaded(it.works) }, onFailure = { RailState.Failed(it.message ?: "failed") })
-            state.byType = state.byType + (t to r)
+        for (t in MediaType.SEARCHABLE) {
+            scope.launch {
+                val r = session.io { a.listByType(t, limit = 40) }.fold(onSuccess = { RailState.Loaded(it.works) }, onFailure = { RailState.Failed(it.message ?: "failed") })
+                state.byType = state.byType + (t to r)
+            }
         }
         // Missing / upgrades / following / continue are enrolled-only, personal surfaces —
         // a guest cannot read them (they 403). Skip the calls and leave the rails empty so
@@ -121,20 +126,24 @@ fun HomeScreen(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, o
 
     LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 32.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(36.dp)) {
         item { SpotlightBlock(session, state, onOpen, onWant) }
-        if (session.isGuest) item {
-            Notice(
-                "Browsing as a guest — watch and listen freely, no account needed.",
-                detail = "Sign in to save your place, keep playlists, and want or follow things. Open Settings to sign in.",
-                icon = Icons.Rounded.Info,
-                tone = Tokens.slate,
-            )
+        if (session.isGuest) {
+            item {
+                Notice(
+                    "Browsing as a guest — watch and listen freely, no account needed.",
+                    detail = "Sign in to save your place, keep playlists, and want or follow things. Open Settings to sign in.",
+                    icon = Icons.Rounded.Info,
+                    tone = Tokens.slate,
+                )
+            }
         }
         val cont = state.continueRail
-        if (cont !is RailState.Loaded || cont.items.isNotEmpty()) item {
-            Rail("Continue", cont, subtitle = "Unfinished playback sessions this node recorded — not history, just where a device stopped", emptyText = "", skeletonAspect = Aspect.SQUARE, skeletonWidth = 240.dp, key = { it.sessionId }) { e ->
-                val type = MediaType.from(e.contentType)
-                val art by rememberCover(session, type, e.title, e.artworkPath, e.year).let { c -> androidx.compose.runtime.derivedStateOf { c.value.bitmap } }
-                MediaCard(e.title, type, onOpen = { onOpen(Route.Detail(e.workId, type, e.title, from = "Home")) }, subtitle = listOfNotNull(e.editionLabel, e.progressLabel).joinToString("  ·  "), meta = listOf(e.state), artwork = art, status = session.index.statusOf(e.workId), width = 240.dp, progress = e.fraction, aspectOverride = Aspect.SQUARE)
+        if (cont !is RailState.Loaded || cont.items.isNotEmpty()) {
+            item {
+                Rail("Continue", cont, subtitle = "Unfinished playback sessions this node recorded — not history, just where a device stopped", emptyText = "", skeletonAspect = Aspect.SQUARE, skeletonWidth = 240.dp, key = { it.sessionId }) { e ->
+                    val type = MediaType.from(e.contentType)
+                    val art by rememberCover(session, type, e.title, e.artworkPath, e.year).let { c -> androidx.compose.runtime.derivedStateOf { c.value.bitmap } }
+                    MediaCard(e.title, type, onOpen = { onOpen(Route.Detail(e.workId, type, e.title, from = "Home")) }, subtitle = listOfNotNull(e.editionLabel, e.progressLabel).joinToString("  ·  "), meta = listOf(e.state), artwork = art, status = session.index.statusOf(e.workId), width = 240.dp, progress = e.fraction, aspectOverride = Aspect.SQUARE)
+                }
             }
         }
         item { WorkRail("Recently added", state.recent, session, onOpen, onWant, trailing = { GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh) }) }
@@ -175,7 +184,9 @@ fun HomeScreen(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, o
 private fun SpotlightBlock(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, onWant: (String, String, MediaType) -> Unit) {
     when (val s = state.spotlight) {
         RailState.Loading -> HeroSkeleton()
+
         is RailState.Failed -> Notice("Couldn't load the library: ${s.message}", tone = Tokens.danger)
+
         is RailState.Loaded -> {
             var i by remember(s.items) { mutableStateOf(0) }
             val work = s.items.getOrNull(i)

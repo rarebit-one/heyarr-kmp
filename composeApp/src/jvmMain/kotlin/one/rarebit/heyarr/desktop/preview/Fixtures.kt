@@ -128,7 +128,11 @@ object Fixtures {
         val w = works.firstOrNull { JsonScan.stringField(it, "id") == id } ?: return "{}"
         val hasFile = id in setOf(YELLOWSTONE, "w-dune", "w-kid-a", "w-piranesi")
         val type = JsonScan.stringField(w, "content_type")
-        val (mime, size) = when (type) { "book" -> "application/epub+zip" to 1_842_000L; "music" -> "audio/flac" to 412_000_000L; else -> "video/mp4" to 2_986_000_000L }
+        val (mime, size) = when (type) {
+            "book" -> "application/epub+zip" to 1_842_000L
+            "music" -> "audio/flac" to 412_000_000L
+            else -> "video/mp4" to 2_986_000_000L
+        }
         val primary = if (hasFile) """{"asset_id":"01a032b7-8f86-7a18-a130-1e030d633f69","edition_id":"e1","blob_hash":"$HASH","mime":"$mime","size":$size,"content_url":"/api/v1/blobs/$HASH/content"}""" else "null"
         return w.dropLast(1) + ""","external_ids":{},"primary_asset":$primary}"""
     }

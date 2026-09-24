@@ -59,7 +59,10 @@ class OpenExternallyTest {
         }
         val opened = ArrayList<File>()
         val fakeOpener = object : ExternalOpener {
-            override fun open(file: File): OpenResult { opened += file; return OpenResult.Opened }
+            override fun open(file: File): OpenResult {
+                opened += file
+                return OpenResult.Opened
+            }
         }
 
         val status = OpenExternally(fakeDownloader, fakeOpener).open(
@@ -84,7 +87,10 @@ class OpenExternallyTest {
         }
         var openCalled = false
         val fakeOpener = object : ExternalOpener {
-            override fun open(file: File): OpenResult { openCalled = true; return OpenResult.Opened }
+            override fun open(file: File): OpenResult {
+                openCalled = true
+                return OpenResult.Opened
+            }
         }
         val status = OpenExternally(fakeDownloader, fakeOpener)
             .open("https://h.example", "blake3:${"a".repeat(64)}", "s", null, "text/html", "Article")

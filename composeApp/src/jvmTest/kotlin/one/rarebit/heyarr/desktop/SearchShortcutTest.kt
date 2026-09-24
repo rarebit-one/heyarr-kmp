@@ -1,10 +1,10 @@
 package one.rarebit.heyarr.desktop
 
+import one.rarebit.heyarr.desktop.ui.dispatchSearchShortcut
 import java.awt.Canvas
 import java.awt.event.InputEvent
 import java.awt.event.KeyEvent
 import kotlin.test.*
-import one.rarebit.heyarr.desktop.ui.dispatchSearchShortcut
 
 class SearchShortcutTest {
     private val source = Canvas() // No window, native peer or Compose focus owner.
@@ -23,8 +23,13 @@ class SearchShortcutTest {
 
     @Test fun reservedModifiersOrdinaryTypingAndModalDialogsDoNotOpenSearch() {
         val ctrl = InputEvent.CTRL_DOWN_MASK
-        for (modifiers in listOf(0, InputEvent.META_DOWN_MASK, ctrl or InputEvent.META_DOWN_MASK,
-            ctrl or InputEvent.ALT_DOWN_MASK, ctrl or InputEvent.SHIFT_DOWN_MASK)) {
+        for (modifiers in listOf(
+            0,
+            InputEvent.META_DOWN_MASK,
+            ctrl or InputEvent.META_DOWN_MASK,
+            ctrl or InputEvent.ALT_DOWN_MASK,
+            ctrl or InputEvent.SHIFT_DOWN_MASK,
+        )) {
             val key = event(KeyEvent.KEY_PRESSED, modifiers)
             assertFalse(dispatchSearchShortcut(key, true) { fail("Unexpected search for modifiers=$modifiers") })
             assertFalse(key.isConsumed)

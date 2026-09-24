@@ -25,18 +25,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.core.heyarr.ProviderInfo
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
-import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.desktop.state.rememberArtwork
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.ui.theme.Tokens
+import one.rarebit.heyarr.desktop.heyarr.McpResult
+import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.desktop.state.rememberArtwork
 import one.rarebit.heyarr.desktop.ui.components.MediaRow
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.theme.Tokens
 
 /** A discovery hit the user chose to want: the sheet opens by title with the year and type filled in. */
 typealias WantByTitle = (title: String, year: Int?, type: MediaType) -> Unit
@@ -62,7 +62,9 @@ fun DiscoverScreen(session: AppSession, state: DiscoverState, onWantTitle: WantB
     LaunchedEffect(session.generation) {
         if (state.generation != session.generation) {
             state.generation = session.generation
-            state.result = null; state.asked = null; state.providers = null
+            state.result = null
+            state.asked = null
+            state.providers = null
             val a = session.api ?: return@LaunchedEffect
             session.io { a.providers() }.onSuccess { state.providers = it }
         }
@@ -70,8 +72,12 @@ fun DiscoverScreen(session: AppSession, state: DiscoverState, onWantTitle: WantB
     fun ask() {
         val a = session.api ?: return
         val q = state.query.trim().ifBlank { return }
-        state.busy = true; state.asked = q
-        scope.launch { state.result = session.io { a.discover(q) }.getOrNull(); state.busy = false }
+        state.busy = true
+        state.asked = q
+        scope.launch {
+            state.result = session.io { a.discover(q) }.getOrNull()
+            state.busy = false
+        }
     }
 
     Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {

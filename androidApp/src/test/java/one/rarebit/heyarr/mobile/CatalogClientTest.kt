@@ -1,10 +1,10 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.catalog.Artwork
-import one.rarebit.heyarr.mobile.catalog.CatalogClient
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.catalog.Artwork
+import one.rarebit.heyarr.mobile.catalog.CatalogClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -15,7 +15,8 @@ private class WorksTransport(private val response: HttpResponse) : HttpTransport
     var lastUrl: String? = null
     var lastAuth: String? = null
     override fun get(url: String, headers: Map<String, String>): HttpResponse {
-        lastUrl = url; lastAuth = headers["Authorization"]
+        lastUrl = url
+        lastAuth = headers["Authorization"]
         return if (url.contains("/api/v1/works")) response else HttpResponse(404, "")
     }
     override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(405, "")

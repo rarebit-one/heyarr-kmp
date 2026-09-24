@@ -27,6 +27,7 @@ class OpenExternally(
         val ext = MediaExt.forNameAndMime(filename, mime)
         return when (val dl = downloader.download(baseUrl, blobHash, token, ext)) {
             is DownloadResult.Failed -> dl.message
+
             is DownloadResult.Downloaded -> when (val op = opener.open(dl.file)) {
                 is OpenResult.Opened -> "Opened “$displayName” in your default app."
                 is OpenResult.Failed -> op.message

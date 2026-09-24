@@ -15,10 +15,9 @@ internal data class PlayChange(
     val tag: String = "",
     val at: ULong = 0UL,
 ) {
-    fun encode(): String =
-        "{\"ItemID\":${PsJson.goJsonString(itemId)}" +
-            ",\"Tag\":${PsJson.goJsonString(tag)}" +
-            ",\"At\":$at}"
+    fun encode(): String = "{\"ItemID\":${PsJson.goJsonString(itemId)}" +
+        ",\"Tag\":${PsJson.goJsonString(tag)}" +
+        ",\"At\":$at}"
 
     companion object {
         fun decode(json: String): PlayChange = PlayChange(
@@ -80,7 +79,9 @@ internal class PlayLog {
         var bestAt: ULong = 0UL
         for ((tag, rec) in events) {
             if (bestTag == null || rec.at > bestAt || (rec.at == bestAt && tag > bestTag!!)) {
-                bestTag = tag; bestItem = rec.itemId; bestAt = rec.at
+                bestTag = tag
+                bestItem = rec.itemId
+                bestAt = rec.at
             }
         }
         return bestItem

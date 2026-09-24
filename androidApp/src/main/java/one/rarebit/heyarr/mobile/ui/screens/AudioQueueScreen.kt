@@ -42,17 +42,17 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import one.rarebit.heyarr.mobile.playback.AudioState
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.playback.AudioState
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Artwork
+import one.rarebit.heyarr.mobile.ui.components.clockShort
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.SectionHeader
-import one.rarebit.heyarr.mobile.ui.components.clockShort
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 
 /** The full audio screen: cover, transport, scrubber, and the queue — the music accent throughout. */
 @Composable
@@ -85,8 +85,14 @@ fun AudioQueueScreen(
             state.error?.let { Notice("Playback error: $it", tone = Tokens.danger, modifier = Modifier.padding(top = 8.dp)) }
             var dragging by remember { mutableStateOf<Float?>(null) }
             Slider(
-                value = dragging ?: state.fraction, onValueChange = { dragging = it }, onValueChangeFinished = { dragging?.let { if (state.durationMs > 0) onSeek((it * state.durationMs).toLong()) }; dragging = null },
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).semantics { contentDescription = "Position" }, enabled = state.durationMs > 0,
+                value = dragging ?: state.fraction,
+                onValueChange = { dragging = it },
+                onValueChangeFinished = {
+                    dragging?.let { if (state.durationMs > 0) onSeek((it * state.durationMs).toLong()) }
+                    dragging = null
+                },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).semantics { contentDescription = "Position" },
+                enabled = state.durationMs > 0,
                 colors = SliderDefaults.colors(thumbColor = theme.accentGradientEnd, activeTrackColor = theme.accent, inactiveTrackColor = Tokens.surface3),
             )
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
@@ -105,7 +111,8 @@ fun AudioQueueScreen(
                     Row(
                         Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).background(if (current) theme.tint(0.16f) else Tokens.surface1).clickable { onSkipTo(i) }.padding(horizontal = 12.dp, vertical = 10.dp)
                             .semantics { contentDescription = "${track.title}${if (current) ", playing" else ""}" },
-                        horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(if (current) "▶" else "%02d".format(i + 1), style = MaterialTheme.typography.labelMedium, color = if (current) theme.accentGradientEnd else Tokens.textMuted, modifier = Modifier.width(28.dp))
                         Text(track.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)

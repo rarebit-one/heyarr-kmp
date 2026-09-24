@@ -3,8 +3,6 @@ package one.rarebit.heyarr.mobile
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.heyarr.CandidateJson
 import one.rarebit.heyarr.core.heyarr.DesiredItemJson
-import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
-import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.core.heyarr.QualityProfileJson
 import one.rarebit.heyarr.core.mcp.ExplanationJson
 import one.rarebit.heyarr.core.mcp.PlaybackStatusJson
@@ -14,9 +12,11 @@ import one.rarebit.heyarr.core.mcp.RendererJson
 import one.rarebit.heyarr.core.mcp.SatisfactionJson
 import one.rarebit.heyarr.core.mcp.SearchHitsJson
 import one.rarebit.heyarr.core.mcp.WantJson
+import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
+import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.preview.FakeHeyarrTransport
 import one.rarebit.heyarr.mobile.preview.Fixtures
-import one.rarebit.heyarr.core.theme.MediaType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -123,7 +123,9 @@ class McpModelsTest {
     @Test
     fun releaseAttributesLeaveUnknownsOut() {
         val args = ReleaseToExplain("r", "t", ReleaseAttributes(resolution = 1080, source = "", hdr = null)).toArguments()
-        @Suppress("UNCHECKED_CAST") val attrs = args["attributes"] as Map<String, Any?>
+
+        @Suppress("UNCHECKED_CAST")
+        val attrs = args["attributes"] as Map<String, Any?>
         assertEquals(1080, attrs["resolution"])
         assertNull(attrs["source"])
         assertNull(attrs["hdr"])

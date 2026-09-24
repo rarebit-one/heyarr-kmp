@@ -14,11 +14,16 @@ import org.junit.Test
 
 /** A transport that records the last POST and returns a canned response (or throws). */
 private class RecordingTransport(private val response: HttpResponse?, private val failure: Exception? = null) : HttpTransport {
-    var lastPostUrl: String? = null; private set
-    var lastPostBody: String? = null; private set
-    var lastPostAuth: String? = null; private set
-    var lastPostContentType: String? = null; private set
-    var posts = 0; private set
+    var lastPostUrl: String? = null
+        private set
+    var lastPostBody: String? = null
+        private set
+    var lastPostAuth: String? = null
+        private set
+    var lastPostContentType: String? = null
+        private set
+    var posts = 0
+        private set
     override fun get(url: String, headers: Map<String, String>): HttpResponse = HttpResponse(405, "")
     override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
         posts++

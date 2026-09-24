@@ -146,7 +146,9 @@ class McpModelsTest {
     @Test
     fun releaseAttributesLeaveUnknownsOut() {
         val args = ReleaseToExplain("r", "t", ReleaseAttributes(resolution = 1080, source = "", hdr = null)).toArguments()
-        @Suppress("UNCHECKED_CAST") val attrs = args["attributes"] as Map<String, Any?>
+
+        @Suppress("UNCHECKED_CAST")
+        val attrs = args["attributes"] as Map<String, Any?>
         assertEquals(1080, attrs["resolution"])
         assertNull(attrs["source"])
         assertNull(attrs["hdr"])

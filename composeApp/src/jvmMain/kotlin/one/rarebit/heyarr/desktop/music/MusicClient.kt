@@ -1,11 +1,11 @@
 package one.rarebit.heyarr.desktop.music
 
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.desktop.catalog.Grouping
 import one.rarebit.heyarr.desktop.catalog.GroupingJson
 import one.rarebit.heyarr.desktop.library.Work
 import one.rarebit.heyarr.desktop.library.WorksJson
-import one.rarebit.heyarr.core.net.HttpTransport
 import java.net.URLEncoder
 
 /**
@@ -81,12 +81,11 @@ class MusicClient(
         fun artistsUrl(baseUrl: String, cursor: String? = null): String =
             page(baseUrl.trimEnd('/') + "/api/v1/artists?limit=" + PAGE_LIMIT, cursor)
 
-        fun albumsUrl(baseUrl: String, artist: String, cursor: String? = null): String =
-            page(
-                baseUrl.trimEnd('/') + "/api/v1/works?limit=" + PAGE_LIMIT +
-                    "&content_type=music&artist=" + enc(artist) + "&sort=title&include=" + INCLUDE,
-                cursor,
-            )
+        fun albumsUrl(baseUrl: String, artist: String, cursor: String? = null): String = page(
+            baseUrl.trimEnd('/') + "/api/v1/works?limit=" + PAGE_LIMIT +
+                "&content_type=music&artist=" + enc(artist) + "&sort=title&include=" + INCLUDE,
+            cursor,
+        )
 
         fun tracksUrl(baseUrl: String, workId: String, cursor: String? = null): String =
             page(baseUrl.trimEnd('/') + "/api/v1/works/" + enc(workId) + "/assets?limit=" + PAGE_LIMIT, cursor)

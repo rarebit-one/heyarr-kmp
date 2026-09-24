@@ -1,11 +1,11 @@
 package one.rarebit.heyarr.desktop
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.desktop.feeds.FeedsClient
 import one.rarebit.heyarr.core.feeds.FollowedItemsJson
 import one.rarebit.heyarr.core.feeds.FollowedSourcesJson
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.desktop.feeds.FeedsClient
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

@@ -25,8 +25,7 @@ import java.text.Normalizer
 /** A write's total-order key: a Lamport counter with a unique tie-break tag. */
 data class PosKey(val at: Long, val writer: String) {
     /** True when this sorts AFTER [other] under (at, writer) — the max-register join. */
-    fun greater(other: PosKey): Boolean =
-        if (at != other.at) at > other.at else writer > other.writer
+    fun greater(other: PosKey): Boolean = if (at != other.at) at > other.at else writer > other.writer
 
     val isZero: Boolean get() = at == 0L && writer == ""
 
@@ -41,9 +40,9 @@ enum class DriveOp(val wire: Int) { PUT(0), DELETE(1) }
 data class DriveChange(
     val op: DriveOp,
     val path: String,
-    val blob: String = "",   // PUT only
-    val size: Long = 0,      // PUT only
-    val mtime: Long = 0,     // PUT only
+    val blob: String = "", // PUT only
+    val size: Long = 0, // PUT only
+    val mtime: Long = 0, // PUT only
     val at: Long,
     val writer: String,
     val base: PosKey = PosKey.ZERO,
@@ -183,7 +182,17 @@ class Drive {
         val rec = entries[normalisePath(path)] ?: return emptyList()
         val liveKeys = rec.liveHeads().map { it.key }.toHashSet()
         val prior = rec.values.values.filter { it.key !in liveKeys && it.blob.isNotEmpty() }
-            .sortedWith(Comparator { a, b -> if (b.key.greater(a.key)) 1 else if (a.key.greater(b.key)) -1 else 0 })
+            .sortedWith(
+                Comparator { a, b ->
+                    if (b.key.greater(a.key)) {
+                        1
+                    } else if (a.key.greater(b.key)) {
+                        -1
+                    } else {
+                        0
+                    }
+                },
+            )
         return prior.map { it.blob }
     }
 
@@ -206,7 +215,17 @@ class Drive {
                 // Live path: keep the newest maxVersionsPerPath of its prior versions.
                 val liveKeys = live.map { it.key }.toHashSet()
                 val prior = rec.values.values.filter { it.key !in liveKeys && it.blob.isNotEmpty() }
-                    .sortedWith(Comparator { a, b -> if (b.key.greater(a.key)) 1 else if (a.key.greater(b.key)) -1 else 0 })
+                    .sortedWith(
+                        Comparator { a, b ->
+                            if (b.key.greater(a.key)) {
+                                1
+                            } else if (a.key.greater(b.key)) {
+                                -1
+                            } else {
+                                0
+                            }
+                        },
+                    )
                 for ((i, v) in prior.withIndex()) {
                     if (policy.maxVersionsPerPath >= 0 && i >= policy.maxVersionsPerPath) break
                     kept.add(v.blob)
@@ -248,10 +267,19 @@ class Drive {
             for (l in live.subList(0, live.size - 1)) losers.add(p to l)
         }
         // Global sort so the numeric collision suffix is deterministic across replicas.
-        losers.sortWith(Comparator { a, b ->
-            if (a.first != b.first) a.first.compareTo(b.first)
-            else if (b.second.key.greater(a.second.key)) -1 else if (a.second.key.greater(b.second.key)) 1 else 0
-        })
+        losers.sortWith(
+            Comparator { a, b ->
+                if (a.first != b.first) {
+                    a.first.compareTo(b.first)
+                } else if (b.second.key.greater(a.second.key)) {
+                    -1
+                } else if (a.second.key.greater(b.second.key)) {
+                    1
+                } else {
+                    0
+                }
+            },
+        )
         val placed = HashSet<String>()
         for ((orig, v) in losers) {
             val dp = uniqueConflictPath(orig, v.key, occupied, placed)
@@ -301,18 +329,26 @@ class Drive {
             val writes = rec.values.values.sortedWith(compareBy({ it.key.at }, { it.key.writer }))
             for ((wi, w) in writes.withIndex()) {
                 if (wi > 0) sb.append(',')
-                sb.append("{\"blob\":"); jsonString(sb, w.blob)
+                sb.append("{\"blob\":")
+                jsonString(sb, w.blob)
                 sb.append(",\"size\":").append(w.size)
                 sb.append(",\"mtime\":").append(w.mtime)
                 sb.append(",\"at\":").append(w.key.at)
-                sb.append(",\"writer\":"); jsonString(sb, w.key.writer)
+                sb.append(",\"writer\":")
+                jsonString(sb, w.key.writer)
                 if (w.base.at != 0L) sb.append(",\"baseAt\":").append(w.base.at)
-                if (w.base.writer != "") { sb.append(",\"baseBy\":"); jsonString(sb, w.base.writer) }
+                if (w.base.writer != "") {
+                    sb.append(",\"baseBy\":")
+                    jsonString(sb, w.base.writer)
+                }
                 sb.append('}')
             }
             sb.append(']')
             if (rec.delKey.at != 0L) sb.append(",\"delAt\":").append(rec.delKey.at)
-            if (rec.delKey.writer != "") { sb.append(",\"delBy\":"); jsonString(sb, rec.delKey.writer) }
+            if (rec.delKey.writer != "") {
+                sb.append(",\"delBy\":")
+                jsonString(sb, rec.delKey.writer)
+            }
             sb.append('}')
         }
         sb.append("],\"counter\":").append(counter).append('}')
@@ -353,7 +389,9 @@ class Drive {
             val baseObj = JsonScan.objectAt(obj, "base")
             val base = if (baseObj != null) {
                 PosKey(JsonScan.longField(baseObj, "At") ?: 0, JsonScan.stringField(baseObj, "Writer") ?: "")
-            } else PosKey.ZERO
+            } else {
+                PosKey.ZERO
+            }
             return DriveChange(
                 op = if ((JsonScan.intField(obj, "op") ?: 0) == 1) DriveOp.DELETE else DriveOp.PUT,
                 path = JsonScan.stringField(obj, "path") ?: "",
@@ -373,6 +411,7 @@ class Drive {
  * path": Unicode NFC, forward slashes, cleaned (resolve . and .., collapse //), leading
  * slash trimmed, case-sensitive.
  */
+
 /**
  * Serialise a [DriveChange] to its wire JSON (the inverse of [Drive.parseChange]),
  * matching heyarr-core's `json.Marshal` field names + omitempty so a Kotlin device's
@@ -404,7 +443,13 @@ private fun cleanPath(p: String): String {
     for (seg in p.split('/')) {
         when (seg) {
             "", "." -> {}
-            ".." -> if (out.isNotEmpty() && out.last() != "..") out.removeLast() else if (!rooted) out.addLast("..")
+
+            ".." -> if (out.isNotEmpty() && out.last() != "..") {
+                out.removeLast()
+            } else if (!rooted) {
+                out.addLast("..")
+            }
+
             else -> out.addLast(seg)
         }
     }

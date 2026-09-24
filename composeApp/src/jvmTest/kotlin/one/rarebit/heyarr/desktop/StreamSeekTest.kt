@@ -57,8 +57,7 @@ class StreamSeekTest {
 
     // ── the clock ────────────────────────────────────────────────────────────────
 
-    private fun timePos(seconds: Double) =
-        """{"event":"property-change","name":"time-pos","data":$seconds}"""
+    private fun timePos(seconds: Double) = """{"event":"property-change","name":"time-pos","data":$seconds}"""
 
     @Test
     fun aDirectFilesPositionIsMpvsOwn() {

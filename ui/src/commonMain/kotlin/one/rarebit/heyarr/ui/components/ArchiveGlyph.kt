@@ -22,15 +22,20 @@ fun ArchiveMark(modifier: Modifier = Modifier, color: Color = Tokens.textPrimary
     Canvas(modifier.size(32.dp)) {
         val u = size.minDimension / 12f
         fun block(x: Int, y: Int, w: Int, h: Int) = drawRect(color, Offset(x * u, y * u), Size(w * u, h * u))
-        block(2, 1, 3, 10); block(7, 1, 3, 10); block(5, 5, 2, 2)
-        block(1, 0, 1, 1); block(10, 11, 1, 1)
+        block(2, 1, 3, 10)
+        block(7, 1, 3, 10)
+        block(5, 5, 2, 2)
+        block(1, 0, 1, 1)
+        block(10, 11, 1, 1)
     }
 }
 
 /** Indeterminate activity only: a changing pixel glyph never implies a measured percentage. */
 @Composable
 fun ArchiveActivity(reduceMotion: Boolean, modifier: Modifier = Modifier, color: Color = Tokens.textPrimary) {
-    val phase = if (reduceMotion) 0f else {
+    val phase = if (reduceMotion) {
+        0f
+    } else {
         val transition = rememberInfiniteTransition(label = "archive activity")
         val value by transition.animateFloat(0f, 4f, infiniteRepeatable(tween(3200, easing = LinearEasing)), label = "glyph phase")
         value

@@ -21,8 +21,14 @@ object Blake3 {
     private const val ROOT = 8
 
     private val IV = intArrayOf(
-        0x6A09E667L.toInt(), 0xBB67AE85L.toInt(), 0x3C6EF372L.toInt(), 0xA54FF53AL.toInt(),
-        0x510E527FL.toInt(), 0x9B05688CL.toInt(), 0x1F83D9ABL.toInt(), 0x5BE0CD19L.toInt(),
+        0x6A09E667L.toInt(),
+        0xBB67AE85L.toInt(),
+        0x3C6EF372L.toInt(),
+        0xA54FF53AL.toInt(),
+        0x510E527FL.toInt(),
+        0x9B05688CL.toInt(),
+        0x1F83D9ABL.toInt(),
+        0x5BE0CD19L.toInt(),
     )
 
     private val MSG_PERMUTATION = intArrayOf(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8)
@@ -89,19 +95,28 @@ object Blake3 {
     private fun compress(cv: IntArray, block: IntArray, counter: Long, blockLen: Int, flags: Int): IntArray {
         val s = IntArray(16)
         for (i in 0 until 8) s[i] = cv[i]
-        s[8] = IV[0]; s[9] = IV[1]; s[10] = IV[2]; s[11] = IV[3]
+        s[8] = IV[0]
+        s[9] = IV[1]
+        s[10] = IV[2]
+        s[11] = IV[3]
         s[12] = (counter and 0xFFFFFFFFL).toInt()
         s[13] = (counter ushr 32).toInt()
         s[14] = blockLen
         s[15] = flags
 
         var m = block
-        round(s, m); m = permute(m)
-        round(s, m); m = permute(m)
-        round(s, m); m = permute(m)
-        round(s, m); m = permute(m)
-        round(s, m); m = permute(m)
-        round(s, m); m = permute(m)
+        round(s, m)
+        m = permute(m)
+        round(s, m)
+        m = permute(m)
+        round(s, m)
+        m = permute(m)
+        round(s, m)
+        m = permute(m)
+        round(s, m)
+        m = permute(m)
+        round(s, m)
+        m = permute(m)
         round(s, m) // 7th round, no permute after
 
         for (i in 0 until 8) {
@@ -184,7 +199,10 @@ object Blake3 {
 
     private fun parentOutput(left: IntArray, right: IntArray, key: IntArray, flags: Int): Output {
         val block = IntArray(16)
-        for (i in 0 until 8) { block[i] = left[i]; block[i + 8] = right[i] }
+        for (i in 0 until 8) {
+            block[i] = left[i]
+            block[i + 8] = right[i]
+        }
         return Output(key, block, 0, BLOCK_LEN, PARENT or flags)
     }
 
@@ -194,7 +212,9 @@ object Blake3 {
         private val cvStack = arrayOfNulls<IntArray>(54)
         private var stackLen = 0
 
-        private fun push(cv: IntArray) { cvStack[stackLen++] = cv }
+        private fun push(cv: IntArray) {
+            cvStack[stackLen++] = cv
+        }
         private fun pop(): IntArray = cvStack[--stackLen]!!
 
         private fun addChunkCv(first: IntArray, totalChunks: Long) {

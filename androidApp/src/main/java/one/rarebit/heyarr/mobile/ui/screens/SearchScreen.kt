@@ -47,33 +47,33 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.mcp.EpisodeHit
-import one.rarebit.heyarr.mobile.nav.Route
-import one.rarebit.heyarr.mobile.nav.detailRoute
-import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.core.state.LibraryStatus
-import one.rarebit.heyarr.mobile.state.SearchController
 import one.rarebit.heyarr.core.state.SearchFilter
 import one.rarebit.heyarr.core.state.SearchGrouping
 import one.rarebit.heyarr.core.state.SearchRow
 import one.rarebit.heyarr.core.state.Segment
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.heyarr.McpResult
+import one.rarebit.heyarr.mobile.nav.Route
+import one.rarebit.heyarr.mobile.nav.detailRoute
+import one.rarebit.heyarr.mobile.state.AppSession
+import one.rarebit.heyarr.mobile.state.SearchController
 import one.rarebit.heyarr.mobile.theme.Tokens
+import one.rarebit.heyarr.mobile.ui.components.MediaRow
+import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
-import one.rarebit.heyarr.mobile.ui.components.MediaRow
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
-import one.rarebit.heyarr.mobile.ui.components.rememberCover
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 
 /**
  * Universal search — one box, every media kind, results grouped by type and streamed in
@@ -102,7 +102,10 @@ fun SearchScreen(
     }
 
     Column(modifier.fillMaxSize().padding(horizontal = Tokens.screenPadding).padding(top = Tokens.s4), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SearchBox(value = search.query, onValueChange = search::updateQuery, onSubmit = { search.submit(); session.recent.push(search.query).also { recent = it } }, onClear = { search.updateQuery("") })
+        SearchBox(value = search.query, onValueChange = search::updateQuery, onSubmit = {
+            search.submit()
+            session.recent.push(search.query).also { recent = it }
+        }, onClear = { search.updateQuery("") })
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             for (f in SearchFilter.entries) {
                 val count = if (f == SearchFilter.ALL) null else sections.firstOrNull { f.admits(it.type) }?.rows?.size?.takeIf { it > 0 }
@@ -110,8 +113,13 @@ fun SearchScreen(
             }
         }
         when {
-            search.isIdle -> IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = { session.recent.clear(); recent = emptyList() })
+            search.isIdle -> IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = {
+                session.recent.clear()
+                recent = emptyList()
+            })
+
             SearchGrouping.empty(sections) -> NoResultsPane(session, search.query, onWant)
+
             else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
                 for (section in sections) {
                     if (section.segment is Segment.Loaded && section.rows.isEmpty()) continue
@@ -135,24 +143,37 @@ private fun ResultRow(session: AppSession, row: SearchRow, onOpen: () -> Unit, o
             val cover by rememberCover(session, row.type, hit.title, hit.artworkPath, hit.year, hit.creator)
             val status = session.index.statusOf(hit.workId)
             MediaRow(
-                title = hit.title, type = row.type, onOpen = onOpen, subtitle = hit.creator,
+                title = hit.title,
+                type = row.type,
+                onOpen = onOpen,
+                subtitle = hit.creator,
                 meta = listOf(hit.year?.toString(), hit.attributes["runtime"], hit.attributes["album"], hit.attributes["series"]),
-                artwork = cover.url, status = status,
+                artwork = cover.url,
+                status = status,
                 trailing = { if (status == LibraryStatus.NOT_TRACKED) IconButtonRound(Icons.Rounded.Add, "Want ${hit.title}", { onWant(hit.workId, hit.title) }, size = 36.dp) },
             )
         }
+
         is SearchRow.EpisodeRow -> MediaRow(
-            title = row.hit.title, type = row.type, onOpen = onOpen, subtitle = row.hit.workTitle,
+            title = row.hit.title,
+            type = row.type,
+            onOpen = onOpen,
+            subtitle = row.hit.workTitle,
             meta = listOf(row.hit.kind, if (row.hit.blobHash != null) "file held" else "no file"),
             status = if (row.hit.blobHash != null) LibraryStatus.IN_LIBRARY else null,
             trailing = { if (row.hit.blobHash != null) IconButtonRound(Icons.Rounded.PlayArrow, "Play ${row.hit.title}", { onPlayEpisode(row.hit) }, size = 36.dp, filled = true) },
         )
+
         is SearchRow.SourceRow -> {
             val cover by rememberCover(session, row.type, row.source.title, null, feedRef = row.source.feedRef)
             MediaRow(
-                title = row.source.title, type = row.type, onOpen = onOpen, subtitle = row.source.feedRef,
+                title = row.source.title,
+                type = row.type,
+                onOpen = onOpen,
+                subtitle = row.source.feedRef,
                 meta = listOf(row.source.type, "${row.source.itemsArchived}/${row.source.itemsKnown} archived", row.source.health),
-                artwork = cover.url, status = LibraryStatus.IN_LIBRARY,
+                artwork = cover.url,
+                status = LibraryStatus.IN_LIBRARY,
             )
         }
     }
@@ -169,7 +190,8 @@ private fun SearchBox(value: String, onValueChange: (String) -> Unit, onSubmit: 
             .background(Tokens.surface1, shape)
             .border(if (focused) 2.dp else Tokens.hairline, if (focused) accent else Tokens.border, shape)
             .padding(horizontal = 14.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(Icons.Rounded.Search, contentDescription = null, tint = if (focused) accent else Tokens.textMuted, modifier = Modifier.size(20.dp))
         Box(Modifier.weight(1f)) {
@@ -218,12 +240,16 @@ private fun NoResultsPane(session: AppSession, query: String, onWant: (String, S
             action = {
                 SecondaryButton("Ask the metadata provider", icon = Icons.Rounded.TravelExplore, enabled = !busy, onClick = {
                     busy = true
-                    scope.launch { session.io { session.api.discover(query) }.onSuccess { discovery = it }; busy = false }
+                    scope.launch {
+                        session.io { session.api.discover(query) }.onSuccess { discovery = it }
+                        busy = false
+                    }
                 })
             },
         )
         when (val d = discovery) {
             null -> {}
+
             is McpResult.Refused -> Notice("discover_content: ${d.message}", detail = "Discovery needs a TVDB provider configured on the node (ADR-0058). Wanting by title still works.")
             is McpResult.Ok -> if (d.value.isEmpty()) Text("The provider found nothing for “$query”.", color = Tokens.textMuted, style = MaterialTheme.typography.bodyMedium)
             else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {

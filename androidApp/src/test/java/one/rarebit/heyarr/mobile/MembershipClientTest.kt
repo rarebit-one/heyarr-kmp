@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.mobile
 
-import one.rarebit.heyarr.mobile.device.MembershipClient
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.device.MembershipClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
@@ -13,7 +13,10 @@ class MembershipClientTest {
 
     private class Fake(private val status: Int, private val body: String) : HttpTransport {
         val urls = ArrayList<String>()
-        override fun get(url: String, headers: Map<String, String>): HttpResponse { urls += url; return HttpResponse(status, body) }
+        override fun get(url: String, headers: Map<String, String>): HttpResponse {
+            urls += url
+            return HttpResponse(status, body)
+        }
         override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(405, "")
     }
 

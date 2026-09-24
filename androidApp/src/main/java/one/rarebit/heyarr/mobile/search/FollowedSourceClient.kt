@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.mobile.search
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.library.LibraryClient
 import java.net.URLEncoder
 
 /**

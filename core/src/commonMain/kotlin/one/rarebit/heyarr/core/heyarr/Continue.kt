@@ -53,7 +53,9 @@ data class ContinueEntry(
         }
 
     private fun clock(s: Long): String {
-        val h = s / 3600; val m = (s % 3600) / 60; val sec = s % 60
+        val h = s / 3600
+        val m = (s % 3600) / 60
+        val sec = s % 60
         val ss = sec.toString().padStart(2, '0')
         val mm = m.toString().padStart(2, '0')
         return if (h > 0) "$h:$mm:$ss" else "$m:$ss"

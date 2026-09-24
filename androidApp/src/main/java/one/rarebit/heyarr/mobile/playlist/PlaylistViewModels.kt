@@ -63,7 +63,10 @@ internal class PlaylistsViewModel(
         viewModelScope.launch {
             val id = withContext(io) { runCatching { ps.createPlaylist(name?.trim()?.takeIf { it.isNotEmpty() }) } }
             _state.value = _state.value.copy(busy = false)
-            id.getOrNull()?.let { refresh(); onCreated(it) }
+            id.getOrNull()?.let {
+                refresh()
+                onCreated(it)
+            }
         }
     }
 }

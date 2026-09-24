@@ -40,5 +40,7 @@ class InMemoryDeviceIdStore(private val key: String = "phone-test") : DeviceIdSt
     private val ids = HashMap<String, String>()
     override fun deviceKey() = key
     override fun deviceId(baseUrl: String) = ids[baseUrl.trimEnd('/')]
-    override fun putDeviceId(baseUrl: String, id: String) { ids[baseUrl.trimEnd('/')] = id }
+    override fun putDeviceId(baseUrl: String, id: String) {
+        ids[baseUrl.trimEnd('/')] = id
+    }
 }

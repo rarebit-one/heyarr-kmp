@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.desktop
 
-import kotlin.test.*
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.state.PlaybackSession
 import one.rarebit.heyarr.desktop.ui.*
+import kotlin.test.*
 
 class ArchiveExperienceTest {
     private fun track(id: String, type: MediaType = MediaType.MUSIC) = Route.Player("album", id, "hash-$id", "Album", id, type)
@@ -18,10 +18,12 @@ class ArchiveExperienceTest {
     }
 
     @Test fun audioDockRequiresAudioAndEnoughRoomForTheReader() {
-        for (type in MediaType.entries) for (width in listOf(760f, 1099f, 1100f, 1600f)) {
-            assertEquals(type.isListening() && width >= 1100, showAudioDock(type, true, width, false), "$type/$width")
-            assertFalse(showAudioDock(type, false, width, false))
-            assertFalse(showAudioDock(type, true, width, true))
+        for (type in MediaType.entries) {
+            for (width in listOf(760f, 1099f, 1100f, 1600f)) {
+                assertEquals(type.isListening() && width >= 1100, showAudioDock(type, true, width, false), "$type/$width")
+                assertFalse(showAudioDock(type, false, width, false))
+                assertFalse(showAudioDock(type, true, width, true))
+            }
         }
     }
 

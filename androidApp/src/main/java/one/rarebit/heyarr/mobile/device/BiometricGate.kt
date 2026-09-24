@@ -43,35 +43,34 @@ interface BiometricGate {
 /** Backed by androidx `BiometricPrompt`; must be constructed with a [FragmentActivity]. */
 class AndroidBiometricGate(private val activity: FragmentActivity) : BiometricGate {
 
-    override suspend fun authenticate(title: String, subtitle: String): Boolean =
-        withContext(Dispatchers.Main) {
-            suspendCancellableCoroutine { cont ->
-                val prompt = BiometricPrompt(
-                    activity,
-                    ContextCompat.getMainExecutor(activity),
-                    object : BiometricPrompt.AuthenticationCallback() {
-                        override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                            if (cont.isActive) cont.resume(true)
-                        }
+    override suspend fun authenticate(title: String, subtitle: String): Boolean = withContext(Dispatchers.Main) {
+        suspendCancellableCoroutine { cont ->
+            val prompt = BiometricPrompt(
+                activity,
+                ContextCompat.getMainExecutor(activity),
+                object : BiometricPrompt.AuthenticationCallback() {
+                    override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
+                        if (cont.isActive) cont.resume(true)
+                    }
 
-                        override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                            if (cont.isActive) cont.resume(false)
-                        }
+                    override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
+                        if (cont.isActive) cont.resume(false)
+                    }
 
-                        override fun onAuthenticationFailed() {
-                            // A single non-match — the prompt stays open for a retry.
-                        }
-                    },
+                    override fun onAuthenticationFailed() {
+                        // A single non-match — the prompt stays open for a retry.
+                    }
+                },
+            )
+            val info = BiometricPrompt.PromptInfo.Builder()
+                .setTitle(title)
+                .setSubtitle(subtitle)
+                .setAllowedAuthenticators(
+                    BiometricManager.Authenticators.BIOMETRIC_STRONG or
+                        BiometricManager.Authenticators.DEVICE_CREDENTIAL,
                 )
-                val info = BiometricPrompt.PromptInfo.Builder()
-                    .setTitle(title)
-                    .setSubtitle(subtitle)
-                    .setAllowedAuthenticators(
-                        BiometricManager.Authenticators.BIOMETRIC_STRONG or
-                            BiometricManager.Authenticators.DEVICE_CREDENTIAL,
-                    )
-                    .build()
-                prompt.authenticate(info)
-            }
+                .build()
+            prompt.authenticate(info)
         }
+    }
 }

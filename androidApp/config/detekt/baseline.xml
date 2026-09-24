@@ -8,7 +8,6 @@
     <ID>ComplexCondition:PlayHistory.kt$PlayLog$bestTag == null || rec.at &gt; bestAt || (rec.at == bestAt &amp;&amp; tag &gt; bestTag!!)</ID>
     <ID>ComplexCondition:ProblemDetail.kt$ProblemDetail$i &lt; body.length &amp;&amp; (body[i] == ' ' || body[i] == '\t' || body[i] == ':')</ID>
     <ID>ComplexCondition:SearchResultsJson.kt$SearchResultsJson$i &lt; json.length &amp;&amp; (json[i] == ' ' || json[i] == '\t' || json[i] == ':')</ID>
-    <ID>ComplexCondition:Series.kt$Series$mime != null &amp;&amp; (mime.startsWith("image/") || mime.startsWith("text/") || mime == "application/xml")</ID>
     <ID>ComplexCondition:SessionJson.kt$SessionJson$i &lt; json.length &amp;&amp; (json[i] == ' ' || json[i] == '\t' || json[i] == ':')</ID>
     <ID>CyclomaticComplexMethod:Cards.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: String? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The card width; null fills the parent (a grid cell). */ width: Dp? = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, actions: List&lt;CardAction&gt; = emptyList(), )</ID>
     <ID>CyclomaticComplexMethod:CastScreen.kt$@Composable fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modifier)</ID>
@@ -16,23 +15,14 @@
     <ID>CyclomaticComplexMethod:ContinueClient.kt$ContinueClient.Companion$fun parse(body: String): List&lt;ContinueEntry&gt;</ID>
     <ID>CyclomaticComplexMethod:Decisions.kt$Decisions$fun section(route: Route?): NavSection?</ID>
     <ID>CyclomaticComplexMethod:DetailCurate.kt$@Composable internal fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
-    <ID>CyclomaticComplexMethod:DetailCurate.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal())</ID>
-    <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun DetailHero(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit)</ID>
-    <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
-    <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
-    <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
-    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
-    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
     <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable private fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
-    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable private fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
     <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable private fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
     <ID>CyclomaticComplexMethod:DeviceEnrolment.kt$DeviceEnrolment$fun refreshMembership(): Boolean</ID>
     <ID>CyclomaticComplexMethod:DeviceEnrolment.kt$DeviceEnrolment$private suspend fun reflectPairing(ps: PairingState)</ID>
     <ID>CyclomaticComplexMethod:EnrolScreen.kt$@Composable fun EnrolScreen( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
-    <ID>CyclomaticComplexMethod:ExternalMetadata.kt$ExternalMetadata$private suspend fun resolve(key: MetaKey): ExternalMeta?</ID>
     <ID>CyclomaticComplexMethod:Fixtures.kt$FakeHeyarrTransport$override fun get(url: String, headers: Map&lt;String, String&gt;): HttpResponse</ID>
     <ID>CyclomaticComplexMethod:Fixtures.kt$FakeHeyarrTransport$override fun post(url: String, body: String?, contentType: String?, headers: Map&lt;String, String&gt;): HttpResponse</ID>
     <ID>CyclomaticComplexMethod:HeyarrNavHost.kt$@UnstableApi @Composable fun HeyarrNavHost( vm: AppViewModel, graph: AppGraph, focusDevice: Int, /** Raise the "Sign in to save" upgrade (QR/device) over the guest shell. */ onSignInToSave: () -&gt; Unit = {}, navController: NavHostController = rememberNavController(), )</ID>
@@ -45,15 +35,11 @@
     <ID>CyclomaticComplexMethod:PlaybackDiagnostics.kt$PlaybackDiagnostics$private fun codecLabel(mime: String?): String</ID>
     <ID>CyclomaticComplexMethod:PlayerScreen.kt$@UnstableApi @Composable fun PlayerScreen(session: AppSession, video: VideoSession, state: PlayerScreenState, onBack: () -&gt; Unit, onNext: (QueueEntry) -&gt; Unit, onStop: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>CyclomaticComplexMethod:PsJson.kt$PsJson$fun goQuote(s: String): String</ID>
-    <ID>CyclomaticComplexMethod:SearchGrouping.kt$SearchGrouping$fun group( segments: Map&lt;MediaType, Segment&gt;, episodes: Segment, sources: Segment, filter: SearchFilter = SearchFilter.ALL, ): List&lt;SearchSection&gt;</ID>
     <ID>CyclomaticComplexMethod:SearchScreen.kt$@Composable fun SearchScreen( session: AppSession, search: SearchController, onOpen: (Route) -&gt; Unit, onWant: (workId: String, title: String) -&gt; Unit, onPlayEpisode: (EpisodeHit) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>CyclomaticComplexMethod:SettingsScreen.kt$@Composable fun SettingsScreen( session: AppSession, state: SettingsState, config: HeyarrConfig, authority: SessionAuthority?, onSaveConnection: (baseUrl: String, qualityProfile: String) -&gt; Unit, onResetConnection: () -&gt; Unit, onSignOut: () -&gt; Unit, onTelemetry: () -&gt; Unit, onDevice: () -&gt; Unit, onSourcesChanged: () -&gt; Unit, modifier: Modifier = Modifier, deviceSummary: String? = null, /** True while browsing anonymously — hides enrolled-only panels, shows "Sign in to save". */ isGuest: Boolean = false, onSignInToSave: () -&gt; Unit = {}, /** Run the mDNS → DNS discovery chain and save the node it finds. */ onDiscover: () -&gt; Unit = {}, )</ID>
     <ID>CyclomaticComplexMethod:SettingsScreen.kt$@Composable private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () -&gt; Unit)</ID>
-    <ID>CyclomaticComplexMethod:Table.kt$@Composable fun DataTable( columns: List&lt;TableColumn&gt;, rowCount: Int, modifier: Modifier = Modifier, emptyText: String = "Nothing here.", minWidth: Dp? = null, detail: (@Composable (row: Int) -&gt; Unit)? = null, detailLabel: (row: Int) -&gt; String? = { null }, cell: @Composable RowScope.(row: Int, column: Int) -&gt; Unit, )</ID>
     <ID>CyclomaticComplexMethod:TelemetryScreen.kt$@Composable fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummary: String, onBack: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>CyclomaticComplexMethod:WantSheet.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
-    <ID>EmptyElseBlock:DetailScreen.kt$if (route.curate) state.tab = DetailTab.CURATE</ID>
-    <ID>EmptyElseBlock:VideoSession.kt$VideoSession$if (p.playbackState == Player.STATE_ENDED) p.seekTo(0)</ID>
     <ID>EmptyFunctionBlock:NsdMdnsResolver.kt$NsdMdnsResolver.&lt;no name provided&gt;${}</ID>
     <ID>ExplicitItLambdaParameter:AudioQueueScreen.kt${ i, it -&gt; "$i:${it.assetId}" }</ID>
     <ID>FunctionNaming:AudioQueueScreen.kt$@Composable fun AudioQueueScreen( state: AudioState, onBack: () -&gt; Unit, onTogglePlay: () -&gt; Unit, onNext: () -&gt; Unit, onPrevious: () -&gt; Unit, onSeek: (Long) -&gt; Unit, onSkipTo: (Int) -&gt; Unit, onStop: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
@@ -63,52 +49,25 @@
     <ID>FunctionNaming:Cards.kt$@Composable fun HeroSkeleton(height: Dp = 320.dp)</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun MediaCardSkeleton(aspect: CardAspect = CardAspect.POSTER, width: Dp = Tokens.posterWidth)</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun MediaRow( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: String? = null, status: LibraryStatus? = null, selected: Boolean = false, trailing: (@Composable () -&gt; Unit)? = null, )</ID>
-    <ID>FunctionNaming:Cards.kt$@Composable fun MediaRowSkeleton(count: Int = 4)</ID>
-    <ID>FunctionNaming:Cards.kt$@Composable fun StatusPill(status: LibraryStatus, modifier: Modifier = Modifier, compact: Boolean = false)</ID>
     <ID>FunctionNaming:Cards.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: String? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The card width; null fills the parent (a grid cell). */ width: Dp? = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, actions: List&lt;CardAction&gt; = emptyList(), )</ID>
     <ID>FunctionNaming:CastScreen.kt$@Composable fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:CastScreen.kt$@Composable private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable internal fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
-    <ID>FunctionNaming:DetailCurate.kt$@Composable internal fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
-    <ID>FunctionNaming:DetailCurate.kt$@Composable internal fun SidecarsPanel(state: DetailState, seasons: List&lt;Season&gt;)</ID>
-    <ID>FunctionNaming:DetailCurate.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable private fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable private fun SidecarsPanel(state: DetailState, seasons: List&lt;Season&gt;)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal())</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable internal fun AssetPersonalActions(personal: DetailPersonal, assetId: String, title: String)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun ArchiveBlock(state: DetailState, onOpen: (Route) -&gt; Unit)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun AssetPersonalActions(personal: DetailPersonal, assetId: String, title: String)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun BookFilesBlock(work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun CastPicker(session: AppSession, state: DetailState)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun DetailHero(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun FileBlock(work: Work, state: DetailState)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, ext: ExternalEpisode?)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun SidecarsPanel(state: DetailState, seasons: List&lt;Season&gt;)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun SynopsisBlock(work: Work, state: DetailState, coverIsExternal: Boolean)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -&gt; Unit)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun TracksBlock(session: AppSession, work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun ArchiveBlock(state: DetailState, onOpen: (Route) -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun BookFilesBlock(work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun FileBlock(work: Work, state: DetailState)</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, ext: ExternalEpisode?)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun SynopsisBlock(work: Work, state: DetailState, coverIsExternal: Boolean)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun TracksBlock(session: AppSession, work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun ArchiveBlock(state: DetailState, onOpen: (Route) -&gt; Unit)</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun BookFilesBlock(work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable private fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun FileBlock(work: Work, state: DetailState)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable private fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, ext: ExternalEpisode?)</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun SynopsisBlock(work: Work, state: DetailState, coverIsExternal: Boolean)</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun TracksBlock(session: AppSession, work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable private fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
     <ID>FunctionNaming:EnrolScreen.kt$@Composable fun EnrolScreen( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
     <ID>FunctionNaming:EnrolScreen.kt$@Composable private fun CountdownLine(prefix: String, deadlineMillis: Long, now: Long, suffix: String)</ID>
@@ -120,7 +79,6 @@
     <ID>FunctionNaming:HeyarrNavHost.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable private fun GuestUpsellSheet(onSignIn: () -&gt; Unit, onDismiss: () -&gt; Unit)</ID>
     <ID>FunctionNaming:HeyarrNavHost.kt$@UnstableApi @Composable fun HeyarrNavHost( vm: AppViewModel, graph: AppGraph, focusDevice: Int, /** Raise the "Sign in to save" upgrade (QR/device) over the guest shell. */ onSignInToSave: () -&gt; Unit = {}, navController: NavHostController = rememberNavController(), )</ID>
     <ID>FunctionNaming:HeyarrTheme.kt$@Composable fun HeyarrTheme(media: MediaTheme = MediaThemes.default, content: @Composable () -&gt; Unit)</ID>
-    <ID>FunctionNaming:HeyarrTheme.kt$@Composable fun MediaScope(type: MediaType, content: @Composable () -&gt; Unit)</ID>
     <ID>FunctionNaming:HomeScreen.kt$@Composable fun HomeScreen( session: AppSession, state: HomeState, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, onPlayContinue: (ContinueEntry) -&gt; Unit, modifier: Modifier = Modifier, discover: Boolean = false, personal: PersonalRows = PersonalRows(), /** Raise the "Sign in to save" upgrade — shown on the guest banner. */ onSignInToSave: () -&gt; Unit = {}, )</ID>
     <ID>FunctionNaming:HomeScreen.kt$@Composable private fun GuestBanner(onSignIn: () -&gt; Unit)</ID>
     <ID>FunctionNaming:HomeScreen.kt$@Composable private fun SpotlightBlock(session: AppSession, state: HomeState, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit)</ID>
@@ -148,27 +106,7 @@
     <ID>FunctionNaming:PlaylistScreens.kt$@Composable internal fun PlaylistsScreen( state: PlaylistsViewModel.UiState, onOpen: (spaceId: String, name: String) -&gt; Unit, onCreate: (name: String?) -&gt; Unit, onBack: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>FunctionNaming:PlaylistScreens.kt$@Composable private fun GatewaySyncFooter(starredSpaceId: String?, historySpaceId: String?)</ID>
     <ID>FunctionNaming:PlaylistScreens.kt$@Composable private fun NameDialog(title: String, confirm: String, initial: String = "", onConfirm: (String?) -&gt; Unit, onDismiss: () -&gt; Unit)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun EmptyState(title: String, modifier: Modifier = Modifier, detail: String? = null, icon: ImageVector = Icons.Rounded.Search, action: (@Composable () -&gt; Unit)? = null)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun ErrorState(title: String, detail: String?, onRetry: (() -&gt; Unit)?, modifier: Modifier = Modifier)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun Field(label: String, value: String, modifier: Modifier = Modifier, placeholder: String? = null, secret: Boolean = false, keyboard: KeyboardType = KeyboardType.Text, onChange: (String) -&gt; Unit)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun FilterChip(label: String, selected: Boolean, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, count: Int? = null, enabled: Boolean = true)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun GhostButton(label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun IconButtonRound(icon: ImageVector, contentDescription: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, enabled: Boolean = true, size: Dp = 40.dp, filled: Boolean = false)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun MediaBadge(type: MediaType, modifier: Modifier = Modifier)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun MetaLine(parts: List&lt;String?&gt;, modifier: Modifier = Modifier, color: Color = Tokens.textMuted, maxLines: Int = 1)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun Notice(text: String, modifier: Modifier = Modifier, tone: Color = Tokens.warning, icon: ImageVector = Icons.Rounded.Info, detail: String? = null)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun OfflineBanner(text: String, detail: String?, onRetry: () -&gt; Unit, onSettings: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun PrimaryButton( label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, compact: Boolean = false, contentDescription: String = label, )</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun SecondaryButton( label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, compact: Boolean = false, danger: Boolean = false, )</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun SectionHeader(title: String, modifier: Modifier = Modifier, subtitle: String? = null, trailing: (@Composable () -&gt; Unit)? = null, icon: ImageVector? = null)</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun Skeleton(modifier: Modifier, shape: Shape = RoundedCornerShape(Tokens.radiusChip))</ID>
-    <ID>FunctionNaming:Primitives.kt$@Composable fun ToastCard(toast: Toast, onDismiss: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:QrScanner.kt$@Composable fun QrScanner( onQr: (String) -&gt; Boolean, modifier: Modifier = Modifier, noPermission: @Composable () -&gt; Unit = {}, )</ID>
-    <ID>FunctionNaming:Reasons.kt$@Composable fun KeyValue(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = Tokens.textPrimary)</ID>
-    <ID>FunctionNaming:Reasons.kt$@Composable fun Panel(title: String, modifier: Modifier = Modifier, trailing: (@Composable () -&gt; Unit)? = null, content: @Composable () -&gt; Unit)</ID>
-    <ID>FunctionNaming:Reasons.kt$@Composable fun ReasonList(reasons: List&lt;Reason&gt;, modifier: Modifier = Modifier, emphasiseFailures: Boolean = true)</ID>
-    <ID>FunctionNaming:Reasons.kt$@Composable fun RejectedBy(reasons: List&lt;Reason&gt;, modifier: Modifier = Modifier)</ID>
-    <ID>FunctionNaming:Reasons.kt$@Composable fun RuleCode(rule: String, modifier: Modifier = Modifier, tone: Color = Tokens.textPrimary)</ID>
     <ID>FunctionNaming:SearchScreen.kt$@Composable fun SearchScreen( session: AppSession, search: SearchController, onOpen: (Route) -&gt; Unit, onWant: (workId: String, title: String) -&gt; Unit, onPlayEpisode: (EpisodeHit) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>FunctionNaming:SearchScreen.kt$@Composable private fun IdlePane(recent: List&lt;String&gt;, onPick: (String) -&gt; Unit, onClear: () -&gt; Unit)</ID>
     <ID>FunctionNaming:SearchScreen.kt$@Composable private fun NoResultsPane(session: AppSession, query: String, onWant: (String, String) -&gt; Unit)</ID>
@@ -179,18 +117,13 @@
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun AppearancePanel(session: AppSession)</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () -&gt; Unit)</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun PeersPanel(session: AppSession, state: SettingsState)</ID>
-    <ID>FunctionNaming:Table.kt$@Composable fun Cell(text: String, color: Color = Tokens.textPrimary, muted: Boolean = false, mono: Boolean = false, maxLines: Int = 1)</ID>
-    <ID>FunctionNaming:Table.kt$@Composable fun DataTable( columns: List&lt;TableColumn&gt;, rowCount: Int, modifier: Modifier = Modifier, emptyText: String = "Nothing here.", minWidth: Dp? = null, detail: (@Composable (row: Int) -&gt; Unit)? = null, detailLabel: (row: Int) -&gt; String? = { null }, cell: @Composable RowScope.(row: Int, column: Int) -&gt; Unit, )</ID>
-    <ID>FunctionNaming:Table.kt$@Composable fun Section(title: String, modifier: Modifier = Modifier, subtitle: String? = null, initiallyOpen: Boolean = true, trailing: (@Composable () -&gt; Unit)? = null, content: @Composable () -&gt; Unit)</ID>
-    <ID>FunctionNaming:Table.kt$@Composable private fun RowScope.HeaderCell(c: TableColumn)</ID>
     <ID>FunctionNaming:TelemetryScreen.kt$@Composable fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummary: String, onBack: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:WantSheet.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
     <ID>LongMethod:DetailCurate.kt$@Composable internal fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
-    <ID>LongMethod:DetailCurate.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
-    <ID>LongMethod:DetailScreen.kt$@Composable private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>LongMethod:EnrolScreen.kt$@Composable fun EnrolScreen( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
     <ID>LongMethod:HeyarrNavHost.kt$@UnstableApi @Composable fun HeyarrNavHost( vm: AppViewModel, graph: AppGraph, focusDevice: Int, /** Raise the "Sign in to save" upgrade (QR/device) over the guest shell. */ onSignInToSave: () -&gt; Unit = {}, navController: NavHostController = rememberNavController(), )</ID>
     <ID>LongMethod:HomeScreen.kt$@Composable fun HomeScreen( session: AppSession, state: HomeState, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, onPlayContinue: (ContinueEntry) -&gt; Unit, modifier: Modifier = Modifier, discover: Boolean = false, personal: PersonalRows = PersonalRows(), /** Raise the "Sign in to save" upgrade — shown on the guest banner. */ onSignInToSave: () -&gt; Unit = {}, )</ID>
+    <ID>LongMethod:LibraryScreen.kt$@Composable fun DownloadsScreen(session: AppSession, state: DownloadsState, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>LongMethod:LibraryScreen.kt$@Composable fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, onPlaylists: (() -&gt; Unit)? = null)</ID>
     <ID>LongMethod:MainActivity.kt$MainActivity$override fun onCreate(savedInstanceState: Bundle?)</ID>
     <ID>LongMethod:PlayerScreen.kt$@UnstableApi @Composable fun PlayerScreen(session: AppSession, video: VideoSession, state: PlayerScreenState, onBack: () -&gt; Unit, onNext: (QueueEntry) -&gt; Unit, onStop: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
@@ -209,10 +142,7 @@
     <ID>LongParameterList:Cover.kt$(session: AppSession, type: MediaType, title: String, nodeArtPath: String?, year: Int? = null, creator: String? = null, feedRef: String? = null)</ID>
     <ID>LongParameterList:DetailCurate.kt$(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>LongParameterList:DetailScreen.kt$(session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal())</ID>
-    <ID>LongParameterList:DetailScreen.kt$(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
-    <ID>LongParameterList:DetailScreen.kt$(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
     <ID>LongParameterList:DetailScreen.kt$(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit)</ID>
-    <ID>LongParameterList:DetailScreen.kt$(session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit)</ID>
     <ID>LongParameterList:DetailWatch.kt$(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
     <ID>LongParameterList:DetailWatch.kt$(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
     <ID>LongParameterList:DevicePairingSteps.kt$DevicePairingSteps$( private val keyring: () -&gt; DeviceKeyring?, private val relayTransport: VoidbindHttpTransport, private val nodeTransport: HttpTransport, private val baseUrl: () -&gt; String, private val deviceName: () -&gt; String, private val credential: () -&gt; Credential?, private val clock: () -&gt; Long = System::currentTimeMillis, )</ID>
@@ -233,22 +163,13 @@
     <ID>LongParameterList:PlayerScreen.kt$(session: AppSession, video: VideoSession, state: PlayerScreenState, onBack: () -&gt; Unit, onNext: (QueueEntry) -&gt; Unit, onStop: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>LongParameterList:PlayerScreen.kt$(video: VideoSession, ps: VideoSession.State, target: PlaybackTarget, onNext: (() -&gt; Unit)?, onStop: () -&gt; Unit, fullscreenToggle: () -&gt; Unit, fullscreen: Boolean)</ID>
     <ID>LongParameterList:PlaylistScreens.kt$( state: PlaylistViewModel.UiState, onBack: () -&gt; Unit, onPlayAll: (List&lt;Work&gt;) -&gt; Unit, onOpenWork: (Work) -&gt; Unit, onRemove: (String) -&gt; Unit, onRename: (String) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
-    <ID>LongParameterList:Primitives.kt$( label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, compact: Boolean = false, contentDescription: String = label, )</ID>
-    <ID>LongParameterList:Primitives.kt$( label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, compact: Boolean = false, danger: Boolean = false, )</ID>
-    <ID>LongParameterList:Primitives.kt$(icon: ImageVector, contentDescription: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, enabled: Boolean = true, size: Dp = 40.dp, filled: Boolean = false)</ID>
-    <ID>LongParameterList:Primitives.kt$(label: String, selected: Boolean, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, count: Int? = null, enabled: Boolean = true)</ID>
-    <ID>LongParameterList:Primitives.kt$(label: String, value: String, modifier: Modifier = Modifier, placeholder: String? = null, secret: Boolean = false, keyboard: KeyboardType = KeyboardType.Text, onChange: (String) -&gt; Unit)</ID>
     <ID>LongParameterList:ProgressReporter.kt$ConsumptionReporter$( private val client: ConsumptionClient, private val store: DeviceIdStore, private val scope: CoroutineScope, private val baseUrl: () -&gt; String, private val canWrite: () -&gt; Boolean, private val enrolledDeviceKey: () -&gt; String?, private val deviceName: () -&gt; String, private val capabilities: () -&gt; ClientCapabilities?, private val io: CoroutineDispatcher = Dispatchers.IO, private val clock: () -&gt; Double = { System.currentTimeMillis() / 1000.0 }, private val throttle: ProgressThrottle = ProgressThrottle(), )</ID>
     <ID>LongParameterList:SearchScreen.kt$( session: AppSession, search: SearchController, onOpen: (Route) -&gt; Unit, onWant: (workId: String, title: String) -&gt; Unit, onPlayEpisode: (EpisodeHit) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>LongParameterList:SeriesTest.kt$SeriesTest$(id: String, name: String, label: String? = null, role: String? = "primary", mime: String? = "video/mp4", hash: String? = "blake3:$id", path: String? = null, missing: String? = null)</ID>
     <ID>LongParameterList:SettingsScreen.kt$( session: AppSession, state: SettingsState, config: HeyarrConfig, authority: SessionAuthority?, onSaveConnection: (baseUrl: String, qualityProfile: String) -&gt; Unit, onResetConnection: () -&gt; Unit, onSignOut: () -&gt; Unit, onTelemetry: () -&gt; Unit, onDevice: () -&gt; Unit, onSourcesChanged: () -&gt; Unit, modifier: Modifier = Modifier, deviceSummary: String? = null, /** True while browsing anonymously — hides enrolled-only panels, shows "Sign in to save". */ isGuest: Boolean = false, onSignInToSave: () -&gt; Unit = {}, /** Run the mDNS → DNS discovery chain and save the node it finds. */ onDiscover: () -&gt; Unit = {}, )</ID>
     <ID>LongParameterList:SpaceSession.kt$SpaceSession$( private val client: PersonalStateClient, private val device: DeviceEncKey, private val crypto: SpaceCrypto = VoidbindSpaceCrypto, /** * Extra recipient X25519 public keys a newly-created space is also wrapped for, so a * peer device can read it too (ADR-0022, ADR-0049): the OTHER authorised member * devices (their `denc` keys, from the membership this device already folds) and, * when it can be provisioned to the phone, the recovery key. Empty means "only this * device can read it" — the honest degraded default before enrolment completes. */ private val additionalRecipients: () -&gt; List&lt;ByteArray&gt; = { emptyList() }, private val newSpaceId: () -&gt; String = { UUID.randomUUID().toString() }, private val newTag: () -&gt; String = { UUID.randomUUID().toString() }, private val newWriter: () -&gt; String = { UUID.randomUUID().toString() }, )</ID>
-    <ID>LongParameterList:Table.kt$( columns: List&lt;TableColumn&gt;, rowCount: Int, modifier: Modifier = Modifier, emptyText: String = "Nothing here.", minWidth: Dp? = null, detail: (@Composable (row: Int) -&gt; Unit)? = null, detailLabel: (row: Int) -&gt; String? = { null }, cell: @Composable RowScope.(row: Int, column: Int) -&gt; Unit, )</ID>
-    <ID>LongParameterList:Table.kt$(title: String, modifier: Modifier = Modifier, subtitle: String? = null, initiallyOpen: Boolean = true, trailing: (@Composable () -&gt; Unit)? = null, content: @Composable () -&gt; Unit)</ID>
-    <ID>LoopWithTooManyJumpStatements:ExternalMetadata.kt$ExternalMetadata$for</ID>
     <ID>LoopWithTooManyJumpStatements:MembershipOps.kt$MembershipOps$while</ID>
     <ID>LoopWithTooManyJumpStatements:SearchResultsJson.kt$SearchResultsJson$for</ID>
-    <ID>LoopWithTooManyJumpStatements:Variants.kt$Variants$for</ID>
     <ID>MagicNumber:AcquireClient.kt$AcquireClient$200</ID>
     <ID>MagicNumber:AcquireClient.kt$AcquireClient$201</ID>
     <ID>MagicNumber:AcquireClient.kt$AcquireClient$403</ID>
@@ -261,14 +182,12 @@
     <ID>MagicNumber:AppSession.kt$AppSession$4_500</ID>
     <ID>MagicNumber:AppSession.kt$AppSession$8_000</ID>
     <ID>MagicNumber:AppSession.kt$AppSession$9_000</ID>
-    <ID>MagicNumber:AppViewModel.kt$AppViewModel$1000</ID>
     <ID>MagicNumber:AudioQueueScreen.kt$0.16f</ID>
     <ID>MagicNumber:AudioQueueScreen.kt$0.7f</ID>
     <ID>MagicNumber:AudioSessionBridge.kt$AudioSessionBridge$1000.0</ID>
     <ID>MagicNumber:AuthInterceptor.kt$AuthInterceptor.Companion$443</ID>
     <ID>MagicNumber:AuthInterceptor.kt$AuthInterceptor.Companion$80</ID>
     <ID>MagicNumber:Cards.kt$0.16f</ID>
-    <ID>MagicNumber:Cards.kt$0.3f</ID>
     <ID>MagicNumber:Cards.kt$0.5f</ID>
     <ID>MagicNumber:Cards.kt$0.8f</ID>
     <ID>MagicNumber:Cards.kt$350</ID>
@@ -288,27 +207,17 @@
     <ID>MagicNumber:CruciformPairCallback.kt$CruciformPairCallback$0xFF</ID>
     <ID>MagicNumber:CruciformPairCallback.kt$CruciformPairCallback$3</ID>
     <ID>MagicNumber:CruciformPairCallback.kt$CruciformPairCallback$4</ID>
-    <ID>MagicNumber:DetailCurate.kt$10</ID>
     <ID>MagicNumber:DetailCurate.kt$20</ID>
     <ID>MagicNumber:DetailCurate.kt$3</ID>
     <ID>MagicNumber:DetailCurate.kt$4</ID>
     <ID>MagicNumber:DetailCurate.kt$5</ID>
     <ID>MagicNumber:DetailCurate.kt$6</ID>
     <ID>MagicNumber:DetailScreen.kt$0.22f</ID>
-    <ID>MagicNumber:DetailScreen.kt$10</ID>
-    <ID>MagicNumber:DetailScreen.kt$16f</ID>
-    <ID>MagicNumber:DetailScreen.kt$20</ID>
-    <ID>MagicNumber:DetailScreen.kt$3</ID>
-    <ID>MagicNumber:DetailScreen.kt$4</ID>
-    <ID>MagicNumber:DetailScreen.kt$5</ID>
-    <ID>MagicNumber:DetailScreen.kt$6</ID>
-    <ID>MagicNumber:DetailScreen.kt$9f</ID>
     <ID>MagicNumber:DetailWatch.kt$10</ID>
     <ID>MagicNumber:DetailWatch.kt$16f</ID>
     <ID>MagicNumber:DetailWatch.kt$3</ID>
     <ID>MagicNumber:DetailWatch.kt$4</ID>
     <ID>MagicNumber:DetailWatch.kt$5</ID>
-    <ID>MagicNumber:DetailWatch.kt$6</ID>
     <ID>MagicNumber:DetailWatch.kt$9f</ID>
     <ID>MagicNumber:DevicePairingSteps.kt$DevicePairingSteps$1000</ID>
     <ID>MagicNumber:DiscoverClient.kt$DiscoverClient$200</ID>
@@ -329,9 +238,6 @@
     <ID>MagicNumber:EnrolScreen.kt$60</ID>
     <ID>MagicNumber:EnrolScreen.kt$8</ID>
     <ID>MagicNumber:EnrolScreen.kt$999</ID>
-    <ID>MagicNumber:ExternalMetadata.kt$ExternalMetadata$32</ID>
-    <ID>MagicNumber:ExternalMetadata.kt$ExternalMetadata.Companion$200</ID>
-    <ID>MagicNumber:ExternalMetadata.kt$ExternalParsers$400</ID>
     <ID>MagicNumber:Fixtures.kt$FakeHeyarrTransport$200</ID>
     <ID>MagicNumber:Fixtures.kt$FakeHeyarrTransport$400</ID>
     <ID>MagicNumber:Fixtures.kt$FakeHeyarrTransport$404</ID>
@@ -363,7 +269,6 @@
     <ID>MagicNumber:HeyarrApi.kt$HeyarrApi$403</ID>
     <ID>MagicNumber:HeyarrApi.kt$HeyarrApi$50</ID>
     <ID>MagicNumber:HeyarrNavHost.kt$3</ID>
-    <ID>MagicNumber:HeyarrTheme.kt$0.18f</ID>
     <ID>MagicNumber:HomeScreen.kt$220</ID>
     <ID>MagicNumber:HomeScreen.kt$24</ID>
     <ID>MagicNumber:HomeScreen.kt$40</ID>
@@ -411,10 +316,6 @@
     <ID>MagicNumber:PlayerScreen.kt$3500</ID>
     <ID>MagicNumber:PlayerScreen.kt$9f</ID>
     <ID>MagicNumber:PlaylistScreens.kt$3</ID>
-    <ID>MagicNumber:Primitives.kt$0.22f</ID>
-    <ID>MagicNumber:Primitives.kt$0.55f</ID>
-    <ID>MagicNumber:Primitives.kt$0.5f</ID>
-    <ID>MagicNumber:Primitives.kt$900</ID>
     <ID>MagicNumber:ProgressReporter.kt$ConsumptionReporter$1000.0</ID>
     <ID>MagicNumber:ProgressReporter.kt$ConsumptionReporter$409</ID>
     <ID>MagicNumber:PsJson.kt$PsJson$0x20</ID>
@@ -422,14 +323,12 @@
     <ID>MagicNumber:PsJson.kt$PsJson$0x7F</ID>
     <ID>MagicNumber:PsJson.kt$PsJson$4</ID>
     <ID>MagicNumber:ReaderActivity.kt$ReaderActivity$48</ID>
-    <ID>MagicNumber:Reasons.kt$3</ID>
     <ID>MagicNumber:SealedSecretStore.kt$SealedSecretStore$0xFF</ID>
     <ID>MagicNumber:SealedSecretStore.kt$SealedSecretStore$16</ID>
     <ID>MagicNumber:SealedSecretStore.kt$SealedSecretStore$24</ID>
     <ID>MagicNumber:SealedSecretStore.kt$SealedSecretStore$3</ID>
     <ID>MagicNumber:SealedSecretStore.kt$SealedSecretStore$4</ID>
     <ID>MagicNumber:SealedSecretStore.kt$SealedSecretStore$8</ID>
-    <ID>MagicNumber:Series.kt$Series$4</ID>
     <ID>MagicNumber:SessionAudioPlayer.kt$SessionAudioPlayer$3_000</ID>
     <ID>MagicNumber:SessionAudioPlayer.kt$SessionAudioPlayer$500</ID>
     <ID>MagicNumber:SessionClient.kt$SessionClient$200</ID>
@@ -478,28 +377,13 @@
     <ID>MatchingDeclarationName:Routes.kt$Route</ID>
     <ID>MatchingDeclarationName:SeriesWant.kt$SeriesWantState</ID>
     <ID>MatchingDeclarationName:SettingsScreen.kt$SettingsState</ID>
-    <ID>MatchingDeclarationName:Table.kt$TableColumn</ID>
     <ID>MatchingDeclarationName:TelemetryScreen.kt$TelemetryState</ID>
     <ID>MatchingDeclarationName:WantSheet.kt$WantRequest</ID>
     <ID>MaxLineLength:AppGraph.kt$AppGraph$/** A bare client for the public metadata sources: no interceptor, so the node's credential never leaves for another host. */</ID>
     <ID>MaxLineLength:AppGraph.kt$AppGraph$/** Cover art and synopses from keyless public sources, cached under the app's cache dir (Settings → Appearance turns it off). */</ID>
     <ID>MaxLineLength:AppGraph.kt$AppGraph$ExternalMetadata(File(app.cacheDir, "meta"), enabled = { settings.externalMetadata }, fetch = PhoneExternalMetadata.okHttpFetch(bareHttp))</ID>
     <ID>MaxLineLength:AppGraph.kt$AppGraph$private</ID>
-    <ID>MaxLineLength:AppSession.kt$AppSession$e is McpTransportException -&gt; { noteTransportFailure(e); toast(Toast.Kind.ERROR, "Can't reach heyarr", e.message) }</ID>
-    <ID>MaxLineLength:AppSession.kt$AppSession$fun noteSuccess()</ID>
-    <ID>MaxLineLength:AppSession.kt$AppSession$if (ok) { lastOkAt = System.currentTimeMillis(); connection = Connection.ONLINE } else { failures++; connection = Connection.OFFLINE }</ID>
-    <ID>MaxLineLength:AppSession.kt$AppSession$is McpResult.Ok -&gt; { toast(Toast.Kind.SUCCESS, "Wanted “$title”", "Measured against the $profile profile."); refreshIndex() }</ID>
-    <ID>MaxLineLength:AppSession.kt$AppSession$scope.launch { delay(if (kind == Toast.Kind.REFUSED || kind == Toast.Kind.ERROR) 9_000 else 4_500); toasts.remove(t) }</ID>
-    <ID>MaxLineLength:AppViewModel.kt$AppViewModel$"(${view.rejected[MembershipOp.hash(own)] ?: view.ineffective[MembershipOp.hash(own)] ?: "not admitted"})."</ID>
     <ID>MaxLineLength:AppViewModel.kt$AppViewModel$/** Resolve the server to default to, using the current effective URL as the manual fallback. Off `Dispatchers.IO`. */</ID>
-    <ID>MaxLineLength:AppViewModel.kt$AppViewModel$/** `POST /enrol` again for a stored admission the node has not accepted (e.g. the proof could not be signed in the background). */</ID>
-    <ID>MaxLineLength:AppViewModel.kt$AppViewModel$_enrolState.value = EnrolUiState.CompareSas(info, ps.sas, ps.sameDevice, ps.deadlineMillis, ps.awaitingAdmission, ps.handedOff)</ID>
-    <ID>MaxLineLength:AppViewModel.kt$AppViewModel$_enrolState.value = EnrolUiState.Enrolled(shown, ps.registration, ps.needsAdmin, retriable = ps.retriable)</ID>
-    <ID>MaxLineLength:AppViewModel.kt$AppViewModel$_enrolState.value = EnrolUiState.Error(_deviceInfo.value, "could not sign with the device key: ${it.message}")</ID>
-    <ID>MaxLineLength:AppViewModel.kt$AppViewModel$if</ID>
-    <ID>MaxLineLength:AppViewModel.kt$AppViewModel$val fresh = if (ring != null) withContext(Dispatchers.IO) { runCatching { ring.info() }.getOrNull() } else null</ID>
-    <ID>MaxLineLength:AppViewModel.kt$AppViewModel$val remote = runCatching { MembershipClient(rawTransport, config.baseUrl).fetch(usr) }.getOrNull() ?: return true</ID>
-    <ID>MaxLineLength:AppViewModel.kt$AppViewModel$val view = runCatching { Membership.evaluate(usr, ring.knownOps(), nowSeconds()) }.getOrNull() ?: return emptyList()</ID>
     <ID>MaxLineLength:AppViewModel.kt$UnavailablePairingSteps$override suspend fun handshake(inviteQr: String, deadlineMillis: Long): PairingOutcome&lt;PairingSteps.Handshaked&gt;</ID>
     <ID>MaxLineLength:AppViewModel.kt$UnavailablePairingSteps$override suspend fun register(op: String): EnrolClient.Outcome</ID>
     <ID>MaxLineLength:AppViewModel.kt$UnavailablePairingSteps$private val failed = PairingOutcome.Failed(PairingFailureKind.PROTOCOL, "pairing is not available in this build", "")</ID>
@@ -519,10 +403,7 @@
     <ID>MaxLineLength:AudioQueueScreen.kt$Text(listOfNotNull(item.artist, item.album).joinToString(" · "), style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted)</ID>
     <ID>MaxLineLength:AudioQueueScreen.kt$Text(track.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:AudioQueueScreen.kt$colors = SliderDefaults.colors(thumbColor = theme.accentGradientEnd, activeTrackColor = theme.accent, inactiveTrackColor = Tokens.surface3)</ID>
-    <ID>MaxLineLength:AudioQueueScreen.kt$horizontalArrangement = Arrangement.spacedBy(12.dp)</ID>
-    <ID>MaxLineLength:AudioQueueScreen.kt$modifier = Modifier.fillMaxWidth().padding(top = 8.dp).semantics { contentDescription = "Position" }</ID>
     <ID>MaxLineLength:AudioQueueScreen.kt$state.error?.let { Notice("Playback error: $it", tone = Tokens.danger, modifier = Modifier.padding(top = 8.dp)) }</ID>
-    <ID>MaxLineLength:AudioQueueScreen.kt$value = dragging ?: state.fraction</ID>
     <ID>MaxLineLength:AuthInterceptorTest.kt$AuthInterceptorTest$assertTrue(AuthInterceptor.shouldStamp("https://node.example:443/api/v1/works", "https://node.example", hasAuth = false))</ID>
     <ID>MaxLineLength:Blake3Test.kt$Blake3Test$@Test fun abc()</ID>
     <ID>MaxLineLength:Blake3Test.kt$Blake3Test$@Test fun block64()</ID>
@@ -540,9 +421,6 @@
     <ID>MaxLineLength:Cards.kt$DropdownMenuItem(text = { Text("Open", color = Tokens.textPrimary) }, leadingIcon = { Icon(Icons.Rounded.OpenInNew, null, tint = Tokens.textMuted) }, onClick = { menuOpen = false; onOpen() })</ID>
     <ID>MaxLineLength:Cards.kt$Icon(type.icon(), contentDescription = null, tint = theme.accent.copy(alpha = 0.55f), modifier = Modifier.size(glyphSize))</ID>
     <ID>MaxLineLength:Cards.kt$RailState.Loading -&gt; Row(Modifier.padding(horizontal = padding), horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap)) { repeat(4) { MediaCardSkeleton(skeletonAspect, skeletonWidth) } }</ID>
-    <ID>MaxLineLength:Cards.kt$Row</ID>
-    <ID>MaxLineLength:Cards.kt$Skeleton(Modifier.fillMaxWidth(0.5f).height(12.dp)); Skeleton(Modifier.fillMaxWidth(0.3f).height(10.dp))</ID>
-    <ID>MaxLineLength:Cards.kt$Skeleton(Modifier.width(80.dp).height(14.dp))</ID>
     <ID>MaxLineLength:Cards.kt$Text(title, style = MaterialTheme.typography.displaySmall, color = Tokens.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:Cards.kt$Text(title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:Cards.kt$Text(title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))</ID>
@@ -550,25 +428,21 @@
     <ID>MaxLineLength:Cards.kt$for (a in actions) DropdownMenuItem(text = { Text(a.label, color = Tokens.textPrimary) }, leadingIcon = a.icon?.let { ic -&gt; @Composable { Icon(ic, null, tint = Tokens.textMuted) } }, onClick = { menuOpen = false; a.onClick() })</ID>
     <ID>MaxLineLength:Cards.kt$fun</ID>
     <ID>MaxLineLength:Cards.kt$if</ID>
-    <ID>MaxLineLength:Cards.kt$if (!compact) Text(status.label.uppercase(), style = MaterialTheme.typography.labelSmall, color = tone, maxLines = 1)</ID>
     <ID>MaxLineLength:Cards.kt$if (description != null) Text(description, style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted, maxLines = 3, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:Cards.kt$if (kicker != null) Text(kicker.uppercase(), style = MaterialTheme.typography.labelSmall, color = theme.accentGradientEnd, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))</ID>
     <ID>MaxLineLength:Cards.kt$if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:Cards.kt$if (theme.spineShadow) Box(Modifier.width(10.dp).fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent))))</ID>
     <ID>MaxLineLength:Cards.kt$if (wantable) DropdownMenuItem(text = { Text("Want", color = Tokens.textPrimary) }, leadingIcon = { Icon(Icons.Rounded.Add, null, tint = theme.accentGradientEnd) }, onClick = { menuOpen = false; onWant?.invoke() })</ID>
     <ID>MaxLineLength:Cards.kt$is RailState.Loaded</ID>
-    <ID>MaxLineLength:Cards.kt$modifier.background(Tokens.bgBase.copy(alpha = 0.72f), RectangleShape).border(Tokens.hairline, tone.copy(alpha = 0.45f), RectangleShape).padding(horizontal = if (compact) 6.dp else 8.dp, vertical = if (compact) 4.dp else 3.dp)</ID>
     <ID>MaxLineLength:CastScreen.kt$Column</ID>
     <ID>MaxLineLength:CastScreen.kt$Notice("Playback position is the device's own report, live. heyarr keeps no play history this client can read; to send something here, use Play on… from a work.", icon = Icons.Rounded.Cast, tone = Tokens.slate)</ID>
     <ID>MaxLineLength:CastScreen.kt$Text(clock(st.elapsedSeconds) + (dur?.let { " / " + clock(it) } ?: ""), style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted, modifier = Modifier.weight(1f))</ID>
     <ID>MaxLineLength:CastScreen.kt$Text(st.state.lowercase().replace('_', ' '), style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)</ID>
     <ID>MaxLineLength:CastScreen.kt$else</ID>
-    <ID>MaxLineLength:CastScreen.kt$for (r in state.renderers!!) FilterChip(r.name, state.selected?.udn == r.udn, { state.selected = r; state.status = null }, icon = Icons.Rounded.Cast)</ID>
     <ID>MaxLineLength:CastScreen.kt$if</ID>
     <ID>MaxLineLength:CastScreen.kt$if (r.subtitle.isNotBlank()) Text(r.subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
     <ID>MaxLineLength:CastScreen.kt$if (st == null) Text("No status reported.", color = Tokens.textMuted) else Transport(st, state.busy, ::control)</ID>
     <ID>MaxLineLength:CastScreen.kt$if (st.elapsedSeconds == 0L &amp;&amp; playing) KeyValue("position", "not reported — some devices report none until they have parsed enough of the stream", valueColor = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:CastScreen.kt$onSuccess = { list -&gt; state.renderers = list; if (state.selected == null) state.selected = list.firstOrNull() }</ID>
     <ID>MaxLineLength:CastScreen.kt$session.io { session.api.control(r.name, action) }.onSuccess { res -&gt; if (res is McpResult.Refused) session.refused(res) }</ID>
     <ID>MaxLineLength:CastScreen.kt$state.error != null &amp;&amp; state.renderers == null -&gt; ErrorState("Couldn't list renderers", state.error, { load() })</ID>
     <ID>MaxLineLength:CastScreen.kt$state.renderers!!.isEmpty() -&gt; EmptyState("No renderers found", detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again.", icon = Icons.Rounded.Cast)</ID>
@@ -581,7 +455,6 @@
     <ID>MaxLineLength:ChangeIdTest.kt$ChangeIdTest$assertEquals("change ${JsonScan.stringField(v, "name")}", want, PersonalStateId.changeId(space, parents, ct))</ID>
     <ID>MaxLineLength:ChangeIdTest.kt$ChangeIdTest$assertEquals("snapshot ${JsonScan.stringField(v, "name")}", want, PersonalStateId.snapshotId(space, frontier, ct))</ID>
     <ID>MaxLineLength:ClientCapabilitiesTest.kt$ClientCapabilitiesTest$"""{"asset_id":"a\"b","client":{"containers":["mp4","mkv","webm"],"video":["h264"],"audio":["aac","opus"],"max_height":1080}}"""</ID>
-    <ID>MaxLineLength:ConsumptionClient.kt$ConsumptionClient$return</ID>
     <ID>MaxLineLength:ConsumptionClient.kt$ConsumptionClient$val resp = http.post(transitionUrl(baseUrl(), sessionId), transitionBody(transition, pos), "application/json", h)</ID>
     <ID>MaxLineLength:ConsumptionClient.kt$ConsumptionClient.Companion$"{\"asset_id\":" + AcquireClient.jsonString(assetId) + ",\"device_id\":" + AcquireClient.jsonString(deviceId) + ",\"verb\":" + AcquireClient.jsonString(verb) + "}"</ID>
     <ID>MaxLineLength:ConsumptionClient.kt$ConsumptionClient.Companion$"{\"containers\":" + arr(it.containers) + ",\"video_codecs\":" + arr(it.video) + ",\"audio_codecs\":" + arr(it.audio)</ID>
@@ -612,7 +485,6 @@
     <ID>MaxLineLength:CrdtParityTest.kt$CrdtParityTest$private</ID>
     <ID>MaxLineLength:CruciformPairCallback.kt$CruciformPairCallback$if</ID>
     <ID>MaxLineLength:CruciformPairCallbackTest.kt$CruciformPairCallbackTest$assertTrue(PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair-done?session=x") is PairDeepLink.Done)</ID>
-    <ID>MaxLineLength:Decisions.kt$Decisions$assetId = t.id</ID>
     <ID>MaxLineLength:Decisions.kt$Decisions$fun</ID>
     <ID>MaxLineLength:DecisionsTest.kt$DecisionsTest$/** The shell's decisions are pure: what the player route shows, when the bar shows, which tile lights, how an album queues. */</ID>
     <ID>MaxLineLength:DecisionsTest.kt$DecisionsTest$WorkAsset(id = "t1", editionId = "e", filename = "01 - Everything.flac", mime = "audio/flac", blobHash = hash)</ID>
@@ -620,30 +492,25 @@
     <ID>MaxLineLength:DecisionsTest.kt$DecisionsTest$private val track = AudioItem(assetId = "a1", workId = "w", title = "One", contentUrl = "https://n/api/v1/blobs/$hash/content")</ID>
     <ID>MaxLineLength:DecisionsTest.kt$DecisionsTest$private val video = NowPlaying(PlaybackTarget("https://n/api/v1/blobs/$hash/content", Credential.Session("t"), isVideo = true), "Film")</ID>
     <ID>MaxLineLength:DecisionsTest.kt$DecisionsTest$val work = Work(id = "w", title = "Kid A", kind = "music", artist = "Radiohead", artworkPath = "/api/v1/blobs/$hash/content")</ID>
-    <ID>MaxLineLength:DetailCurate.kt$.</ID>
     <ID>MaxLineLength:DetailCurate.kt$/** "Would this be accepted?" — describe a release, get every rule back. Absent fields stay absent so they read as undetermined. */</ID>
     <ID>MaxLineLength:DetailCurate.kt$0 -&gt; Cell(t.filename ?: t.id, color = if (t.isPlayable || t.role == "artwork") Tokens.textPrimary else Tokens.textDisabled)</ID>
     <ID>MaxLineLength:DetailCurate.kt$0 -&gt; Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { Cell(cand.title); if (cand.selected) Text("selected", style = MaterialTheme.typography.labelSmall, color = LocalMediaTheme.current.accentGradientEnd) }</ID>
     <ID>MaxLineLength:DetailCurate.kt$1 -&gt; Cell(session.profiles.firstOrNull { it.id == w.qualityProfileId }?.name ?: w.qualityProfileId ?: "?", mono = true)</ID>
-    <ID>MaxLineLength:DetailCurate.kt$2 -&gt; Text(when { v == null -&gt; "unmeasured"; v.accepted -&gt; "accepted"; else -&gt; "rejected" }, style = MaterialTheme.typography.labelMedium, color = verdictColor(when { v == null -&gt; ""; v.accepted -&gt; "pass"; else -&gt; "fail" }))</ID>
     <ID>MaxLineLength:DetailCurate.kt$3 -&gt; Text(sat?.contentSatisfaction?.replace('_', ' ') ?: (w.content ?: "…"), style = MaterialTheme.typography.labelMedium, color = verdictColor(if ((sat?.contentSatisfaction ?: w.content) == "satisfied") "pass" else "fail"))</ID>
     <ID>MaxLineLength:DetailCurate.kt$4 -&gt; Cell(sat?.let { if (it.placementUnproven) "unproven (single node)" else it.placementSatisfaction } ?: (w.placement ?: "…"), muted = true)</ID>
-    <ID>MaxLineLength:DetailCurate.kt$4 -&gt; Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { for (x in v?.rejectedBy.orEmpty().take(2)) RuleCode(x.rule, tone = Tokens.danger); if ((v?.rejectedBy?.size ?: 0) &gt; 2) Cell("+${v!!.rejectedBy.size - 2}", muted = true) }</ID>
     <ID>MaxLineLength:DetailCurate.kt$3 -&gt; Text(if (cand.accepted) "accepted" else "rejected", style = MaterialTheme.typography.labelMedium, color = verdictColor(if (cand.accepted) "pass" else "fail"))</ID>
     <ID>MaxLineLength:DetailCurate.kt$4 -&gt; if (t.missingSince != null) Text("missing", style = MaterialTheme.typography.labelSmall, color = Tokens.danger) else Cell("")</ID>
     <ID>MaxLineLength:DetailCurate.kt$5 -&gt; Cell(sat?.let { (if (it.upgradeEligible) "eligible" else it.upgradeStatus.replace('_', ' ')) + (it.upgradeDetail.takeIf { d -&gt; d.isNotBlank() }?.let { d -&gt; " — $d" } ?: "") } ?: (w.detail ?: ""), muted = true, maxLines = 2)</ID>
     <ID>MaxLineLength:DetailCurate.kt$DataTable</ID>
-    <ID>MaxLineLength:DetailCurate.kt$DetailPlayback$val</ID>
     <ID>MaxLineLength:DetailCurate.kt$Field("Resolution (480/720/1080/2160)", resolution, Modifier.weight(1f), keyboard = KeyboardType.Number) { resolution = it.filter { c -&gt; c.isDigit() } }</ID>
     <ID>MaxLineLength:DetailCurate.kt$Field("Size (bytes)", size, Modifier.weight(1f), keyboard = KeyboardType.Number) { size = it.filter { c -&gt; c.isDigit() } }</ID>
     <ID>MaxLineLength:DetailCurate.kt$Icon(Icons.Rounded.ClosedCaption, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(16.dp))</ID>
     <ID>MaxLineLength:DetailCurate.kt$Icon(Icons.Rounded.Image, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(16.dp))</ID>
     <ID>MaxLineLength:DetailCurate.kt$Notice("heyarr's tool surface has no caption or artwork search yet: sidecars arrive with a release or a scan. Asking the indexers again (Indexer candidates) is the only fetch this node can queue.", tone = Tokens.slate)</ID>
-    <ID>MaxLineLength:DetailCurate.kt$Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (p in profiles) FilterChip(p.name, profile == p.name, { profile = p.name }) }</ID>
     <ID>MaxLineLength:DetailCurate.kt$Row</ID>
-    <ID>MaxLineLength:DetailCurate.kt$SecondaryButton</ID>
-    <ID>MaxLineLength:DetailCurate.kt$Section("Score a release", subtitle = "Ask the profile about a release you are looking at", initiallyOpen = false) { ExplainPanel(session, wants) }</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (p in profiles) FilterChip(p.name, profile == p.name, { profile = p.name }) }</ID>
     <ID>MaxLineLength:DetailCurate.kt$Section</ID>
+    <ID>MaxLineLength:DetailCurate.kt$Section("Score a release", subtitle = "Ask the profile about a release you are looking at", initiallyOpen = false) { ExplainPanel(session, wants) }</ID>
     <ID>MaxLineLength:DetailCurate.kt$Text("${art.size} artwork file${if (art.size == 1) "" else "s"}", style = MaterialTheme.typography.bodyMedium, color = Tokens.textPrimary)</ID>
     <ID>MaxLineLength:DetailCurate.kt$Text("${subs.size} caption file${if (subs.size == 1) "" else "s"}", style = MaterialTheme.typography.bodyMedium, color = Tokens.textPrimary)</ID>
     <ID>MaxLineLength:DetailCurate.kt$Text("Describe a release and heyarr explains, rule by rule, whether the profile would accept it. Leave a field blank when you do not know — a blank reads as undetermined, a guess reads as a claim.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
@@ -652,56 +519,28 @@
     <ID>MaxLineLength:DetailCurate.kt$columns = listOf(TableColumn("File", width = 260.dp), TableColumn("Size", width = 80.dp, alignEnd = true), TableColumn("Verdict", width = 100.dp), TableColumn("Score", width = 60.dp, alignEnd = true), TableColumn("Rejected by", width = 220.dp))</ID>
     <ID>MaxLineLength:DetailCurate.kt$columns = listOf(TableColumn("Release", width = 260.dp), TableColumn("Provider", width = 100.dp), TableColumn("Score", width = 60.dp, alignEnd = true), TableColumn("Verdict", width = 90.dp), TableColumn("", width = 120.dp, alignEnd = true))</ID>
     <ID>MaxLineLength:DetailCurate.kt$columns = listOf(TableColumn("Scope", width = 70.dp), TableColumn("Profile", width = 110.dp), TableColumn("State", width = 110.dp), TableColumn("Content", width = 110.dp), TableColumn("Placement", width = 140.dp), TableColumn("Upgrade", width = 220.dp), TableColumn("Monitor", width = 120.dp, alignEnd = true))</ID>
-    <ID>MaxLineLength:DetailCurate.kt$detail = { r -&gt; Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { RejectedBy(cands[r].second.rejectedBy); ReasonList(cands[r].second.reasons) } }</ID>
     <ID>MaxLineLength:DetailCurate.kt$detail = { r -&gt; verdicts[held[r].id]?.let { ReasonList(it.reasons) } ?: Text("No verdict — this file is not measured by any want.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }</ID>
-    <ID>MaxLineLength:DetailCurate.kt$else</ID>
     <ID>MaxLineLength:DetailCurate.kt$for (w in wants) (state.satisfaction[w.id] as? McpResult.Refused)?.let { Notice("get_content_satisfaction: ${it.message}", tone = Tokens.danger) }</ID>
-    <ID>MaxLineLength:DetailCurate.kt$fun</ID>
+    <ID>MaxLineLength:DetailCurate.kt$if</ID>
     <ID>MaxLineLength:DetailCurate.kt$if (seasons.isNotEmpty()) Text("· ${seasons.sumOf { s -&gt; s.episodes.count { it.subtitles.isEmpty() &amp;&amp; it.isPlayable } }} held episodes without captions", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
     <ID>MaxLineLength:DetailCurate.kt$if (seasons.isNotEmpty()) Text("· ${seasons.sumOf { s -&gt; s.episodes.count { it.thumbnail == null } }} episodes without a thumbnail", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailCurate.kt$if</ID>
     <ID>MaxLineLength:DetailCurate.kt$internal</ID>
     <ID>MaxLineLength:DetailCurate.kt$is McpResult.Ok</ID>
     <ID>MaxLineLength:DetailCurate.kt$null -&gt; if (hash != null) Skeleton(Modifier.fillMaxWidth().height(40.dp)) else Text("Nothing to check.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailCurate.kt$private</ID>
     <ID>MaxLineLength:DetailCurate.kt$rowCount = cands.size</ID>
-    <ID>MaxLineLength:DetailCurate.kt$rowCount = wants.size</ID>
     <ID>MaxLineLength:DetailCurate.kt$scope.launch { session.io { session.api.monitor(w.id, !w.monitor) }.onSuccess { res -&gt; if (res is McpResult.Refused) session.refused(res) else session.refreshIndex() } }</ID>
     <ID>MaxLineLength:DetailCurate.kt$scope.launch { session.io { session.api.searchReleases(wants.first().id) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Search queued", "Indexers answer within a minute; the Downloads tab under Library shows the job."); is McpResult.Refused -&gt; session.refused(r) } } }</ID>
     <ID>MaxLineLength:DetailCurate.kt$scope.launch { session.io { session.api.verifyBlob(hash) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Verification queued", "Re-hashing runs as a job; see Library → Downloads."); is McpResult.Refused -&gt; session.refused(r) } } }</ID>
-    <ID>MaxLineLength:DetailCurate.kt$session.io { session.api.acquire(w.id, cand.candidateId) }.onSuccess { res -&gt; when (res) { is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Acquiring", cand.title); session.refreshIndex(); reload() }; is McpResult.Refused -&gt; session.refused(res) } }</ID>
     <ID>MaxLineLength:DetailCurate.kt$val rel = ReleaseToExplain("candidate", title.ifBlank { "untitled release" }, ReleaseAttributes(resolution = resolution.toIntOrNull(), source = source, videoCodec = codec, sizeBytes = size.toLongOrNull()))</ID>
     <ID>MaxLineLength:DetailCurate.kt$val rows = listOf("work id" to work.id, "work key" to (work.workKey ?: "—"), "type" to type.label) + work.externalIds.map { it.key to it.value } + state.externalIds.map { it.source to it.value }</ID>
     <ID>MaxLineLength:DetailCurate.kt$val verdicts = wants.flatMap { w -&gt; (state.satisfaction[w.id] as? McpResult.Ok)?.value?.assets.orEmpty() }.associateBy { it.assetId }</ID>
     <ID>MaxLineLength:DetailCurate.kt$var profile by remember(profiles) { mutableStateOf(wants.firstOrNull()?.let { w -&gt; profiles.firstOrNull { it.id == w.qualityProfileId }?.name } ?: profiles.firstOrNull()?.name ?: session.defaultProfile) }</ID>
     <ID>MaxLineLength:DetailCurate.kt$when (c) { 0 -&gt; Cell(rep.peer); 1 -&gt; Cell(rep.state, mono = true); 2 -&gt; Text(if (rep.verified) "yes" else "no", style = MaterialTheme.typography.labelMedium, color = verdictColor(if (rep.verified) "pass" else "undetermined")) }</ID>
     <ID>MaxLineLength:DetailCurate.kt$when (c) { 0 -&gt; Cell(v.title); 1 -&gt; Cell(Variants.seasonOf(v)?.let { "S$it" } ?: "", mono = true, muted = true); 2 -&gt; GhostButton("Open", { onOpen(detailRoute(v.id, MediaType.from(v.kind), v.title, from = work.title, curate = true)) }) }</ID>
-    <ID>MaxLineLength:DetailCurate.kt$}</ID>
     <ID>MaxLineLength:DetailScreen.kt$.</ID>
-    <ID>MaxLineLength:DetailScreen.kt$/** "Would this be accepted?" — describe a release, get every rule back. Absent fields stay absent so they read as undetermined. */</ID>
-    <ID>MaxLineLength:DetailScreen.kt$0 -&gt; Cell(t.filename ?: t.id, color = if (t.isPlayable || t.role == "artwork") Tokens.textPrimary else Tokens.textDisabled)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$0 -&gt; Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { Cell(cand.title); if (cand.selected) Text("selected", style = MaterialTheme.typography.labelSmall, color = LocalMediaTheme.current.accentGradientEnd) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$1 -&gt; Cell(session.profiles.firstOrNull { it.id == w.qualityProfileId }?.name ?: w.qualityProfileId ?: "?", mono = true)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$2 -&gt; Text(when { v == null -&gt; "unmeasured"; v.accepted -&gt; "accepted"; else -&gt; "rejected" }, style = MaterialTheme.typography.labelMedium, color = verdictColor(when { v == null -&gt; ""; v.accepted -&gt; "pass"; else -&gt; "fail" }))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$3 -&gt; Text(sat?.contentSatisfaction?.replace('_', ' ') ?: (w.content ?: "…"), style = MaterialTheme.typography.labelMedium, color = verdictColor(if ((sat?.contentSatisfaction ?: w.content) == "satisfied") "pass" else "fail"))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$4 -&gt; Cell(sat?.let { if (it.placementUnproven) "unproven (single node)" else it.placementSatisfaction } ?: (w.placement ?: "…"), muted = true)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$4 -&gt; Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) { for (x in v?.rejectedBy.orEmpty().take(2)) RuleCode(x.rule, tone = Tokens.danger); if ((v?.rejectedBy?.size ?: 0) &gt; 2) Cell("+${v!!.rejectedBy.size - 2}", muted = true) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$4 -&gt; Text(if (cand.accepted) "accepted" else "rejected", style = MaterialTheme.typography.labelMedium, color = verdictColor(if (cand.accepted) "pass" else "fail"))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$4 -&gt; if (t.missingSince != null) Text("missing", style = MaterialTheme.typography.labelSmall, color = Tokens.danger) else Cell("")</ID>
-    <ID>MaxLineLength:DetailScreen.kt$5 -&gt; Cell(sat?.let { (if (it.upgradeEligible) "eligible" else it.upgradeStatus.replace('_', ' ')) + (it.upgradeDetail.takeIf { d -&gt; d.isNotBlank() }?.let { d -&gt; " — $d" } ?: "") } ?: (w.detail ?: ""), muted = true, maxLines = 2)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Box</ID>
-    <ID>MaxLineLength:DetailScreen.kt$DataTable</ID>
     <ID>MaxLineLength:DetailScreen.kt$DetailPlayback$val</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Field("Resolution (480/720/1080/2160)", resolution, Modifier.weight(1f), keyboard = KeyboardType.Number) { resolution = it.filter { c -&gt; c.isDigit() } }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Field("Size (bytes)", size, Modifier.weight(1f), keyboard = KeyboardType.Number) { size = it.filter { c -&gt; c.isDigit() } }</ID>
     <ID>MaxLineLength:DetailScreen.kt$GhostButton("Search the network again", { scope.launch { session.io { session.api.renderers(refresh = true) }.onSuccess { state.renderers = it } } })</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Icon(Icons.Rounded.ClosedCaption, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(14.dp))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Icon(Icons.Rounded.ClosedCaption, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(16.dp))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Icon(Icons.Rounded.Image, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(16.dp))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Icon(Icons.Rounded.Info, contentDescription = null, tint = Tokens.textDisabled, modifier = Modifier.size(14.dp))</ID>
     <ID>MaxLineLength:DetailScreen.kt$Icon(if (t == DetailTab.WATCH) Icons.Rounded.PlayArrow else Icons.Rounded.Build, contentDescription = null, tint = if (active) theme.accentGradientEnd else Tokens.textMuted, modifier = Modifier.size(14.dp))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$IconButtonRound(Icons.Rounded.Cast, "Play ${ep.label} on a renderer", { toggleCast(session, state, ep.asset.id, scope) }, size = 36.dp)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$IconButtonRound(Icons.Rounded.PlayArrow, "Play ${ep.label}", { onPlay(ep) }, size = 40.dp, filled = true, enabled = state.busy == null)</ID>
     <ID>MaxLineLength:DetailScreen.kt$IconButtonRound(Icons.Rounded.PlaylistAdd, "Add $title to a playlist", { personal.onAddToPlaylist(entryId) }, size = 36.dp)</ID>
     <ID>MaxLineLength:DetailScreen.kt$LazyColumn</ID>
     <ID>MaxLineLength:DetailScreen.kt$MediaType.MOVIE -&gt; listOf(work.year?.toString(), primaryFile?.let { Series.qualityTags(it).joinToString(" · ").ifBlank { null } }, primaryFile?.sizeBytes?.let { WorkAsset.formatBytes(it) })</ID>
@@ -709,117 +548,38 @@
     <ID>MaxLineLength:DetailScreen.kt$MediaType.MUSIC, MediaType.AUDIOBOOK -&gt; listOf(work.artist ?: work.author, work.year?.toString(), "${Tracks.playable(state.assets.orEmpty()).size} tracks")</ID>
     <ID>MaxLineLength:DetailScreen.kt$MediaType.SERIES -&gt; item { SeasonsBlock(session, detail, seasons, state, wants, play, cover.url) }</ID>
     <ID>MaxLineLength:DetailScreen.kt$MediaType.SERIES -&gt; listOf(work.year?.toString(), if (seasons.isNotEmpty()) "${seasons.count { it.number != null &amp;&amp; it.number != 0 }} seasons" else null, if (state.assets != null) "$held episodes held" else null)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).border(Tokens.hairline, Tokens.border.copy(alpha = 0.6f), RoundedCornerShape(Tokens.radiusInput)).padding(8.dp)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Notice("heyarr's tool surface has no caption or artwork search yet: sidecars arrive with a release or a scan. Asking the indexers again (Indexer candidates) is the only fetch this node can queue.", tone = Tokens.slate)</ID>
     <ID>MaxLineLength:DetailScreen.kt$PrimaryButton("Continue", { play.playVideo(work, cont.assetId, cont.blobHash, cont.mime ?: work.mime, "${work.title} — ${cont.subtitle ?: cont.editionLabel ?: ""}".trimEnd(' ', '—'), cont.positionSeconds, queueOf(work, seasons, session), art, emptyList()) }, icon = Icons.Rounded.PlayArrow, enabled = state.busy == null)</ID>
     <ID>MaxLineLength:DetailScreen.kt$PrimaryButton("Listen", { play.playAudio(work, audioTracks, 0) }, icon = Icons.Rounded.Headphones)</ID>
     <ID>MaxLineLength:DetailScreen.kt$PrimaryButton("Play ${first.code ?: ""}".trim(), { play.playVideo(work, first.asset.id, first.asset.blobHash!!, first.asset.mime ?: work.mime, Series.playTitle(work, first), null, queueOf(work, seasons, session), art, first.subtitles) }, icon = Icons.Rounded.PlayArrow, enabled = state.busy == null)</ID>
     <ID>MaxLineLength:DetailScreen.kt$PrimaryButton(theme.ctaLabel, { play.playAudio(work, audioTracks, 0) }, icon = if (type == MediaType.AUDIOBOOK) Icons.Rounded.Headphones else Icons.Rounded.PlayArrow)</ID>
     <ID>MaxLineLength:DetailScreen.kt$QueueEntry(e.asset.id, e.asset.blobHash!!, work.title, e.label, e.asset.mime ?: work.mime, work.kind, e.thumbnailPath?.let { HeyarrApi.blobUrlFromPath(session.baseUrl, it) }, e.asset.sizeBytes)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$ReaderFormat.AUDIOBOOK -&gt; PrimaryButton("Listen", { play.playAudio(work, listOf(asset), 0) }, icon = Icons.Rounded.Headphones, compact = true)</ID>
     <ID>MaxLineLength:DetailScreen.kt$Row</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (p in profiles) FilterChip(p.name, profile == p.name, { profile = p.name }) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$SecondaryButton</ID>
-    <ID>MaxLineLength:DetailScreen.kt$SecondaryButton(if (state.wantMenu) "Close" else "Want more…", { state.wantMenu = !state.wantMenu }, icon = Icons.Rounded.Add, compact = true)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Section</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Section("Score a release", subtitle = "Ask the profile about a release you are looking at", initiallyOpen = false) { ExplainPanel(session, wants) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$SectionHeader</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text("${art.size} artwork file${if (art.size == 1) "" else "s"}", style = MaterialTheme.typography.bodyMedium, color = Tokens.textPrimary)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text("${subs.size} caption file${if (subs.size == 1) "" else "s"}", style = MaterialTheme.typography.bodyMedium, color = Tokens.textPrimary)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text("%02d".format(i + 1), style = MaterialTheme.typography.labelMedium, color = theme.accentGradientEnd, modifier = Modifier.width(28.dp))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text("Describe a release and heyarr explains, rule by rule, whether the profile would accept it. Leave a field blank when you do not know — a blank reads as undetermined, a guess reads as a claim.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text("No synopsis — the node has no metadata provider and no public source knew this title. Titles, seasons and episodes below come from the files themselves.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text("Seasons the library has never seen have nothing to point a want at yet — they arrive through a follow.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text("Synopsis${if (coverIsExternal) " and cover" else ""} via ${ext.source} — not from your library. The node has no metadata provider (TVDB, ADR-0058).", style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text("score ${ranked.score}${if (ranked.terminal) " · terminal" else ""}", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(asset.filename ?: asset.id, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(ep.subtitles.size.toString(), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(ep.title ?: ext?.name ?: ep.asset.filename ?: ep.asset.id, style = MaterialTheme.typography.titleSmall, color = if (ep.isPlayable) Tokens.textPrimary else Tokens.textDisabled, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(ext.synopsis.orEmpty(), style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary, maxLines = 6, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(ext?.name ?: "Not held", style = MaterialTheme.typography.titleSmall, color = Tokens.textDisabled, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(if (ranked.accepted) "Would be accepted" else "Would be rejected", style = MaterialTheme.typography.titleSmall, color = verdictColor(if (ranked.accepted) "pass" else "fail"))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(if (subs.isEmpty()) "No caption files held — captions inside the container still show in the player's CC menu." else "Caption files: " + subs.joinToString(", ") { it.filename?.substringBeforeLast('.')?.substringAfterLast('.') ?: "?" }, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(if (wants.isEmpty()) "Want this series and heyarr will look for it." else "Wanted — heyarr searches on its schedule; ask now to jump the queue.", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(item.title, style = MaterialTheme.typography.titleSmall, color = if (item.archived) Tokens.textPrimary else Tokens.textDisabled)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(listOfNotNull(format?.label, asset.sizeBytes?.let { WorkAsset.formatBytes(it) }).joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(listOfNotNull(item.publishedAt?.take(10), if (item.archived) "archived" else "not archived yet", item.want?.summary?.takeIf { it.isNotBlank() }).joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
     <ID>MaxLineLength:DetailScreen.kt$Text(t.label.uppercase(), style = MaterialTheme.typography.labelLarge, color = if (active) Tokens.textPrimary else Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(trackTitle(t), style = MaterialTheme.typography.titleSmall, color = if (t.isPlayable) Tokens.textPrimary else Tokens.textDisabled, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$columns = listOf(TableColumn("File", width = 260.dp), TableColumn("Size", width = 80.dp, alignEnd = true), TableColumn("Verdict", width = 100.dp), TableColumn("Score", width = 60.dp, alignEnd = true), TableColumn("Rejected by", width = 220.dp))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$columns = listOf(TableColumn("Release", width = 260.dp), TableColumn("Provider", width = 100.dp), TableColumn("Size", width = 80.dp, alignEnd = true), TableColumn("Score", width = 60.dp, alignEnd = true), TableColumn("Verdict", width = 90.dp), TableColumn("", width = 120.dp, alignEnd = true))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$columns = listOf(TableColumn("Scope", width = 70.dp), TableColumn("Profile", width = 110.dp), TableColumn("State", width = 110.dp), TableColumn("Content", width = 110.dp), TableColumn("Placement", width = 140.dp), TableColumn("Upgrade", width = 220.dp), TableColumn("Monitor", width = 120.dp, alignEnd = true))</ID>
     <ID>MaxLineLength:DetailScreen.kt$cont?.blobHash != null &amp;&amp; type != MediaType.BOOK &amp;&amp; type != MediaType.MUSIC &amp;&amp; type != MediaType.AUDIOBOOK</ID>
-    <ID>MaxLineLength:DetailScreen.kt$detail = { r -&gt; Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { RejectedBy(cands[r].second.rejectedBy); ReasonList(cands[r].second.reasons) } }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$detail = { r -&gt; verdicts[held[r].id]?.let { ReasonList(it.reasons) } ?: Text("No verdict — this file is not measured by any want.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$else</ID>
-    <ID>MaxLineLength:DetailScreen.kt$else -&gt; PrimaryButton("Read", { play.read(work, asset) }, icon = Icons.Rounded.MenuBook, compact = true)</ID>
     <ID>MaxLineLength:DetailScreen.kt$else -&gt; PrimaryButton(theme.ctaLabel, { play.playVideo(work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList()) }, icon = Icons.Rounded.PlayArrow, enabled = state.busy == null)</ID>
     <ID>MaxLineLength:DetailScreen.kt$else -&gt; Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { for (x in r) FilterChip(x.name, false, { playOn(x) }, icon = Icons.Rounded.Cast) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$ep.asset.sizeBytes?.let { Text(WorkAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$file?.sizeBytes?.let { Text(WorkAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$for (s in all) FilterChip(s.label, s == selected, { state.season = s.number }, count = maxOf(s.episodes.size, ext.count { it.season == s.number }).takeIf { it &gt; 0 })</ID>
-    <ID>MaxLineLength:DetailScreen.kt$for (w in wants) (state.satisfaction[w.id] as? McpResult.Refused)?.let { Notice("get_content_satisfaction: ${it.message}", tone = Tokens.danger) }</ID>
     <ID>MaxLineLength:DetailScreen.kt$fun</ID>
     <ID>MaxLineLength:DetailScreen.kt$hash == null -&gt; PrimaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add, enabled = status == LibraryStatus.NOT_TRACKED)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$icon = Icons.Rounded.Add</ID>
-    <ID>MaxLineLength:DetailScreen.kt$if</ID>
-    <ID>MaxLineLength:DetailScreen.kt$if (!ep.isPlayable) Text("file missing since ${ep.asset.missingSince?.take(10)}", style = MaterialTheme.typography.labelSmall, color = Tokens.danger)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$if (all.isEmpty()) { Notice("No episode files are held for this series yet.${if (wants.isNotEmpty()) " heyarr is looking — Curate → Indexer candidates shows what it found." else ""}"); return }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$if (already) "${s.label} · wanted" else "Want ${s.label}${s.gaps.takeIf { it.isNotEmpty() }?.let { " (${it.size} missing)" } ?: ""}"</ID>
     <ID>MaxLineLength:DetailScreen.kt$if (castId != null &amp;&amp; type != MediaType.BOOK &amp;&amp; type != MediaType.FEED) SecondaryButton("Play on…", { toggleCast(session, state, castId, scope) }, icon = Icons.Rounded.Cast)</ID>
     <ID>MaxLineLength:DetailScreen.kt$if (hash == null &amp;&amp; type != MediaType.SERIES &amp;&amp; type != MediaType.FEED &amp;&amp; type != MediaType.PODCAST &amp;&amp; type != MediaType.MUSIC) Notice("Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Indexer candidates shows what the indexers found."}")</ID>
-    <ID>MaxLineLength:DetailScreen.kt$if (idx &gt;= 0) IconButtonRound(Icons.Rounded.PlayArrow, "Play ${trackTitle(t)}", { play.playAudio(work, playable, idx) }, size = 36.dp, filled = true)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$if (isContinue) Text("continue · ${state.continueEntry?.progressLabel}", style = MaterialTheme.typography.labelSmall, color = theme.accentGradientEnd)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$if (item.archived &amp;&amp; wid != null) SecondaryButton("Open", { onOpen(detailRoute(wid, MediaType.UNKNOWN, item.title, from = "Archive")) }, icon = Icons.Rounded.OpenInNew, compact = true)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$if (playable.isNotEmpty()) PrimaryButton("Play all", { play.playAudio(work, playable, 0) }, icon = Icons.Rounded.PlayArrow, compact = true)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$if (seasons.isNotEmpty()) Text("· ${seasons.sumOf { s -&gt; s.episodes.count { it.subtitles.isEmpty() &amp;&amp; it.isPlayable } }} held episodes without captions", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$if (seasons.isNotEmpty()) Text("· ${seasons.sumOf { s -&gt; s.episodes.count { it.thumbnail == null } }} episodes without a thumbnail", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
     <ID>MaxLineLength:DetailScreen.kt$if (state.renderers == null) scope.launch { session.io { session.api.renderers() }.onSuccess { state.renderers = it } }</ID>
     <ID>MaxLineLength:DetailScreen.kt$if (status == LibraryStatus.NOT_TRACKED &amp;&amp; (hash != null || type == MediaType.SERIES)) SecondaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$is CoreEpisode&lt;*&gt; -&gt; EpisodeRow(session, work, row.phone(), state, extForSeason[row.number], onPlay = { ep -&gt; play.playVideo(work, ep.asset.id, ep.asset.blobHash!!, ep.asset.mime ?: work.mime, Series.playTitle(work, ep), null, queue, art, ep.subtitles) })</ID>
-    <ID>MaxLineLength:DetailScreen.kt$is McpResult.Ok</ID>
-    <ID>MaxLineLength:DetailScreen.kt$is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Following ${work.title}", "Every episode, past and future, becomes a want. If this node can't identify the series yet, it stays a plain want until it can."); session.refreshIndex() }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Wanted ${s.label}", "Measured against $profile; heyarr will look for what this season is missing."); session.refreshIndex() }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$null -&gt; if (hash != null) Skeleton(Modifier.fillMaxWidth().height(40.dp)) else Text("Nothing to check.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$onSuccess = { d -&gt; state.detail = d; state.detailError = if (d == null) "This work no longer exists." else null }</ID>
     <ID>MaxLineLength:DetailScreen.kt$private</ID>
     <ID>MaxLineLength:DetailScreen.kt$r.isEmpty() -&gt; Text("No renderers found. A device that is switched off will not be listed — that is not the same as it not existing.", style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$rowCount = cands.size</ID>
-    <ID>MaxLineLength:DetailScreen.kt$rowCount = wants.size</ID>
     <ID>MaxLineLength:DetailScreen.kt$scope.launch { session.io { a.candidates(w.id) }.onSuccess { c -&gt; state.candidates = state.candidates + (w.id to (c?.candidates ?: emptyList())) } }</ID>
     <ID>MaxLineLength:DetailScreen.kt$scope.launch { session.io { a.continueRail() }.onSuccess { list -&gt; state.continueEntry = list.firstOrNull { it.workId == route.workId } } }</ID>
     <ID>MaxLineLength:DetailScreen.kt$scope.launch { session.io { a.satisfaction(w.id) }.onSuccess { r -&gt; state.satisfaction = state.satisfaction + (w.id to r) } }</ID>
     <ID>MaxLineLength:DetailScreen.kt$scope.launch { session.io { a.works() }.onSuccess { all -&gt; state.variants = Variants.group(all)[route.workId].orEmpty() } }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$scope.launch { session.io { session.api.follow(null, tvdb, null, profile, backfill = "full", reason = "followed from the phone") }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Following ${work.title}", "Every episode, past and future, becomes a want."); session.refreshIndex() }; is McpResult.Refused -&gt; session.refused(r) } } }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$scope.launch { session.io { session.api.monitor(w.id, !w.monitor) }.onSuccess { res -&gt; if (res is McpResult.Refused) session.refused(res) else session.refreshIndex() } }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$scope.launch { session.io { session.api.searchReleases(wants.first().id) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Search queued for ${season.label}", "Results land under Curate → Indexer candidates."); is McpResult.Refused -&gt; session.refused(r) } } }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$scope.launch { session.io { session.api.searchReleases(wants.first().id) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Search queued", "Indexers answer within a minute; the Downloads tab under Library shows the job."); is McpResult.Refused -&gt; session.refused(r) } } }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$scope.launch { session.io { session.api.verifyBlob(hash) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Verification queued", "Re-hashing runs as a job; see Library → Downloads."); is McpResult.Refused -&gt; session.refused(r) } } }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$session.io { session.api.acquire(w.id, cand.candidateId) }.onSuccess { res -&gt; when (res) { is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Acquiring", cand.title); session.refreshIndex(); reload() }; is McpResult.Refused -&gt; session.refused(res) } }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$session.io { session.api.playHere(assetId, renderer.name, renderer.udn) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.SUCCESS, "Playing on ${renderer.name}"); is McpResult.Refused -&gt; session.refused(r) } }</ID>
     <ID>MaxLineLength:DetailScreen.kt$session.io { session.api.searchReleases(w.id) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Search queued", "An indexer can take thirty seconds to answer; open Curate → Indexer candidates in a moment."); is McpResult.Refused -&gt; session.refused(r) } }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$t.sizeBytes?.let { Text(WorkAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }</ID>
     <ID>MaxLineLength:DetailScreen.kt$type == MediaType.FEED || type == MediaType.PODCAST -&gt; PrimaryButton(theme.ctaLabel, { play.playVideo(work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList()) }, icon = Icons.Rounded.OpenInNew, enabled = state.busy == null)</ID>
-    <ID>MaxLineLength:DetailScreen.kt$val all: List&lt;Season&gt; = (seasons + extSeasons.map { Season(it, emptyList()) }).sortedWith(compareBy({ it.number == null }, { if (it.number == 0) Int.MAX_VALUE else it.number ?: 0 }))</ID>
     <ID>MaxLineLength:DetailScreen.kt$val cover by rememberCover(session, type, detail?.title ?: route.title ?: "", detail?.artworkPath, detail?.year, detail?.artist ?: detail?.author)</ID>
     <ID>MaxLineLength:DetailScreen.kt$val feedRef = if (t == MediaType.FEED || t == MediaType.PODCAST) session.io { a.followed() }.getOrNull()?.firstOrNull { it.workId == d.id }?.feedRef else null</ID>
-    <ID>MaxLineLength:DetailScreen.kt$val isContinue = cont != null &amp;&amp; (cont.assetId == ep.asset.id || (cont.blobHash != null &amp;&amp; cont.blobHash == ep.asset.blobHash))</ID>
     <ID>MaxLineLength:DetailScreen.kt$val readable = state.assets.orEmpty().firstOrNull { it.isPlayable &amp;&amp; ReaderFormat.of(it.mime, it.filename)?.let { f -&gt; f != ReaderFormat.AUDIOBOOK } == true }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$val rel = ReleaseToExplain("candidate", title.ifBlank { "untitled release" }, ReleaseAttributes(resolution = resolution.toIntOrNull(), source = source, videoCodec = codec, sizeBytes = size.toLongOrNull()))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$val rows = listOf("work id" to work.id, "work key" to (work.workKey ?: "—"), "type" to type.label) + work.externalIds.map { it.key to it.value } + state.externalIds.map { it.source to it.value }</ID>
     <ID>MaxLineLength:DetailScreen.kt$val seasons = remember(state.assets, type) { if (type == MediaType.SERIES || Series.isSeries(detail?.kind)) Series.seasons(state.assets.orEmpty()) else emptyList() }</ID>
     <ID>MaxLineLength:DetailScreen.kt$val source = session.io { session.api.followed() }.getOrNull()?.firstOrNull { it.workId == route.workId } ?: return@LaunchedEffect</ID>
-    <ID>MaxLineLength:DetailScreen.kt$val thumb = ep.thumbnailPath?.let { HeyarrApi.blobUrlFromPath(session.baseUrl, it) } ?: ext?.imageUrl?.takeIf { session.externalMetadata }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$val verdicts = wants.flatMap { w -&gt; (state.satisfaction[w.id] as? McpResult.Ok)?.value?.assets.orEmpty() }.associateBy { it.assetId }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$var profile by remember(profiles) { mutableStateOf(profiles.firstOrNull { it.name == session.defaultProfile }?.name ?: profiles.firstOrNull()?.name ?: session.defaultProfile) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$var profile by remember(profiles) { mutableStateOf(wants.firstOrNull()?.let { w -&gt; profiles.firstOrNull { it.id == w.qualityProfileId }?.name } ?: profiles.firstOrNull()?.name ?: session.defaultProfile) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$when (c) { 0 -&gt; Cell(rep.peer); 1 -&gt; Cell(rep.state, mono = true); 2 -&gt; Text(if (rep.verified) "yes" else "no", style = MaterialTheme.typography.labelMedium, color = verdictColor(if (rep.verified) "pass" else "undetermined")) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$when (c) { 0 -&gt; Cell(v.title); 1 -&gt; Cell(Variants.seasonOf(v)?.let { "S$it" } ?: "", mono = true, muted = true); 2 -&gt; GhostButton("Open", { onOpen(detailRoute(v.id, MediaType.from(v.kind), v.title, from = work.title, curate = true)) }) }</ID>
-    <ID>MaxLineLength:DetailScreen.kt$}</ID>
     <ID>MaxLineLength:DetailScreenSmokeTest.kt$DetailScreenSmokeTest$DetailScreen(s, Route.Detail(workId, type, title), state, noPlayback, onBack = {}, onOpen = {}, onWant = { _, _ -&gt; })</ID>
     <ID>MaxLineLength:DetailWatch.kt$.</ID>
     <ID>MaxLineLength:DetailWatch.kt$Box</ID>
-    <ID>MaxLineLength:DetailWatch.kt$DetailPlayback$val</ID>
     <ID>MaxLineLength:DetailWatch.kt$Icon(Icons.Rounded.ClosedCaption, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(14.dp))</ID>
     <ID>MaxLineLength:DetailWatch.kt$Icon(Icons.Rounded.Info, contentDescription = null, tint = Tokens.textDisabled, modifier = Modifier.size(14.dp))</ID>
     <ID>MaxLineLength:DetailWatch.kt$IconButtonRound(Icons.Rounded.Cast, "Play ${ep.label} on a renderer", { toggleCast(session, state, ep.asset.id, scope) }, size = 36.dp)</ID>
@@ -827,9 +587,8 @@
     <ID>MaxLineLength:DetailWatch.kt$Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).border(Tokens.hairline, Tokens.border.copy(alpha = 0.6f), RoundedCornerShape(Tokens.radiusInput)).padding(8.dp)</ID>
     <ID>MaxLineLength:DetailWatch.kt$ReaderFormat.AUDIOBOOK -&gt; PrimaryButton("Listen", { play.playAudio(work, listOf(asset), 0) }, icon = Icons.Rounded.Headphones, compact = true)</ID>
     <ID>MaxLineLength:DetailWatch.kt$Row</ID>
-    <ID>MaxLineLength:DetailWatch.kt$SecondaryButton(if (state.wantMenu) "Close" else "Want more…", { state.wantMenu = !state.wantMenu }, icon = Icons.Rounded.Add, compact = true)</ID>
     <ID>MaxLineLength:DetailWatch.kt$SecondaryButton</ID>
-    <ID>MaxLineLength:DetailWatch.kt$Section</ID>
+    <ID>MaxLineLength:DetailWatch.kt$SecondaryButton(if (state.wantMenu) "Close" else "Want more…", { state.wantMenu = !state.wantMenu }, icon = Icons.Rounded.Add, compact = true)</ID>
     <ID>MaxLineLength:DetailWatch.kt$SectionHeader</ID>
     <ID>MaxLineLength:DetailWatch.kt$Text("%02d".format(i + 1), style = MaterialTheme.typography.labelMedium, color = theme.accentGradientEnd, modifier = Modifier.width(28.dp))</ID>
     <ID>MaxLineLength:DetailWatch.kt$Text("No synopsis — the node has no metadata provider and no public source knew this title. Titles, seasons and episodes below come from the files themselves.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
@@ -846,13 +605,13 @@
     <ID>MaxLineLength:DetailWatch.kt$Text(listOfNotNull(format?.label, asset.sizeBytes?.let { WorkAsset.formatBytes(it) }).joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
     <ID>MaxLineLength:DetailWatch.kt$Text(listOfNotNull(item.publishedAt?.take(10), if (item.archived) "archived" else "not archived yet", item.want?.summary?.takeIf { it.isNotBlank() }).joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
     <ID>MaxLineLength:DetailWatch.kt$Text(trackTitle(t), style = MaterialTheme.typography.titleSmall, color = if (t.isPlayable) Tokens.textPrimary else Tokens.textDisabled, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:DetailWatch.kt$else -&gt; PrimaryButton("Read", { play.read(work, asset) }, icon = Icons.Rounded.MenuBook, compact = true)</ID>
     <ID>MaxLineLength:DetailWatch.kt$else</ID>
+    <ID>MaxLineLength:DetailWatch.kt$else -&gt; PrimaryButton("Read", { play.read(work, asset) }, icon = Icons.Rounded.MenuBook, compact = true)</ID>
     <ID>MaxLineLength:DetailWatch.kt$ep.asset.sizeBytes?.let { Text(WorkAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }</ID>
     <ID>MaxLineLength:DetailWatch.kt$file?.sizeBytes?.let { Text(WorkAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }</ID>
     <ID>MaxLineLength:DetailWatch.kt$for (s in all) FilterChip(s.label, s == selected, { state.season = s.number }, count = maxOf(s.episodes.size, ext.count { it.season == s.number }).takeIf { it &gt; 0 })</ID>
-    <ID>MaxLineLength:DetailWatch.kt$fun</ID>
     <ID>MaxLineLength:DetailWatch.kt$icon = Icons.Rounded.Add</ID>
+    <ID>MaxLineLength:DetailWatch.kt$if</ID>
     <ID>MaxLineLength:DetailWatch.kt$if (!ep.isPlayable) Text("file missing since ${ep.asset.missingSince?.take(10)}", style = MaterialTheme.typography.labelSmall, color = Tokens.danger)</ID>
     <ID>MaxLineLength:DetailWatch.kt$if (all.isEmpty()) { Notice("No episode files are held for this series yet.${if (wants.isNotEmpty()) " heyarr is looking — Curate → Indexer candidates shows what it found." else ""}"); return }</ID>
     <ID>MaxLineLength:DetailWatch.kt$if (already) "${s.label} · wanted" else "Want ${s.label}${s.gaps.takeIf { it.isNotEmpty() }?.let { " (${it.size} missing)" } ?: ""}"</ID>
@@ -860,12 +619,10 @@
     <ID>MaxLineLength:DetailWatch.kt$if (isContinue) Text("continue · ${state.continueEntry?.progressLabel}", style = MaterialTheme.typography.labelSmall, color = theme.accentGradientEnd)</ID>
     <ID>MaxLineLength:DetailWatch.kt$if (item.archived &amp;&amp; wid != null) SecondaryButton("Open", { onOpen(detailRoute(wid, MediaType.UNKNOWN, item.title, from = "Archive")) }, icon = Icons.Rounded.OpenInNew, compact = true)</ID>
     <ID>MaxLineLength:DetailWatch.kt$if (playable.isNotEmpty()) PrimaryButton("Play all", { play.playAudio(work, playable, 0) }, icon = Icons.Rounded.PlayArrow, compact = true)</ID>
-    <ID>MaxLineLength:DetailWatch.kt$if</ID>
     <ID>MaxLineLength:DetailWatch.kt$internal</ID>
     <ID>MaxLineLength:DetailWatch.kt$is CoreEpisode&lt;*&gt; -&gt; EpisodeRow(session, work, row.phone(), state, extForSeason[row.number], onPlay = { ep -&gt; play.playVideo(work, ep.asset.id, ep.asset.blobHash!!, ep.asset.mime ?: work.mime, Series.playTitle(work, ep), null, queue, art, ep.subtitles) })</ID>
     <ID>MaxLineLength:DetailWatch.kt$is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Following ${work.title}", "Every episode, past and future, becomes a want. If this node can't identify the series yet, it stays a plain want until it can."); session.refreshIndex() }</ID>
     <ID>MaxLineLength:DetailWatch.kt$is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Wanted ${s.label}", "Measured against $profile; heyarr will look for what this season is missing."); session.refreshIndex() }</ID>
-    <ID>MaxLineLength:DetailWatch.kt$is McpResult.Ok</ID>
     <ID>MaxLineLength:DetailWatch.kt$private</ID>
     <ID>MaxLineLength:DetailWatch.kt$scope.launch { session.io { session.api.follow(null, tvdb, null, profile, backfill = "full", reason = "followed from the phone") }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; { session.toast(Toast.Kind.SUCCESS, "Following ${work.title}", "Every episode, past and future, becomes a want."); session.refreshIndex() }; is McpResult.Refused -&gt; session.refused(r) } } }</ID>
     <ID>MaxLineLength:DetailWatch.kt$scope.launch { session.io { session.api.searchReleases(wants.first().id) }.onSuccess { r -&gt; when (r) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Search queued for ${season.label}", "Results land under Curate → Indexer candidates."); is McpResult.Refused -&gt; session.refused(r) } } }</ID>
@@ -879,8 +636,6 @@
     <ID>MaxLineLength:DevicePairingSteps.kt$DevicePairingSteps$PairingOutcome.Failed(PairingFailureKind.PROTOCOL, "The admission could not be stored: ${e.message}", "")</ID>
     <ID>MaxLineLength:DevicePairingSteps.kt$DevicePairingSteps$PairingOutcome.Failed(PairingFailureKind.PROTOCOL, "This phone's device keys are not available. Open the Device screen and try again.", "")</ID>
     <ID>MaxLineLength:DevicePairingSteps.kt$DevicePairingSteps$return@runInterruptible EnrolClient.Outcome.Failed("could not sign with the device key (${e.message}) — bring the app to the front and register again")</ID>
-    <ID>MaxLineLength:DeviceSessionTest.kt$DeviceSessionTest$val resp = DeviceAuthTransport(inner, { s }, onUnauthorized = { calls++; true }).get("u", Credential.Device(cert, "x").asHeader())</ID>
-    <ID>MaxLineLength:DeviceSessionTest.kt$DeviceSessionTest$val t = DeviceAuthTransport(inner, { s }, membership = { ops }, onUnauthorized = { ops = "old.op,new.op"; true })</ID>
     <ID>MaxLineLength:DeviceSessionTest.kt$DeviceSessionTest.Scripted$override fun post(url: String, body: String?, contentType: String?, headers: Map&lt;String, String&gt;)</ID>
     <ID>MaxLineLength:DiscoverClient.kt$DiscoverClient.Companion$/** `{ "results": [ { title, year, type, tvdb_id, overview } ] }`, tolerantly; a hit with no title is skipped. */</ID>
     <ID>MaxLineLength:DiscoverClientTest.kt$DiscoverClientTest$assertTrue(DiscoverClient(PostTransport(HttpResponse(404, "")), base, cred).discover("x") is DiscoverClient.Outcome.Unavailable)</ID>
@@ -900,48 +655,6 @@
     <ID>MaxLineLength:EnrolScreen.kt$Text(info.certToken, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)</ID>
     <ID>MaxLineLength:EnrolScreen.kt$color = if (info.tier == KeyTier.SOFTWARE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant</ID>
     <ID>MaxLineLength:EnrolScreen.kt$color = if (state.needsAdmin) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalEpisode$data</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$File(cacheDir, "$id.json").writeText(JsonWrite.obj(linkedMapOf("image" to m.imageUrl, "landscape_image" to m.landscapeImageUrl, "synopsis" to m.synopsis, "source" to m.source, "source_url" to m.sourceUrl, "tvmaze_id" to m.tvmazeId, "fetched_at" to m.fetchedAt)))</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$MediaType.BOOK -&gt; get("https://openlibrary.org/search.json?title=${enc(key.title)}${key.creator?.let { "&amp;author=${enc(it)}" } ?: ""}&amp;limit=1&amp;fields=title,author_name,cover_i,first_publish_year,first_sentence")?.let { ExternalParsers.openLibrary(it) }</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$MediaType.PODCAST, MediaType.AUDIOBOOK -&gt; get("https://itunes.apple.com/search?term=${enc(key.title)}&amp;media=podcast&amp;limit=1")?.let { ExternalParsers.itunes(it) } ?: feedImage(key)</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$get("https://api.tvmaze.com/shows/$id/images")?.let(one.rarebit.heyarr.core.state.LandscapeArtwork::tvmaze)</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$if (cached != null &amp;&amp; !stale(cached)) return@withLock cached.also { synchronized(memory) { memory[id] = it } }</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$imageUrl = JsonScan.stringField(o, "image")</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$private fun stale(m: ExternalMeta): Boolean</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$return ExternalMeta(imageUrl = "https://coverartarchive.org/release-group/$mbid/front-500", source = "Cover Art Archive", sourceUrl = "https://musicbrainz.org/release-group/$mbid")</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$return ExternalMeta(imageUrl = fromFeed ?: "https://icons.duckduckgo.com/ip3/$host.ico", synopsis = xml?.let { ExternalParsers.feedDescription(it) }, source = if (fromFeed != null) "the feed" else "site icon", sourceUrl = ref)</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$return MessageDigest.getInstance("SHA-256").digest(raw.toByteArray()).joinToString("") { "%02x".format(it) }.take(32)</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$sourceUrl = JsonScan.stringField(o, "source_url")</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$val body = cached ?: withContext(Dispatchers.IO) { get("https://api.tvmaze.com/shows/$tvmazeId/episodes") }?.also { runCatching { cacheDir.mkdirs(); f.writeText(it) } } ?: return emptyList()</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$val cached = runCatching { if (f.isFile &amp;&amp; System.currentTimeMillis() - f.lastModified() &lt; TTL_MS) f.readText() else null }.getOrNull()</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata$val raw = "artwork-v2|${key.type.name}|${key.title.lowercase().trim()}|${key.year ?: ""}|${key.creator?.lowercase() ?: ""}|${key.feedRef ?: ""}"</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata.Companion$.</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalMetadata.Companion$fun</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$(RE_DESCRIPTION.find(xml)?.groupValues?.get(1) ?: RE_SUBTITLE.find(xml)?.groupValues?.get(1))?.let { stripHtml(it) }?.takeIf { it.isNotBlank() }?.take(400)</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$ExternalEpisode(season, number, JsonScan.stringField(e, "name"), JsonScan.stringField(e, "airdate"), JsonScan.stringField(e, "summary")?.let(::stripHtml), JsonScan.objectAt(e, "image")?.let { JsonScan.stringField(it, "medium") ?: JsonScan.stringField(it, "original") })</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$RE_IMAGE_URL.find(xml)?.groupValues?.get(1)?.trim()?.takeIf { it.isNotEmpty() &amp;&amp; !it.endsWith("favicon.ico") }?.let { return it }</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$fun stripHtml(s: String): String</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$private val RE_IMAGE_URL = Regex("""&lt;image&gt;\s*(?:&lt;[^&gt;]+&gt;[^&lt;]*&lt;/[^&gt;]+&gt;\s*)*?&lt;url&gt;\s*([^&lt;]+?)\s*&lt;/url&gt;""", RegexOption.DOT_MATCHES_ALL)</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$private val RE_SUBTITLE = Regex("""&lt;(?:subtitle|itunes:summary)&gt;(.*?)&lt;/(?:subtitle|itunes:summary)&gt;""", RegexOption.DOT_MATCHES_ALL)</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$return ExternalMeta(imageUrl = "https://covers.openlibrary.org/b/id/$cover-L.jpg", synopsis = sentence, source = "Open Library", sourceUrl = "https://covers.openlibrary.org/b/id/$cover.json")</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$return ExternalMeta(imageUrl = art, source = "Apple Podcasts", sourceUrl = JsonScan.stringField(r, "collectionViewUrl"))</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$return ExternalMeta(imageUrl = image, synopsis = JsonScan.stringField(o, "summary")?.let(::stripHtml), source = "TVmaze", sourceUrl = JsonScan.stringField(o, "url"), tvmazeId = JsonScan.longField(o, "id"))</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$val image = JsonScan.objectAt(o, "image")?.let { JsonScan.stringField(it, "original") ?: JsonScan.stringField(it, "medium") }</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$val page = JsonScan.objectAt(o, "content_urls")?.let { JsonScan.objectAt(it, "desktop") }?.let { JsonScan.stringField(it, "page") }</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$ExternalParsers$val sentence = JsonScan.arrayOf(doc, listOf("first_sentence"))?.let { JsonArrays.parseStrings(it).firstOrNull() }</ID>
-    <ID>MaxLineLength:ExternalMetadata.kt$MetaKey$data</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$assertEquals("Phantom Pain", eps[0].name)</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$assertEquals("a favicon is a last resort but still an image", "https://blog.cloudflare.com/favicon.ico", ExternalParsers.feedImage(plain))</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$assertEquals("e75c0549-ad55-39e3-8025-c72c5d4a3c5d", ExternalParsers.musicBrainzReleaseGroup("""{"release-groups":[{"id":"e75c0549-ad55-39e3-8025-c72c5d4a3c5d","title":"Kid A"}]}"""))</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val atom = """&lt;feed xmlns="http://www.w3.org/2005/Atom"&gt;&lt;title&gt;Blog&lt;/title&gt;&lt;subtitle&gt;Notes on things&lt;/subtitle&gt;&lt;logo&gt;https://blog/logo.png&lt;/logo&gt;&lt;/feed&gt;"""</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val eps = ExternalParsers.tvmazeEpisodes("""[{"id":1,"season":4,"number":2,"name":"Phantom Pain","airdate":"2021-11-07","image":{"medium":"https://static.tvmaze.com/e.jpg"},"summary":"&lt;p&gt;The Yellowstone recovers.&lt;/p&gt;"},{"id":2,"season":5,"number":8,"name":"Desire Is All You Need","airdate":"2022-12-31","image":null,"summary":null}]""")</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val it = ExternalParsers.itunes("""{"results":[{"collectionName":"ATP","artworkUrl100":"https://a/100.jpg","artworkUrl600":"https://a/600.jpg","collectionViewUrl":"https://podcasts.apple.com/x"}]}""")!!</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val ol = ExternalParsers.openLibrary("""{"docs":[{"author_name":["Susanna Clarke"],"cover_i":10226290,"first_publish_year":2020,"title":"Piranesi","first_sentence":["When the Moon rose in the Third Northern Hall I went to the Ninth Vestibule."]}]}""")!!</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val plain = """&lt;rss&gt;&lt;channel&gt;&lt;title&gt;Cloudflare&lt;/title&gt;&lt;image&gt;&lt;url&gt;https://blog.cloudflare.com/favicon.ico&lt;/url&gt;&lt;title&gt;Cloudflare&lt;/title&gt;&lt;/image&gt;&lt;/channel&gt;&lt;/rss&gt;"""</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val rss = """&lt;?xml version="1.0"?&gt;&lt;rss&gt;&lt;channel&gt;&lt;title&gt;ATP&lt;/title&gt;&lt;description&gt;&lt;![CDATA[Three &lt;b&gt;nerds&lt;/b&gt; discussing tech.]]&gt;&lt;/description&gt;&lt;itunes:image href="https://cdn/atp.jpg"/&gt;&lt;image&gt;&lt;url&gt;https://cdn/small.png&lt;/url&gt;&lt;title&gt;x&lt;/title&gt;&lt;/image&gt;&lt;/channel&gt;&lt;/rss&gt;"""</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val show = ExternalParsers.tvmazeShow("""{"id":24594,"url":"https://www.tvmaze.com/shows/24594/yellowstone","name":"Yellowstone","premiered":"2018-06-20","image":{"medium":"https://static.tvmaze.com/m.jpg","original":"https://static.tvmaze.com/o.jpg"},"summary":"&lt;p&gt;&lt;b&gt;Yellowstone &lt;/b&gt;follows the Dutton family &amp;amp; co.&lt;/p&gt;"}""")!!</ID>
-    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val w = ExternalParsers.wikipedia("""{"type":"standard","title":"Sintel","thumbnail":{"source":"https://upload.wikimedia.org/x/330px-Sintel_poster.jpg?utm_source=en"},"extract":"Sintel is a 2010 animated fantasy short film.","content_urls":{"desktop":{"page":"https://en.wikipedia.org/wiki/Sintel"}}}""")!!</ID>
-    <ID>MaxLineLength:Fakes.kt$FakeAudioPlayer$override fun playQueue(items: List&lt;AudioItem&gt;, startIndex: Int)</ID>
     <ID>MaxLineLength:Fakes.kt$SubstringTransport$override fun patch(url: String, body: String?, contentType: String?, headers: Map&lt;String, String&gt;)</ID>
     <ID>MaxLineLength:Fakes.kt$SubstringTransport$override fun post(url: String, body: String?, contentType: String?, headers: Map&lt;String, String&gt;)</ID>
     <ID>MaxLineLength:Fakes.kt$SubstringTransport$return routes.firstOrNull { (k, _) -&gt; "$method $path".contains(k) }?.second ?: HttpResponse(404, """{"detail":"no such route in the fake"}""")</ID>
@@ -967,7 +680,6 @@
     <ID>MaxLineLength:Fixtures.kt$Fixtures$private val S4 = listOf("Half the Money", "Phantom Pain", "All I See Is You", "Winning or Learning", "Under a Blanket of Red", "I Want to Be Him", "Keep the Wolves Close", "No Kindness for the Coward", "No Such Thing as Fair", "Grass on the Streets and Weeds on the Rooftops")</ID>
     <ID>MaxLineLength:Fixtures.kt$Fixtures$private val S5 = listOf("One Hundred Years Is Nothing", "The Sting of Wisdom", "Tall Drink of Water", "Horses in Heaven", "Watch 'Em Ride Away", "Cigarettes Whiskey a Meadow and You", "The Dream Is Not Me")</ID>
     <ID>MaxLineLength:Fixtures.kt$Fixtures$rejected_by</ID>
-    <ID>MaxLineLength:Fixtures.kt$Fixtures$val (mime, size) = when (type) { "book" -&gt; "application/epub+zip" to 1_842_000L; "music" -&gt; "audio/flac" to 412_000_000L; else -&gt; "video/mp4" to 2_986_000_000L }</ID>
     <ID>MaxLineLength:Fixtures.kt$Fixtures$val peers = """{"count":1,"truncated":false,"peers":[{"peer_id":"01a01df7-2472-7a96-b9d7-73da4e8a7355","name":"hyperion-1","site":"bartley-ridge","mode":"full","is_self":true}],"note":"More than one peer is supported and proven (M4), and so is exactly one: a single peer here is a deployment choice, not a symptom."}"""</ID>
     <ID>MaxLineLength:Fixtures.kt$Fixtures$val playback = """{"elapsed_seconds":1425,"duration_seconds":5520,"playing":true,"renderer":"Living room TV","state":"PLAYING","title":"Yellowstone — S04E02 Phantom Pain"}"""</ID>
     <ID>MaxLineLength:Fixtures.kt$Fixtures$val primary = if (hasFile) """{"asset_id":"01a032b7-8f86-7a18-a130-1e030d633f69","edition_id":"e1","blob_hash":"$HASH","mime":"$mime","size":$size,"content_url":"/api/v1/blobs/$HASH/content"}""" else "null"</ID>
@@ -1011,11 +723,9 @@
     <ID>MaxLineLength:HeyarrConfigRelayTest.kt$HeyarrConfigRelayTest$assertEquals("https://relay.example/v1/sessions", cfg.copy(relayBaseUrl = "https://relay.example/").relaySessionsUrl)</ID>
     <ID>MaxLineLength:HeyarrDataSourceTest.kt$HeyarrDataSourceTest$assertEquals("Device cert.token proof.fresh", HeyarrDataSource.authorization("Device cert.token proof.fresh", planned))</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$"You're browsing as a guest — watch, listen and read freely. To keep wants, follows, playlists and your place across devices, sign in with Cruciform or enrol this phone."</ID>
-    <ID>MaxLineLength:HeyarrNavHost.kt$Column</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$Connection.OFFLINE -&gt; OfflineBanner("Can't reach heyarr", session.baseUrl, onRetry = { scope.launch { session.probe() } }, onSettings = { go(one.rarebit.heyarr.mobile.ui.components.NavSection.SETTINGS) })</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$Connection.UNAUTHORIZED -&gt; OfflineBanner("heyarr refused the credential", "Sign in again, or re-check this device's authorisation in Settings.", onRetry = { scope.launch { session.probe() } }, onSettings = { go(one.rarebit.heyarr.mobile.ui.components.NavSection.SETTINGS) })</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$DetailScreen(session, route, holder.detail(route.workId), play, onBack = ::back, onOpen = ::open, onWant = onWant, modifier = content, personal = detailPersonal)</ID>
-    <ID>MaxLineLength:HeyarrNavHost.kt$LaunchedEffect(playbackNotice) { playbackNotice?.let { session.toast(Toast.Kind.INFO, it); vm.playback.clearNotice() } }</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$ModalBottomSheet</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$PlaylistsScreen(state = plState, onOpen = { sid, name -&gt; open(Route.Playlist(sid, name)) }, onCreate = { name -&gt; plVm.create(name) { sid -&gt; open(Route.Playlist(sid, name)) } }, onBack = ::back, modifier = content)</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$Route.Player -&gt; video.current?.kind?.let { MediaType.from(it) } ?: if (audioState.item != null) MediaType.MUSIC else MediaType.MOVIE</ID>
@@ -1028,10 +738,7 @@
     <ID>MaxLineLength:HeyarrNavHost.kt$context.startActivity(ReaderActivity.intent(context, asset.id, PlaybackClient.blobContentUrl(env.baseUrl, hash), work.title))</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$factory = viewModelFactory { initializer { PersonalActionsViewModel(vm.personalState(env.baseUrl, env.credential), LibraryClient(env.transport, env.baseUrl, env.credential)) } }</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$fun go(section: one.rarebit.heyarr.mobile.ui.components.NavSection)</ID>
-    <ID>MaxLineLength:HeyarrNavHost.kt$if (np.assetId != lastStartedAsset) { lastStartedAsset = np.assetId; navController.navigate(Route.Player) { launchSingleTop = true } }</ID>
-    <ID>MaxLineLength:HeyarrNavHost.kt$if (openPlayerOnAudio &amp;&amp; audioState.item != null) { openPlayerOnAudio = false; navController.navigate(Route.Player) { launchSingleTop = true } }</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$onAddToPlaylist = if (personalActions.enabled) ({ w: Work -&gt; personalActions.openAddToPlaylist(w.id) }) else null</ID>
-    <ID>MaxLineLength:HeyarrNavHost.kt$onAudioToggle = audio::togglePlayPause</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$onDiscover = { vm.discoverAndSave { found -&gt; session.toast(Toast.Kind.INFO, "Discovered a node (${found.source.name.lowercase()})", found.baseUrl) } }</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$onNext = { e -&gt; vm.playback.playFile(e.title, e.assetId, e.blobHash, e.mime, e.kind, artworkUrl = video.current?.artworkUrl) }</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$onOpenWork = { w -&gt; open(detailRoute(w.id, MediaType.from(w.kind), w.title, from = "Library")) }</ID>
@@ -1039,24 +746,8 @@
     <ID>MaxLineLength:HeyarrNavHost.kt$onSourcesChanged = { holder.search.invalidateSources() }</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$onTogglePlay = audio::togglePlayPause</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$onVideoNext = video.next()?.let { e -&gt; { vm.playback.playFile(e.title, e.assetId, e.blobHash, e.mime, e.kind, artworkUrl = video.current?.artworkUrl) } }</ID>
-    <ID>MaxLineLength:HeyarrNavHost.kt$signInPrompt?.let { GuestUpsellSheet(onSignIn = { signInPrompt = null; onSignInToSave() }, onDismiss = { signInPrompt = null }) }</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$val plVm: PlaylistViewModel = viewModel(key = "playlist:${r.spaceId}:${env.key}", factory = viewModelFactory { initializer { PlaylistViewModel(r.spaceId, r.title, ps, LibraryClient(env.transport, env.baseUrl, env.credential)) } })</ID>
     <ID>MaxLineLength:HeyarrNavHost.kt$val plVm: PlaylistsViewModel = viewModel(key = "playlists:${env.key}", factory = viewModelFactory { initializer { PlaylistsViewModel(vm.personalState(env.baseUrl, env.credential)) } })</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$bodyLarge = TextStyle(fontFamily = body, fontSize = Tokens.Type.bodyL, fontWeight = FontWeight.Normal, lineHeight = 24.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$bodyMedium = TextStyle(fontFamily = body, fontSize = Tokens.Type.bodyM, fontWeight = FontWeight.Normal, lineHeight = 20.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$bodySmall = TextStyle(fontFamily = body, fontSize = Tokens.Type.bodyS, fontWeight = FontWeight.Normal, lineHeight = 16.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$displayLarge = TextStyle(fontFamily = display, fontSize = Tokens.Type.h1, fontWeight = FontWeight.SemiBold, lineHeight = 34.sp, letterSpacing = (-0.5).sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$displayMedium = TextStyle(fontFamily = display, fontSize = Tokens.Type.h2, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp, letterSpacing = (-0.3).sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$displaySmall = TextStyle(fontFamily = display, fontSize = Tokens.Type.h3, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$headlineLarge = TextStyle(fontFamily = display, fontSize = Tokens.Type.h3, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$headlineMedium = TextStyle(fontFamily = display, fontSize = Tokens.Type.h4, fontWeight = FontWeight.SemiBold, lineHeight = 26.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$headlineSmall = TextStyle(fontFamily = display, fontSize = Tokens.Type.h5, fontWeight = FontWeight.SemiBold, lineHeight = 22.sp, letterSpacing = 0.2.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$labelLarge = TextStyle(fontFamily = body, fontSize = Tokens.Type.bodyM, fontWeight = FontWeight.Medium, lineHeight = 20.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$labelMedium = TextStyle(fontFamily = RubikFamily, fontSize = Tokens.Type.bodyS, fontWeight = FontWeight.Medium, lineHeight = 16.sp, letterSpacing = 0.2.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$labelSmall = TextStyle(fontFamily = RubikFamily, fontSize = Tokens.Type.bodyXs, fontWeight = FontWeight.Medium, lineHeight = 14.sp, letterSpacing = 0.4.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$titleLarge = TextStyle(fontFamily = body, fontSize = Tokens.Type.h4, fontWeight = FontWeight.SemiBold, lineHeight = 26.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$titleMedium = TextStyle(fontFamily = body, fontSize = Tokens.Type.h5, fontWeight = FontWeight.SemiBold, lineHeight = 22.sp)</ID>
-    <ID>MaxLineLength:HeyarrTheme.kt$titleSmall = TextStyle(fontFamily = body, fontSize = Tokens.Type.h6, fontWeight = FontWeight.SemiBold, lineHeight = 20.sp)</ID>
     <ID>MaxLineLength:HomeScreen.kt$HomeState$var byType by mutableStateOf&lt;Map&lt;MediaType, RailState&lt;SearchHit&gt;&gt;&gt;(MediaType.SEARCHABLE.associateWith { RailState.Loading })</ID>
     <ID>MaxLineLength:HomeScreen.kt$LazyColumn</ID>
     <ID>MaxLineLength:HomeScreen.kt$MediaCard(w.title, MediaType.UNKNOWN, onOpen = { w.workId?.let { onOpen(detailRoute(it, MediaType.UNKNOWN, w.title, from = "Missing")) } }, subtitle = w.qualityProfile?.let { "profile: $it" }, meta = listOf(w.state.lowercase().replace('_', ' ')), status = status, showBadge = false)</ID>
@@ -1100,7 +791,6 @@
     <ID>MaxLineLength:JsonScanTest.kt$JsonScanTest$val items = listOf("a" to "2026-01-01T00:00:00Z", "b" to null, "c" to "2026-03-01T00:00:00Z", "d" to "bad", "e" to "2026-02-01T00:00:00Z")</ID>
     <ID>MaxLineLength:LibraryClient.kt$LibraryClient.Companion$/** The browse embeds every list row is asked for (heyarr-core ADR-0075): the poster and the one playable file. */</ID>
     <ID>MaxLineLength:LibraryScreen.kt$(state.type == null || (state.type == MEDIA &amp;&amp; MediaType.from(w.kind) in MEDIA_KINDS) || MediaType.from(w.kind) == state.type)</ID>
-    <ID>MaxLineLength:LibraryScreen.kt$1 -&gt; Text(j.state, style = MaterialTheme.typography.labelMedium, color = verdictColor(when (j.state) { "succeeded" -&gt; "pass"; "dead", "failed" -&gt; "fail"; "running", "leased" -&gt; "undetermined"; else -&gt; "" }))</ID>
     <ID>MaxLineLength:LibraryScreen.kt$3 -&gt; Cell(if (w.managed == true || w.state == "SELECTED") "handed off" else "—", muted = true)</ID>
     <ID>MaxLineLength:LibraryScreen.kt$4 -&gt; Cell(j.lastError ?: "", muted = j.lastError == null, color = Tokens.danger, maxLines = 2)</ID>
     <ID>MaxLineLength:LibraryScreen.kt$Column</ID>
@@ -1116,7 +806,6 @@
     <ID>MaxLineLength:LibraryScreen.kt$MediaScope(MediaType.FEED) { FilterChip("Feeds", state.type == MediaType.FEED, { state.type = if (state.type == MediaType.FEED) MEDIA else MediaType.FEED }, icon = MediaType.FEED.icon(), count = counts[MediaType.FEED]?.takeIf { it &gt; 0 }) }</ID>
     <ID>MaxLineLength:LibraryScreen.kt$MediaScope(t) { FilterChip(t.plural, state.type == t, { state.type = if (state.type == t) MEDIA else t }, icon = t.icon(), count = counts[t]?.takeIf { it &gt; 0 }) }</ID>
     <ID>MaxLineLength:LibraryScreen.kt$Row</ID>
-    <ID>MaxLineLength:LibraryScreen.kt$SecondaryButton("Search", { scope.launch { session.io { session.api.searchReleases(w.id) }.onSuccess { res -&gt; when (res) { is McpResult.Ok -&gt; session.toast(Toast.Kind.INFO, "Search queued"); is McpResult.Refused -&gt; session.refused(res) } } } }, icon = Icons.Rounded.Search, compact = true)</ID>
     <ID>MaxLineLength:LibraryScreen.kt$Section</ID>
     <ID>MaxLineLength:LibraryScreen.kt$SectionHeader</ID>
     <ID>MaxLineLength:LibraryScreen.kt$columns = listOf(TableColumn("Job", width = 150.dp), TableColumn("State", width = 90.dp), TableColumn("Attempts", width = 70.dp, alignEnd = true), TableColumn("Updated", width = 130.dp), TableColumn("Last error", width = 240.dp))</ID>
@@ -1129,7 +818,6 @@
     <ID>MaxLineLength:LibraryScreen.kt$if (wid != null) GhostButton("Open", { onOpen(detailRoute(wid, MediaType.UNKNOWN, state.titles[wid], from = "Downloads", curate = true)) })</ID>
     <ID>MaxLineLength:LibraryScreen.kt$item { Notice("The node reports each want's acquisition state and phase, not a percentage — a transfer's byte count lives in the download client and heyarr does not relay it yet.", tone = Tokens.slate) }</ID>
     <ID>MaxLineLength:LibraryScreen.kt$private val MEDIA_KINDS = setOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.AUDIOBOOK, MediaType.PODCAST)</ID>
-    <ID>MaxLineLength:LibraryScreen.kt$rowCount = inFlight.size</ID>
     <ID>MaxLineLength:LibraryScreen.kt$session.io { session.api.desired() }.fold(onSuccess = { state.desired = it }, onFailure = { state.error = it.message })</ID>
     <ID>MaxLineLength:LibraryScreen.kt$session.io { session.api.works() }.fold(onSuccess = { state.works = it }, onFailure = { state.error = it.message })</ID>
     <ID>MaxLineLength:LibraryScreen.kt$state.error != null &amp;&amp; state.desired == null -&gt; Notice("Couldn't load wants: ${state.error}", tone = Tokens.danger)</ID>
@@ -1138,7 +826,6 @@
     <ID>MaxLineLength:LibraryUiState.kt$LibraryUiState$/** The whole-library read the app ViewModel keeps for the session (the shell's screens read it through `AppSession` instead). */</ID>
     <ID>MaxLineLength:LoginScreen.kt$if (onApproveOnThisPhone != null) "…or scan this with your authenticator:" else "Scan this with your authenticator:"</ID>
     <ID>MaxLineLength:MainActivity.kt$(if (scroll) frame.verticalScroll(rememberScrollState()) else frame).padding(horizontal = Tokens.screenPadding, vertical = Tokens.s3)</ID>
-    <ID>MaxLineLength:MainActivity.kt$MainActivity$ConnectionFields(config, onSave = { url, profile -&gt; vm.updateSettings(url, profile); showSettings = false }, onReset = { vm.resetSettings(); showSettings = false })</ID>
     <ID>MaxLineLength:MainActivity.kt$MainActivity$else -&gt; HeyarrNavHost(vm = vm, graph = app.graph, focusDevice = focusDevice, onSignInToSave = { showLogin = true })</ID>
     <ID>MaxLineLength:MainActivity.kt$MainActivity$private</ID>
     <ID>MaxLineLength:MainActivity.kt$MainActivity$refusal = if (r.refused &amp;&amp; r.session != null) r.session to (r.reason ?: "the report did not match the relay.") else null</ID>
@@ -1157,10 +844,7 @@
     <ID>MaxLineLength:McpModelsTest.kt$McpModelsTest$val bare = PlaybackStatusJson.parse("""{"elapsed_seconds":0,"playing":false,"renderer":"Phantom II 95 dB-a98d","state":"NO_MEDIA_PRESENT"}""")!!</ID>
     <ID>MaxLineLength:MediaMime.kt$MediaMime$private val AUDIO_EXTENSIONS = setOf("mp3", "flac", "ogg", "oga", "opus", "m4a", "aac", "wav", "wma", "alac", "aiff")</ID>
     <ID>MaxLineLength:MediaThemeTest.kt$MediaThemeTest$assertTrue("${t.type.name} start ${ratio(t.onAccent, t.ctaGradientStart)}", ratio(t.onAccent, t.ctaGradientStart) &gt;= 4.5)</ID>
-    <ID>MaxLineLength:MediaThemeTest.kt$MediaThemeTest$fun ch(v: Float): Double</ID>
-    <ID>MaxLineLength:MediaThemeTest.kt$MediaThemeTest$fun ratio(a: Color, b: Color): Double</ID>
     <ID>MaxLineLength:MembershipClientTest.kt$MembershipClientTest$assertEquals(emptyList&lt;String&gt;(), MembershipClient(Fake(200, """{"usr":"$usr","ops":[]}"""), "http://h").fetch(usr))</ID>
-    <ID>MaxLineLength:MembershipClientTest.kt$MembershipClientTest.Fake$override fun get(url: String, headers: Map&lt;String, String&gt;): HttpResponse</ID>
     <ID>MaxLineLength:MembershipClientTest.kt$MembershipClientTest.Fake$override fun post(url: String, body: String?, contentType: String?, headers: Map&lt;String, String&gt;)</ID>
     <ID>MaxLineLength:MembershipOpsTest.kt$MembershipOpsTest$assertEquals(DeviceCredential.membershipHeaderValue(listOf(addA, addB, addC)), MembershipOps.headerValue(listOf(addA, addB, addC), addB))</ID>
     <ID>MaxLineLength:MembershipOpsTest.kt$MembershipOpsTest$assertEquals(Membership.merge(listOf(addA, addB)).joinToString(","), MembershipOps.headerValue(listOf(addB), addA))</ID>
@@ -1182,7 +866,6 @@
     <ID>MaxLineLength:MissingScreen.kt$meta = listOf(w.state.lowercase().replace('_', ' '), if (w.monitor) "monitored" else "not monitored")</ID>
     <ID>MaxLineLength:MissingScreen.kt$scope.launch { session.io { session.api.missing() }.fold(onSuccess = { state.missing = it }, onFailure = { state.error = it.message }) }</ID>
     <ID>MaxLineLength:MissingScreen.kt$scope.launch { session.io { session.api.upgradeCandidates() }.fold(onSuccess = { state.upgrades = it }, onFailure = { state.error = it.message }) }</ID>
-    <ID>MaxLineLength:MissingScreen.kt$session.io { action(id) }.onSuccess { r -&gt; if (r is McpResult.Refused) { refused++; session.refused(r) } else ok++ }</ID>
     <ID>MaxLineLength:MissingScreen.kt$session.toast(if (refused == 0) Toast.Kind.SUCCESS else Toast.Kind.INFO, "$label: $ok done${if (refused &gt; 0) ", $refused refused" else ""}")</ID>
     <ID>MaxLineLength:MissingScreen.kt$state.selected = if (checked) state.selected - w.desiredItemId else state.selected + w.desiredItemId</ID>
     <ID>MaxLineLength:MissingScreen.kt$subtitle = listOfNotNull(w.qualityProfile?.let { "profile $it" }, w.reason).joinToString(" · ")</ID>
@@ -1205,7 +888,6 @@
     <ID>MaxLineLength:Nav.kt$if (detail != null) Text(detail.substringBefore(" ·"), style = RAIL_LABEL.copy(letterSpacing = 0.2.sp, fontWeight = FontWeight.Normal), color = Tokens.textDisabled, maxLines = 1, softWrap = false)</ID>
     <ID>MaxLineLength:Nav.kt$modifier.fillMaxHeight().width(Tokens.navWidth).background(Tokens.surface1).windowInsetsPadding(WindowInsets.statusBars).padding(vertical = 14.dp, horizontal = 8.dp)</ID>
     <ID>MaxLineLength:Nav.kt$private</ID>
-    <ID>MaxLineLength:Nav.kt$private val RAIL_LABEL = TextStyle(fontFamily = RubikFamily, fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.9.sp, lineHeight = 12.sp)</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$Box(Modifier.size(44.dp).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(artwork, type, Modifier.size(44.dp), glyphSize = 18.dp) }</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$IconButtonRound(if (paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause, if (paused) "Play" else "Pause", onToggle, size = 44.dp, filled = true)</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$Modifier.weight(1f).clip(RoundedCornerShape(Tokens.radiusCard)).clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen).semantics { contentDescription = "Open the player for $title" }.padding(4.dp)</ID>
@@ -1216,21 +898,16 @@
     <ID>MaxLineLength:NowPlayingBar.kt$colors = SliderDefaults.colors(thumbColor = theme.accentGradientEnd, activeTrackColor = theme.accent, inactiveTrackColor = Tokens.surface3)</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$if (onNext != null) IconButtonRound(Icons.Rounded.SkipNext, "Next: ${nextLabel ?: ""}", onNext, size = 36.dp)</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:NowPlayingBar.kt$modifier = Modifier.fillMaxWidth().height(18.dp).semantics { contentDescription = "Position" }</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$onBack = { onAudioSeek((audio.positionMs - 10_000).coerceAtLeast(0)) }</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$onBack = { video.seekBy(-10.0) }</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$onNext = if (audio.hasNext) onAudioNext else null</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$onNext = onVideoNext</ID>
-    <ID>MaxLineLength:NowPlayingBar.kt$onOpen: () -&gt; Unit</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$paused = !audio.playing</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$title = item.title</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$title = track.title</ID>
-    <ID>MaxLineLength:NowPlayingBar.kt$title: String</ID>
-    <ID>MaxLineLength:NowPlayingBar.kt$value = dragging ?: fraction</ID>
     <ID>MaxLineLength:NsdMdnsResolver.kt$NsdMdns$/** Pure: build the hit from the resolved parts. `tls=1` (TXT) means https; a missing host or non-positive port is no hit. */</ID>
     <ID>MaxLineLength:PairDeepLink.kt$PairDeepLink.Companion$?:</ID>
     <ID>MaxLineLength:PairDeepLinkTest.kt$PairDeepLinkTest$if</ID>
-    <ID>MaxLineLength:PairDeepLinkTest.kt$PairDeepLinkTest$try { PairDeepLink.percentDecode("é"); throw AssertionError("expected refusal") } catch (_: IllegalArgumentException) {}</ID>
     <ID>MaxLineLength:PairDeepLinkTest.kt$PairDeepLinkTest$val done = PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair-done?session=abc123") as PairDeepLink.Done</ID>
     <ID>MaxLineLength:PairDeepLinkTest.kt$PairDeepLinkTest$val login = PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair?invite=${encode("voidbind:login?id=a&amp;rp=http%3A%2F%2Fh")}") as PairDeepLink.Invalid</ID>
     <ID>MaxLineLength:PairDeepLinkTest.kt$PairDeepLinkTest$val refused = PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair-done?session=abc123&amp;outcome=refused&amp;reason=the%20SAS%20differed%3A%20%3D") as PairDeepLink.Done</ID>
@@ -1267,9 +944,6 @@
     <ID>MaxLineLength:PlaybackCoordinator.kt$PlaybackCoordinator$resolveInto(client, assetId, blobHash, isVideo, mime, title, caps, startSeconds, kind = kind, artworkUrl = artworkUrl, subtitles = subs)</ID>
     <ID>MaxLineLength:PlaybackCoordinator.kt$PlaybackCoordinator$runCatching { client.resolve(assetId, hash, playing.target.isVideo, playing.target.mimeType, caps.without(codec)) }.getOrNull()</ID>
     <ID>MaxLineLength:PlaybackCoordinator.kt$PlaybackCoordinator$val start = knownStart ?: np.assetId?.let { id -&gt; withContext(io) { runCatching { resumeAt(id) }.getOrNull() } } ?: 0.0</ID>
-    <ID>MaxLineLength:PlaybackCoordinatorTest.kt$PlaybackCoordinatorResumeTest$val</ID>
-    <ID>MaxLineLength:PlaybackCoordinatorTest.kt$PlaybackCoordinatorResumeTest.Spy$override fun endAt(pos: one.rarebit.heyarr.mobile.consumption.Position, completed: Boolean)</ID>
-    <ID>MaxLineLength:PlaybackCoordinatorTest.kt$PlaybackCoordinatorResumeTest.Spy$override fun progressAt(pos: one.rarebit.heyarr.mobile.consumption.Position)</ID>
     <ID>MaxLineLength:PlaybackCoordinatorTest.kt$PlaybackCoordinatorTest$"POST /playback/plan" to HttpResponse(200, """{"mode":"stream","url":"/api/v1/playback/stream/tok","mime":"video/mp4","reason":"audio"}""")</ID>
     <ID>MaxLineLength:PlaybackCoordinatorTest.kt$PlaybackCoordinatorTest$c.playAsset(Work(id = "w1", title = "Dune"), WorkAsset(id = "a1", editionId = "e1", blobHash = hash, mime = "video/mp4"))</ID>
     <ID>MaxLineLength:PlaybackCoordinatorTest.kt$PlaybackCoordinatorTest$c.playAsset(Work(id = "w1", title = "Dune"), WorkAsset(id = "a1", editionId = "e1", blobHash = null, filename = "dune.epub"))</ID>
@@ -1280,7 +954,6 @@
     <ID>MaxLineLength:PlaybackDiagnostics.kt$PlaybackDiagnostics$return "$what isn't producing any picture on this phone (the container may not be supported) — ${remedy(target)}"</ID>
     <ID>MaxLineLength:PlaybackDiagnostics.kt$PlaybackDiagnostics.TrackGroup$/** One `Tracks.Group`, flattened: its renderer type, whether ANY format in it is playable, and the first format's shape. */</ID>
     <ID>MaxLineLength:PlaybackDiagnosticsTest.kt$PlaybackDiagnosticsTest$assertTrue(msg.startsWith("This phone has no working decoder for this file — asking the server for a phone-friendly stream"))</ID>
-    <ID>MaxLineLength:PlaybackDiagnosticsTest.kt$PlaybackDiagnosticsTest$contentUrl = "https://h/x"</ID>
     <ID>MaxLineLength:PlaybackDiagnosticsTest.kt$PlaybackDiagnosticsTest$private val aac = TrackGroup(PlaybackDiagnostics.TYPE_AUDIO, supported = true, sampleMime = "audio/mp4a-latm", channels = 2)</ID>
     <ID>MaxLineLength:PlaybackDiagnosticsTest.kt$PlaybackDiagnosticsTest$private val ac3 = TrackGroup(PlaybackDiagnostics.TYPE_AUDIO, supported = false, sampleMime = "audio/ac3", channels = 6)</ID>
     <ID>MaxLineLength:PlaybackDiagnosticsTest.kt$PlaybackDiagnosticsTest$val msg = PlaybackDiagnostics.describeError("ERROR_CODE_DECODER_INIT_FAILED", "Decoder init failed: OMX.x", target(PlaybackTarget.Origin.DIRECT_PLANNED))</ID>
@@ -1317,7 +990,6 @@
     <ID>MaxLineLength:PlayerScreen.kt$drawLine(Tokens.surface3, Offset(0f, y), Offset(size.width, y), strokeWidth = size.height, cap = StrokeCap.Round)</ID>
     <ID>MaxLineLength:PlayerScreen.kt$drawLine(theme.accent.copy(alpha = 0.35f), Offset(0f, y), Offset(size.width * buffered, y), strokeWidth = size.height, cap = StrokeCap.Round)</ID>
     <ID>MaxLineLength:PlayerScreen.kt$else</ID>
-    <ID>MaxLineLength:PlayerScreen.kt$factory = { ctx -&gt; PlayerView(ctx).apply { useController = false; player = video.player; setShutterBackgroundColor(android.graphics.Color.BLACK) } }</ID>
     <ID>MaxLineLength:PlayerScreen.kt$fun</ID>
     <ID>MaxLineLength:PlayerScreen.kt$if (banner != null) Notice(banner, tone = if (ps.issue != null || ps.noFrame) Tokens.warning else Tokens.slate)</ID>
     <ID>MaxLineLength:PlayerScreen.kt$if (item.target.isVideo) IconButtonRound(Icons.Rounded.Fullscreen, "Fullscreen", { video.fullscreen = true }, size = 40.dp, filled = true)</ID>
@@ -1334,8 +1006,6 @@
     <ID>MaxLineLength:PlayerScreen.kt$session.io { session.api.playHere(assetId, x.name, x.udn) }.onSuccess { res -&gt; when (res) { is McpResult.Ok -&gt; session.toast(Toast.Kind.SUCCESS, "Playing on ${x.name}", video.current?.title); is McpResult.Refused -&gt; session.refused(res) } }</ID>
     <ID>MaxLineLength:PlayerScreen.kt$text = { Column { Text(t.label, color = if (t.id == ps.selectedTrackId) LocalMediaTheme.current.accentGradientEnd else Tokens.textPrimary); t.language?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) } } }</ID>
     <ID>MaxLineLength:PlayerScreen.kt$val banner = ps.issue ?: (if (ps.noFrame) one.rarebit.heyarr.mobile.playback.PlaybackDiagnostics.noFrameMessage(item.target) else null) ?: item.banner ?: streamNote(item.target)</ID>
-    <ID>MaxLineLength:PlayerScreen.kt$value = dragging ?: ps.fraction</ID>
-    <ID>MaxLineLength:PlayerScreen.kt$verticalAlignment = Alignment.CenterVertically</ID>
     <ID>MaxLineLength:PlaylistFlowTest.kt$PlaylistFlowTest$val actions = PersonalActionsViewModel(coord, LibraryClient(NotFound(), "https://n", Credential.Session("t")), io = dispatcher)</ID>
     <ID>MaxLineLength:PlaylistFlowTest.kt$PlaylistFlowTest$val actions = PersonalActionsViewModel(coordinator(FakeServer()), LibraryClient(NotFound(), "https://n", Credential.Session("t")), io = dispatcher)</ID>
     <ID>MaxLineLength:PlaylistFlowTest.kt$PlaylistFlowTest.NotFound$override fun post(url: String, body: String?, contentType: String?, headers: Map&lt;String, String&gt;)</ID>
@@ -1343,7 +1013,6 @@
     <ID>MaxLineLength:PlaylistScreens.kt$LazyColumn</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).background(Tokens.surface1).clickable { onOpen(pl.spaceId, pl.name) }.padding(12.dp)</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).background(Tokens.surface1).clickable { onOpenWork(work) }.padding(horizontal = 12.dp, vertical = 8.dp)</ID>
-    <ID>MaxLineLength:PlaylistScreens.kt$NameDialog(title = "New playlist", confirm = "Create &amp; add", onConfirm = { naming = false; onCreateNew(it) }, onDismiss = onDismiss)</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$Row</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$Text("${pl.itemIds.size} item${if (pl.itemIds.size == 1) "" else "s"}", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$Text("Playlists sync once the Mac is an enrolled member. For starred and history, run `heyarr device gateway` with:", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
@@ -1353,8 +1022,6 @@
     <ID>MaxLineLength:PlaylistScreens.kt$confirmButton = { TextButton(onClick = { naming = true }) { Text("New playlist", color = Tokens.textPrimary) } }</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$historySpaceId?.let { Text("--history-space=$it", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, color = Tokens.textPrimary) }</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$if (!state.notEnrolled) PrimaryButton("New playlist", { creating = true }, icon = Icons.Rounded.Add, compact = true)</ID>
-    <ID>MaxLineLength:PlaylistScreens.kt$if (creating) NameDialog(title = "New playlist", confirm = "Create", onConfirm = { creating = false; onCreate(it) }, onDismiss = { creating = false })</ID>
-    <ID>MaxLineLength:PlaylistScreens.kt$if (renaming) NameDialog(title = "Rename playlist", confirm = "Rename", initial = state.name, onConfirm = { renaming = false; it?.let(onRename) }, onDismiss = { renaming = false })</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$if (state.works.isNotEmpty()) PrimaryButton("Play all", { onPlayAll(state.works) }, icon = Icons.Rounded.PlayArrow, compact = true)</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$item { SectionHeader("Playlists", subtitle = "Encrypted personal state, decrypted on this phone — the node never reads it") }</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$item { SectionHeader(state.name.ifEmpty { "Playlist" }, subtitle = "${state.items.size} item${if (state.items.size == 1) "" else "s"}") }</ID>
@@ -1364,7 +1031,6 @@
     <ID>MaxLineLength:PlaylistScreens.kt$state.items.isEmpty() -&gt; item { EmptyState("This playlist is empty", detail = "Add from any card's long-press menu, or a track's ⋯ menu.", icon = Icons.Rounded.PlaylistPlay) }</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$state.notEnrolled -&gt; item { Notice("Enrol this device to keep playlists — they are encrypted and only readable here.") }</ID>
     <ID>MaxLineLength:PlaylistScreens.kt$state.playlists.isEmpty() -&gt; item { EmptyState("No playlists yet", detail = "Make one here, or add from any card's long-press menu.", icon = Icons.Rounded.PlaylistPlay) }</ID>
-    <ID>MaxLineLength:PlaylistScreens.kt$verticalAlignment = Alignment.CenterVertically</ID>
     <ID>MaxLineLength:PlaylistViewModels.kt$PlaylistsViewModel$val result = withContext(io) { runCatching { Triple(ps.playlists(), ps.starredSpaceId(), ps.historySpaceId()) } }</ID>
     <ID>MaxLineLength:PlaylistViewModels.kt$PlaylistsViewModel${ (lists, starred, history) -&gt; UiState(playlists = lists, starredSpaceId = starred, historySpaceId = history) }</ID>
     <ID>MaxLineLength:PossessionProofTest.kt$PossessionProofTest$assertEquals(Cert.parse(certB).cert.device.render(), "ed25519:cd14b37f956e953194ff7fb73b3d81dcc561d61a7538094b7c3e1a643ee5f3aa")</ID>
@@ -1376,72 +1042,20 @@
     <ID>MaxLineLength:PossessionProofTest.kt$PossessionProofTest$private</ID>
     <ID>MaxLineLength:PossessionProofTest.kt$PossessionProofTest$private val proofA = "eyJ2IjoyLCJjcnQiOiJsQ2ViWTBpTTM0SGM0Z3RGUERtZ1o2S0pMWWE0ejc0YklhU1hSWFV1d01ZIiwiaWF0IjoxNzAwMDAwMDAwLCJleHAiOjE3MDAwMDAxMjB9.2Ta_JOte2RDRHBFrNvOToo68--ea7TIfRjFPNGV-JtvQiXVb_hfE1gQCA9RwlbHyFJ9Mp0AZ5G_u19U1jB-FAg"</ID>
     <ID>MaxLineLength:PossessionProofTest.kt$PossessionProofTest$private val proofB = "eyJ2IjoyLCJjcnQiOiJJdG01WGo5Vmtta2NkQWNOV3JjNEM0QU1LeVppTmx2cFRZM2dfS2FtakxJIiwiaWF0IjoxNzg4MzUwNDAwLCJleHAiOjE3ODgzNTA1MjB9.Qrj11oz4bLp_Zy8xWcHzQkhvYsjcCdy69LGGRcoCABPnlz3WynYLQwVFuxoVlYkn024FaXIDhXGadMAfR5g5Bw"</ID>
-    <ID>MaxLineLength:Primitives.kt$.</ID>
-    <ID>MaxLineLength:Primitives.kt$Box</ID>
-    <ID>MaxLineLength:Primitives.kt$Column</ID>
-    <ID>MaxLineLength:Primitives.kt$Icon(Icons.Rounded.ErrorOutline, contentDescription = null, tint = Tokens.danger, modifier = Modifier.size(26.dp))</ID>
-    <ID>MaxLineLength:Primitives.kt$Icon(Icons.Rounded.WifiOff, contentDescription = null, tint = Tokens.danger, modifier = Modifier.size(18.dp))</ID>
-    <ID>MaxLineLength:Primitives.kt$Text(label.uppercase(), style = MaterialTheme.typography.labelMedium, color = fg, maxLines = 1, softWrap = false)</ID>
-    <ID>MaxLineLength:Primitives.kt$Text(title, style = MaterialTheme.typography.headlineMedium, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:Primitives.kt$Text(type.label.uppercase(), style = MaterialTheme.typography.labelSmall, color = theme.accentGradientEnd, maxLines = 1)</ID>
-    <ID>MaxLineLength:Primitives.kt$fun</ID>
-    <ID>MaxLineLength:Primitives.kt$if (count != null) Text(count.toString(), style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled, maxLines = 1, softWrap = false)</ID>
-    <ID>MaxLineLength:Primitives.kt$if (detail != null) Text(detail, style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted, modifier = Modifier.padding(horizontal = 24.dp))</ID>
-    <ID>MaxLineLength:Primitives.kt$if (detail != null) Text(detail, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:Primitives.kt$if (icon != null) Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(if (compact) 16.dp else 18.dp))</ID>
-    <ID>MaxLineLength:Primitives.kt$if (icon != null) Icon(icon, contentDescription = null, tint = fg, modifier = Modifier.size(if (compact) 16.dp else 20.dp))</ID>
-    <ID>MaxLineLength:Primitives.kt$if (icon != null) Icon(icon, contentDescription = null, tint = if (selected) theme.accent else fg, modifier = Modifier.size(14.dp))</ID>
-    <ID>MaxLineLength:Primitives.kt$if (subtitle != null) { Spacer(Modifier.height(6.dp)); Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }</ID>
-    <ID>MaxLineLength:Primitives.kt$if (text.isNotEmpty()) Text(text, style = MaterialTheme.typography.bodySmall, color = color, maxLines = maxLines, overflow = TextOverflow.Ellipsis, modifier = modifier)</ID>
-    <ID>MaxLineLength:Primitives.kt$if (toast.detail != null) Text(toast.detail, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:Primitives.kt$if (toast.tool != null) Text("via ${toast.tool}", style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled)</ID>
-    <ID>MaxLineLength:Primitives.kt$if (value.isEmpty() &amp;&amp; placeholder != null) Text(placeholder, style = MaterialTheme.typography.bodyMedium, color = Tokens.textDisabled)</ID>
-    <ID>MaxLineLength:Primitives.kt$interactionSource = interaction</ID>
-    <ID>MaxLineLength:Primitives.kt$modifier.background(theme.tint(0.22f), RoundedCornerShape(Tokens.radiusChip)).border(Tokens.hairline, theme.accent.copy(alpha = 0.5f), RoundedCornerShape(Tokens.radiusChip))</ID>
-    <ID>MaxLineLength:Primitives.kt$modifier.fillMaxWidth().background(Tokens.danger.copy(alpha = 0.16f)).border(Tokens.hairline, Tokens.danger.copy(alpha = 0.4f)).padding(horizontal = 16.dp, vertical = 8.dp)</ID>
-    <ID>MaxLineLength:Primitives.kt$modifier.fillMaxWidth().background(Tokens.surface3, RoundedCornerShape(Tokens.radiusCard)).border(Tokens.hairline, tone.copy(alpha = 0.5f), RoundedCornerShape(Tokens.radiusCard)).padding(12.dp)</ID>
-    <ID>MaxLineLength:Primitives.kt$modifier.fillMaxWidth().background(tone.copy(alpha = 0.10f), RoundedCornerShape(Tokens.radiusInput)).border(Tokens.hairline, tone.copy(alpha = 0.35f), RoundedCornerShape(Tokens.radiusInput)).padding(12.dp)</ID>
-    <ID>MaxLineLength:Primitives.kt$val a by t.animateFloat(0.55f, 1f, infiniteRepeatable(tween(900, easing = LinearEasing), RepeatMode.Reverse), label = "shimmer")</ID>
-    <ID>MaxLineLength:Primitives.kt$value</ID>
     <ID>MaxLineLength:ProgressReporter.kt$ConsumptionReporter$if (runCatching { client.transition(id, "start", null) }.getOrNull() is ConsumptionClient.Outcome.Ok) sessionId = id</ID>
     <ID>MaxLineLength:ReaderActivity.kt$ReaderActivity$publicationParser = DefaultPublicationParser(this@ReaderActivity, httpClient = http, assetRetriever = retriever, pdfFactory = PdfiumDocumentFactory(this@ReaderActivity))</ID>
-    <ID>MaxLineLength:ReaderActivity.kt$ReaderActivity$val asset = retriever.retrieve(absolute).getOrElse { status.text = "Could not fetch the file: $it"; return@launch }</ID>
     <ID>MaxLineLength:ReaderActivity.kt$ReaderActivity$val initialJson = localJson ?: withContext(kotlinx.coroutines.Dispatchers.IO) { app.readingPositionSync.resume(assetId) }?.also { positions.put(assetId, it) }</ID>
-    <ID>MaxLineLength:ReaderActivity.kt$ReaderActivity$val pub = opener.open(asset, allowUserInteraction = false).getOrElse { status.text = "Could not open the file: $it"; return@launch }</ID>
     <ID>MaxLineLength:ReaderActivity.kt$ReaderFragment$override</ID>
     <ID>MaxLineLength:ReaderActivity.kt$ReaderFragment$pub.conformsTo(Publication.Profile.DIVINA) -&gt; ImageNavigatorFragment.createFactory(pub, initialLocator = initial)</ID>
     <ID>MaxLineLength:ReaderActivity.kt$ReaderFragment$pub.conformsTo(Publication.Profile.PDF) -&gt; PdfNavigatorFactory(pub, PdfiumEngineProvider()).createFragmentFactory(initialLocator = initial)</ID>
     <ID>MaxLineLength:ReaderHttp.kt$ReaderHttp.&lt;no name provided&gt;$if (!AuthInterceptor.shouldStamp(request.url.toString(), baseUrl(), hasAuth)) return Try.success(request)</ID>
     <ID>MaxLineLength:ReaderPositionTest.kt$ReaderPositionTest$val locator = """{"href":"/ch3.xhtml","type":"application/xhtml+xml","locations":{"progression":0.42,"position":57,"totalProgression":0.31}}"""</ID>
-    <ID>MaxLineLength:ReadingPositionStore.kt$PrefsReadingPositionStore$override fun put(assetId: String, locatorJson: String)</ID>
     <ID>MaxLineLength:ReadingPositionStore.kt$ReaderPosition$/** What the node is told from a Locator: its `locations.position` (a 1-based page-ish index), when Readium computed one. Pure. */</ID>
-    <ID>MaxLineLength:Reasons.kt$.</ID>
-    <ID>MaxLineLength:Reasons.kt$Box</ID>
-    <ID>MaxLineLength:Reasons.kt$Row</ID>
-    <ID>MaxLineLength:Reasons.kt$Text(label, style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted, modifier = Modifier.width(96.dp))</ID>
-    <ID>MaxLineLength:Reasons.kt$Text(rule.uppercase(), style = MaterialTheme.typography.labelMedium.copy(fontFamily = RubikFamily, fontWeight = FontWeight.Medium, letterSpacing = 0.3.sp), color = tone)</ID>
-    <ID>MaxLineLength:Reasons.kt$Text(title, style = MaterialTheme.typography.headlineSmall, color = Tokens.textPrimary, modifier = Modifier.weight(1f))</ID>
-    <ID>MaxLineLength:Reasons.kt$fun</ID>
-    <ID>MaxLineLength:Reasons.kt$if (r.detail.isNotBlank()) Text(r.detail, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:Reasons.kt$if (r.score != null &amp;&amp; r.score != 0) Text("+${r.score}", style = MaterialTheme.typography.labelSmall, color = tone)</ID>
-    <ID>MaxLineLength:Reasons.kt$if (reasons.isEmpty()) Text("No rules reported.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:Reasons.kt$if (reasons.size &gt; 3) Text("+${reasons.size - 3}", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:Reasons.kt$modifier.fillMaxWidth().background(Tokens.surface1, RoundedCornerShape(Tokens.radiusCard)).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusCard)).padding(16.dp)</ID>
     <ID>MaxLineLength:Routes.kt$Route.Detail$@Serializable data</ID>
     <ID>MaxLineLength:Routes.kt$fun</ID>
     <ID>MaxLineLength:RoutesTest.kt$RoutesTest$assertEquals(p, Json.decodeFromString(Route.Playlist.serializer(), Json.encodeToString(Route.Playlist.serializer(), p)))</ID>
-    <ID>MaxLineLength:SearchController.kt$SearchController$if (q.isBlank()) { cancelInFlight(); segments = emptyMap(); episodes = Segment.Loaded(emptyList()); sources = Segment.Loaded(emptyList()); return }</ID>
     <ID>MaxLineLength:SearchController.kt$SearchController$withContext(Dispatchers.IO) { runCatching(block) }.onFailure { if (it is McpTransportException) onTransportFailure(it) }</ID>
-    <ID>MaxLineLength:SearchGrouping.kt$SearchGrouping$val</ID>
-    <ID>MaxLineLength:SearchGroupingTest.kt$SearchGroupingTest$/** Grouping is pure: sections in a fixed order, per-type segments landing independently, rows re-homed by their own type. */</ID>
-    <ID>MaxLineLength:SearchGroupingTest.kt$SearchGroupingTest$assertEquals(listOf("S04E02 — Phantom Pain"), sections.first { it.type == MediaType.SERIES }.rows.map { it.title })</ID>
-    <ID>MaxLineLength:SearchGroupingTest.kt$SearchGroupingTest$assertEquals(listOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.PODCAST), sections.map { it.type })</ID>
-    <ID>MaxLineLength:SearchGroupingTest.kt$SearchGroupingTest$private fun rows(query: String, type: String?)</ID>
-    <ID>MaxLineLength:SearchGroupingTest.kt$SearchGroupingTest$val books = SearchGrouping.group(segments, Segment.Loaded(emptyList()), Segment.Loaded(emptyList()), SearchFilter.BOOKS)</ID>
-    <ID>MaxLineLength:SearchGroupingTest.kt$SearchGroupingTest$val nothing = SearchGrouping.group(MediaType.SEARCHABLE.associateWith { Segment.Loaded(emptyList()) }, Segment.Loaded(emptyList()), Segment.Loaded(emptyList()))</ID>
-    <ID>MaxLineLength:SearchGroupingTest.kt$SearchGroupingTest$val segments = mapOf(MediaType.MOVIE to Segment.Loaded(severance), MediaType.SERIES to Segment.Loaded(severance))</ID>
     <ID>MaxLineLength:SearchResultsJsonTest.kt$SearchResultsJsonEpisodesTest$ {</ID>
-    <ID>MaxLineLength:SearchResultsJsonTest.kt$SearchResultsJsonEpisodesTest$assertEquals("edition", ed.kind)</ID>
     <ID>MaxLineLength:SearchResultsJsonTest.kt$SearchResultsJsonEpisodesTest$val hits = one.rarebit.heyarr.mobile.search.SearchResultsJson.parseHits("""{"works":[{"work_id":"w1","title":"X"}]}""")</ID>
     <ID>MaxLineLength:SearchResultsJsonTest.kt$SearchResultsJsonTest$assertEquals("http://p/x.jpg", SearchResultsJson.parse("""[{"id":"x","poster_url":"http://p/x.jpg"}]""")[0].posterUrl)</ID>
     <ID>MaxLineLength:SearchScreen.kt$"Nothing in the library matches “$query”"</ID>
@@ -1451,7 +1065,6 @@
     <ID>MaxLineLength:SearchScreen.kt$Icon(Icons.Rounded.Search, contentDescription = null, tint = if (focused) accent else Tokens.textMuted, modifier = Modifier.size(20.dp))</ID>
     <ID>MaxLineLength:SearchScreen.kt$MediaScope(f.type ?: MediaType.MOVIE) { FilterChip(f.label, search.filter == f, { search.filter = f }, count = count) }</ID>
     <ID>MaxLineLength:SearchScreen.kt$Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { for (q in recent) FilterChip(q, false, { onPick(q) }) }</ID>
-    <ID>MaxLineLength:SearchScreen.kt$SearchBox(value = search.query, onValueChange = search::updateQuery, onSubmit = { search.submit(); session.recent.push(search.query).also { recent = it } }, onClear = { search.updateQuery("") })</ID>
     <ID>MaxLineLength:SearchScreen.kt$SecondaryButton</ID>
     <ID>MaxLineLength:SearchScreen.kt$Text("Kept on this phone only — not synced anywhere, not part of your encrypted personal state.", style = MaterialTheme.typography.bodySmall, color = Tokens.textDisabled)</ID>
     <ID>MaxLineLength:SearchScreen.kt$Text("Recent searches", style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, modifier = Modifier.weight(1f))</ID>
@@ -1469,29 +1082,12 @@
     <ID>MaxLineLength:SearchScreen.kt$meta = listOf(hit.year?.toString(), hit.attributes["runtime"], hit.attributes["album"], hit.attributes["series"])</ID>
     <ID>MaxLineLength:SearchScreen.kt$meta = listOf(row.source.type, "${row.source.itemsArchived}/${row.source.itemsKnown} archived", row.source.health)</ID>
     <ID>MaxLineLength:SearchScreen.kt$private</ID>
-    <ID>MaxLineLength:SearchScreen.kt$scope.launch { session.io { session.api.discover(query) }.onSuccess { discovery = it }; busy = false }</ID>
-    <ID>MaxLineLength:SearchScreen.kt$search.isIdle -&gt; IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = { session.recent.clear(); recent = emptyList() })</ID>
     <ID>MaxLineLength:SearchScreen.kt$trailing = { if (row.hit.blobHash != null) IconButtonRound(Icons.Rounded.PlayArrow, "Play ${row.hit.title}", { onPlayEpisode(row.hit) }, size = 36.dp, filled = true) }</ID>
     <ID>MaxLineLength:SearchScreen.kt$trailing = { if (status == LibraryStatus.NOT_TRACKED) IconButtonRound(Icons.Rounded.Add, "Want ${hit.title}", { onWant(hit.workId, hit.title) }, size = 36.dp) }</ID>
     <ID>MaxLineLength:SearchScreen.kt$val count = if (f == SearchFilter.ALL) null else sections.firstOrNull { f.admits(it.type) }?.rows?.size?.takeIf { it &gt; 0 }</ID>
-    <ID>MaxLineLength:Series.kt$Series$/** The episode marker in a filename stem: `S04E01` (also `S04E01E02`), `4x01`, `Episode 5`, `E05`, or a leading `05 -`. */</ID>
-    <ID>MaxLineLength:Series.kt$Series$RE_NXNN.find(stem)?.let { m -&gt; return Marker(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.range.last + 1) }</ID>
-    <ID>MaxLineLength:Series.kt$Series$RE_SXXEXX.find(stem)?.let { m -&gt; return Marker(m.groupValues[1].toInt(), m.groupValues[2].toInt(), m.range.last + 1) }</ID>
-    <ID>MaxLineLength:Series.kt$Series$Season(season, eps.sortedWith(compareBy&lt;Episode&gt; { it.number == null }.thenBy { it.number ?: 0 }.thenBy { it.asset.filename ?: it.asset.id }))</ID>
-    <ID>MaxLineLength:Series.kt$Series$if (mime != null &amp;&amp; (mime.startsWith("image/") || mime.startsWith("text/") || mime == "application/xml")) return false</ID>
-    <ID>MaxLineLength:Series.kt$Series$private</ID>
-    <ID>MaxLineLength:Series.kt$Series$private val RE_CODEC = Regex("""^(x|h)\.?26[45]$|^hevc$|^avc$|^av1$|^xvid$|^divx$|^vp9$|^(aac|ac3|eac3|dts|ddp?|truehd|flac|opus)(\d.*)?$""")</ID>
-    <ID>MaxLineLength:Series.kt$Series$private val RE_LANG_SUFFIX = Regex("""\.(en|eng|es|spa|fr|fre|fra|de|ger|deu|it|ita|pt|por|ja|jpn|zh|chi|nl|dut|sv|swe|forced|sdh)(\.(forced|sdh))?$""")</ID>
-    <ID>MaxLineLength:Series.kt$Series$private val RE_SEASON_DIR = Regex("""(?i)^(?:season|series|staffel|saison|stagione|temporada|seizoen|s)[ ._-]*(\d{1,3})(?:[^0-9].*)?$""")</ID>
-    <ID>MaxLineLength:Series.kt$Series$return (asset.role == "artwork" || name.endsWith("-thumb.jpg") || name.endsWith("-thumb.png")) &amp;&amp; name.contains("-thumb.")</ID>
-    <ID>MaxLineLength:Series.kt$Series$return cleaned.split(' ').filter { it.isNotBlank() }.filter { isNoise(it) &amp;&amp; !RE_YEAR.matches(it.lowercase()) }.map { it.uppercase() }.distinct().take(4)</ID>
-    <ID>MaxLineLength:Series.kt$Series$val cleaned = stem.replace(RE_BRACKETS) { " " + it.value.trim('[', ']', '(', ')', '{', '}') + " " }.replace(RE_SEPARATORS, " ")</ID>
-    <ID>MaxLineLength:Series.kt$Series$val dirs = sourcePath?.replace('\\', '/')?.substringBeforeLast('/', "")?.takeIf { it.isNotBlank() } ?: return null</ID>
-    <ID>MaxLineLength:Series.kt$Series$var stem = (asset.filename ?: asset.sourcePath?.substringAfterLast('/') ?: asset.id).substringBeforeLast('.').lowercase()</ID>
     <ID>MaxLineLength:SeriesTest.kt$SeriesTest$WorkAsset(id = id, editionId = "e-${label ?: "none"}", role = role, filename = name, mime = mime, blobHash = hash, sourcePath = path ?: "/media/shows/Yellowstone (2018)/${label ?: "."}/$name", missingSince = missing, sizeBytes = 1_500_000_000L, editionLabel = label)</ID>
     <ID>MaxLineLength:SeriesTest.kt$SeriesTest$assertEquals("Yellowstone — S04E01 Half the Money", Series.playTitle(Work(id = "w", title = "Yellowstone", kind = "series"), Series.firstPlayable(seasons)!!))</ID>
     <ID>MaxLineLength:SeriesTest.kt$SeriesTest$assertEquals(listOf("HDTV-1080P", "AC3", "X264"), Series.qualityTags(file("q", "Yellowstone (2018) - S04E02 - Phantom Pain [HDTV-1080p][AC3 5.1][x264].mp4")))</ID>
-    <ID>MaxLineLength:SeriesTest.kt$SeriesTest$assertTrue(Series.isSeries("tv_series"))</ID>
     <ID>MaxLineLength:SeriesTest.kt$SeriesTest$file("s4e1-nfo", "Yellowstone.2018.S04E01.Half.the.Money.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.nfo", "Season 04", mime = null, hash = "blake3:nfo")</ID>
     <ID>MaxLineLength:SeriesTest.kt$SeriesTest$file("s4e1-srt", "Yellowstone.2018.S04E01.Half.the.Money.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb.en.srt", "Season 04", role = "subtitle", mime = "text/plain")</ID>
     <ID>MaxLineLength:SeriesTest.kt$SeriesTest$file("s4e1-thumb", "Yellowstone.2018.S04E01.Half.the.Money.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb-thumb.jpg", "Season 04", role = "artwork", mime = "image/jpeg")</ID>
@@ -1501,7 +1097,6 @@
     <ID>MaxLineLength:SeriesTest.kt$SeriesTest$val seasons = Series.seasons(listOf(file("a", "Show.S01E01.mkv", "Season 01"), file("b", "Show.S01E04.mkv", "Season 01")))</ID>
     <ID>MaxLineLength:SessionAudioPlayer.kt$SessionAudioPlayer$controller?.let { c -&gt; _state.update { it.copy(positionMs = c.currentPosition.coerceAtLeast(0), durationMs = c.duration.coerceAtLeast(0)) } }</ID>
     <ID>MaxLineLength:SessionAudioPlayer.kt$SessionAudioPlayer.&lt;no name provided&gt;$_state.update { it.copy(index = c.currentMediaItemIndex, positionMs = 0, durationMs = c.duration.coerceAtLeast(0), error = null) }</ID>
-    <ID>MaxLineLength:SessionJson.kt$SessionJson$if (json[i] == '\\' &amp;&amp; i + 1 &lt; json.length) { sb.append(json[i + 1]); i += 2 } else { sb.append(json[i]); i++ }</ID>
     <ID>MaxLineLength:SettingsScreen.kt$Field("Node URL", baseUrl, placeholder = HeyarrConfig.DEFAULT_BASE_URL, keyboard = KeyboardType.Uri) { baseUrl = it }</ID>
     <ID>MaxLineLength:SettingsScreen.kt$FilterChip("Media-adaptive accents", ap.adaptiveAccents, { session.updateAppearance(ap.copy(adaptiveAccents = !ap.adaptiveAccents)) })</ID>
     <ID>MaxLineLength:SettingsScreen.kt$FilterChip("Public cover art &amp; synopses", session.externalMetadata, { session.updateExternalMetadata(!session.externalMetadata) })</ID>
@@ -1542,21 +1137,6 @@
     <ID>MaxLineLength:StreamSeekDurationTest.kt$StreamSeekDurationTest$val body = """{"mode":"stream","url":"/api/v1/playback/stream/tok","source":{"container":"mp4","video":"hevc","audio":"eac3","duration_seconds":2703.4}}"""</ID>
     <ID>MaxLineLength:Subtitles.kt$Subtitles$private val RE_LANG = Regex("""\.(en|eng|es|spa|fr|fre|fra|de|ger|deu|it|ita|pt|por|ja|jpn|zh|chi|nl|dut|sv|swe)(?:\.(?:forced|sdh))?$""")</ID>
     <ID>MaxLineLength:SubtitlesTest.kt$SubtitlesTest$assertEquals("Director's commentary", Subtitles.label(language = "en", label = "Director's commentary", index = 0))</ID>
-    <ID>MaxLineLength:Table.kt$.</ID>
-    <ID>MaxLineLength:Table.kt$Box(Modifier.fillMaxWidth().background(Tokens.bgBase.copy(alpha = 0.5f)).padding(horizontal = 16.dp, vertical = 10.dp)) { detail(r) }</ID>
-    <ID>MaxLineLength:Table.kt$Box(m, contentAlignment = if (c.alignEnd) Alignment.CenterEnd else Alignment.CenterStart) { Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) { cell(r, ci) } }</ID>
-    <ID>MaxLineLength:Table.kt$Column</ID>
-    <ID>MaxLineLength:Table.kt$Icon(if (open) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(18.dp))</ID>
-    <ID>MaxLineLength:Table.kt$Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusButton)).clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = { open = !open })</ID>
-    <ID>MaxLineLength:Table.kt$Row</ID>
-    <ID>MaxLineLength:Table.kt$Text(c.title.uppercase(), style = MaterialTheme.typography.labelSmall.copy(fontFamily = RubikFamily, letterSpacing = 0.8.sp), color = Tokens.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:Table.kt$Text(text, style = if (mono) MaterialTheme.typography.labelMedium.copy(fontFamily = RubikFamily) else MaterialTheme.typography.bodySmall, color = if (muted) Tokens.textMuted else color, maxLines = maxLines, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:Table.kt$fun</ID>
-    <ID>MaxLineLength:Table.kt$if (detail != null) Icon(if (open) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(18.dp))</ID>
-    <ID>MaxLineLength:Table.kt$if (r &lt; rowCount - 1) Box(Modifier.fillMaxWidth().height(Tokens.hairline).background(Tokens.border))</ID>
-    <ID>MaxLineLength:Table.kt$if (rowCount == 0) Text(emptyText, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, modifier = Modifier.padding(12.dp))</ID>
-    <ID>MaxLineLength:Table.kt$if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>
-    <ID>MaxLineLength:Table.kt$verticalAlignment = Alignment.CenterVertically</ID>
     <ID>MaxLineLength:TaggedItemIdentityTest.kt$TaggedItemIdentityTest$"$base/api/v1/assets/A1" to """{"id":"A1","edition_id":"E1","filename":"01 - Song.flac","blob_hash":"h","mime":"audio/flac"}"""</ID>
     <ID>MaxLineLength:TaggedItemIdentityTest.kt$TaggedItemIdentityTest.Fake$override fun post(url: String, body: String?, contentType: String?, headers: Map&lt;String, String&gt;)</ID>
     <ID>MaxLineLength:TelemetryScreen.kt$Box(Modifier.padding(top = 5.dp).size(8.dp).background(if (x.healthy) Tokens.success else Tokens.danger, RectangleShape))</ID>
@@ -1578,9 +1158,8 @@
     <ID>MaxLineLength:TelemetryScreen.kt$state.peers?.let { p -&gt; for (peer in p.peers) KeyValue("peer", "${peer.name}${if (peer.isSelf) " (this node)" else ""} · ${peer.site ?: ""} · ${peer.mode ?: ""}") }</ID>
     <ID>MaxLineLength:TelemetryScreen.kt$x.version?.takeIf { it != "unreported" }?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled) }</ID>
     <ID>MaxLineLength:VideoSession.kt$VideoSession$else</ID>
-    <ID>MaxLineLength:VideoSession.kt$VideoSession$fun togglePause()</ID>
-    <ID>MaxLineLength:VideoSession.kt$VideoSession$if (p.isPlaying &amp;&amp; now - lastReport &gt;= PROGRESS_TICK_MS) { lastReport = now; onProgress(PlaybackProgress(sourceSeconds(), false, PlaybackProgress.Event.TICK)) }</ID>
     <ID>MaxLineLength:VideoSession.kt$VideoSession$if (player === p &amp;&amp; p.playbackState == Player.STATE_READY &amp;&amp; !state.renderedFrame) state = state.copy(noFrame = true)</ID>
+    <ID>MaxLineLength:VideoSession.kt$VideoSession$setSelectionFlags(if (i == 0) androidx.media3.common.C.SELECTION_FLAG_DEFAULT else 0)</ID>
     <ID>MaxLineLength:VideoSession.kt$VideoSession$state = state.copy(positionMs = positionMs(p), durationMs = durationMs(p), bufferedMs = bufferedMs(p))</ID>
     <ID>MaxLineLength:VideoSession.kt$VideoSession$val same = current?.assetId != null &amp;&amp; current?.assetId == np.assetId &amp;&amp; target?.contentUrl == np.target.contentUrl</ID>
     <ID>MaxLineLength:VideoSession.kt$VideoSession.&lt;no name provided&gt;$PlaybackDiagnostics.TrackGroup(type = g.type, supported = g.isSupported, sampleMime = f?.sampleMimeType, channels = f?.channelCount ?: 0)</ID>
@@ -1642,10 +1221,6 @@
     <ID>NestedBlockDepth:PsJson.kt$PsJson$fun topLevelStrings(arraySlice: String): List&lt;String&gt;</ID>
     <ID>NestedBlockDepth:SearchResultsJson.kt$SearchResultsJson$private fun sliceBalanced(s: String, start: Int, open: Char, close: Char): String?</ID>
     <ID>NestedBlockDepth:SessionJson.kt$SessionJson$private fun stringArrayField(json: String, key: String): List&lt;String&gt;</ID>
-    <ID>ReturnCount:AppViewModel.kt$AppViewModel$private fun joinPairing(inviteQr: String, sameDevice: Boolean)</ID>
-    <ID>ReturnCount:AppViewModel.kt$AppViewModel$private fun memberEncRecipients(ring: DeviceKeyring): List&lt;ByteArray&gt;</ID>
-    <ID>ReturnCount:AppViewModel.kt$AppViewModel$private fun refreshMembership(): Boolean</ID>
-    <ID>ReturnCount:AppViewModel.kt$AppViewModel$private suspend fun reflectPairing(ps: PairingState)</ID>
     <ID>ReturnCount:AuthInterceptor.kt$AuthInterceptor$override fun intercept(chain: Interceptor.Chain): Response</ID>
     <ID>ReturnCount:AuthInterceptor.kt$AuthInterceptor.Companion$fun shouldStamp(requestUrl: String, baseUrl: String, hasAuth: Boolean): Boolean</ID>
     <ID>ReturnCount:DeviceAuthTransport.kt$DeviceAuthTransport$private inline fun withDeviceAuth(headers: Map&lt;String, String&gt;, send: (Map&lt;String, String&gt;) -&gt; HttpResponse): HttpResponse</ID>
@@ -1654,15 +1229,6 @@
     <ID>ReturnCount:DeviceEnrolment.kt$DeviceEnrolment$private suspend fun reflectPairing(ps: PairingState)</ID>
     <ID>ReturnCount:DevicePersonalState.kt$DevicePersonalState$private fun memberEncRecipients(ring: DeviceKeyring): List&lt;ByteArray&gt;</ID>
     <ID>ReturnCount:EnrolClient.kt$EnrolClient$fun register( certToken: String, proof: String, name: String, credential: Credential?, ops: List&lt;String&gt; = emptyList(), ): Outcome</ID>
-    <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$private suspend fun feedImage(key: MetaKey): ExternalMeta?</ID>
-    <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$private suspend fun musicBrainz(key: MetaKey): ExternalMeta?</ID>
-    <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$suspend fun episodes(tvmazeId: Long): List&lt;ExternalEpisode&gt;</ID>
-    <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$suspend fun lookup(key: MetaKey): ExternalMeta?</ID>
-    <ID>ReturnCount:ExternalMetadata.kt$ExternalParsers$fun feedImage(xml: String): String?</ID>
-    <ID>ReturnCount:ExternalMetadata.kt$ExternalParsers$fun itunes(body: String): ExternalMeta?</ID>
-    <ID>ReturnCount:ExternalMetadata.kt$ExternalParsers$fun openLibrary(body: String): ExternalMeta?</ID>
-    <ID>ReturnCount:ExternalMetadata.kt$ExternalParsers$fun wikipedia(body: String): ExternalMeta?</ID>
-    <ID>ReturnCount:ExternalMetadata.kt$ExternalParsers$fun yearAgrees(text: String?, year: Int?): Boolean</ID>
     <ID>ReturnCount:Fixtures.kt$FakeHeyarrTransport$override fun post(url: String, body: String?, contentType: String?, headers: Map&lt;String, String&gt;): HttpResponse</ID>
     <ID>ReturnCount:Hex.kt$Hex$fun decodeOrNull(hex: String): ByteArray?</ID>
     <ID>ReturnCount:HeyarrConfig.kt$HeyarrConfig.Companion$fun normalizeBaseUrl(raw: String?): String?</ID>
@@ -1693,10 +1259,6 @@
     <ID>ReturnCount:SearchResultsJson.kt$SearchResultsJson$private fun extractArray(body: String): String?</ID>
     <ID>ReturnCount:SearchResultsJson.kt$SearchResultsJson$private fun intField(json: String, key: String): Int?</ID>
     <ID>ReturnCount:SearchResultsJson.kt$SearchResultsJson$private fun stringField(json: String, key: String): String?</ID>
-    <ID>ReturnCount:Series.kt$Series$fun seasonOfLabel(label: String?): Int?</ID>
-    <ID>ReturnCount:Series.kt$Series$fun seasonOfPath(sourcePath: String?): Int?</ID>
-    <ID>ReturnCount:Series.kt$Series$private fun isEpisodeFile(asset: WorkAsset): Boolean</ID>
-    <ID>ReturnCount:Series.kt$Series$private fun markerIn(stem: String): Marker?</ID>
     <ID>ReturnCount:SessionJson.kt$SessionJson$private fun stringArrayField(json: String, key: String): List&lt;String&gt;</ID>
     <ID>ReturnCount:SessionJson.kt$SessionJson$private fun stringField(json: String, key: String): String?</ID>
     <ID>ReturnCount:Subtitles.kt$Subtitles$fun label(language: String?, label: String?, index: Int): String</ID>
@@ -1714,26 +1276,18 @@
     <ID>TooGenericExceptionCaught:PlaybackClient.kt$PlaybackClient$e: Exception</ID>
     <ID>TooManyFunctions:AppSession.kt$AppSession</ID>
     <ID>TooManyFunctions:AppViewModel.kt$AppViewModel : ViewModel</ID>
-    <ID>TooManyFunctions:DetailScreen.kt$one.rarebit.heyarr.mobile.ui.screens.DetailScreen.kt</ID>
     <ID>TooManyFunctions:DeviceEnrolment.kt$DeviceEnrolment</ID>
     <ID>TooManyFunctions:DeviceKeyring.kt$DeviceKeyring</ID>
-    <ID>TooManyFunctions:ExternalMetadata.kt$ExternalMetadata</ID>
     <ID>TooManyFunctions:Fixtures.kt$Fixtures</ID>
     <ID>TooManyFunctions:HeyarrApi.kt$HeyarrApi</ID>
     <ID>TooManyFunctions:PairingCoordinator.kt$PairingCoordinator</ID>
     <ID>TooManyFunctions:PersonalStateCoordinator.kt$PersonalStateCoordinator</ID>
     <ID>TooManyFunctions:PlaybackCoordinator.kt$PlaybackCoordinator</ID>
-    <ID>TooManyFunctions:Primitives.kt$one.rarebit.heyarr.mobile.ui.components.Primitives.kt</ID>
     <ID>TooManyFunctions:SearchResultsJson.kt$SearchResultsJson</ID>
-    <ID>TooManyFunctions:Series.kt$Series</ID>
     <ID>TooManyFunctions:SessionAudioPlayer.kt$SessionAudioPlayer : AudioPlayer</ID>
     <ID>TooManyFunctions:SpaceRegistry.kt$SpaceRegistry</ID>
     <ID>TooManyFunctions:SpaceSession.kt$SpaceSession</ID>
     <ID>TooManyFunctions:VideoSession.kt$VideoSession</ID>
-    <ID>UnusedParameter:DetailCurate.kt$session: AppSession</ID>
-    <ID>UnusedParameter:DetailCurate.kt$work: Work</ID>
-    <ID>UnusedParameter:DetailScreen.kt$session: AppSession</ID>
-    <ID>UnusedParameter:DetailScreen.kt$work: Work</ID>
     <ID>UnusedParameter:DetailWatch.kt$session: AppSession</ID>
     <ID>UnusedParameter:DetailWatch.kt$work: Work</ID>
     <ID>UnusedParameter:Fakes.kt$SubstringTransport$body: String?</ID>

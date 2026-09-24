@@ -31,8 +31,12 @@ class PersonalStateIdTest {
         var i = 0
         while (i < arr.length) {
             if (arr[i] == '"') {
-                val sb = StringBuilder(); i++
-                while (i < arr.length && arr[i] != '"') { sb.append(arr[i]); i++ }
+                val sb = StringBuilder()
+                i++
+                while (i < arr.length && arr[i] != '"') {
+                    sb.append(arr[i])
+                    i++
+                }
                 out.add(sb.toString())
             }
             i++
@@ -54,8 +58,16 @@ class PersonalStateIdTest {
             val cipher = hexToBytes(JsonScan.stringField(v, "cipher_hex")!!)
             val expected = JsonScan.stringField(v, "id")!!
             val got = when (kind) {
-                "change" -> { changes++; PersonalStateId.changeId(space, refs, cipher) }
-                "snapshot" -> { snapshots++; PersonalStateId.snapshotId(space, refs, cipher) }
+                "change" -> {
+                    changes++
+                    PersonalStateId.changeId(space, refs, cipher)
+                }
+
+                "snapshot" -> {
+                    snapshots++
+                    PersonalStateId.snapshotId(space, refs, cipher)
+                }
+
                 else -> fail("unknown vector kind $kind")
             }
             assertEquals(expected, got, "$kind id for space=$space refs=$refs")

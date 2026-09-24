@@ -9,14 +9,13 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import one.rarebit.heyarr.desktop.ui.components.AudioDock
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,26 +31,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isAltPressed
-import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.isCtrlPressed
 import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.heyarr.QualityProfile
-import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
-import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
-import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
+import one.rarebit.heyarr.desktop.heyarr.McpResult
+import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
 import one.rarebit.heyarr.desktop.open.BlobDownloader
 import one.rarebit.heyarr.desktop.open.ExternalOpener
 import one.rarebit.heyarr.desktop.open.JdkBlobDownloader
@@ -64,29 +65,16 @@ import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.ArtworkLoader
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.state.SearchController
-import one.rarebit.heyarr.core.state.Toast
-import one.rarebit.heyarr.ui.theme.HeyarrTheme
-import one.rarebit.heyarr.ui.theme.LocalAppearance
-import one.rarebit.heyarr.ui.theme.MediaThemes
-import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.ui.theme.Tokens
-import one.rarebit.heyarr.ui.components.FilterChip
-import one.rarebit.heyarr.ui.components.GhostButton
-import one.rarebit.heyarr.ui.components.OfflineBanner
-import one.rarebit.heyarr.ui.components.Panel
-import one.rarebit.heyarr.ui.components.PrimaryButton
-import one.rarebit.heyarr.desktop.ui.components.SideNav
-import one.rarebit.heyarr.ui.components.ToastCard
+import one.rarebit.heyarr.desktop.ui.components.AudioDock
 import one.rarebit.heyarr.desktop.ui.components.NowPlayingBar
 import one.rarebit.heyarr.desktop.ui.components.PlaybackHost
-import one.rarebit.heyarr.desktop.ui.screens.accentHex
+import one.rarebit.heyarr.desktop.ui.components.SideNav
 import one.rarebit.heyarr.desktop.ui.screens.DetailScreen
 import one.rarebit.heyarr.desktop.ui.screens.DetailState
-import one.rarebit.heyarr.desktop.ui.screens.Field
 import one.rarebit.heyarr.desktop.ui.screens.DiscoverScreen
 import one.rarebit.heyarr.desktop.ui.screens.DiscoverState
+import one.rarebit.heyarr.desktop.ui.screens.Field
 import one.rarebit.heyarr.desktop.ui.screens.HomeScreen
-import one.rarebit.heyarr.desktop.ui.screens.WantByTitle
 import one.rarebit.heyarr.desktop.ui.screens.HomeState
 import one.rarebit.heyarr.desktop.ui.screens.LibraryScreen
 import one.rarebit.heyarr.desktop.ui.screens.LibraryState
@@ -101,6 +89,18 @@ import one.rarebit.heyarr.desktop.ui.screens.ReaderScreen
 import one.rarebit.heyarr.desktop.ui.screens.SearchScreen
 import one.rarebit.heyarr.desktop.ui.screens.SettingsScreen
 import one.rarebit.heyarr.desktop.ui.screens.SettingsState
+import one.rarebit.heyarr.desktop.ui.screens.WantByTitle
+import one.rarebit.heyarr.desktop.ui.screens.accentHex
+import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.OfflineBanner
+import one.rarebit.heyarr.ui.components.Panel
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.ToastCard
+import one.rarebit.heyarr.ui.theme.HeyarrTheme
+import one.rarebit.heyarr.ui.theme.LocalAppearance
+import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.ui.theme.Tokens
 
 /** A pending Want: either an existing work by id, or a title the library has never seen. */
 data class WantRequest(val workId: String?, val title: String, val year: Int? = null, val type: MediaType = MediaType.MOVIE)
@@ -156,7 +156,10 @@ fun App(
     val playerScreen = remember { PlayerScreenState() }
     val playback = session.playback
     val fullscreen = playback.fullscreen
-    fun setFullscreen(on: Boolean) { playback.fullscreen = on; onFullscreen(on) }
+    fun setFullscreen(on: Boolean) {
+        playback.fullscreen = on
+        onFullscreen(on)
+    }
     val searchFocus = remember { FocusRequester() }
     var focusSearchTick by remember { mutableStateOf(0) }
     var want by remember { mutableStateOf<WantRequest?>(null) }
@@ -165,7 +168,11 @@ fun App(
     var showConnection by remember { mutableStateOf(initialConnectionSheet) }
     val connectionState = remember { ConnectionState() }
 
-    LaunchedEffect(Unit) { session.startHeartbeat(); session.refreshIndex(); initialQuery?.let { search.updateQuery(it) } }
+    LaunchedEffect(Unit) {
+        session.startHeartbeat()
+        session.refreshIndex()
+        initialQuery?.let { search.updateQuery(it) }
+    }
     // Resume vault sync (W4) if a folder was configured, and stop the daemon (closing its folder
     // watch) when the shell leaves composition — the session scope dies with it, but closing the
     // WatchService explicitly frees the OS handle.
@@ -177,7 +184,12 @@ fun App(
     LaunchedEffect(session.generation) { if (session.generation > 0) details.clear() }
     LaunchedEffect(focusSearchTick) { if (focusSearchTick > 0) runCatching { searchFocus.requestFocus() } }
 
-    fun openSearch() { consuming = false; nav.go(Route.Search); focusSearchTick++ }
+    fun openSearch() {
+        consuming = false
+        nav.go(Route.Search)
+        focusSearchTick++
+    }
+
     // A Player route hands its item to the session before the screen composes, so the first
     // frame already has something to show and nothing bounces back to the previous screen.
     fun go(route: Route) {
@@ -198,7 +210,8 @@ fun App(
     }
     // The session player streams with the saved connection; the pop-out OSC takes the media accent.
     LaunchedEffect(session.config, playback.current?.assetId) {
-        playback.baseUrl = session.config.baseUrl; playback.token = session.config.bearerToken.trim()
+        playback.baseUrl = session.config.baseUrl
+        playback.token = session.config.bearerToken.trim()
         // Resolve each play URL through the server's playback plan, so a 4K/HEVC asset
         // is transcoded down to a smoothly-decodable stream; falls back to the direct
         // blob when there is no connection.
@@ -220,9 +233,13 @@ fun App(
             val key = PlayerKeys.fromAwt(e.keyCode) ?: return@KeyEventDispatcher false
             playback.wakeControls()
             val handled = PlayerKeys.handle(
-                key, playback.player,
+                key,
+                playback.player,
                 onFullscreen = { setFullscreen(!playback.fullscreen) },
-                onBack = { if (playback.fullscreen) setFullscreen(false); nav.back() },
+                onBack = {
+                    if (playback.fullscreen) setFullscreen(false)
+                    nav.back()
+                },
                 fullscreen = playback.fullscreen,
             )
             if (handled) e.consume()
@@ -248,7 +265,13 @@ fun App(
                     if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                     val mod = e.isCtrlPressed || e.isMetaPressed
                     if (current is Route.Player && !mod && want == null) {
-                        if (PlayerKeys.handle(e.key, playback.player, { setFullscreen(!fullscreen) }, { if (fullscreen) setFullscreen(false); nav.back() }, fullscreen)) return@onPreviewKeyEvent true
+                        if (PlayerKeys.handle(e.key, playback.player, { setFullscreen(!fullscreen) }, {
+                                if (fullscreen) setFullscreen(false)
+                                nav.back()
+                            }, fullscreen)
+                        ) {
+                            return@onPreviewKeyEvent true
+                        }
                     }
                     when {
                         e.isCtrlPressed && !e.isMetaPressed && !e.isAltPressed && !e.isShiftPressed && e.key == Key.F && want == null && !showConnection && !showSignIn -> { openSearch(); true }
@@ -270,24 +293,32 @@ fun App(
                     val compact = maxWidth < Tokens.compactBreakpoint
                     val audioDock = showAudioDock(playback.type, playback.active, maxWidth.value, fullscreen)
                     Row(Modifier.fillMaxSize()) {
-                        if (!fullscreen) SideNav(
-                            current, onGo = { if (it == Route.Search) openSearch() else nav.go(it) }, connection = session.connection, compact = compact,
-                            connectionDetail = run {
-                                val host = session.config.baseUrl.removePrefix("https://").removePrefix("http://").substringBefore('/').substringBefore(':')
-                                session.lastLatencyMs?.let { "$it ms · $host" } ?: host.ifBlank { null }
-                            },
-                            onConnection = { showConnection = true }, consuming = consuming,
-                        )
+                        if (!fullscreen) {
+                            SideNav(
+                                current,
+                                onGo = { if (it == Route.Search) openSearch() else nav.go(it) },
+                                connection = session.connection,
+                                compact = compact,
+                                connectionDetail = run {
+                                    val host = session.config.baseUrl.removePrefix("https://").removePrefix("http://").substringBefore('/').substringBefore(':')
+                                    session.lastLatencyMs?.let { "$it ms · $host" } ?: host.ifBlank { null }
+                                },
+                                onConnection = { showConnection = true },
+                                consuming = consuming,
+                            )
+                        }
                         Column(Modifier.weight(1f).fillMaxHeight()) {
                             if (!fullscreen) Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 FilterChip("Consume", consuming, { consuming = true; nav.go(Route.Consume(Experience.WATCH)) })
                                 FilterChip("Manage", !consuming, { consuming = false; nav.go(Route.Search) })
                                 GhostButton("Search everything · Ctrl+F", ::openSearch, icon = androidx.compose.material.icons.Icons.Rounded.Search)
                             }
-                            if (!fullscreen) when (session.connection) {
-                                Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.config.baseUrl, onRetry = { scope.launch { session.probe() } }, onSettings = { nav.go(Route.Settings) })
-                                Connection.UNAUTHORIZED -> OfflineBanner("heyarr refused the token", "Check the bearer token in Settings.", onRetry = { scope.launch { session.probe() } }, onSettings = { nav.go(Route.Settings) })
-                                else -> {}
+                            if (!fullscreen) {
+                                when (session.connection) {
+                                    Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.config.baseUrl, onRetry = { scope.launch { session.probe() } }, onSettings = { nav.go(Route.Settings) })
+                                    Connection.UNAUTHORIZED -> OfflineBanner("heyarr refused the token", "Check the bearer token in Settings.", onRetry = { scope.launch { session.probe() } }, onSettings = { nav.go(Route.Settings) })
+                                    else -> {}
+                                }
                             }
                             // Guest choke point: any "save" action (want by id or by title) is an
                             // enrolled-only surface, so in guest mode it opens the "Sign in to save"
@@ -318,7 +349,12 @@ fun App(
                     for (t in session.toasts.takeLast(4)) ToastCard(t, onDismiss = { session.dismiss(t) })
                 }
                 want?.let { req -> WantSheet(session, req, onClose = { want = null }) }
-                if (showSignIn) SignInSheet(session, onClose = { showSignIn = false }, onOpenSettings = { showSignIn = false; nav.go(Route.Settings) })
+                if (showSignIn) {
+                    SignInSheet(session, onClose = { showSignIn = false }, onOpenSettings = {
+                        showSignIn = false
+                        nav.go(Route.Settings)
+                    })
+                }
                 if (showConnection) ConnectionSheet(session, connectionState, onClose = { showConnection = false }, onSettings = { nav.go(Route.Settings) })
             }
         }
@@ -422,8 +458,11 @@ private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -> Unit
                     // friction with no decision behind it). The picker only earns its
                     // place when there is an actual choice.
                     session.profiles.isEmpty() -> Text("No profiles loaded yet.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+
                     offered.isEmpty() -> Text("No quality profile is configured for ${type.label.lowercase()} yet — add one with `heyarr quality-profile create` and tag it --content-types ${type.apiName}.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+
                     offered.size == 1 -> Text("Measured against ${offered[0].name}" + (offered[0].description?.let { " — $it" } ?: "") + ".", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+
                     else -> {
                         Text("Quality profile — the standard this want is measured against", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (p in offered) FilterChip(p.name, profile == p.name, { profile = p.name }) }

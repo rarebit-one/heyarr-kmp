@@ -25,8 +25,12 @@ object PlaceholderArt {
         val x = c * (1 - kotlin.math.abs((h / 60f) % 2 - 1))
         val m = l - c / 2
         val (r, g, b) = when {
-            h < 60 -> Triple(c, x, 0f); h < 120 -> Triple(x, c, 0f); h < 180 -> Triple(0f, c, x)
-            h < 240 -> Triple(0f, x, c); h < 300 -> Triple(x, 0f, c); else -> Triple(c, 0f, x)
+            h < 60 -> Triple(c, x, 0f)
+            h < 120 -> Triple(x, c, 0f)
+            h < 180 -> Triple(0f, c, x)
+            h < 240 -> Triple(0f, x, c)
+            h < 300 -> Triple(x, 0f, c)
+            else -> Triple(c, 0f, x)
         }
         return Color4f(r + m, g + m, b + m, 1f)
     }

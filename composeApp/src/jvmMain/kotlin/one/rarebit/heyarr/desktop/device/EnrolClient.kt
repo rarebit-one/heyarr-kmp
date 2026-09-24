@@ -49,7 +49,10 @@ class EnrolClient(
         }
         when (self.status) {
             200, 201, 204 -> return Outcome.Registered("POST /enrol", recoveryKey(self.body))
-            404, 405 -> Unit // not mounted on this node — fall through to the admin lane
+
+            404, 405 -> Unit
+
+            // not mounted on this node — fall through to the admin lane
             else -> return Outcome.Failed(problem(self.body, self.status, "self-enrol"))
         }
 
@@ -57,7 +60,9 @@ class EnrolClient(
         val adminBody = MiniJson.encodeObject(listOf("cert" to certToken, "name" to name))
         val admin = runCatching {
             http.post(
-                adminEnrolUrl(baseUrl), adminBody, "application/json",
+                adminEnrolUrl(baseUrl),
+                adminBody,
+                "application/json",
                 credential.asHeader(),
             )
         }.getOrElse { return Outcome.Failed("register: ${it.message}") }
@@ -77,15 +82,14 @@ class EnrolClient(
             JsonScan.stringField(body, "recovery_encryption_key")?.trim()?.takeIf { it.isNotEmpty() }
 
         /** The `POST /enrol` body: `cert`, `proof`, `name`, and `ops` only when there are any. */
-        fun selfBody(certToken: String, proof: String, name: String, ops: List<String>): String =
-            MiniJson.encodeObject(
-                buildList {
-                    add("cert" to certToken)
-                    add("proof" to proof)
-                    add("name" to name)
-                    if (ops.isNotEmpty()) add("ops" to ops)
-                },
-            )
+        fun selfBody(certToken: String, proof: String, name: String, ops: List<String>): String = MiniJson.encodeObject(
+            buildList {
+                add("cert" to certToken)
+                add("proof" to proof)
+                add("name" to name)
+                if (ops.isNotEmpty()) add("ops" to ops)
+            },
+        )
 
         /** A best-effort message from an RFC-7807 problem body, else a plain "step failed (HTTP n)". */
         private fun problem(body: String, status: Int, step: String): String {

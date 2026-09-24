@@ -178,8 +178,7 @@ class DesktopDeviceKeyring(
      * the desktop analog of heyarr-mobile's `DeviceKeyring.recoveryRecipient()`. Absent →
      * the honest degraded default: the space is wrapped for THIS device only.
      */
-    fun recoveryRecipient(): String? =
-        recoveryFile().takeIf { it.exists() }?.readText()?.trim()?.ifEmpty { null }
+    fun recoveryRecipient(): String? = recoveryFile().takeIf { it.exists() }?.readText()?.trim()?.ifEmpty { null }
 
     /** Persist the recovery encryption public key delivered by `/enrol` (a blank value clears it). */
     fun saveRecoveryRecipient(key: String) {

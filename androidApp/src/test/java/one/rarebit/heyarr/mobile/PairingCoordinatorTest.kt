@@ -2,8 +2,8 @@ package one.rarebit.heyarr.mobile
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -80,6 +80,7 @@ class PairingCoordinatorTest {
      * like `HeyarrApp.appScope`), so `advanceUntilIdle` runs its pipeline and a gate
      * left open at the end of a test does not hang `runTest`.
      */
+
     /** Records what was reported to Cruciform, and whether an activity "took" it. */
     private class RecordingAnnouncer(val taken: Boolean) : CruciformAnnouncer {
         val reports = ArrayList<Triple<String, String, String>>()
@@ -294,7 +295,6 @@ class PairingCoordinatorTest {
         assertEquals(0, h.created.size)
         assertNull(h.store.pending)
     }
-
 
     // ── the same-phone one-tap channel (voidbind-kmp ADR-0008) ──────────────────
 

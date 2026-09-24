@@ -41,7 +41,8 @@ class PlaybackService : MediaSessionService() {
                     .setUsage(C.USAGE_MEDIA)
                     .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
                     .build(),
-                /* handleAudioFocus = */ true,
+                /* handleAudioFocus = */
+                true,
             )
             .build()
         session = MediaSession.Builder(this, player)
@@ -58,7 +59,10 @@ class PlaybackService : MediaSessionService() {
     }
 
     override fun onDestroy() {
-        session?.run { player.release(); release() }
+        session?.run {
+            player.release()
+            release()
+        }
         session = null
         super.onDestroy()
     }

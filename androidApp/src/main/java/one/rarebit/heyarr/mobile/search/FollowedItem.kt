@@ -63,8 +63,7 @@ object FollowedItemsJson {
 
     private val ENVELOPE_KEYS = listOf("items", "followed_items", "data")
 
-    fun parse(body: String): List<FollowedItem> =
-        JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
+    fun parse(body: String): List<FollowedItem> = JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
 
     fun nextCursor(body: String): String? =
         JsonScan.rootObject(body)?.let { JsonScan.stringField(it, "next_cursor") }?.takeIf { it.isNotBlank() }

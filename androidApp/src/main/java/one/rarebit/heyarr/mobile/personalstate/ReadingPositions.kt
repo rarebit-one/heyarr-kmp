@@ -16,11 +16,10 @@ internal data class PositionChange(
     val at: ULong = 0UL,
     val writer: String = "",
 ) {
-    fun encode(): String =
-        "{\"PubID\":${PsJson.goJsonString(pubId)}" +
-            ",\"Position\":${PsJson.goJsonString(position)}" +
-            ",\"At\":$at" +
-            ",\"Writer\":${PsJson.goJsonString(writer)}}"
+    fun encode(): String = "{\"PubID\":${PsJson.goJsonString(pubId)}" +
+        ",\"Position\":${PsJson.goJsonString(position)}" +
+        ",\"At\":$at" +
+        ",\"Writer\":${PsJson.goJsonString(writer)}}"
 
     companion object {
         fun decode(json: String): PositionChange = PositionChange(
@@ -34,8 +33,7 @@ internal data class PositionChange(
 
 internal class ReadingPositions {
     private data class PosKey(val at: ULong, val writer: String) {
-        fun greater(other: PosKey): Boolean =
-            if (at != other.at) at > other.at else writer > other.writer
+        fun greater(other: PosKey): Boolean = if (at != other.at) at > other.at else writer > other.writer
     }
 
     private data class PosRec(val position: String, val key: PosKey)

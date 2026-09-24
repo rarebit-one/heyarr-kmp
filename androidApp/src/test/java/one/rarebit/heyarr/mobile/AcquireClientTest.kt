@@ -10,10 +10,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private class PostCapturingTransport(private val status: Int, private val respBody: String = "") : HttpTransport {
-    var lastUrl: String? = null; private set
-    var lastBody: String? = null; private set
-    var lastAuth: String? = null; private set
-    var lastContentType: String? = null; private set
+    var lastUrl: String? = null
+        private set
+    var lastBody: String? = null
+        private set
+    var lastAuth: String? = null
+        private set
+    var lastContentType: String? = null
+        private set
     override fun get(url: String, headers: Map<String, String>): HttpResponse = HttpResponse(405, "")
     override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
         lastUrl = url

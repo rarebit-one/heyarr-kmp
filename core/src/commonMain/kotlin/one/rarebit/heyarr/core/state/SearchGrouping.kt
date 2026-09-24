@@ -49,7 +49,8 @@ enum class SearchFilter(val label: String, val type: MediaType?) {
     SERIES("Series", MediaType.SERIES),
     MUSIC("Music", MediaType.MUSIC),
     BOOKS("Books", MediaType.BOOK),
-    PODCASTS("Podcasts & feeds", MediaType.PODCAST);
+    PODCASTS("Podcasts & feeds", MediaType.PODCAST),
+    ;
 
     fun admits(type: MediaType): Boolean = when (this) {
         ALL -> true
@@ -97,7 +98,9 @@ object SearchGrouping {
         fun absorb(kind: MediaType, seg: Segment) {
             when (seg) {
                 Segment.Pending -> pending.add(kind)
+
                 is Segment.Failed -> failed[kind] = seg.message
+
                 is Segment.Loaded -> {
                     if (seg.truncated) truncated.add(kind)
                     seg.rows.forEach(::place)

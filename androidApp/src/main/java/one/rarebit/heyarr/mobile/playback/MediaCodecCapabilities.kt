@@ -14,8 +14,7 @@ object MediaCodecCapabilities {
 
     @Volatile private var cached: ClientCapabilities? = null
 
-    fun probe(context: Context): ClientCapabilities =
-        cached ?: build(context).also { cached = it }
+    fun probe(context: Context): ClientCapabilities = cached ?: build(context).also { cached = it }
 
     private fun build(context: Context): ClientCapabilities {
         val mimes = ArrayList<String>()

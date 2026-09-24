@@ -41,13 +41,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
@@ -60,13 +60,7 @@ import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.state.LibraryStatus
-import one.rarebit.heyarr.ui.theme.CardAspect
-import one.rarebit.heyarr.ui.theme.LocalAppearance
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.MediaScope
-import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.MetaLine
 import one.rarebit.heyarr.ui.components.Notice
@@ -78,6 +72,12 @@ import one.rarebit.heyarr.ui.components.StatusPill
 import one.rarebit.heyarr.ui.components.focusRing
 import one.rarebit.heyarr.ui.components.icon
 import one.rarebit.heyarr.ui.components.interactiveSurface
+import one.rarebit.heyarr.ui.theme.CardAspect
+import one.rarebit.heyarr.ui.theme.LocalAppearance
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.ui.theme.Tokens
 
 /**
  * Artwork with a blur-up: an accent-tinted gradient placeholder (with the type glyph)
@@ -197,7 +197,11 @@ fun MediaRow(
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val shape = RoundedCornerShape(Tokens.radiusInput)
-    val bg = when { selected -> theme.tint(0.16f); hovered -> Tokens.surface2; else -> Color.Transparent }
+    val bg = when {
+        selected -> theme.tint(0.16f)
+        hovered -> Tokens.surface2
+        else -> Color.Transparent
+    }
     Row(
         modifier.fillMaxWidth()
             .focusRing(interaction, shape)
@@ -207,7 +211,8 @@ fun MediaRow(
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen)
             .semantics { this.contentDescription = "${type.label}: $title${status?.let { ", ${it.label}" } ?: ""}${if (selected) ", selected" else ""}" }
             .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         val thumbW = 52.dp * theme.aspect.ratio
         Box(Modifier.width(thumbW).height(52.dp).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 18.dp) }
@@ -247,6 +252,7 @@ fun <T> Rail(
         SectionHeader(title, subtitle = subtitle, trailing = trailing)
         when (state) {
             RailState.Loading -> Row(horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap)) { repeat(6) { MediaCardSkeleton(skeletonAspect, skeletonWidth) } }
+
             is RailState.Failed -> Notice(state.message, tone = Tokens.danger, detail = onRetry?.let { "Click Retry in the banner or reload the page." })
             is RailState.Loaded -> if (state.items.isEmpty()) Text(emptyText, style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted)
             else LazyRow(horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap), contentPadding = androidx.compose.foundation.layout.PaddingValues(end = 24.dp)) {
@@ -306,7 +312,9 @@ fun HeroSkeleton(height: Dp = 380.dp) {
     Box(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(Tokens.radiusCard))) {
         Skeleton(Modifier.fillMaxSize(), RoundedCornerShape(0.dp))
         Column(Modifier.align(Alignment.BottomStart).padding(28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Skeleton(Modifier.width(80.dp).height(14.dp)); Skeleton(Modifier.width(360.dp).height(30.dp)); Skeleton(Modifier.width(220.dp).height(12.dp))
+            Skeleton(Modifier.width(80.dp).height(14.dp))
+            Skeleton(Modifier.width(360.dp).height(30.dp))
+            Skeleton(Modifier.width(220.dp).height(12.dp))
             Skeleton(Modifier.width(120.dp).height(40.dp), RectangleShape)
         }
     }

@@ -50,8 +50,7 @@ internal class PersonalStateCoordinator(
 
     // --- starred ------------------------------------------------------------------
 
-    fun starredIds(): List<String> =
-        registry.starredSpace()?.let { session.starred(it)?.ids() } ?: emptyList()
+    fun starredIds(): List<String> = registry.starredSpace()?.let { session.starred(it)?.ids() } ?: emptyList()
 
     /** Star or unstar an item, creating the starred role space on first use. Returns the new starred ids. */
     fun setStarred(itemId: String, starred: Boolean): List<String> {

@@ -64,7 +64,10 @@ class SessionAudioPlayer(
     }
 
     private fun withController(block: (MediaController) -> Unit) {
-        controller?.let { block(it); return }
+        controller?.let {
+            block(it)
+            return
+        }
         pending.addLast(block)
         if (connecting) return
         connecting = true
@@ -108,13 +111,19 @@ class SessionAudioPlayer(
     }
     override fun skipTo(index: Int) {
         if (index !in _state.value.queue.indices) return
-        withController { it.seekTo(index, 0L); it.play() }
+        withController {
+            it.seekTo(index, 0L)
+            it.play()
+        }
     }
 
     override fun stop() {
         stopTicker()
         _state.value = AudioState()
-        controller?.let { it.stop(); it.clearMediaItems() }
+        controller?.let {
+            it.stop()
+            it.clearMediaItems()
+        }
     }
 
     private fun startTicker() {
@@ -127,7 +136,10 @@ class SessionAudioPlayer(
         }
     }
 
-    private fun stopTicker() { ticker?.cancel(); ticker = null }
+    private fun stopTicker() {
+        ticker?.cancel()
+        ticker = null
+    }
 
     private fun AudioItem.toMediaItem(): MediaItem {
         val builder = MediaItem.Builder().setMediaId(assetId).setUri(Uri.parse(contentUrl))

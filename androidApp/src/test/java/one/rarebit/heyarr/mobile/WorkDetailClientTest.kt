@@ -1,11 +1,11 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.net.HttpResponse
+import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.WorkDetailClient
 import one.rarebit.heyarr.mobile.library.WorkPatch
-import one.rarebit.heyarr.core.net.HttpResponse
-import one.rarebit.heyarr.core.net.HttpTransport
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -16,7 +16,8 @@ import org.junit.Test
  */
 internal class RoutedTransport(private val routes: Map<String, HttpResponse>) : HttpTransport {
     val calls = ArrayList<Triple<String, String, String?>>() // method, url, body
-    var lastAuth: String? = null; private set
+    var lastAuth: String? = null
+        private set
 
     private fun answer(method: String, url: String, body: String?, headers: Map<String, String>): HttpResponse {
         calls.add(Triple(method, url, body))
@@ -53,12 +54,18 @@ class WorkDetailClientTest {
         // size + blob mime inline, no /editions or /blobs fan-out. Paged by next_cursor.
         val t = RoutedTransport(
             mapOf(
-                "GET /works/w1/assets?limit=200" to HttpResponse(200, """{"items":[
+                "GET /works/w1/assets?limit=200" to HttpResponse(
+                    200,
+                    """{"items":[
                     {"id":"a1","edition_id":"e1","source_class":"managed","blob_hash":"blake3:aa","role":"primary","filename":"one.mkv","edition_label":"1080p","edition_type":"release","blob_size":2048,"blob_mime":"video/x-matroska","identification_source":"scan","created_at":"2026-09-01T00:00:00Z","updated_at":"2026-09-01T00:00:00Z"}
-                ],"next_cursor":"p2"}"""),
-                "GET /works/w1/assets?limit=200&cursor=p2" to HttpResponse(200, """{"items":[
+                ],"next_cursor":"p2"}""",
+                ),
+                "GET /works/w1/assets?limit=200&cursor=p2" to HttpResponse(
+                    200,
+                    """{"items":[
                     {"id":"a3","edition_id":"e1","source_class":"linked","blob_hash":null,"role":"subtitle","filename":"one.srt","edition_label":"1080p","edition_type":"release","blob_size":null,"blob_mime":null,"identification_source":"scan","created_at":"2026-09-01T00:00:00Z","updated_at":"2026-09-01T00:00:00Z"}
-                ]}"""),
+                ]}""",
+                ),
             ),
         )
         val assets = WorkDetailClient(t, base, cred).assetsForWork("w1")
@@ -77,10 +84,13 @@ class WorkDetailClientTest {
     @Test fun wantsForWorkFiltersByWorkIdAndIsRecentFirst() {
         val t = RoutedTransport(
             mapOf(
-                "GET /desired?work_id=w1&limit=200" to HttpResponse(200, """{"items":[
+                "GET /desired?work_id=w1&limit=200" to HttpResponse(
+                    200,
+                    """{"items":[
                     {"id":"old","scope":"work","work_id":"w1","quality_profile_id":"q","monitor":true,"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"},
                     {"id":"new","scope":"work","work_id":"w1","quality_profile_id":"q","monitor":true,"created_at":"2026-02-01T00:00:00Z","updated_at":"2026-02-01T00:00:00Z"}
-                ]}"""),
+                ]}""",
+                ),
             ),
         )
         assertEquals(listOf("new", "old"), WorkDetailClient(t, base, cred).wantsForWork("w1").map { it.id })

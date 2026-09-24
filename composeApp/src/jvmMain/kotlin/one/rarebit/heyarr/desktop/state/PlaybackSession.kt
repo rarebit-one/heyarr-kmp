@@ -1,15 +1,14 @@
 package one.rarebit.heyarr.desktop.state
 
-import one.rarebit.heyarr.core.state.*
-
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import one.rarebit.heyarr.core.state.*
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
 import one.rarebit.heyarr.desktop.library.Episode
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
-import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.isListening
 
@@ -52,10 +51,13 @@ class PlaybackSession {
     var onPlayerScreen: Boolean by mutableStateOf(false)
 
     var fullscreen: Boolean by mutableStateOf(false)
+
     /** Bumped by anything that should show the fullscreen transport again (a key, the pointer). */
     var controlsTick: Int by mutableStateOf(0)
         private set
-    fun wakeControls() { controlsTick++ }
+    fun wakeControls() {
+        controlsTick++
+    }
     var popout: Boolean by mutableStateOf(false)
     var startError: String? by mutableStateOf(null)
 
@@ -67,20 +69,25 @@ class PlaybackSession {
         val same = current?.assetId == item.assetId
         current = item
         startError = null
-        if (same && player.isRunning) { player.play(); return }
-        if (!item.typeHint.isListening()) audioQueue = emptyList()
-        else if (audioQueue.none { it.assetId == item.assetId }) audioQueue = listOf(item)
+        if (same && player.isRunning) {
+            player.play()
+            return
+        }
+        if (!item.typeHint.isListening()) {
+            audioQueue = emptyList()
+        } else if (audioQueue.none { it.assetId == item.assetId }) {
+            audioQueue = listOf(item)
+        }
         // The host resolves/loads on IO, including changes between tracks.
         pendingStart = true
-        refreshSubtitles()   // adds now if the queue is already known + player up; else a no-op re-run does it
+        refreshSubtitles() // adds now if the queue is already known + player up; else a no-op re-run does it
     }
 
     /** The subtitle-sidecar blob URLs for [item], from its episode in the loaded [queue] (empty when unknown yet). */
-    private fun subtitleUrlsFor(item: Route.Player): List<String> =
-        queue.firstOrNull { it.asset.id == item.assetId }
-            ?.subtitles.orEmpty()
-            .mapNotNull { it.blobHash }
-            .map { HeyarrApi.blobUrl(baseUrl, it) }
+    private fun subtitleUrlsFor(item: Route.Player): List<String> = queue.firstOrNull { it.asset.id == item.assetId }
+        ?.subtitles.orEmpty()
+        .mapNotNull { it.blobHash }
+        .map { HeyarrApi.blobUrl(baseUrl, it) }
 
     /**
      * Attach the current item's `.srt`/`.vtt` sidecars to the running player. Idempotent
@@ -88,7 +95,9 @@ class PlaybackSession {
      * that knowledge — the host that starts mpv and the screen that fetches the assets —
      * both call it and whichever completes last wins.
      */
-    fun refreshSubtitles() { current?.let { player.addExternalSubtitles(subtitleUrlsFor(it)) } }
+    fun refreshSubtitles() {
+        current?.let { player.addExternalSubtitles(subtitleUrlsFor(it)) }
+    }
 
     fun next(): Route.Player? {
         val c = current ?: return null

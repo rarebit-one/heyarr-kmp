@@ -14,21 +14,29 @@ object EnrolAdvance {
     enum class OnInvite {
         /** Keys exist and are unenrolled: join now. */
         JOIN,
+
         /** No device key yet: park the invite and create the key — the prompt has its reason on screen. */
         PROVISION_THEN_JOIN,
+
         /** Keys still being read, or a pairing already in flight: park it; it joins when the phone is ready. */
         PARK,
+
         /** This phone already holds an admission; only the human can choose to forget it. */
         REFUSE,
     }
 
     fun onInvite(state: EnrolUiState): OnInvite = when (state) {
         is EnrolUiState.Ready -> OnInvite.JOIN
+
         EnrolUiState.Unprovisioned -> OnInvite.PROVISION_THEN_JOIN
+
         is EnrolUiState.Error -> if (state.info == null) OnInvite.PROVISION_THEN_JOIN else OnInvite.JOIN
+
         is EnrolUiState.Enrolled -> OnInvite.REFUSE
+
         EnrolUiState.Loading, is EnrolUiState.Joining, is EnrolUiState.CompareSas,
-        is EnrolUiState.Registering, is EnrolUiState.Removed -> OnInvite.PARK
+        is EnrolUiState.Registering, is EnrolUiState.Removed,
+        -> OnInvite.PARK
     }
 
     /**

@@ -1,10 +1,11 @@
 package one.rarebit.heyarr.desktop.preview
 
 import androidx.compose.runtime.mutableStateOf
-import kotlinx.coroutines.*
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.use
+import kotlinx.coroutines.*
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.open.BlobDownloader
 import one.rarebit.heyarr.desktop.open.DownloadResult
 import one.rarebit.heyarr.desktop.open.ExternalOpener
@@ -14,10 +15,9 @@ import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.InMemorySettingsStore
 import one.rarebit.heyarr.desktop.state.ArtworkLoader
-import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.ui.App
-import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.Experience
+import one.rarebit.heyarr.desktop.ui.Route
 import org.jetbrains.skia.EncodedImageFormat
 import java.io.File
 
@@ -50,8 +50,10 @@ fun main(args: Array<String>) {
         "09-settings" to Route.Settings,
     )
     val sizes = listOf(1280 to 900)
-    for ((name, route) in shots) for ((w, h) in sizes) {
-        render(File(out, "$name.png"), w, h, route, query = if (name.endsWith("results")) "dune" else null, downloads = name == "06b-downloads")
+    for ((name, route) in shots) {
+        for ((w, h) in sizes) {
+            render(File(out, "$name.png"), w, h, route, query = if (name.endsWith("results")) "dune" else null, downloads = name == "06b-downloads")
+        }
     }
     // Guest mode: no token, browsing as an anonymous guest — the "Sign in to save" affordance
     // shows and the personal rails (continue / missing / following) are hidden.
@@ -92,7 +94,7 @@ private fun render(file: File, width: Int, height: Int, route: Route, query: Str
         System.err.println("  artwork cached for fixture hash: ${art.peek(artPath) != null}")
         val png = image.encodeToData(EncodedImageFormat.PNG) ?: error("encode failed")
         file.writeBytes(png.bytes)
-        println("rendered ${file.name} (${width}x$height, ${route})")
+        println("rendered ${file.name} (${width}x$height, $route)")
     }
 }
 
@@ -113,8 +115,11 @@ private fun verifyShelfSwitch() {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     val settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://heyarr.example.test:7777", externalMetadata = false))
     val session = one.rarebit.heyarr.desktop.state.AppSession(
-        settings, FakeHeyarrTransport(), NoPlayer,
-        one.rarebit.heyarr.desktop.open.OpenExternally(NoDownloader, NoOpener), scope,
+        settings,
+        FakeHeyarrTransport(),
+        NoPlayer,
+        one.rarebit.heyarr.desktop.open.OpenExternally(NoDownloader, NoOpener),
+        scope,
         ArtworkLoader({ "" }, { "" }, fetcher = { PlaceholderArt.bytes(it) }),
         one.rarebit.heyarr.desktop.state.DesktopExternalMetadata.NONE,
     )
@@ -125,7 +130,11 @@ private fun verifyShelfSwitch() {
             scene.setContent {
                 one.rarebit.heyarr.ui.theme.HeyarrTheme {
                     one.rarebit.heyarr.desktop.ui.screens.LibraryScreen(
-                        session, states.getValue(selected.value), {}, { _, _, _ -> }, experience = selected.value,
+                        session,
+                        states.getValue(selected.value),
+                        {},
+                        { _, _, _ -> },
+                        experience = selected.value,
                     )
                 }
             }
@@ -141,6 +150,8 @@ private fun verifyShelfSwitch() {
                 check(!state.works.isNullOrEmpty()) { "Shelf $experience did not load after navigation: ${state.error}" }
             }
         }
-    } finally { scope.cancel() }
+    } finally {
+        scope.cancel()
+    }
     println("verified Watch → Listen → Read → Watch in one composition")
 }

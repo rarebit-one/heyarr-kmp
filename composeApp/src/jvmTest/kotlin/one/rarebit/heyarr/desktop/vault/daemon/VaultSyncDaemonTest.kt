@@ -37,14 +37,21 @@ class VaultSyncDaemonTest {
 
     private class FakeSync(private val body: () -> VaultSyncEngine.Stats) : VaultSync {
         val calls = AtomicInteger(0)
-        override fun syncOnce(): VaultSyncEngine.Stats { calls.incrementAndGet(); return body() }
+        override fun syncOnce(): VaultSyncEngine.Stats {
+            calls.incrementAndGet()
+            return body()
+        }
     }
 
     private class FakeChanges : SyncChanges {
         private val ch = Channel<Unit>(Channel.UNLIMITED)
-        fun signal() { ch.trySend(Unit) }
-        override suspend fun awaitChange(timeoutMs: Long): Boolean =
-            withTimeoutOrNull(timeoutMs) { ch.receive(); true } ?: false
+        fun signal() {
+            ch.trySend(Unit)
+        }
+        override suspend fun awaitChange(timeoutMs: Long): Boolean = withTimeoutOrNull(timeoutMs) {
+            ch.receive()
+            true
+        } ?: false
     }
 
     private fun scope() = CoroutineScope(Dispatchers.Default + Job())
@@ -93,7 +100,8 @@ class VaultSyncDaemonTest {
             val sync = FakeSync { VaultSyncEngine.Stats(2, 1, 0, 3) }
             val changes = FakeChanges()
             val daemon = VaultSyncDaemon(
-                configIn(dir), scope,
+                configIn(dir),
+                scope,
                 resolve = { VaultSyncDaemon.Resolved(sync, changes, "ed25519:test", watching = true) },
             )
             daemon.start()
@@ -117,7 +125,8 @@ class VaultSyncDaemonTest {
             assertTrue(JsonScan.stringField(status, "last_sync_at")!!.endsWith("Z"))
             daemon.close()
         } finally {
-            scope.cancel(); dir.toFile().deleteRecursively()
+            scope.cancel()
+            dir.toFile().deleteRecursively()
         }
     }
 
@@ -128,7 +137,8 @@ class VaultSyncDaemonTest {
         try {
             val sync = FakeSync { noStats }
             val daemon = VaultSyncDaemon(
-                configIn(dir), scope,
+                configIn(dir),
+                scope,
                 resolve = { VaultSyncDaemon.Resolved(sync, FakeChanges(), "ed25519:test", watching = true) },
             )
             daemon.start()
@@ -138,7 +148,8 @@ class VaultSyncDaemonTest {
             awaitUntil { sync.calls.get() >= 2 }
             daemon.close()
         } finally {
-            scope.cancel(); dir.toFile().deleteRecursively()
+            scope.cancel()
+            dir.toFile().deleteRecursively()
         }
     }
 
@@ -149,7 +160,8 @@ class VaultSyncDaemonTest {
         try {
             val sync = FakeSync { noStats }
             val daemon = VaultSyncDaemon(
-                configIn(dir), scope,
+                configIn(dir),
+                scope,
                 resolve = { VaultSyncDaemon.Resolved(sync, FakeChanges(), "ed25519:test", watching = true) },
             )
             daemon.start()
@@ -166,7 +178,8 @@ class VaultSyncDaemonTest {
             awaitUntil { phaseInFile(dir.resolve("vault-sync.json")) == "running" }
             daemon.close()
         } finally {
-            scope.cancel(); dir.toFile().deleteRecursively()
+            scope.cancel()
+            dir.toFile().deleteRecursively()
         }
     }
 
@@ -176,7 +189,8 @@ class VaultSyncDaemonTest {
         val scope = scope()
         try {
             val daemon = VaultSyncDaemon(
-                configIn(dir), scope,
+                configIn(dir),
+                scope,
                 resolve = { VaultSyncDaemon.Resolved(FakeSync { noStats }, FakeChanges(), "ed25519:test", watching = true) },
             )
             daemon.start()
@@ -190,7 +204,8 @@ class VaultSyncDaemonTest {
             assertEquals(false, JsonScan.boolField(malformed, "ok"))
             daemon.close()
         } finally {
-            scope.cancel(); dir.toFile().deleteRecursively()
+            scope.cancel()
+            dir.toFile().deleteRecursively()
         }
     }
 
@@ -200,7 +215,8 @@ class VaultSyncDaemonTest {
         val scope = scope()
         try {
             val daemon = VaultSyncDaemon(
-                configIn(dir), scope,
+                configIn(dir),
+                scope,
                 resolve = { throw IllegalStateException("node unreachable") },
             )
             daemon.start()
@@ -215,7 +231,8 @@ class VaultSyncDaemonTest {
             assertEquals("node unreachable", JsonScan.stringField(status, "last_error"))
             daemon.close()
         } finally {
-            scope.cancel(); dir.toFile().deleteRecursively()
+            scope.cancel()
+            dir.toFile().deleteRecursively()
         }
     }
 
@@ -225,7 +242,8 @@ class VaultSyncDaemonTest {
         val scope = scope()
         try {
             val daemon = VaultSyncDaemon(
-                configIn(dir, folder = null), scope,
+                configIn(dir, folder = null),
+                scope,
                 resolve = { fail("resolve must not run without a folder") },
             )
             daemon.start()
@@ -236,7 +254,8 @@ class VaultSyncDaemonTest {
             assertEquals("preparing", phaseInFile(dir.resolve("vault-sync.json")))
             daemon.close()
         } finally {
-            scope.cancel(); dir.toFile().deleteRecursively()
+            scope.cancel()
+            dir.toFile().deleteRecursively()
         }
     }
 }

@@ -16,13 +16,17 @@ interface ReadingPositionStore {
 class PrefsReadingPositionStore(context: Context) : ReadingPositionStore {
     private val prefs = context.applicationContext.getSharedPreferences("heyarr-reading", Context.MODE_PRIVATE)
     override fun locator(assetId: String): String? = prefs.getString("locator.$assetId", null)
-    override fun put(assetId: String, locatorJson: String) { prefs.edit().putString("locator.$assetId", locatorJson).apply() }
+    override fun put(assetId: String, locatorJson: String) {
+        prefs.edit().putString("locator.$assetId", locatorJson).apply()
+    }
 }
 
 class InMemoryReadingPositionStore : ReadingPositionStore {
     private val m = HashMap<String, String>()
     override fun locator(assetId: String) = m[assetId]
-    override fun put(assetId: String, locatorJson: String) { m[assetId] = locatorJson }
+    override fun put(assetId: String, locatorJson: String) {
+        m[assetId] = locatorJson
+    }
 }
 
 /** What the node is told from a Locator: its `locations.position` (a 1-based page-ish index), when Readium computed one. Pure. */

@@ -4,9 +4,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
-import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.mobile.playback.ClientCapabilities
 import one.rarebit.heyarr.mobile.playback.PlaybackCoordinator
 import one.rarebit.heyarr.mobile.playback.PlaybackDiagnostics
@@ -64,9 +64,11 @@ class PlaybackCoordinatorTest {
     }
 
     @Test fun aRowWithAPrimaryAssetPlansAgainstCapabilities() {
-        val (c, t) = coordinator(mapOf(
-            "POST /playback/plan" to HttpResponse(200, """{"mode":"stream","url":"/api/v1/playback/stream/tok","mime":"video/mp4","reason":"audio"}"""),
-        ))
+        val (c, t) = coordinator(
+            mapOf(
+                "POST /playback/plan" to HttpResponse(200, """{"mode":"stream","url":"/api/v1/playback/stream/tok","mime":"video/mp4","reason":"audio"}"""),
+            ),
+        )
         c.capabilities = caps
         c.play(Work(id = "w1", title = "Dune", blobHash = hash, mime = "video/x-matroska", primaryAssetId = "a1"))
         val np = c.nowPlaying.value!!
@@ -94,9 +96,11 @@ class PlaybackCoordinatorTest {
     }
 
     @Test fun anIssueOnAPlannedDirectTargetReplansOnceAndOnlyOnce() {
-        val (c, t) = coordinator(mapOf(
-            "POST /playback/plan" to HttpResponse(200, """{"mode":"direct","reason":"fine"}"""),
-        ))
+        val (c, t) = coordinator(
+            mapOf(
+                "POST /playback/plan" to HttpResponse(200, """{"mode":"direct","reason":"fine"}"""),
+            ),
+        )
         c.capabilities = caps
         c.playAsset(Work(id = "w1", title = "Dune"), WorkAsset(id = "a1", editionId = "e1", blobHash = hash, mime = "video/mp4"))
         assertEquals(PlaybackTarget.Origin.DIRECT_PLANNED, c.nowPlaying.value!!.target.origin)
@@ -137,31 +141,59 @@ class PlaybackCoordinatorResumeTest {
 
     private class Spy : one.rarebit.heyarr.mobile.consumption.ProgressReporter {
         val events = ArrayList<String>()
-        override fun begin(assetId: String, verb: String) { events.add("begin:$assetId:$verb") }
-        override fun progressAt(pos: one.rarebit.heyarr.mobile.consumption.Position) { events.add("progress:${pos.locator}") }
-        override fun pauseAt(pos: one.rarebit.heyarr.mobile.consumption.Position) { events.add("pause") }
-        override fun resumeAt(pos: one.rarebit.heyarr.mobile.consumption.Position) { events.add("resume") }
-        override fun endAt(pos: one.rarebit.heyarr.mobile.consumption.Position, completed: Boolean) { events.add("end:$completed") }
+        override fun begin(assetId: String, verb: String) {
+            events.add("begin:$assetId:$verb")
+        }
+        override fun progressAt(pos: one.rarebit.heyarr.mobile.consumption.Position) {
+            events.add("progress:${pos.locator}")
+        }
+        override fun pauseAt(pos: one.rarebit.heyarr.mobile.consumption.Position) {
+            events.add("pause")
+        }
+        override fun resumeAt(pos: one.rarebit.heyarr.mobile.consumption.Position) {
+            events.add("resume")
+        }
+        override fun endAt(pos: one.rarebit.heyarr.mobile.consumption.Position, completed: Boolean) {
+            events.add("end:$completed")
+        }
     }
 
     @Test fun aPlayLooksUpTheResumePositionAndOpensASession() {
         val spy = Spy()
-        val c = PlaybackCoordinator(RoutedTransport(emptyMap()), { "https://h" }, { Credential.Session("t") }, CoroutineScope(dispatcher), dispatcher,
-            reporter = spy, resumeAt = { id -> if (id == "a1") 1284.5 else null })
+        val c = PlaybackCoordinator(
+            RoutedTransport(emptyMap()),
+            { "https://h" },
+            { Credential.Session("t") },
+            CoroutineScope(dispatcher),
+            dispatcher,
+            reporter = spy,
+            resumeAt = { id -> if (id == "a1") 1284.5 else null },
+        )
         c.play(Work(id = "w1", title = "Arrival", blobHash = hash, mime = "video/mp4", primaryAssetId = "a1"))
         val np = c.nowPlaying.value!!
         assertEquals(1284.5, np.startSeconds, 0.0)
         assertEquals("watch", np.verb)
         assertEquals(listOf("begin:a1:watch"), spy.events)
-        c.reportProgress(1300.0); c.reportEnded(1400.0, completed = false)
+        c.reportProgress(1300.0)
+        c.reportEnded(1400.0, completed = false)
         assertEquals(listOf("begin:a1:watch", "progress:1300", "end:false"), spy.events)
     }
 
     @Test fun aKnownStartSkipsTheLookupAndAudioIsAListen() {
         val spy = Spy()
         var looked = false
-        val c = PlaybackCoordinator(RoutedTransport(emptyMap()), { "https://h" }, { Credential.Session("t") }, CoroutineScope(dispatcher), dispatcher,
-            reporter = spy, resumeAt = { looked = true; 5.0 })
+        val c = PlaybackCoordinator(
+            RoutedTransport(emptyMap()),
+            { "https://h" },
+            { Credential.Session("t") },
+            CoroutineScope(dispatcher),
+            dispatcher,
+            reporter = spy,
+            resumeAt = {
+                looked = true
+                5.0
+            },
+        )
         c.playFile("Track", "a9", hash, "audio/flac", "music", startSeconds = 42.0)
         assertEquals(42.0, c.nowPlaying.value!!.startSeconds, 0.0)
         assertEquals("listen", c.nowPlaying.value!!.verb)

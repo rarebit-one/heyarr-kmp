@@ -30,15 +30,35 @@ internal class FakeAudioPlayer : AudioPlayer {
     val flow = MutableStateFlow(AudioState())
     override val state: StateFlow<AudioState> = flow
     val commands = ArrayList<String>()
-    override fun playQueue(items: List<AudioItem>, startIndex: Int) { commands.add("queue:${items.size}@$startIndex"); flow.value = AudioState(queue = items, index = startIndex, playing = true) }
-    override fun play() { commands.add("play") }
-    override fun pause() { commands.add("pause") }
-    override fun togglePlayPause() { commands.add("toggle") }
-    override fun next() { commands.add("next") }
-    override fun previous() { commands.add("previous") }
-    override fun seekTo(positionMs: Long) { commands.add("seek:$positionMs") }
-    override fun skipTo(index: Int) { commands.add("skip:$index") }
-    override fun stop() { commands.add("stop"); flow.value = AudioState() }
+    override fun playQueue(items: List<AudioItem>, startIndex: Int) {
+        commands.add("queue:${items.size}@$startIndex")
+        flow.value = AudioState(queue = items, index = startIndex, playing = true)
+    }
+    override fun play() {
+        commands.add("play")
+    }
+    override fun pause() {
+        commands.add("pause")
+    }
+    override fun togglePlayPause() {
+        commands.add("toggle")
+    }
+    override fun next() {
+        commands.add("next")
+    }
+    override fun previous() {
+        commands.add("previous")
+    }
+    override fun seekTo(positionMs: Long) {
+        commands.add("seek:$positionMs")
+    }
+    override fun skipTo(index: Int) {
+        commands.add("skip:$index")
+    }
+    override fun stop() {
+        commands.add("stop")
+        flow.value = AudioState()
+    }
 }
 
 internal fun worksPage(vararg items: String, next: String? = null): String =

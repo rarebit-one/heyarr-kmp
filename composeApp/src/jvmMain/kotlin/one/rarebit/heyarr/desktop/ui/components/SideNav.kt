@@ -18,15 +18,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.MenuBook
-import androidx.compose.material.icons.rounded.Movie
-import one.rarebit.heyarr.desktop.ui.Experience
-import one.rarebit.heyarr.ui.theme.HeyarrFonts
-import androidx.compose.ui.semantics.selected
 import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.Explore
+import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.MenuBook
+import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.ReportProblem
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
@@ -38,24 +35,27 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import one.rarebit.heyarr.desktop.state.Connection
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
-import one.rarebit.heyarr.ui.theme.Tokens
+import one.rarebit.heyarr.desktop.ui.Experience
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.components.focusRing
+import one.rarebit.heyarr.ui.theme.HeyarrFonts
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.Tokens
 
 /** A nav destination: label, icon, route, optional keyboard hint. */
 data class NavItem(val route: Route, val label: String, val icon: ImageVector, val hint: String? = null)
@@ -95,7 +95,8 @@ fun SideNav(current: Route, onGo: (Route) -> Unit, connection: Connection, compa
     val theme = LocalMediaTheme.current
     Column(
         modifier.fillMaxHeight().width(Tokens.navWidth).background(Tokens.surface1).padding(vertical = 14.dp, horizontal = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         one.rarebit.heyarr.ui.components.ArchiveMark(Modifier.padding(4.dp))
         Spacer(Modifier.height(14.dp))
@@ -110,16 +111,28 @@ private fun RailItem(item: NavItem, active: Boolean, accent: Color, accentEnd: C
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val shape = RoundedCornerShape(Tokens.radiusButton)
-    val tile = when { active -> accent.copy(alpha = 0.18f); hovered -> Tokens.surface2; else -> Color.Transparent }
-    val fg = when { active -> accentEnd; hovered -> Tokens.textPrimary; else -> Tokens.textMuted }
+    val tile = when {
+        active -> accent.copy(alpha = 0.18f)
+        hovered -> Tokens.surface2
+        else -> Color.Transparent
+    }
+    val fg = when {
+        active -> accentEnd
+        hovered -> Tokens.textPrimary
+        else -> Tokens.textMuted
+    }
     Column(
         Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(Tokens.radiusButton))
             .hoverable(interaction)
             .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = onClick)
-            .semantics { this.contentDescription = item.label; this.selected = active }
+            .semantics {
+                this.contentDescription = item.label
+                this.selected = active
+            }
             .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(Modifier.size(44.dp).focusRing(interaction, shape).background(tile, shape).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape), contentAlignment = Alignment.Center) {
             Icon(item.icon, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))
@@ -146,7 +159,8 @@ private fun ConnectionTile(connection: Connection, detail: String?, onClick: () 
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
             .semantics { this.contentDescription = "heyarr connection: $label${detail?.let { ", $it" } ?: ""}. Open connection details" }
             .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(Modifier.size(36.dp).focusRing(interaction, RectangleShape).background(Tokens.surface2, RectangleShape).border(Tokens.hairline, tone.copy(alpha = 0.6f), RectangleShape), contentAlignment = Alignment.Center) {
             Box(Modifier.size(10.dp).background(tone, RectangleShape))

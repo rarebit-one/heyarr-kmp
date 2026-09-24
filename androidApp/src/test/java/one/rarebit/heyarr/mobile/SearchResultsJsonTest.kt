@@ -76,10 +76,15 @@ class SearchResultsJsonEpisodesTest {
         assertEquals("/api/v1/blobs/blake3:33/content", hits.works[0].artworkPath)
         assertEquals(2, hits.episodes.size)
         val ed = hits.episodes[0]
-        assertEquals("edition", ed.kind); assertEquals("S01E01", ed.code); assertEquals("a9", ed.assetId); assertEquals("blake3:88", ed.blobHash)
+        assertEquals("edition", ed.kind)
+        assertEquals("S01E01", ed.code)
+        assertEquals("a9", ed.assetId)
+        assertEquals("blake3:88", ed.blobHash)
         assertEquals(true, ed.isPlayable)
         val item = hits.episodes[1]
-        assertEquals("item", item.kind); assertEquals(false, item.isPlayable); assertEquals("S01E02", item.code)
+        assertEquals("item", item.kind)
+        assertEquals(false, item.isPlayable)
+        assertEquals("S01E02", item.code)
     }
 
     @Test fun anOlderNodeHasNoEpisodes() {

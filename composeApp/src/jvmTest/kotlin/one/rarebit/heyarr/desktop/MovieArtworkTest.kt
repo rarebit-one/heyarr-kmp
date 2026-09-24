@@ -8,11 +8,13 @@ import kotlin.test.*
 
 class MovieArtworkTest {
     private val hits = DiscoveryJson.list("""{"results":[{"title":"Alien: Romulus","year":2024,"type":"movie","source":"tmdb","external_id":"945961","poster_url":"https://image.tmdb.org/t/p/w500/poster.jpg","backdrop_url":"https://image.tmdb.org/t/p/w1280/backdrop.jpg"}]}""")
+
     @Test fun matchesPunctuationAndRetainsBothRoles() {
         val art = MovieArtwork.select(MetaKey(MediaType.MOVIE, "Alien Romulus", 2024), hits)!!
         assertEquals("https://image.tmdb.org/t/p/w1280/backdrop.jpg", art.landscapeImageUrl)
         assertEquals("https://image.tmdb.org/t/p/w500/poster.jpg", art.imageUrl)
     }
+
     @Test fun refusesWrongYearTitleTypeAndAmbiguousRemakes() {
         assertNull(MovieArtwork.select(MetaKey(MediaType.MOVIE, "Alien Romulus", 1979), hits))
         assertNull(MovieArtwork.select(MetaKey(MediaType.MOVIE, "Alien", 2024), hits))

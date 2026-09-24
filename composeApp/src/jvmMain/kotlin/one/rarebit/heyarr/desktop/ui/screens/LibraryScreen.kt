@@ -1,8 +1,6 @@
 package one.rarebit.heyarr.desktop.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
-import one.rarebit.heyarr.desktop.ui.Experience
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +13,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Refresh
@@ -24,8 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -33,24 +32,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.Variants
-import one.rarebit.heyarr.desktop.library.Work
-import androidx.compose.runtime.remember
-import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.core.state.LibraryStatus
-import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.ui.theme.Tokens
+import one.rarebit.heyarr.desktop.library.Work
+import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.desktop.ui.Experience
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.desktop.ui.components.MediaCard
+import one.rarebit.heyarr.desktop.ui.components.MediaCardSkeleton
+import one.rarebit.heyarr.desktop.ui.components.MediaRow
+import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
-import one.rarebit.heyarr.desktop.ui.components.MediaCard
-import one.rarebit.heyarr.desktop.ui.components.MediaCardSkeleton
-import one.rarebit.heyarr.desktop.ui.components.MediaRow
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.icon
+import one.rarebit.heyarr.ui.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.Tokens
 
 /** A pseudo-kind for the default filter: the four media kinds, no feeds or documents. */
 val MEDIA = MediaType.UNKNOWN
@@ -64,6 +64,7 @@ class LibraryState {
     var works by mutableStateOf<List<Work>?>(null)
     var error by mutableStateOf<String?>(null)
     var loading by mutableStateOf(false)
+
     /** null = every kind; [MEDIA] = films, series, music, books (the default — feeds are the Archive, not the shelf). */
     var type by mutableStateOf<MediaType?>(MEDIA)
     var status by mutableStateOf<LibraryStatus?>(null)
@@ -80,14 +81,20 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
     val scope = rememberCoroutineScope()
     fun load() {
         val a = session.api ?: return
-        state.loading = true; state.error = null
+        state.loading = true
+        state.error = null
         scope.launch {
             session.io { a.works() }.fold(onSuccess = { state.works = it }, onFailure = { state.error = it.message })
             state.loading = false
         }
     }
     // Loaded once per node: a new URL or token (session.generation) throws the cached answer away.
-    LaunchedEffect(state, session.generation) { if (state.works == null || state.generation != session.generation) { state.generation = session.generation; load() } }
+    LaunchedEffect(state, session.generation) {
+        if (state.works == null || state.generation != session.generation) {
+            state.generation = session.generation
+            load()
+        }
+    }
 
     val variants = remember(state.works) { Variants.variantIds(state.works.orEmpty()) }
     val all = state.works.orEmpty().filter { it.id !in variants && (experience == null || MediaType.from(it.kind) in experience.kinds) }
@@ -105,11 +112,16 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
                 IconButtonRound(Icons.Rounded.ViewList, "List view", { state.grid = false }, filled = !state.grid)
             }
         })
-        if (experience == null) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip("Works", state.tab == 0, { state.tab = 0 })
-            FilterChip("Downloads", state.tab == 1, { state.tab = 1 }, count = state.downloads.desired?.count { it.state != "FULLY_SATISFIED" && it.state != "AVAILABLE" })
+        if (experience == null) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip("Works", state.tab == 0, { state.tab = 0 })
+                FilterChip("Downloads", state.tab == 1, { state.tab = 1 }, count = state.downloads.desired?.count { it.state != "FULLY_SATISFIED" && it.state != "AVAILABLE" })
+            }
         }
-        if (experience == null && state.tab == 1) { DownloadsScreen(session, state.downloads, onOpen); return@Column }
+        if (experience == null && state.tab == 1) {
+            DownloadsScreen(session, state.downloads, onOpen)
+            return@Column
+        }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(if (experience == null) "Media" else "All", state.type == MEDIA, { state.type = MEDIA }, count = all.count { MediaType.from(it.kind) in (experience?.kinds ?: MEDIA_KINDS) }.takeIf { it > 0 })
             for (t in (experience?.kinds ?: setOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.AUDIOBOOK, MediaType.PODCAST))) {
@@ -125,8 +137,11 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
         }
         when {
             state.error != null && state.works == null -> ErrorState("Couldn't load the library", state.error, ::load)
+
             state.works == null -> LazyVerticalGrid(GridCells.Adaptive(if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES || experience == Experience.WATCH) 280.dp else Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap), verticalArrangement = Arrangement.spacedBy(Tokens.gridGap)) { items(12) { MediaCardSkeleton(aspect = one.rarebit.heyarr.ui.theme.MediaThemes.of(experience?.kinds?.firstOrNull() ?: state.type ?: MediaType.BOOK).aspect) } }
+
             filtered.isEmpty() -> EmptyState(if (all.isEmpty()) "The library is empty" else "Nothing matches these filters", detail = if (all.isEmpty()) "Scan a library root on the node, or Want something and let heyarr find it." else "Clear a filter to see more.")
+
             state.grid -> LazyVerticalGrid(
                 GridCells.Adaptive(if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES || experience == Experience.WATCH) 280.dp else Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap), verticalArrangement = Arrangement.spacedBy(Tokens.gridGap),
                 contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.fillMaxSize(),
@@ -137,6 +152,7 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
                     MediaCard(w.title, type, onOpen = { onOpen(Route.Detail(w.id, type, w.title, from = experience?.title ?: "Library")) }, subtitle = w.artist ?: w.author, meta = listOf(w.year?.toString()), artwork = cover.bitmap, status = session.index.statusOf(w.id), onWant = { onWant(w.id, w.title, type) }, mode = session.mode, width = Tokens.posterWidth)
                 }
             }
+
             else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp), contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.fillMaxSize()) {
                 items(filtered, key = { it.id }) { w ->
                     val type = MediaType.from(w.kind)
