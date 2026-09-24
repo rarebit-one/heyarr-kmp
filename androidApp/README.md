@@ -1,13 +1,15 @@
-# heyarr-mobile
+# heyarr Android client (`:androidApp`)
+
+(Formerly the standalone `heyarr-mobile` repo; now a module of `heyarr-kmp`.)
 
 The first-party **Android client for [heyarr](https://github.com/rarebit-one/heyarr-core)** —
 the self-hosted media platform. Voidbind **QR** sign-in, a native **library browse**, and the
 seams for **device-side personal state** (decrypt-on-device) that make this the *product*
 client rather than a generic Subsonic app.
 
-It wears the **Heyarr Desktop design language** — the same tokens, media-keyed accents,
-self-hosted Inter / Montserrat / Rubik faces and components as
-[`rarebit-one/heyarr-kmp`](https://github.com/rarebit-one/heyarr-kmp) — on a
+It wears the **Heyarr Desktop design language** — the same tokens, media-keyed accents
+(shared through `:ui` / `:core`), self-hosted Inter / Montserrat / Rubik faces and components
+as the desktop client (`:composeApp`) in this repo — on a
 phone's bottom bar (a rail on a tablet), consumption first with curation one tab away.
 
 ## Screens
@@ -52,13 +54,14 @@ ones this phone decrypts itself (`personalstate/`), and they say so.
 ### voidbind-kmp consumption
 
 This app depends on the **published** shared client,
-`one.rarebit.voidbind:voidbind-client:0.5.0` (GitHub Packages, private — a token with
+`one.rarebit.voidbind:voidbind-client` (currently 0.8.0, pinned in `gradle/libs.versions.toml`;
+GitHub Packages, private — a token with
 `read:packages` is required even for a same-org read). `settings.gradle.kts` reads
 `gpr.user` / `gpr.token` from `~/.gradle/gradle.properties`, or `GITHUB_ACTOR` /
 `GITHUB_TOKEN` from the environment; CI passes its own workflow token. Locally:
 
 ```sh
-GITHUB_ACTOR=<your login> GITHUB_TOKEN=$(gh auth token) ./gradlew testDebugUnitTest assembleDebug
+GITHUB_ACTOR=<your login> GITHUB_TOKEN=$(gh auth token) ./gradlew :androidApp:testDebugUnitTest :androidApp:assembleDebug
 ```
 
 `login/` is now a thin façade over the library's `WebLoginClient` / `LoginQr`, and the
@@ -99,8 +102,8 @@ tests and previews share with the desktop.
 ## Build / test
 
 ```sh
-./gradlew testDebugUnitTest      # pure-JVM unit tests (readers, grouping, status, series, theme, routes, credential)
-./gradlew assembleDebug          # debug APK
+./gradlew :androidApp:testDebugUnitTest   # pure-JVM unit tests (readers, grouping, status, series, theme, routes, credential)
+./gradlew :androidApp:assembleDebug       # debug APK
 ```
 
 Requires JDK 17+ and an Android SDK (API 35). Point `local.properties` at your SDK
@@ -175,7 +178,7 @@ export RELEASE_KEYSTORE_BASE64=$(base64 -i ~/.config/rarebit-android-signing/hey
 export RELEASE_KEYSTORE_PASSWORD=$(cat ~/.config/rarebit-android-signing/heyarr-mobile.password)
 export RELEASE_KEY_PASSWORD="$RELEASE_KEYSTORE_PASSWORD"
 export RELEASE_KEY_ALIAS=one.rarebit.heyarr.mobile
-./gradlew :app:assembleRelease -PreleaseVersionName=v0.2.1
+./gradlew :androidApp:assembleRelease -PreleaseVersionName=v0.2.1
 ```
 
 ### Getting it onto a phone

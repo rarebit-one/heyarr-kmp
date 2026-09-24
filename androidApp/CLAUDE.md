@@ -1,7 +1,10 @@
-# CLAUDE.md — heyarr-mobile
+# CLAUDE.md — `:androidApp` (the heyarr Android client)
 
-Guidance for Claude Code working in **heyarr-mobile** (part of the `rarebit-one` org).
-Read the workspace `~/Workspace/rarebit-one/CLAUDE.md` too — its Critical Rules
+Guidance for Claude Code working in **`:androidApp`**, the Android module of the
+`heyarr-kmp` monorepo (it began life as the separate `heyarr-mobile` repo, whose name
+survives in the `heyarr-mobile://` deep links and the release APK's file name).
+Read the repo-root `CLAUDE.md` for module boundaries and the monorepo's build commands,
+and the workspace `~/Workspace/rarebit-one/CLAUDE.md` too — its Critical Rules
 (worktree-only, signed commits, autonomous-merge on green CI, issue hygiene) apply here.
 
 ## What this is
@@ -121,7 +124,8 @@ instead of re-joining a dead session; re-firing the same link while live is a no
 
 ## voidbind-kmp is consumed as the published `voidbind-client` artifact
 
-`one.rarebit.voidbind:voidbind-client:0.5.0` from GitHub Packages (private; needs a
+`one.rarebit.voidbind:voidbind-client` (currently **0.8.0**, pinned once for every module in
+`gradle/libs.versions.toml`) from GitHub Packages (private; needs a
 `read:packages` token — `settings.gradle.kts` reads `gpr.user`/`gpr.token` gradle
 properties or `GITHUB_ACTOR`/`GITHUB_TOKEN`; CI passes its own token). The library's
 minSdk is 33, so ours is too. **Do not re-derive any Voidbind wire format here** —
@@ -168,7 +172,7 @@ read-scoped until an admin grants its key (`POST /api/v1/session/management-gran
 `/api/v1/spaces/{id}/{keys,changes,snapshot}` as **opaque ciphertext** — the peer never
 decrypts (Invariant 6, ADR-0049) — and does the decrypt-and-fold and the mint on THIS device:
 `SpaceSession` finds the wrapped key sealed for this device, unwraps it with the phone's X25519
-key (`SpaceCrypto` over voidbind-client **0.7.0** `VoidbindEncryption` — X25519 wrap + XChaCha20,
+key (`SpaceCrypto` over voidbind-client's `VoidbindEncryption`, since **0.7.0** — X25519 wrap + XChaCha20,
 KAT-proven; **no wire format is re-derived here**), decrypts the snapshot + changes, and folds
 them through the four CRDT ports (`Playlist`/`StarSet`/`ReadingPositions`/`PlayLog`). A write is
 minted at the current heads, encrypted, and pushed; the node re-derives the content-addressed id
@@ -283,9 +287,12 @@ app/src/test/…  pure-JVM unit tests (no Android runtime) — including the des
 ## Build / test
 
 ```sh
-./gradlew testDebugUnitTest      # unit tests — the acceptance bar, CI-run
-./gradlew assembleDebug          # debug APK
+./gradlew :androidApp:testDebugUnitTest   # unit tests — the acceptance bar, CI-run
+./gradlew :androidApp:assembleDebug       # debug APK
 ```
+
+Run from the repo root. `:androidApp` is only part of the build when an Android SDK is
+detected (see `settings.gradle.kts`).
 
 Nothing builds on the laptop: push the branch and let CI (`android.yml`) run
 `testDebugUnitTest` + `assembleDebug` — that is the acceptance bar. (A native run needs a

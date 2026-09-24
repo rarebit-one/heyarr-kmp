@@ -1,17 +1,68 @@
 # heyarr-kmp
 
-The **Kotlin Multiplatform monorepo** for heyarr's first-party clients — the "hey *arr"
-media-library manager: what content exists, what *should* exist, and why. It houses:
+The **Kotlin Multiplatform monorepo** for heyarr's first-party clients. heyarr is the
+"hey *arr" media-library manager: what content exists, what *should* exist, and why.
 
-- **`:composeApp`** — the desktop client (Compose Multiplatform, JVM; Linux x64 **and**
-  aarch64 (Asahi/Omarchy), with macOS/Windows for free via the JVM).
-- **`:androidApp`** — the Android client (Media3/Readium).
-- **`:core`** — the shared, pure-Kotlin client layer (JSON, MCP client + models,
-  `HttpTransport`, `Credential` incl. voidbind device auth, REST models, library/search
-  state) consumed by both apps.
-- **`:ui`** — the shared Compose design tokens/themes.
+| Module | What it is | Targets |
+|--------|------------|---------|
+| **`:core`** | The shared, pure-Kotlin client layer: the hand-rolled JSON codec (`JsonScan` / `JsonWrite`), the `HttpTransport` seam, the MCP client + models, REST/telemetry models, `Credential` (guest / bearer / voidbind `Device`), library-status and search-grouping derivation, the `MediaType` enum, BLAKE3 + the vault codec. **No Compose, no platform APIs in `commonMain`.** | JVM; Android when an SDK is present |
+| **`:ui`** | The shared Compose design layer: `Tokens` and the media → accent table (`MediaThemes`), plus shared glyphs. Exposes `:core` as `api`. | JVM; Android when an SDK is present |
+| **`:composeApp`** | The **desktop** client (Compose Multiplatform, JVM): Linux x64 **and** aarch64, with macOS/Windows for free via the JVM. Also ships the headless vault-sync daemon ([docs/vault-sync-daemon.md](docs/vault-sync-daemon.md)). | JVM |
+| **`:androidApp`** | The **Android** client (Compose, Media3/ExoPlayer, Readium), with voidbind QR login and device enrolment. See [androidApp/README.md](androidApp/README.md). | Android (minSdk 33) |
 
-The rest of this document describes the desktop client specifically.
+Both apps depend on `:core` and `:ui`. `:androidApp` still carries some code that has not
+converged into the shared modules yet (its own `HeyarrApi`, JSON readers and screens).
+New shared logic belongs in `:core` (or `:ui` if it is Compose-typed), not in either app.
+
+## Build & test
+
+JDK 17 is required (the modules declare a JDK 17 toolchain). Everything resolves
+`one.rarebit.voidbind:voidbind-client` from the org's GitHub Packages, so every build
+needs a token with `read:packages`. Set `gpr.user` / `gpr.token` in
+`~/.gradle/gradle.properties`, or pass `GITHUB_ACTOR` / `GITHUB_TOKEN`
+(e.g. `GITHUB_TOKEN=$(gh auth token)`).
+
+```bash
+./gradlew :core:jvmTest                     # shared layer: fast pure-JVM tests
+./gradlew :core:build :ui:build :composeApp:build   # what desktop CI runs
+./gradlew :composeApp:run                   # the desktop app (needs a display; libmpv for in-app playback)
+./gradlew :composeApp:screenshots           # every screen rendered off-screen → composeApp/build/screenshots/
+./gradlew :androidApp:testDebugUnitTest :androidApp:assembleDebug   # what android CI runs
+```
+
+**The Android SDK is optional.** `settings.gradle.kts` detects it (`ANDROID_HOME`,
+`ANDROID_SDK_ROOT`, or `sdk.dir` in `local.properties`). Without one, `:androidApp` is
+left out of the build and `:core` / `:ui` build JVM-only. A desktop-only machine can
+still build and test everything except the phone app.
+
+A devcontainer (`.devcontainer/`) provides JDK 17 and the Skia/X11 libraries for headless
+builds and screenshots. `scripts/devcontainer-exec <cmd>` rsyncs the tree to a container
+host, runs the command there, and syncs reports and screenshots back.
+
+### CI
+
+| Workflow | Runs | Triggered by |
+|----------|------|--------------|
+| `desktop.yml` | `:core:build :ui:build :composeApp:build`, the vault-sync uber JAR, screenshots | PRs + `main`, path-filtered |
+| `android.yml` | `:androidApp:testDebugUnitTest :androidApp:assembleDebug` | PRs + `main`, path-filtered |
+| `instrumented.yml` | an on-device Compose smoke test on an emulator | PRs + `main`, path-filtered |
+| `android-release.yml` | the signed release APK, attached to a GitHub Release | `v*` tags |
+
+## Toolchain
+
+| Piece | Version |
+|-------|---------|
+| Kotlin | 2.3.20 (matches the org) |
+| Gradle | 8.9 |
+| JDK | 17 (Temurin) |
+| AGP | 8.7.3 (compileSdk 35, minSdk 33) |
+| Compose Multiplatform | 1.9.3 (desktop, `:ui`) |
+| Compose compiler | bundled with Kotlin (`org.jetbrains.kotlin.plugin.compose`) |
+| voidbind-client | 0.8.0 (GitHub Packages, private) |
+
+---
+
+# The desktop client (`:composeApp`)
 
 It is a real client, not a mockup: every screen has loading skeletons, empty and error
 states, an offline banner, keyboard operability with visible focus rings, and semantic
@@ -51,8 +102,9 @@ and names the tool in a toast.
 
 ## Design system
 
-Tokens live in one place — `theme/Tokens.kt` (surfaces, text ramp, radii, spacing,
-type scale) — and the media table in `theme/MediaType.kt`:
+Tokens live in one place — `:ui`'s `theme/Tokens.kt` (surfaces, text ramp, radii,
+spacing, type scale) — and the media table in `:ui`'s `theme/MediaThemes.kt`, keyed on
+`:core`'s `MediaType`:
 
 | Media | Accent | Card | CTA |
 |-------|--------|------|-----|
@@ -67,11 +119,12 @@ type scale) — and the media table in `theme/MediaType.kt`:
 The accent swaps the CTA gradient, focus rings, active-nav mark, progress bars and
 section underline; surfaces and text stay constant. Wrap any subtree in
 `MediaScope(type) { … }` to re-skin it. Fonts are self-hosted (OFL): **Inter** for UI
-and body, **Montserrat** for display headings — `composeApp/src/jvmMain/resources/fonts`.
+and body, **Montserrat** for display headings, **Rubik** for the compact technical
+labels — `composeApp/src/jvmMain/resources/fonts`.
 
 ## How heyarr is reached
 
-`heyarr/HeyarrApi.kt` is the one typed door. MCP tools go over `mcp/McpClient.kt`: a
+`heyarr/HeyarrApi.kt` is the one typed door. MCP tools go over `:core`'s `mcp/McpClient.kt`: a
 stateless JSON-RPC 2.0 `tools/call` POST to `/api/v1/mcp` with the same bearer as the
 REST reads (verified: no `initialize` handshake needed). Result text is read with the
 hand-rolled `JsonScan` (the org's no-serialization-library stance; the request side is
@@ -84,92 +137,67 @@ Artwork streams from `GET /blobs/{hash}/content` through `state/ArtworkLoader.kt
 (authenticated, decoded off-thread, memory LRU + XDG disk cache, lazy per card,
 blur-up on arrival).
 
-## Build & run
+## Running it
 
-Nothing builds on the laptop: this repo has a **devcontainer** and a bridge script
-that rsyncs the tree to the container host (mac-mini-1 / lamia-1), runs the command
-inside the container and syncs reports/screenshots back — the same model as heyarr-core.
-
-```bash
-scripts/devcontainer-exec ./gradlew build              # compile + JVM unit tests
-scripts/devcontainer-exec ./gradlew :composeApp:screenshots   # renders every screen off-screen → composeApp/build/screenshots/
-scripts/devcontainer-exec ./gradlew :composeApp:createDistributable  # Linux app-image with a bundled JRE
-```
-
-To run the packaged image on this machine (Hyprland / sway / any non-reparenting WM,
-HiDPI Wayland): `scripts/heyarr-desktop`. It sets `_JAVA_AWT_WM_NONREPARENTING=1`
-(otherwise AWT never accepts the compositor's resize) and the UI scale comes from
-Settings → Appearance, seeded from `HEYARR_UI_SCALE` or `GDK_SCALE` — a JVM under
+To run the packaged image (`./gradlew :composeApp:createDistributable` builds a Linux
+app-image with a bundled JRE) on Hyprland / sway / any non-reparenting WM with HiDPI
+Wayland, use `scripts/heyarr-desktop`. It sets `_JAVA_AWT_WM_NONREPARENTING=1`
+(otherwise AWT never accepts the compositor's resize). The UI scale comes from
+Settings → Appearance, seeded from `HEYARR_UI_SCALE` or `GDK_SCALE`, because a JVM under
 XWayland reports 1× and ignores `sun.java2d.uiScale` for Compose.
+`scripts/install-desktop.sh` installs a versioned build locally.
 
 Playback in the app is libmpv in-process (`libmpv.so` / `libmpv.dylib`, part of the
 `mpv` package on Arch and Homebrew): mpv decodes into memory frames the UI draws, so
 the transport and everything else sit over the picture. "Pop out" runs the `mpv`
 command in a window of its own, driven over the same control socket.
 
-Locally, with a JDK 17 on `PATH`:
-
-```bash
-./gradlew build
-./gradlew :composeApp:run   # needs a display; libmpv for playback in the app, the mpv command for the pop-out
-```
-
 The screenshot task drives the real `App` with `preview/Fixtures.kt` — canned answers
 in the shapes observed on a live node — through Compose's `ImageComposeScene`, so a
-headless CI can show the app. The same fixtures back the JVM tests
-(`McpClientTest`, `McpModelsTest`, `SearchGroupingTest`, `LibraryStatusTest`,
-`MediaThemeTest`, plus the earlier client/parser tests).
+headless CI can show the app. The same fixtures back the JVM tests.
 
 ## Keyboard
 
 Ctrl+F search · ↑ ↓ move · ↵ open · Esc clear / back · Ctrl-1 Watch · Ctrl-2 Listen · Ctrl-3 Read · Ctrl-4 Missing · Ctrl-5 Cast · ⌘, settings · Tab walks every control, with a 2px accent focus ring.
 
-## Toolchain
-
-| Piece | Version |
-|-------|---------|
-| Kotlin | 2.3.20 (matches the org) |
-| Gradle | 8.9 |
-| JDK | 17 (Temurin) |
-| AGP | n/a (no Android target yet) |
-| Compose Multiplatform | 1.9.3 |
-| Compose compiler | bundled with Kotlin (`org.jetbrains.kotlin.plugin.compose:2.3.20`) |
-
 ## Project structure
 
 ```
 composeApp/src/jvmMain/kotlin/one/rarebit/heyarr/desktop/
-├── Main.kt                    # entry point; wires concretes
-├── mcp/        JsonWrite, McpClient (JSON-RPC over HttpTransport), McpModels (typed readers: Reason, Want, Satisfaction, Explanation …)
-├── heyarr/     HeyarrApi (the typed door: one method per tool / verified REST read), RestModels (QualityProfile, DesiredItem, Candidate)
-├── theme/      Tokens, MediaType + MediaThemes (the media table), HeyarrTheme (fonts, Material mapping, MediaScope)
-├── state/      AppSession (config, connectivity, want index, toasts), SearchController (debounced fan-out), SearchGrouping, LibraryStatus, ArtworkLoader, RecentSearches
-├── ui/         App (shell, keys, Want sheet), Route/Nav, components/ (buttons, chips, cards, rail, hero, reasons, side nav), screens/
-├── preview/    Fixtures + FakeHeyarrTransport, Screenshots (off-screen renderer), PlaceholderArt
-├── net/ library/ music/ books/ feeds/ open/ playback/ settings/ auth/ login/   # the v1 clients and seams, unchanged
-└── resources/fonts/           # Inter + Montserrat (OFL)
+├── Main.kt       # entry point; wires concretes
+├── heyarr/       HeyarrApi (the typed door: one method per tool / verified REST read)
+├── theme/        HeyarrTheme (fonts, Material mapping, MediaScope) over :ui's Tokens + MediaThemes
+├── state/        AppSession (config, connectivity, want index, toasts), SearchController (debounced fan-out),
+│                 ArtworkLoader, RecentSearches, PlaybackSession, VaultSyncController
+├── ui/           App (shell, keys, Want sheet), Route/Nav, EnrolPanel, components/, screens/
+├── device/       device enrolment: the keyring (OS keychain → libsecret → sealed file), pairing coordinator
+├── vault/        vault sync engine + the headless daemon (daemon/)
+├── preview/      Fixtures + FakeHeyarrTransport, Screenshots (off-screen renderer), PlaceholderArt
+├── net/ discovery/ library/ catalog/ music/ books/ feeds/ open/ playback/ settings/ login/
+└── resources/fonts/   # Inter, Montserrat, Rubik (OFL)
 ```
 
-## Login: bearer token today, Voidbind later
+The JSON codec, MCP client + models, REST/telemetry models, `Credential`, library status
+and search grouping live in `:core` (`one.rarebit.heyarr.core.*`).
 
-Settings takes a pasted bearer token (`heyarr_<id>_<secret>`, ADR-0011), stored in
-`~/.config/heyarr-desktop/config.json` with `0600` perms. Voidbind device/QR login is
-behind `login/VoidbindLogin.kt` (`LoginProvider`) and stays stubbed until the private
-`one.rarebit.voidbind:voidbind-client` artifact is resolvable — that needs a GitHub PAT
-with `read:packages`: set `gpr.user` / `gpr.token` (or `GITHUB_ACTOR` / `GITHUB_TOKEN`),
-uncomment the GitHub Packages repo in `settings.gradle.kts` and the dependency in
-`composeApp/build.gradle.kts`, then replace `VoidbindLoginStub` with a coordinator over
-the library's `LoginApproval` / `DevicePairing` / `WebLoginClient`.
+## Signing in: guest by default, then bearer token or device enrolment
+
+The desktop connects as a **guest** by default. It finds the node over mDNS
+(`_heyarr._tcp`), and on a trusted network it can browse and play with no credential.
+"Sign in to save" is the upgrade, and it offers two credentials (`login/VoidbindLogin.kt`):
+
+- **Device enrolment** (preferred): the desktop pairs in as a voidbind device over the
+  relay (`device/`, voidbind-client's `DevicePairing`). It keeps its Ed25519 seed in
+  the OS keychain (macOS Keychain, else libsecret, else a sealed file) and presents
+  `Authorization: Device <cert>~<proof>`.
+- **Bearer token**: a pasted `heyarr_<id>_<secret>` (ADR-0011), stored in
+  `~/.config/heyarr-desktop/config.json` with `0600` perms.
 
 ## Next steps
 
-- **Secret storage** — move the token from the config file into libsecret / KWallet.
-- **Shared KMP module** — extract `net/`, `mcp/`, `heyarr/`, `state/` into a
-  `commonMain` shared with heyarr-mobile (the code here already avoids JVM-only APIs
-  below the UI, except `JdkHttpTransport`, `FileSettingsStore` and `ArtworkLoader`'s
-  Skia decode).
-- **Reader** — the EPUB/CBZ surface for books.
-- **Personal-state crypto** — the encrypted personal-state sync, once the desktop can hold a device key.
+- **Secret storage for the bearer token**: move it from the config file into the same
+  keychain the device key already uses.
+- **Reader**: the EPUB/CBZ surface for books (the desktop reader is still a placeholder).
 
 ### Archive interface
 
