@@ -43,9 +43,10 @@ kotlin {
 
     sourceSets {
         val commonMain by getting {
-            // kotlinx-coroutines-core comes back when HeyarrApi / the async layer moves in
-            // from :composeApp (Gate A).
             dependencies {
+                // The shared SearchController (state/) exposes its state as a StateFlow and
+                // takes the app's CoroutineScope, so coroutines are part of :core's API.
+                api(libs.kotlinx.coroutines.core)
                 // Gate B: the shared device-auth brain. voidbind-client's device-credential
                 // domain (DeviceCredential, DeviceAuthPolicy, DevicePairing, WebLoginClient …)
                 // lives in voidbind's OWN commonMain, so :core consumes it in common code;
@@ -56,14 +57,10 @@ kotlin {
                 implementation(libs.voidbind.client)
             }
         }
-        val jvmAndAndroidMain by getting {
-            dependencies {
-                implementation(libs.kotlinx.coroutines.core)
-            }
-        }
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                implementation(libs.kotlinx.coroutines.test)
                 // voidbind's crypto (used by the vault codec tests) needs a registered
                 // cryptography-kotlin provider at RUNTIME. voidbind-client declares the
                 // provider as `implementation`, and :composeApp adds it for the app — but

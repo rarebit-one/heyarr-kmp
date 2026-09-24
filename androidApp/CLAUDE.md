@@ -244,7 +244,7 @@ app/src/main/java/one/rarebit/heyarr/mobile/
                 PlayerScreen (the in-app ExoPlayer: transport, captions menu with language names, cast, up next, fullscreen) ·
                 AudioQueueScreen · WantSheet (a bottom sheet: profile, monitor, reason)
   state/        AppSession (per node+credential: HeyarrApi, heartbeat/connection, the want-derived LibraryIndex, quality
-                profiles, appearance prefs, toasts, optimistic want; LibraryStatus/LibraryIndex come from `:core`) · SearchController (the fan-out, over `:core`'s pure SearchGrouping; followed sources cross via `asFeedSource()`) ·
+                profiles, appearance prefs, toasts, optimistic want; LibraryStatus/LibraryIndex come from `:core`) · SearchController (a thin Compose adapter over `:core`'s shared SearchController, which owns the fan-out; followed sources cross via `asFeedSource()` in its SearchBackend) ·
                 RecentSearches (a local file, labelled local) · PhoneExternalMetadata (the OkHttp fetcher + User-Agent for
                 `:core`'s shared ExternalMetadata: keyless public covers/synopses, disk-cached; ExternalParsers pure)
   mcp/          McpClient (JSON-RPC tools/call → Ok text | Refused error, transport failures thrown) · McpModels (Reason,
