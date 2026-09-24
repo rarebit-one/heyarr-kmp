@@ -167,7 +167,7 @@ Ctrl+F search · ↑ ↓ move · ↵ open · Esc clear / back · Ctrl-1 Watch ·
 composeApp/src/jvmMain/kotlin/one/rarebit/heyarr/desktop/
 ├── Main.kt       # entry point; wires concretes
 ├── heyarr/       HeyarrApi (the typed door: one method per tool / verified REST read)
-├── state/        AppSession (config, connectivity, want index, toasts), SearchController (debounced fan-out),
+├── state/        AppSession (config, connectivity, want index, toasts), SearchController (Compose adapter over `:core`'s debounced fan-out),
 │                 ArtworkLoader, RecentSearches, PlaybackSession, VaultSyncController
 ├── ui/           App (shell, keys, Want sheet), Route/Nav, EnrolPanel, components/, screens/
 ├── device/       device enrolment: the keyring (OS keychain → libsecret → sealed file), pairing coordinator

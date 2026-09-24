@@ -1054,7 +1054,6 @@
     <ID>MaxLineLength:Routes.kt$Route.Detail$@Serializable data</ID>
     <ID>MaxLineLength:Routes.kt$fun</ID>
     <ID>MaxLineLength:RoutesTest.kt$RoutesTest$assertEquals(p, Json.decodeFromString(Route.Playlist.serializer(), Json.encodeToString(Route.Playlist.serializer(), p)))</ID>
-    <ID>MaxLineLength:SearchController.kt$SearchController$withContext(Dispatchers.IO) { runCatching(block) }.onFailure { if (it is McpTransportException) onTransportFailure(it) }</ID>
     <ID>MaxLineLength:SearchResultsJsonTest.kt$SearchResultsJsonEpisodesTest$ {</ID>
     <ID>MaxLineLength:SearchResultsJsonTest.kt$SearchResultsJsonEpisodesTest$val hits = one.rarebit.heyarr.mobile.search.SearchResultsJson.parseHits("""{"works":[{"work_id":"w1","title":"X"}]}""")</ID>
     <ID>MaxLineLength:SearchResultsJsonTest.kt$SearchResultsJsonTest$assertEquals("http://p/x.jpg", SearchResultsJson.parse("""[{"id":"x","poster_url":"http://p/x.jpg"}]""")[0].posterUrl)</ID>

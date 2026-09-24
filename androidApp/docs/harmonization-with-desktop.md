@@ -111,8 +111,8 @@ most `library/` / `music/` / `search/` models, `theme/Tokens` + `theme/MediaType
 
 **Tier B — `commonMain` with a dispatcher injected** (they already take a
 `CoroutineScope`; swap `Dispatchers.IO`/`runInterruptible`/`System.nanoTime` for
-injected/`expect` equivalents): `state/AppSession`, `SearchController`, the
-playback-plan coordinator.
+injected/`expect` equivalents): `state/AppSession`, `SearchController` (done: it
+lives in `:core`'s `state/` with an injected I/O dispatcher), the playback-plan coordinator.
 
 **Tier C — per-platform `actual`s:** HTTP transport (`java.net.http` vs OkHttp),
 blob downloader, settings store (file+XDG vs SharedPreferences), artwork decode+cache

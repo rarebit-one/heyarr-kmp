@@ -1000,7 +1000,6 @@
     <ID>MaxLineLength:Screenshots.kt$settings = settings</ID>
     <ID>MaxLineLength:Screenshots.kt$val settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://heyarr.example.test:7777", bearerToken = if (guest) "" else "heyarr_fixture_token"))</ID>
     <ID>MaxLineLength:Screenshots.kt$val settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://heyarr.example.test:7777", externalMetadata = false))</ID>
-    <ID>MaxLineLength:SearchController.kt$SearchController$withContext(Dispatchers.IO) { runCatching(block) }.onFailure { if (it is McpTransportException) onTransportFailure(it) }</ID>
     <ID>MaxLineLength:SearchScreen.kt$Column</ID>
     <ID>MaxLineLength:SearchScreen.kt$EmptyState("Search everything at once", detail = "Movies, series, music and books come from the library; podcasts and feeds from what you follow. Results appear per type as each answer lands.")</ID>
     <ID>MaxLineLength:SearchScreen.kt$Icon(Icons.Rounded.History, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(16.dp))</ID>
@@ -1202,7 +1201,6 @@
     <ID>WildcardImport:RecentSearches.kt$import one.rarebit.heyarr.core.state.*</ID>
     <ID>WildcardImport:RemoveWorkTest.kt$import kotlin.test.*</ID>
     <ID>WildcardImport:Screenshots.kt$import kotlinx.coroutines.*</ID>
-    <ID>WildcardImport:SearchController.kt$import one.rarebit.heyarr.core.state.*</ID>
     <ID>WildcardImport:SearchShortcutTest.kt$import kotlin.test.*</ID>
   </CurrentIssues>
 </SmellBaseline>

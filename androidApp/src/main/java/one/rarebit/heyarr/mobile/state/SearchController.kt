@@ -5,123 +5,78 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.core.feeds.FollowedSource
 import one.rarebit.heyarr.core.mcp.McpTransportException
+import one.rarebit.heyarr.core.mcp.SearchHits
+import one.rarebit.heyarr.core.state.SearchBackend
 import one.rarebit.heyarr.core.state.SearchFilter
-import one.rarebit.heyarr.core.state.SearchGrouping
 import one.rarebit.heyarr.core.state.SearchRow
 import one.rarebit.heyarr.core.state.SearchSection
-import one.rarebit.heyarr.core.state.Segment
+import one.rarebit.heyarr.core.state.SearchState
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.search.asFeedSource
+import one.rarebit.heyarr.core.state.SearchController as SharedSearchController
 
 /**
- * Universal search: one query, every media kind at once — ported from heyarr-desktop's
- * `state/SearchController.kt`. On each keystroke the query is debounced, then fanned
- * out as one `search_content` per searchable kind, plus one untyped call for episode
- * hits, plus a client-side match over the followed sources — all in parallel, each
- * landing in its own [Segment] the moment it returns. A slow kind therefore never
- * holds the others back, and a failed one shows its own error inside its section
- * instead of blanking the page.
+ * Android's Compose adapter over `:core`'s [SharedSearchController], which owns the
+ * universal-search logic (debounce, per-kind fan-out, followed-source cache). This class
+ * only mirrors that controller's [SearchState] flow into snapshot state for the screen,
+ * and adapts [HeyarrApi] to the [SearchBackend] seam. The phone has no keyboard
+ * selection, so it doesn't expose the shared controller's `selected` state.
+ *
+ * Each call syncs the mirror right away as well as through the collector, so the search
+ * box's value changes on the same frame as the keystroke, as it did when the state here
+ * was snapshot state.
  */
 class SearchController(
-    private val scope: CoroutineScope,
-    private val api: () -> HeyarrApi,
-    private val onTransportFailure: (McpTransportException) -> Unit,
-    private val debounceMs: Long = 220,
+    scope: CoroutineScope,
+    api: () -> HeyarrApi,
+    onTransportFailure: (McpTransportException) -> Unit,
+    debounceMs: Long = 220,
 ) {
-    var query: String by mutableStateOf("")
-        private set
-    var filter: SearchFilter by mutableStateOf(SearchFilter.ALL)
-    var segments: Map<MediaType, Segment> by mutableStateOf(emptyMap())
-        private set
-    var episodes: Segment by mutableStateOf(Segment.Loaded(emptyList()))
-        private set
-    var sources: Segment by mutableStateOf(Segment.Loaded(emptyList()))
-        private set
+    private val shared = SharedSearchController(
+        scope = scope,
+        backend = { ApiSearchBackend(api()) },
+        onTransportFailure = onTransportFailure,
+        ioDispatcher = Dispatchers.IO,
+        debounceMs = debounceMs,
+    )
+    private var state: SearchState by mutableStateOf(shared.state.value)
 
-    private var followed: List<FollowedSource>? = null
-    private var debounce: Job? = null
-    private var inFlight: List<Job> = emptyList()
-    private var generation = 0
-
-    val sections: List<SearchSection> get() = SearchGrouping.group(segments, episodes, sources, filter)
-    val rows: List<SearchRow> get() = SearchGrouping.flatten(sections)
-    val isIdle: Boolean get() = query.isBlank()
-    val isSettled: Boolean get() = SearchGrouping.settled(sections)
-
-    fun updateQuery(q: String) {
-        query = q
-        debounce?.cancel()
-        if (q.isBlank()) {
-            cancelInFlight()
-            segments = emptyMap()
-            episodes = Segment.Loaded(emptyList())
-            sources = Segment.Loaded(emptyList())
-            return
-        }
-        debounce = scope.launch {
-            delay(debounceMs)
-            run(q)
-        }
+    init {
+        scope.launch { shared.state.collect { state = it } }
     }
 
-    fun submit() {
-        debounce?.cancel()
-        if (query.isNotBlank()) run(query)
-    }
+    val query: String get() = state.query
+    var filter: SearchFilter
+        get() = state.filter
+        set(value) = sync { shared.setFilter(value) }
+    val sections: List<SearchSection> get() = state.sections
+    val rows: List<SearchRow> get() = state.rows
+    val isIdle: Boolean get() = state.isIdle
+    val isSettled: Boolean get() = state.isSettled
 
-    private fun cancelInFlight() {
-        inFlight.forEach { it.cancel() }
-        inFlight = emptyList()
-    }
+    fun updateQuery(q: String) = sync { shared.updateQuery(q) }
 
-    private fun run(q: String) {
-        val a = api()
-        cancelInFlight()
-        val gen = ++generation
-        segments = MediaType.SEARCHABLE.associateWith { Segment.Pending }
-        episodes = Segment.Pending
-        sources = Segment.Pending
-        val jobs = ArrayList<Job>()
-        for (kind in MediaType.SEARCHABLE) {
-            jobs += scope.launch {
-                val seg = fetch { a.searchContent(q, kind) }.fold(
-                    onSuccess = { hits -> Segment.Loaded(hits.works.map { SearchRow.WorkRow(it) }, hits.truncated) },
-                    onFailure = { Segment.Failed(it.message ?: "failed") },
-                )
-                if (gen == generation) segments = segments + (kind to seg)
-            }
-        }
-        jobs += scope.launch {
-            val seg = fetch { a.searchContent(q, null) }.fold(
-                onSuccess = { hits -> Segment.Loaded(hits.episodes.map { SearchRow.EpisodeRow(it) }) },
-                onFailure = { Segment.Failed(it.message ?: "failed") },
-            )
-            if (gen == generation) episodes = seg
-        }
-        jobs += scope.launch {
-            val list = followed ?: fetch { a.followed().map { it.asFeedSource() } }.getOrNull()?.also { followed = it }
-            val seg = if (list == null) {
-                Segment.Failed("followed sources unavailable")
-            } else {
-                Segment.Loaded(SearchGrouping.matchSources(q, list))
-            }
-            if (gen == generation) sources = seg
-        }
-        inFlight = jobs
-    }
-
-    private suspend fun <T> fetch(block: () -> T): Result<T> =
-        withContext(Dispatchers.IO) { runCatching(block) }.onFailure { if (it is McpTransportException) onTransportFailure(it) }
+    fun submit() = sync { shared.submit() }
 
     /** Forget the cached followed list (after a follow/unfollow). */
-    fun invalidateSources() {
-        followed = null
+    fun invalidateSources() = shared.invalidateSources()
+
+    private inline fun sync(action: () -> Unit) {
+        action()
+        state = shared.state.value
     }
+}
+
+/**
+ * Android's [HeyarrApi] still returns its own followed-source type, so the seam maps it
+ * to `:core`'s at the search boundary with [asFeedSource].
+ */
+private class ApiSearchBackend(private val api: HeyarrApi) : SearchBackend {
+    override fun searchContent(query: String, type: MediaType?): SearchHits = api.searchContent(query, type)
+
+    override fun followedSources(): List<FollowedSource> = api.followed().map { it.asFeedSource() }
 }
