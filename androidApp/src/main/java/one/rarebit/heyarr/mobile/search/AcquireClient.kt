@@ -104,26 +104,6 @@ class AcquireClient(
         }
     }
 
-    /**
-     * Follow something the library does NOT hold yet — a discovery result (heyarr-core
-     * #454) named by its [title] and the [tvdbId] the provider resolved. The body
-     * carries `title`, never `work_id` (there is no work); the server creates the work
-     * as it creates the subscription. Refusals surface as [Result.Failed].
-     */
-    fun followFeed(title: String, tvdbId: String, backfill: String = DEFAULT_BACKFILL): Result {
-        val resp = http.post(
-            url = followedUrl(baseUrl),
-            body = followFeedBody(title, tvdbId, qualityProfile, backfill),
-            contentType = "application/json",
-            headers = jsonHeaders,
-        )
-        return when {
-            resp.status == 201 || resp.status == 200 -> Result.Following(sourceId = idFromBody(resp.body))
-            resp.status == 403 -> Result.Failed(403, READ_ONLY_FOLLOW_HINT)
-            else -> Result.Failed(resp.status, ProblemDetail.message(resp.body, resp.status, "follow"))
-        }
-    }
-
     companion object {
         /** heyarr's `FollowSourceRequest` default backfill — `from_now` (vs `full`). */
         const val DEFAULT_BACKFILL = "from_now"
@@ -193,20 +173,6 @@ class AcquireClient(
             }
             return "{" + fields.joinToString(",") + "}"
         }
-
-        /**
-         * The follow body for a discovered, not-yet-catalogued series: `title` + `tvdb_id`
-         * (the server refuses `work_id` and `title` together, and there is no work yet).
-         * Pure + unit-tested.
-         */
-        fun followFeedBody(title: String, tvdbId: String, qualityProfile: String, backfill: String = DEFAULT_BACKFILL): String =
-            "{" + listOf(
-                "\"title\":" + jsonString(title),
-                "\"tvdb_id\":" + jsonString(tvdbId),
-                "\"quality_profile\":" + jsonString(qualityProfile),
-                "\"monitor\":true",
-                "\"backfill\":" + jsonString(backfill),
-            ).joinToString(",") + "}"
 
         /** Read an `id` (or `desired_id` / `source_id`) from a small JSON response body. */
         private fun idFromBody(body: String): String? =

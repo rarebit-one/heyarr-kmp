@@ -60,13 +60,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import one.rarebit.heyarr.mobile.state.LibraryStatus
-import one.rarebit.heyarr.mobile.theme.CardAspect
+import one.rarebit.heyarr.core.state.LibraryStatus
+import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.mobile.theme.LocalAppearance
 import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
 import one.rarebit.heyarr.mobile.theme.MediaScope
-import one.rarebit.heyarr.mobile.theme.MediaThemes
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 
 /** The glyph a type's placeholder art shows. */

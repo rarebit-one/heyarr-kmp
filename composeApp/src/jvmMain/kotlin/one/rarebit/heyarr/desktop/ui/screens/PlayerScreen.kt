@@ -80,7 +80,6 @@ import one.rarebit.heyarr.desktop.library.Series
 import one.rarebit.heyarr.desktop.playback.MpvTrack
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
-import one.rarebit.heyarr.desktop.playback.PlayResult
 import one.rarebit.heyarr.desktop.playback.PlayerState
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.Toast
@@ -449,6 +448,3 @@ internal fun clock(s: Double): String {
     val h = t / 3600; val m = (t % 3600) / 60; val sec = t % 60
     return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }
-
-@Suppress("unused")
-private val keepPlayResult = PlayResult.Launched

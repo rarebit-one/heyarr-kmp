@@ -28,7 +28,6 @@ data class AudioState(
 ) {
     val item: AudioItem? get() = queue.getOrNull(index)
     val hasNext: Boolean get() = index in 0 until queue.size - 1
-    val hasPrevious: Boolean get() = index > 0
     val fraction: Float get() = if (durationMs > 0) (positionMs.toDouble() / durationMs).coerceIn(0.0, 1.0).toFloat() else 0f
 }
 

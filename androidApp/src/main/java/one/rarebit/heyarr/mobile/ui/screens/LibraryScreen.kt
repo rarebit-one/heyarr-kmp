@@ -36,17 +36,17 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.DesiredItem
-import one.rarebit.heyarr.mobile.heyarr.JobInfo
+import one.rarebit.heyarr.core.heyarr.JobInfo
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.library.Variants
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
 import one.rarebit.heyarr.mobile.state.AppSession
-import one.rarebit.heyarr.mobile.state.LibraryStatus
+import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.mobile.state.Toast
 import one.rarebit.heyarr.mobile.theme.MediaScope
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Cell
 import one.rarebit.heyarr.mobile.ui.components.DataTable
@@ -68,6 +68,7 @@ import one.rarebit.heyarr.mobile.ui.components.TableColumn
 import one.rarebit.heyarr.mobile.ui.components.icon
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.mobile.ui.components.verdictColor
+import one.rarebit.heyarr.ui.theme.MediaThemes
 
 /** A pseudo-kind for the default filter: the media kinds, no feeds or documents. */
 val MEDIA = MediaType.UNKNOWN
@@ -140,7 +141,7 @@ fun LibraryScreen(session: AppSession, state: LibraryState, onOpen: (Route) -> U
         }
         when {
             state.error != null && state.works == null -> ErrorState("Couldn't load the library", state.error, ::load)
-            state.works == null -> LazyVerticalGrid(GridCells.Adaptive(if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES) 280.dp else Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.s3), verticalArrangement = Arrangement.spacedBy(Tokens.s3)) { items(9) { MediaCardSkeleton(width = Tokens.posterWidth, aspect = one.rarebit.heyarr.mobile.theme.MediaThemes.of(state.type ?: MediaType.BOOK).aspect) } }
+            state.works == null -> LazyVerticalGrid(GridCells.Adaptive(if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES) 280.dp else Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.s3), verticalArrangement = Arrangement.spacedBy(Tokens.s3)) { items(9) { MediaCardSkeleton(width = Tokens.posterWidth, aspect = MediaThemes.of(state.type ?: MediaType.BOOK).aspect) } }
             filtered.isEmpty() -> EmptyState(if (all.isEmpty()) "The library is empty" else "Nothing matches these filters", detail = if (all.isEmpty()) "Scan a library root on the node, or Want something and let heyarr find it." else "Clear a filter to see more.")
             state.grid -> LazyVerticalGrid(
                 GridCells.Adaptive(if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES) 280.dp else Tokens.posterWidth), horizontalArrangement = Arrangement.spacedBy(Tokens.s3), verticalArrangement = Arrangement.spacedBy(Tokens.s3),

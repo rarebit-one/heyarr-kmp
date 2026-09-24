@@ -251,10 +251,6 @@ class AppViewModel internal constructor(
     private val _libraryState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
     val libraryState: StateFlow<LibraryUiState> = _libraryState.asStateFlow()
 
-    /** True while a pull-to-refresh reload of the library is in flight (the list stays shown). */
-    private val _libraryRefreshing = MutableStateFlow(false)
-    val libraryRefreshing: StateFlow<Boolean> = _libraryRefreshing.asStateFlow()
-
     private val _sessionAuthority = MutableStateFlow<SessionAuthority?>(null)
     val sessionAuthority: StateFlow<SessionAuthority?> = _sessionAuthority.asStateFlow()
 
@@ -430,7 +426,6 @@ class AppViewModel internal constructor(
 
     /** This phone's device keys (key, honest tier, cert), once read. */
     private val _deviceInfo = MutableStateFlow<DeviceKeyInfo?>(null)
-    val deviceInfo: StateFlow<DeviceKeyInfo?> = _deviceInfo.asStateFlow()
 
     /** True while [enrolState] is a projection of the coordinator's (non-idle) state. */
     private var showingPairing = false
@@ -786,14 +781,10 @@ class AppViewModel internal constructor(
     /** A human-readable name for the node's device registry. */
     var deviceName: String = "heyarr-mobile"
 
-    /** Pull-to-refresh: reload the library, keeping the current list on screen meanwhile. */
-    fun refreshLibrary() = loadLibrary(keepShowing = true)
-
-    private fun loadLibrary(keepShowing: Boolean = false) {
+    private fun loadLibrary() {
         // Guest-as-default: browse with Credential.Guest when nothing is enrolled.
         val cred = effectiveCredential()
-        if (!keepShowing || _libraryState.value !is LibraryUiState.Loaded) _libraryState.value = LibraryUiState.Loading
-        _libraryRefreshing.value = true
+        _libraryState.value = LibraryUiState.Loading
         viewModelScope.launch {
             val state = withContext(Dispatchers.IO) {
                 runCatching {
@@ -802,7 +793,6 @@ class AppViewModel internal constructor(
                 }.getOrElse { LibraryUiState.Error(it.message ?: "failed to load library") }
             }
             _libraryState.value = state
-            _libraryRefreshing.value = false
         }
     }
 }

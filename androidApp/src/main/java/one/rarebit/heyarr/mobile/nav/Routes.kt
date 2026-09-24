@@ -1,7 +1,7 @@
 package one.rarebit.heyarr.mobile.nav
 
 import kotlinx.serialization.Serializable
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 
 /**
  * The signed-in navigation graph, as typed routes.

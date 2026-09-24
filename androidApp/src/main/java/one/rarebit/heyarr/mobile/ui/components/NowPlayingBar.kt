@@ -42,7 +42,7 @@ import one.rarebit.heyarr.mobile.playback.AudioState
 import one.rarebit.heyarr.mobile.playback.VideoSession
 import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
 import one.rarebit.heyarr.mobile.theme.MediaScope
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 
 /**
@@ -128,6 +128,3 @@ fun clockShort(ms: Long): String {
     val h = t / 3600; val m = (t % 3600) / 60; val sec = t % 60
     return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }
-
-/** `1:23:45` / `12:34` from seconds. */
-fun clockSeconds(s: Double): String = clockShort((s * 1000).toLong())

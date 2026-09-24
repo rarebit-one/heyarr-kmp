@@ -94,13 +94,13 @@ import one.rarebit.heyarr.mobile.search.FollowedItem
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.state.ExternalEpisode
 import one.rarebit.heyarr.mobile.state.ExternalMeta
-import one.rarebit.heyarr.mobile.state.LibraryStatus
+import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.mobile.state.MetaKey
 import one.rarebit.heyarr.mobile.state.Toast
 import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
 import one.rarebit.heyarr.mobile.theme.MediaScope
-import one.rarebit.heyarr.mobile.theme.MediaThemes
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Artwork
 import one.rarebit.heyarr.mobile.ui.components.Cell

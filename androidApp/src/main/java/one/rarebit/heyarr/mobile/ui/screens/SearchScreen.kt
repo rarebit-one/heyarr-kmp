@@ -53,7 +53,7 @@ import one.rarebit.heyarr.core.mcp.EpisodeHit
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
 import one.rarebit.heyarr.mobile.state.AppSession
-import one.rarebit.heyarr.mobile.state.LibraryStatus
+import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.mobile.state.SearchController
 import one.rarebit.heyarr.mobile.state.SearchFilter
 import one.rarebit.heyarr.mobile.state.SearchGrouping
@@ -61,7 +61,7 @@ import one.rarebit.heyarr.mobile.state.SearchRow
 import one.rarebit.heyarr.mobile.state.Segment
 import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
 import one.rarebit.heyarr.mobile.theme.MediaScope
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.EmptyState
 import one.rarebit.heyarr.mobile.ui.components.FilterChip

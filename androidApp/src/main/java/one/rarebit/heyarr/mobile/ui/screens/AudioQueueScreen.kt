@@ -45,7 +45,7 @@ import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.mobile.playback.AudioState
 import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
 import one.rarebit.heyarr.mobile.theme.MediaScope
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Artwork
 import one.rarebit.heyarr.mobile.ui.components.GhostButton

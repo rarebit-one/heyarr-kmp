@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.mobile.search.FollowedSource
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 
 /**
  * Universal search: one query, every media kind at once — ported from heyarr-desktop's
