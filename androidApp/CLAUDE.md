@@ -243,7 +243,7 @@ app/src/main/java/one/rarebit/heyarr/mobile/
                 PlayerScreen (the in-app ExoPlayer: transport, captions menu with language names, cast, up next, fullscreen) ·
                 AudioQueueScreen · WantSheet (a bottom sheet: profile, monitor, reason)
   state/        AppSession (per node+credential: HeyarrApi, heartbeat/connection, the want-derived LibraryIndex, quality
-                profiles, appearance prefs, toasts, optimistic want; LibraryStatus/LibraryIndex come from `:core`) · SearchController + SearchGrouping (the fan-out and the pure grouping) ·
+                profiles, appearance prefs, toasts, optimistic want; LibraryStatus/LibraryIndex come from `:core`) · SearchController (the fan-out, over `:core`'s pure SearchGrouping; followed sources cross via `asFeedSource()`) ·
                 RecentSearches (a local file, labelled local) · PhoneExternalMetadata (the OkHttp fetcher + User-Agent for
                 `:core`'s shared ExternalMetadata: keyless public covers/synopses, disk-cached; ExternalParsers pure)
   mcp/          McpClient (JSON-RPC tools/call → Ok text | Refused error, transport failures thrown) · McpModels (Reason,
@@ -277,8 +277,8 @@ app/src/main/java/one/rarebit/heyarr/mobile/
   auth/ device/ login/ net/  unchanged: Credential · DeviceKeyring + pairing · QR login · HttpTransport/OkHttp, JsonScan +
                 JsonEscapes + JsonWrite (the hand-rolled JSON stance — no serialization library on the wire)
 app/src/test/…  pure-JVM unit tests (no Android runtime) — including the desktop's MediaThemeTest (table + AA contrast),
-                McpClientTest, McpModelsTest (rule codes verbatim, the typed door over the fixtures), SearchGroupingTest,
-                LibraryStatusTest, SeriesTest, VariantsTest, ExternalParsersTest, DecisionsTest, RoutesTest
+                McpClientTest, McpModelsTest (rule codes verbatim, the typed door over the fixtures), FollowedSourceFeedMappingTest,
+                LibraryStatusTest, SeriesTest, VariantsTest, DecisionsTest, RoutesTest (SearchGrouping/ExternalParsers are tested in `:core`)
 .github/workflows/android.yml   CI: testDebugUnitTest + assembleDebug on ubuntu-latest
 ```
 

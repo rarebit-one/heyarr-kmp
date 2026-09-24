@@ -2,6 +2,7 @@ package one.rarebit.heyarr.mobile.search
 
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.mobile.net.Timestamps
+import one.rarebit.heyarr.core.feeds.FollowedSource as FeedSource
 
 /**
  * A source the user is subscribed to — one row of the "Following" list. Models the
@@ -38,6 +39,25 @@ data class FollowedSource(
     /** The timestamp "recent first" orders on: last polled, else created. */
     val recency: String? get() = lastPolledAt ?: createdAt
 }
+
+/**
+ * This source as `:core`'s [FeedSource] (`core.feeds.FollowedSource`) — the model the
+ * shared search grouping (`SearchGrouping.matchSources`, `SearchRow.SourceRow`) is written
+ * over. The phone's own model keeps the extra subscription fields (profile, monitor,
+ * backfill, poll times) for the Following screens; search reads only what both carry. The
+ * archive counters the phone reads as absent display as 0, exactly as the search row
+ * showed them before (`itemsArchived ?: 0`).
+ */
+fun FollowedSource.asFeedSource(): FeedSource = FeedSource(
+    id = id,
+    title = title,
+    workId = workId,
+    type = type,
+    itemsKnown = itemsKnown ?: 0,
+    itemsArchived = itemsArchived ?: 0,
+    health = health,
+    feedRef = feedRef,
+)
 
 /**
  * Parser for the `GET /api/v1/followed-sources` body (`{ "followed_sources": [ … ] }`)
