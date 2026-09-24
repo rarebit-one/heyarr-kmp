@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.mobile.personalstate
 
+import one.rarebit.heyarr.core.vault.PersonalStateId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -10,7 +11,7 @@ class WireTest {
     fun mintComputesTheNodeAcceptedIdAndValidates() {
         val ct = "cipher".encodeToByteArray()
         val ch = EncryptedChange.mint("space-1", listOf("blake3:bb", "", "blake3:aa"), ct)
-        assertEquals(ChangeId.computeChange("space-1", listOf("blake3:aa", "blake3:bb"), ct), ch.changeId)
+        assertEquals(PersonalStateId.changeId("space-1", listOf("blake3:aa", "blake3:bb"), ct), ch.changeId)
         assertEquals(listOf("blake3:aa", "blake3:bb"), ch.parents) // canonicalised
         assertTrue(ch.validate())
     }

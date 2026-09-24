@@ -176,7 +176,7 @@ key (`SpaceCrypto` over voidbind-client's `VoidbindEncryption`, since **0.7.0** 
 KAT-proven; **no wire format is re-derived here**), decrypts the snapshot + changes, and folds
 them through the four CRDT ports (`Playlist`/`StarSet`/`ReadingPositions`/`PlayLog`). A write is
 minted at the current heads, encrypted, and pushed; the node re-derives the content-addressed id
-(`:core`'s pure-Kotlin `Blake3` + `ChangeId`) and refuses a mismatch, so every CRDT + the id framing are
+(`:core`'s pure-Kotlin `Blake3` + `PersonalStateId`) and refuses a mismatch, so every CRDT + the id framing are
 pinned **byte-for-byte** to heyarr-core's parity vectors (copied into `app/src/test/resources/`;
 regenerate in heyarr-core with `-update` and re-copy). `PersonalStateCoordinator` is the app-facing
 façade; `SpaceRegistry` is the device-side role map the gateway keeps as `SpaceRoles` (every
@@ -262,7 +262,6 @@ app/src/main/java/one/rarebit/heyarr/mobile/
   music/        MusicClient (GET /artists) + MusicJson · Track (WorkAsset audio/primary-role/title helpers, Tracks.playable)
   search/       AcquireClient · FollowedSource(s)Json · FollowedSourceClient +
                 FollowedItem · SessionClient + SessionJson · DiscoverClient — the REST clients the typed door composes
-  acquisition/  WantsClient (candidates, POST /desired/{id}/select) + CandidatesJson
   playback/     PlaybackCoordinator (plan against real capabilities, blob fallback, ONE re-plan) · PlaybackClient ·
                 PlaybackTarget · HeyarrDataSource · VideoSession (the app-scoped ExoPlayer the now-playing bar carries
                 between screens: transport, captions, restart-seek for streams, up-next queue, fullscreen flag) ·
@@ -270,7 +269,7 @@ app/src/main/java/one/rarebit/heyarr/mobile/
                 AudioSessionBridge · PlaybackDiagnostics · Subtitles · MediaMime · ClientCapabilities
   reader/       ReaderActivity (Readium 3: EPUB / PDF / comic) + ReaderHttp + ReadingPositionStore/Sync · ReaderAsset (formats)
   consumption/  ConsumptionClient · DeviceIdStore · ProgressReporter + ConsumptionReporter
-  personalstate/ the M9 engine (ChangeId over `:core`'s Blake3, the four CRDTs, SpaceCrypto, PersonalStateClient, SpaceSession,
+  personalstate/ the M9 engine (ids via `:core`'s PersonalStateId, the four CRDTs, SpaceCrypto, PersonalStateClient, SpaceSession,
                 SpaceRegistry, PersonalStateCoordinator)
   playlist/     PersonalActionsViewModel (star / add-to-playlist / record play + the Home rows) · PlaylistScreens (restyled)
                 + PlaylistViewModels + AddToPlaylistDialog

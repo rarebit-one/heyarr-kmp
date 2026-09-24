@@ -5,7 +5,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * :core's BLAKE3-256 (what [ChangeId] hashes with) against Go-minted KATs
+ * :core's BLAKE3-256 (what `PersonalStateId` hashes with) against Go-minted KATs
  * (`github.com/zeebo/blake3`, what heyarr-core hashes with). Empty, "abc", one
  * 64-byte block, one 1024-byte chunk, and a 3000-byte multi-chunk tree — the last
  * two prove the CV-stack tree path, not just a single block. These are the official
