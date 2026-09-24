@@ -6,7 +6,7 @@ The **Kotlin Multiplatform monorepo** for heyarr's first-party clients. heyarr i
 | Module | What it is | Targets |
 |--------|------------|---------|
 | **`:core`** | The shared, pure-Kotlin client layer: the hand-rolled JSON codec (`JsonScan` / `JsonWrite`), the `HttpTransport` seam, the MCP client + models, REST/telemetry models, `Credential` (guest / bearer / voidbind `Device`), library-status and search-grouping derivation, the `MediaType` enum, BLAKE3 + the vault codec. **No Compose, no platform APIs in `commonMain`.** | JVM; Android when an SDK is present |
-| **`:ui`** | The shared Compose design layer: `Tokens` and the media → accent table (`MediaThemes`), plus shared glyphs. Exposes `:core` as `api`. | JVM; Android when an SDK is present |
+| **`:ui`** | The shared Compose design layer: `Tokens`, the media → accent table (`MediaThemes`) and the self-hosted fonts (`HeyarrFonts`, shipped once as Compose resources), plus shared glyphs. Exposes `:core` as `api`. | JVM; Android when an SDK is present |
 | **`:composeApp`** | The **desktop** client (Compose Multiplatform, JVM): Linux x64 **and** aarch64, with macOS/Windows for free via the JVM. Also ships the headless vault-sync daemon ([docs/vault-sync-daemon.md](docs/vault-sync-daemon.md)). | JVM |
 | **`:androidApp`** | The **Android** client (Compose, Media3/ExoPlayer, Readium), with voidbind QR login and device enrolment. See [androidApp/README.md](androidApp/README.md). | Android (minSdk 33) |
 
@@ -120,7 +120,8 @@ The accent swaps the CTA gradient, focus rings, active-nav mark, progress bars a
 section underline; surfaces and text stay constant. Wrap any subtree in
 `MediaScope(type) { … }` to re-skin it. Fonts are self-hosted (OFL): **Inter** for UI
 and body, **Montserrat** for display headings, **Rubik** for the compact technical
-labels — `composeApp/src/jvmMain/resources/fonts`.
+labels — shipped once, for both apps, from `:ui` (`ui/src/commonMain/composeResources/font`,
+exposed as `HeyarrFonts`).
 
 ## How heyarr is reached
 
@@ -173,8 +174,7 @@ composeApp/src/jvmMain/kotlin/one/rarebit/heyarr/desktop/
 ├── device/       device enrolment: the keyring (OS keychain → libsecret → sealed file), pairing coordinator
 ├── vault/        vault sync engine + the headless daemon (daemon/)
 ├── preview/      Fixtures + FakeHeyarrTransport, Screenshots (off-screen renderer), PlaceholderArt
-├── net/ discovery/ library/ catalog/ music/ books/ feeds/ open/ playback/ settings/ login/
-└── resources/fonts/   # Inter, Montserrat, Rubik (OFL)
+└── net/ discovery/ library/ catalog/ music/ books/ feeds/ open/ playback/ settings/ login/
 ```
 
 The JSON codec, MCP client + models, REST/telemetry models, `Credential`, library status

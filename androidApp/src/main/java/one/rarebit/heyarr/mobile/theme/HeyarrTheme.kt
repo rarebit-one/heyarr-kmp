@@ -8,16 +8,16 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import one.rarebit.heyarr.mobile.R
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.ui.theme.HeyarrFonts
 import one.rarebit.heyarr.ui.theme.MediaTheme
 import one.rarebit.heyarr.ui.theme.MediaThemes
 
@@ -29,27 +29,17 @@ data class Appearance(val adaptiveAccents: Boolean = true, val reduceMotion: Boo
 
 val LocalAppearance = staticCompositionLocalOf { Appearance() }
 
-/** Inter — UI and body. Self-hosted static instances (OFL), see res/font. */
-val InterFamily: FontFamily = FontFamily(
-    Font(R.font.inter_regular, FontWeight.Normal),
-    Font(R.font.inter_medium, FontWeight.Medium),
-    Font(R.font.inter_semibold, FontWeight.SemiBold),
-    Font(R.font.inter_bold, FontWeight.Bold),
-)
+/** Inter — UI and body. Self-hosted in :ui (see [HeyarrFonts]). */
+val InterFamily: FontFamily
+    @Composable get() = HeyarrFonts.inter
 
-/** Rubik — the technical voice: nav captions, rule codes, key/value labels, badges. Self-hosted (OFL). */
-val RubikFamily: FontFamily = FontFamily(
-    Font(R.font.rubik_regular, FontWeight.Normal),
-    Font(R.font.rubik_medium, FontWeight.Medium),
-    Font(R.font.rubik_semibold, FontWeight.SemiBold),
-)
+/** Rubik — the technical voice: nav captions, rule codes, key/value labels, badges, keyboard hints. */
+val RubikFamily: FontFamily
+    @Composable get() = HeyarrFonts.rubik
 
 /** Montserrat — display headings only. */
-val MontserratFamily: FontFamily = FontFamily(
-    Font(R.font.montserrat_semibold, FontWeight.SemiBold),
-    Font(R.font.montserrat_bold, FontWeight.Bold),
-    Font(R.font.montserrat_extrabold, FontWeight.ExtraBold),
-)
+val MontserratFamily: FontFamily
+    @Composable get() = HeyarrFonts.montserrat
 
 /**
  * The H1–H6 + Body-XS→XL ramp mapped onto Material's slots so every Material component
@@ -59,10 +49,16 @@ val MontserratFamily: FontFamily = FontFamily(
  * voice — Rubik — so chips, badges, key/value labels and captions read as
  * instrumentation, not prose.
  */
-val HeyarrTypography: Typography by lazy {
-    val display = RubikFamily
-    val body = RubikFamily
-    Typography(
+val HeyarrTypography: Typography
+    @Composable get() {
+        val rubik = RubikFamily
+        return remember(rubik) { heyarrTypography(rubik) }
+    }
+
+private fun heyarrTypography(rubik: FontFamily): Typography {
+    val display = rubik
+    val body = rubik
+    return Typography(
         displayLarge = TextStyle(fontFamily = display, fontSize = Tokens.Type.h1, fontWeight = FontWeight.SemiBold, lineHeight = 34.sp, letterSpacing = (-0.5).sp),
         displayMedium = TextStyle(fontFamily = display, fontSize = Tokens.Type.h2, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp, letterSpacing = (-0.3).sp),
         displaySmall = TextStyle(fontFamily = display, fontSize = Tokens.Type.h3, fontWeight = FontWeight.SemiBold, lineHeight = 28.sp),
@@ -76,8 +72,20 @@ val HeyarrTypography: Typography by lazy {
         bodyMedium = TextStyle(fontFamily = body, fontSize = Tokens.Type.bodyM, fontWeight = FontWeight.Normal, lineHeight = 20.sp),
         bodySmall = TextStyle(fontFamily = body, fontSize = Tokens.Type.bodyS, fontWeight = FontWeight.Normal, lineHeight = 16.sp),
         labelLarge = TextStyle(fontFamily = body, fontSize = Tokens.Type.bodyM, fontWeight = FontWeight.Medium, lineHeight = 20.sp),
-        labelMedium = TextStyle(fontFamily = RubikFamily, fontSize = Tokens.Type.bodyS, fontWeight = FontWeight.Medium, lineHeight = 16.sp, letterSpacing = 0.2.sp),
-        labelSmall = TextStyle(fontFamily = RubikFamily, fontSize = Tokens.Type.bodyXs, fontWeight = FontWeight.Medium, lineHeight = 14.sp, letterSpacing = 0.4.sp),
+        labelMedium = TextStyle(
+            fontFamily = rubik,
+            fontSize = Tokens.Type.bodyS,
+            fontWeight = FontWeight.Medium,
+            lineHeight = 16.sp,
+            letterSpacing = 0.2.sp,
+        ),
+        labelSmall = TextStyle(
+            fontFamily = rubik,
+            fontSize = Tokens.Type.bodyXs,
+            fontWeight = FontWeight.Medium,
+            lineHeight = 14.sp,
+            letterSpacing = 0.4.sp,
+        ),
     )
 }
 

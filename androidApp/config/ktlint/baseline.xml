@@ -927,20 +927,20 @@
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/components/Nav.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="100" column="61" source="standard:argument-list-wrapping" />
-        <error line="115" column="23" source="standard:statement-wrapping" />
-        <error line="115" column="60" source="standard:statement-wrapping" />
-        <error line="115" column="88" source="standard:statement-wrapping" />
-        <error line="115" column="115" source="standard:statement-wrapping" />
-        <error line="116" column="21" source="standard:statement-wrapping" />
-        <error line="116" column="41" source="standard:statement-wrapping" />
-        <error line="116" column="72" source="standard:statement-wrapping" />
-        <error line="116" column="98" source="standard:statement-wrapping" />
-        <error line="121" column="26" source="standard:statement-wrapping" />
-        <error line="121" column="63" source="standard:statement-wrapping" />
-        <error line="121" column="87" source="standard:statement-wrapping" />
-        <error line="123" column="61" source="standard:argument-list-wrapping" />
-        <error line="146" column="61" source="standard:argument-list-wrapping" />
+        <error line="114" column="61" source="standard:argument-list-wrapping" />
+        <error line="129" column="23" source="standard:statement-wrapping" />
+        <error line="129" column="60" source="standard:statement-wrapping" />
+        <error line="129" column="88" source="standard:statement-wrapping" />
+        <error line="129" column="115" source="standard:statement-wrapping" />
+        <error line="130" column="21" source="standard:statement-wrapping" />
+        <error line="130" column="41" source="standard:statement-wrapping" />
+        <error line="130" column="72" source="standard:statement-wrapping" />
+        <error line="130" column="98" source="standard:statement-wrapping" />
+        <error line="135" column="26" source="standard:statement-wrapping" />
+        <error line="135" column="63" source="standard:statement-wrapping" />
+        <error line="135" column="87" source="standard:statement-wrapping" />
+        <error line="137" column="61" source="standard:argument-list-wrapping" />
+        <error line="160" column="61" source="standard:argument-list-wrapping" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/components/NowPlayingBar.kt">
         <error line="3" column="1" source="standard:import-ordering" />

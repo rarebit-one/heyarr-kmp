@@ -14,7 +14,7 @@ commit messages or PR bodies.
 | Module | Plugin | What belongs here |
 |--------|--------|-------------------|
 | `:core` | `kotlin.multiplatform` (jvm + android when an SDK is present) | The pure client layer: `net/` (`HttpTransport`, `JsonScan`, `JsonEscapes`, `JsonArrays`), `mcp/` (`McpClient`, `JsonWrite`, `McpModels`), `heyarr/` (REST + telemetry models), `auth/` (`Credential`, `ClientMode`, `GuestGate`), `state/` (library status, search grouping), `theme/MediaType`, `crypto/Blake3`, `vault/`, `feeds/`, `discovery/`. |
-| `:ui` | `kotlin.multiplatform` + Compose MP | Compose-typed but platform-free design layer: `theme/Tokens`, `theme/MediaThemes` (the media → accent table), shared glyphs. `api(project(":core"))`. |
+| `:ui` | `kotlin.multiplatform` + Compose MP | Compose-typed but platform-free design layer: `theme/Tokens`, `theme/MediaThemes` (the media → accent table), `theme/HeyarrFonts` (the self-hosted fonts, shipped once as Compose resources), shared glyphs. `api(project(":core"))`. |
 | `:composeApp` | `kotlin.multiplatform` (jvm only) + Compose MP desktop | The desktop app and the headless vault-sync daemon. JVM-only code (`JdkHttpTransport`, jmdns, JNA/libmpv, OS keychains) lives here. |
 | `:androidApp` | `com.android.application` + `kotlin.android` | The Android app. Only included when an Android SDK is detected. |
 
@@ -24,7 +24,7 @@ Rules:
   must compile for every target. A platform need gets a seam (an interface or
   `expect`/`actual`) with the concrete implementation in the app or a platform source set.
   Its tests are `commonTest` / `jvmTest` with `kotlin.test`.
-- **`:ui` holds tokens and themes only**, with no app state and no I/O.
+- **`:ui` holds tokens, themes and fonts only**, with no app state and no I/O.
 - Dependency direction: apps → `:ui` → `:core`. Never the reverse, and the two apps never
   depend on each other.
 - **Shared logic goes in `:core`, not into an app.** `:androidApp` still carries copies of code

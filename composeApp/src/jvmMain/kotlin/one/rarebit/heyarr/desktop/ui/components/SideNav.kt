@@ -75,7 +75,14 @@ val NAV_ITEMS = listOf(
 )
 
 /** The rail's uppercase caption style: small sans, tracked. */
-private val RAIL_LABEL = androidx.compose.ui.text.TextStyle(fontFamily = RubikFamily,fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.9.sp, lineHeight = 12.sp)
+private val RAIL_LABEL: androidx.compose.ui.text.TextStyle
+    @Composable get() = androidx.compose.ui.text.TextStyle(
+        fontFamily = RubikFamily,
+        fontSize = 9.5.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.9.sp,
+        lineHeight = 12.sp,
+    )
 
 /**
  * The left rail: a logo, then each destination as an icon over an uppercase caption,

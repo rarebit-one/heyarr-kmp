@@ -69,8 +69,22 @@ enum class NavSection(val label: String, val icon: ImageVector) {
 }
 
 /** The tracked UPPERCASE Rubik caption under each tile — the desktop rail's, sized for a phone. */
-private val TILE_LABEL = TextStyle(fontFamily = RubikFamily, fontSize = 8.5.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.6.sp, lineHeight = 11.sp)
-private val RAIL_LABEL = TextStyle(fontFamily = RubikFamily, fontSize = 9.5.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.9.sp, lineHeight = 12.sp)
+private val TILE_LABEL: TextStyle
+    @Composable get() = TextStyle(
+        fontFamily = RubikFamily,
+        fontSize = 8.5.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.6.sp,
+        lineHeight = 11.sp,
+    )
+private val RAIL_LABEL: TextStyle
+    @Composable get() = TextStyle(
+        fontFamily = RubikFamily,
+        fontSize = 9.5.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 0.9.sp,
+        lineHeight = 12.sp,
+    )
 
 /**
  * The phone's bottom bar: every destination as an icon tile over an uppercase caption,

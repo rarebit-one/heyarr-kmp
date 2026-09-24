@@ -14,9 +14,9 @@ val hasAndroidSdk = extra["hasAndroidSdk"] as Boolean
 if (hasAndroidSdk) apply(plugin = "com.android.library")
 
 kotlin {
-    // The shared Compose-Multiplatform design layer: the design tokens (`Tokens`) and the
-    // media → accent theme table (`MediaThemes`). Compose-typed (Color/Dp), so it lives
-    // apart from the pure `:core` — but still cross-platform, ready for the android/ios
+    // The shared Compose-Multiplatform design layer: the design tokens (`Tokens`), the
+    // media → accent theme table (`MediaThemes`) and the self-hosted fonts (`HeyarrFonts`).
+    // Compose-typed (Color/Dp), so it lives apart from the pure `:core` — but still cross-platform, ready for the android/ios
     // targets that arrive when heyarr-mobile folds in.
     jvm()
 
@@ -33,6 +33,9 @@ kotlin {
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.ui)
+                // Compose resources: the self-hosted fonts ship ONCE, from this module's
+                // composeResources/font, to both apps (desktop jar + android assets).
+                implementation(compose.components.resources)
             }
         }
         val commonTest by getting {
@@ -41,6 +44,13 @@ kotlin {
             }
         }
     }
+}
+
+// The generated `Res` accessors stay internal: apps reach the fonts through the typed
+// families in `theme/HeyarrFonts.kt`, never through resource ids.
+compose.resources {
+    packageOfResClass = "one.rarebit.heyarr.ui.generated.resources"
+    publicResClass = false
 }
 
 if (hasAndroidSdk) {
