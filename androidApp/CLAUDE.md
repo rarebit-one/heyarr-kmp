@@ -194,7 +194,8 @@ Audiobook teal · Podcast magenta with light-safe CTA · Music rose · feeds/doc
 slate). The accent drives the CTA gradient, pressed/focus states, the active nav tile,
 progress bars and the section underline; surfaces and text never change.
 `MediaScope(type) { … }` re-skins a subtree; `MediaThemeTest` pins the table and AA contrast.
-Fonts are self-hosted OFL TTFs in `res/font` (licences in `assets/fonts`): **Inter**
+Fonts are self-hosted OFL TTFs shipped once by `:ui` (`ui/src/commonMain/composeResources/font`,
+licences under `composeResources/files/licenses`, typed families in `HeyarrFonts`): **Inter**
 (body/UI), **Montserrat** (display headings), **Rubik** (the technical voice — nav
 captions, rule-code chips, key/value labels, badges; the two small `label*` type slots).
 
