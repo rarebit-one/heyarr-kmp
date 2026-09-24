@@ -3,7 +3,7 @@ package one.rarebit.heyarr.mobile.state
 import one.rarebit.heyarr.core.mcp.EpisodeHit
 import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.mobile.search.FollowedSource
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 
 /** A search result of any kind, flattened for the list. Ported from heyarr-desktop's `state/SearchGrouping.kt`. */
 sealed interface SearchRow {

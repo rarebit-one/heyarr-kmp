@@ -7,7 +7,7 @@ import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.state.ExternalMeta
 import one.rarebit.heyarr.mobile.state.MetaKey
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 
 /** A cover and where it came from. [external] is set only when a public source supplied it. */
 data class Cover(val url: String?, val external: ExternalMeta? = null)

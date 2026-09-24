@@ -31,9 +31,6 @@ enum class Surface(val requiresEnrolment: Boolean) {
 }
 
 object GuestGate {
-    /** Capabilities a guest lease carries (heyarr-core Phase 1 anonymous principal). */
-    val GUEST_CAPABILITIES: Set<String> = setOf("browse", "play", "subtitle")
-
     /** True when [surface] must be hidden or disabled for a client acting in [mode]. */
     fun isGated(mode: ClientMode, surface: Surface): Boolean =
         mode == ClientMode.GUEST && surface.requiresEnrolment

@@ -62,10 +62,8 @@ object Tokens {
 
     // Layout.
     val navWidth: Dp = 84.dp
-    val navWidthCompact: Dp = 84.dp
     val compactBreakpoint: Dp = 900.dp
     val posterWidth: Dp = 160.dp
-    val posterWidthCompact: Dp = 132.dp
     val squareWidth: Dp = 168.dp
 
     // Compact desktop type scale (Rubik).

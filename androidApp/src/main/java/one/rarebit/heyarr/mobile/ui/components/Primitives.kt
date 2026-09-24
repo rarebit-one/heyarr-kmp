@@ -64,8 +64,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import one.rarebit.heyarr.mobile.state.Toast
 import one.rarebit.heyarr.mobile.theme.LocalAppearance
 import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
-import one.rarebit.heyarr.mobile.theme.MediaThemes
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 
 /**

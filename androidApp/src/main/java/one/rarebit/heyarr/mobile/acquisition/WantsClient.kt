@@ -1,8 +1,6 @@
 package one.rarebit.heyarr.mobile.acquisition
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.mobile.library.Want
-import one.rarebit.heyarr.mobile.library.WorkDetailJson
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.mobile.net.ProblemDetail
@@ -31,10 +29,10 @@ data class Candidate(
 data class CandidateSet(val searchId: String? = null, val selectedId: String? = null, val candidates: List<Candidate>)
 
 /**
- * The acquisition surface a client needs to *manage* a want (§60, §63): every want on
- * the node, the releases an indexer search produced for one — each accepted or
- * rejected by the quality profile with its reasons — and a manual pick. The cancel /
- * pause / retry / search-again writes stay on `WorkDetailClient`.
+ * The acquisition surface a client needs to *manage* a want (§60, §63): the releases
+ * an indexer search produced for one — each accepted or rejected by the quality
+ * profile with its reasons — and a manual pick. The cancel / pause / retry /
+ * search-again writes stay on `WorkDetailClient`.
  */
 class WantsClient(
     private val http: HttpTransport,
@@ -44,21 +42,6 @@ class WantsClient(
     sealed interface SelectOutcome {
         data object Done : SelectOutcome
         data class Refused(val status: Int, val message: String) : SelectOutcome
-    }
-
-    /** Every want, recent first, following the cursor to the end. */
-    fun listAll(): List<Want> {
-        val all = ArrayList<Want>()
-        var cursor: String? = null
-        var pages = 0
-        do {
-            val resp = http.get(desiredUrl(baseUrl, cursor), credential.asHeader())
-            require(resp.status == 200) { "wants: GET /desired failed: HTTP ${resp.status}" }
-            all.addAll(WorkDetailJson.parseWants(resp.body))
-            cursor = JsonScan.rootObject(resp.body)?.let { JsonScan.stringField(it, "next_cursor") }?.takeIf { it.isNotBlank() }
-            pages++
-        } while (cursor != null && pages < MAX_PAGES)
-        return WorkDetailJson.recentFirst(all)
     }
 
     /** `GET /desired/{id}/candidates`; a want with no search yet answers an empty set. */
@@ -77,13 +60,8 @@ class WantsClient(
     }
 
     companion object {
-        const val MAX_PAGES = 50
         const val READ_ONLY = "This session is read-only — choosing a release needs an authorised device."
 
-        fun desiredUrl(base: String, cursor: String?): String {
-            val u = base.trimEnd('/') + "/api/v1/desired?limit=200"
-            return if (cursor.isNullOrBlank()) u else u + "&cursor=" + URLEncoder.encode(cursor, "UTF-8")
-        }
         fun candidatesUrl(base: String, id: String) = base.trimEnd('/') + "/api/v1/desired/" + URLEncoder.encode(id, "UTF-8") + "/candidates"
         fun selectUrl(base: String, id: String) = base.trimEnd('/') + "/api/v1/desired/" + URLEncoder.encode(id, "UTF-8") + "/select"
         fun selectBody(candidateId: String) = "{\"candidate_id\":" + AcquireClient.jsonString(candidateId) + "}"

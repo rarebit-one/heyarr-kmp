@@ -2,8 +2,8 @@ package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.core.heyarr.DesiredItemJson
 import one.rarebit.heyarr.mobile.preview.Fixtures
-import one.rarebit.heyarr.mobile.state.LibraryIndex
-import one.rarebit.heyarr.mobile.state.LibraryStatus
+import one.rarebit.heyarr.core.state.LibraryIndex
+import one.rarebit.heyarr.core.state.LibraryStatus
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

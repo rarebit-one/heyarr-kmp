@@ -73,11 +73,6 @@ internal class PlayLog {
         .sortedWith(compareByDescending<PlayEntry> { it.lastAt }.thenBy { it.id })
         .map { it.id }
 
-    /** Distinct items most-played first (count desc, then recency, then id). */
-    fun frequentIds(): List<String> = perItem().values
-        .sortedWith(compareByDescending<PlayEntry> { it.count }.thenByDescending { it.lastAt }.thenBy { it.id })
-        .map { it.id }
-
     /** The item of the single most recent play event, or null when nothing has played. */
     fun nowPlaying(): String? {
         var bestTag: String? = null

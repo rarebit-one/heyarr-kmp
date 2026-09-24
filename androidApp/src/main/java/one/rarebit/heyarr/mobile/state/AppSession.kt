@@ -21,6 +21,7 @@ import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.mobile.settings.SettingsStore
 import one.rarebit.heyarr.mobile.theme.Appearance
+import one.rarebit.heyarr.core.state.LibraryIndex
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
 enum class Connection { UNKNOWN, ONLINE, OFFLINE, UNAUTHORIZED }

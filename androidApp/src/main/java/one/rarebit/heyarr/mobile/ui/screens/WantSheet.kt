@@ -28,7 +28,7 @@ import kotlinx.coroutines.launch
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.state.Toast
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Field
 import one.rarebit.heyarr.mobile.ui.components.FilterChip

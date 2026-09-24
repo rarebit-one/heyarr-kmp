@@ -1,16 +1,18 @@
 package one.rarebit.heyarr.mobile.personalstate
 
+import one.rarebit.heyarr.core.crypto.Blake3
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
- * BLAKE3-256 against Go-minted KATs (`github.com/zeebo/blake3`, what heyarr-core
- * hashes with). Empty, "abc", one 64-byte block, one 1024-byte chunk, and a
- * 3000-byte multi-chunk tree — the last two prove the CV-stack tree path, not just
- * a single block. These are the official BLAKE3 vectors (bytes = i mod 251).
+ * :core's BLAKE3-256 (what [ChangeId] hashes with) against Go-minted KATs
+ * (`github.com/zeebo/blake3`, what heyarr-core hashes with). Empty, "abc", one
+ * 64-byte block, one 1024-byte chunk, and a 3000-byte multi-chunk tree — the last
+ * two prove the CV-stack tree path, not just a single block. These are the official
+ * BLAKE3 vectors (bytes = i mod 251).
  */
 class Blake3Test {
-    private fun hex(b: ByteArray) = Hex.encode(Blake3.hash256(b))
+    private fun hex(b: ByteArray) = Hex.encode(Blake3.hash(b))
 
     private fun pattern(n: Int) = ByteArray(n) { (it % 251).toByte() }
 
