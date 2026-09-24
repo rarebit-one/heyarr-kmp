@@ -1,6 +1,8 @@
 # 0001: Generate the wire parsers from the OpenAPI spec, or keep them hand-written?
 
-- **Status:** Proposed. Not yet decided or implemented.
+- **Status:** Accepted, 2026-09-24. **Decision:** keep the hand-written `JsonScan` parsers,
+  guarded by `OpenApiContractTest` and its weekly drift job (#88). Revisit generation when
+  heyarr-core validates response bodies against the spec (see "Revisit trigger").
 - **Date:** 2026-09-24
 - **Scope:** every heyarr REST response parser in `:core`, `:composeApp` and `:androidApp`
 - **Related:** `OpenApiContractTest` (rarebit-one/heyarr-kmp#88); heyarr-core ADR-0015 (the OpenAPI
@@ -126,7 +128,7 @@ heyarr-core `main` breaks a parser.
   nested objects under the same name passes.
 - Keys held in variables are not extracted, for example `ATTRIBUTE_KEYS.map { k -> … }`.
 
-## Recommendation
+## Recommendation (accepted)
 
 **Option 2 now. Revisit Option 1, as checked-in generation of data classes and readers only,
 if and when the spec is proven complete.**
