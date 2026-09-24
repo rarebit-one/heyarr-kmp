@@ -1,4 +1,4 @@
-package one.rarebit.heyarr.mobile.ui.components
+package one.rarebit.heyarr.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -15,18 +15,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import one.rarebit.heyarr.core.mcp.Reason
-import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
-import one.rarebit.heyarr.mobile.theme.RubikFamily
-import one.rarebit.heyarr.mobile.theme.Tokens
+import one.rarebit.heyarr.ui.theme.HeyarrFonts
+import one.rarebit.heyarr.ui.theme.LocalHeyarrPlatform
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.Tokens
 
 /** The colour a verdict word gets: pass/bonus in the accent, fail red, miss muted, undetermined gold. */
 @Composable
@@ -37,11 +38,30 @@ fun verdictColor(result: String): Color = when (result) {
     else -> Tokens.textMuted
 }
 
-/** The rule code, verbatim, in a Rubik chip — the one thing a person can act on. */
+/** The rule code in an uppercase Archive tag, in Rubik; accessibility retains the original code verbatim. */
 @Composable
 fun RuleCode(rule: String, modifier: Modifier = Modifier, tone: Color = Tokens.textPrimary) {
-    Box(modifier.semantics { contentDescription = rule }.background(Tokens.surface3, RoundedCornerShape(Tokens.radiusChip)).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusChip)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-        Text(rule.uppercase(), style = MaterialTheme.typography.labelMedium.copy(fontFamily = RubikFamily, fontWeight = FontWeight.Medium, letterSpacing = 0.3.sp), color = tone)
+    Box(
+        modifier.semantics {
+            contentDescription = rule
+        }.background(
+            Tokens.surface3,
+            RoundedCornerShape(Tokens.radiusChip),
+        ).border(
+            Tokens.hairline,
+            Tokens.border,
+            RoundedCornerShape(Tokens.radiusChip),
+        ).padding(horizontal = 6.dp, vertical = 2.dp),
+    ) {
+        Text(
+            rule.uppercase(),
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontFamily = HeyarrFonts.rubik,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.3.sp,
+            ),
+            color = tone,
+        )
     }
 }
 
@@ -53,26 +73,49 @@ fun RuleCode(rule: String, modifier: Modifier = Modifier, tone: Color = Tokens.t
 @Composable
 fun ReasonList(reasons: List<Reason>, modifier: Modifier = Modifier, emphasiseFailures: Boolean = true) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        if (reasons.isEmpty()) Text("No rules reported.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+        if (reasons.isEmpty()) {
+            Text(
+                "No rules reported.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
+            )
+        }
         for (r in reasons) {
             val tone = verdictColor(r.result)
             val strong = emphasiseFailures && r.isFailure
             Row(
                 Modifier.fillMaxWidth()
-                    .background(if (strong) Tokens.danger.copy(alpha = 0.08f) else Color.Transparent, RoundedCornerShape(Tokens.radiusCard))
+                    .background(
+                        if (strong) Tokens.danger.copy(alpha = 0.08f) else Color.Transparent,
+                        RoundedCornerShape(Tokens.radiusCard),
+                    )
                     .padding(horizontal = 6.dp, vertical = 4.dp)
                     .semantics { this.contentDescription = "Rule ${r.rule}, ${r.section}, ${r.result}. ${r.detail}" },
-                verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Box(Modifier.padding(top = 6.dp).size(7.dp).background(tone, RectangleShape))
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
                         RuleCode(r.rule, tone = if (strong) Tokens.danger else Tokens.textPrimary)
                         Text(r.section, style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled)
                         Text(r.result, style = MaterialTheme.typography.labelMedium, color = tone)
-                        if (r.score != null && r.score != 0) Text("+${r.score}", style = MaterialTheme.typography.labelSmall, color = tone)
+                        if (r.score != null &&
+                            r.score != 0
+                        ) {
+                            Text("+${r.score}", style = MaterialTheme.typography.labelSmall, color = tone)
+                        }
                     }
-                    if (r.detail.isNotBlank()) Text(r.detail, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+                    if (r.detail.isNotBlank()) {
+                        Text(
+                            r.detail,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Tokens.textMuted,
+                        )
+                    }
                 }
             }
         }
@@ -86,30 +129,57 @@ fun RejectedBy(reasons: List<Reason>, modifier: Modifier = Modifier) {
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
         Text("rejected by", style = MaterialTheme.typography.labelSmall, color = Tokens.danger)
         for (r in reasons.take(3)) RuleCode(r.rule, tone = Tokens.danger)
-        if (reasons.size > 3) Text("+${reasons.size - 3}", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+        if (reasons.size >
+            3
+        ) {
+            Text("+${reasons.size - 3}", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+        }
     }
 }
 
-/** A small panel with a hairline and title, for a screen's sections. */
+/** A small panel with a hairline and title, for a screen's (or the detail screen's side) sections. */
 @Composable
-fun Panel(title: String, modifier: Modifier = Modifier, trailing: (@Composable () -> Unit)? = null, content: @Composable () -> Unit) {
+fun Panel(
+    title: String,
+    modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
     Column(
-        modifier.fillMaxWidth().background(Tokens.surface1, RoundedCornerShape(Tokens.radiusCard)).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusCard)).padding(16.dp),
+        modifier.fillMaxWidth().background(
+            Tokens.surface1,
+            RoundedCornerShape(Tokens.radiusCard),
+        ).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusCard)).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(title, style = MaterialTheme.typography.headlineSmall, color = Tokens.textPrimary, modifier = Modifier.weight(1f))
+            Text(
+                title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = Tokens.textPrimary,
+                modifier = Modifier.weight(1f),
+            )
             if (trailing != null) trailing()
         }
         content()
     }
 }
 
-/** Label/value pair for metadata tables. */
+/** Label/value pair for metadata tables. The label column is narrower on the phone. */
 @Composable
 fun KeyValue(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = Tokens.textPrimary) {
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted, modifier = Modifier.width(96.dp))
+    val labelWidth = if (LocalHeyarrPlatform.current.touch) 96.dp else 110.dp
+    Row(
+        modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = Tokens.textMuted,
+            modifier = Modifier.width(labelWidth),
+        )
         Text(value, style = MaterialTheme.typography.bodySmall, color = valueColor, modifier = Modifier.weight(1f))
     }
 }

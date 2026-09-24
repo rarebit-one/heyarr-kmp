@@ -2,8 +2,50 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>CyclomaticComplexMethod:Table.kt$@Composable private fun TableBody( modifier: Modifier, touch: Boolean, columns: List&lt;TableColumn&gt;, rowCount: Int, emptyText: String, detail: (@Composable (row: Int) -&gt; Unit)?, detailLabel: (row: Int) -&gt; String?, cell: @Composable RowScope.(row: Int, column: Int) -&gt; Unit, )</ID>
     <ID>FunctionNaming:ArchiveGlyph.kt$@Composable fun ArchiveActivity(reduceMotion: Boolean, modifier: Modifier = Modifier, color: Color = Tokens.textPrimary)</ID>
     <ID>FunctionNaming:ArchiveGlyph.kt$@Composable fun ArchiveMark(modifier: Modifier = Modifier, color: Color = Tokens.textPrimary)</ID>
+    <ID>FunctionNaming:CardParts.kt$@Composable fun MediaRowSkeleton(count: Int = 4)</ID>
+    <ID>FunctionNaming:CardParts.kt$@Composable fun StatusPill(status: LibraryStatus, modifier: Modifier = Modifier, compact: Boolean = false)</ID>
+    <ID>FunctionNaming:HeyarrTheme.kt$@Composable fun HeyarrTheme( media: MediaTheme = MediaThemes.default, platform: HeyarrPlatform = LocalHeyarrPlatform.current, content: @Composable () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:HeyarrTheme.kt$@Composable fun MediaScope(type: MediaType, content: @Composable () -&gt; Unit)</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun EmptyState( title: String, modifier: Modifier = Modifier, detail: String? = null, icon: ImageVector = Icons.Rounded.Search, action: (@Composable () -&gt; Unit)? = null, )</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun ErrorState(title: String, detail: String?, onRetry: (() -&gt; Unit)?, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun Field( label: String, value: String, modifier: Modifier = Modifier, placeholder: String? = null, secret: Boolean = false, keyboard: KeyboardType = KeyboardType.Text, onChange: (String) -&gt; Unit, )</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun FilterChip( label: String, selected: Boolean, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, count: Int? = null, enabled: Boolean = true, )</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun GhostButton( label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, )</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun IconButtonRound( icon: ImageVector, contentDescription: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, enabled: Boolean = true, size: Dp = if (LocalHeyarrPlatform.current.touch) 40.dp else 36.dp, filled: Boolean = false, )</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun Kbd(text: String, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun MediaBadge(type: MediaType, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun MetaLine(parts: List&lt;String?&gt;, modifier: Modifier = Modifier, color: Color = Tokens.textMuted, maxLines: Int = 1)</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun Notice( text: String, modifier: Modifier = Modifier, tone: Color = Tokens.warning, icon: ImageVector = Icons.Rounded.Info, detail: String? = null, )</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun OfflineBanner( text: String, detail: String?, onRetry: () -&gt; Unit, onSettings: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun PrimaryButton( label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, compact: Boolean = false, contentDescription: String = label, )</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun SecondaryButton( label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, compact: Boolean = false, danger: Boolean = false, )</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun SectionHeader( title: String, modifier: Modifier = Modifier, subtitle: String? = null, trailing: (@Composable () -&gt; Unit)? = null, icon: ImageVector? = null, )</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun Skeleton(modifier: Modifier, shape: Shape = RoundedCornerShape(Tokens.radiusChip))</ID>
+    <ID>FunctionNaming:Primitives.kt$@Composable fun ToastCard(toast: Toast, onDismiss: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:Reasons.kt$@Composable fun KeyValue(label: String, value: String, modifier: Modifier = Modifier, valueColor: Color = Tokens.textPrimary)</ID>
+    <ID>FunctionNaming:Reasons.kt$@Composable fun Panel( title: String, modifier: Modifier = Modifier, trailing: (@Composable () -&gt; Unit)? = null, content: @Composable () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:Reasons.kt$@Composable fun ReasonList(reasons: List&lt;Reason&gt;, modifier: Modifier = Modifier, emphasiseFailures: Boolean = true)</ID>
+    <ID>FunctionNaming:Reasons.kt$@Composable fun RejectedBy(reasons: List&lt;Reason&gt;, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:Reasons.kt$@Composable fun RuleCode(rule: String, modifier: Modifier = Modifier, tone: Color = Tokens.textPrimary)</ID>
+    <ID>FunctionNaming:Table.kt$@Composable fun Cell( text: String, color: Color = Tokens.textPrimary, muted: Boolean = false, mono: Boolean = false, maxLines: Int = 1, )</ID>
+    <ID>FunctionNaming:Table.kt$@Composable fun DataTable( columns: List&lt;TableColumn&gt;, rowCount: Int, modifier: Modifier = Modifier, emptyText: String = "Nothing here.", minWidth: Dp? = null, detail: (@Composable (row: Int) -&gt; Unit)? = null, detailLabel: (row: Int) -&gt; String? = { null }, cell: @Composable RowScope.(row: Int, column: Int) -&gt; Unit, )</ID>
+    <ID>FunctionNaming:Table.kt$@Composable fun Section( title: String, modifier: Modifier = Modifier, subtitle: String? = null, initiallyOpen: Boolean = true, trailing: (@Composable () -&gt; Unit)? = null, content: @Composable () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:Table.kt$@Composable private fun RowScope.HeaderCell(c: TableColumn)</ID>
+    <ID>FunctionNaming:Table.kt$@Composable private fun TableBody( modifier: Modifier, touch: Boolean, columns: List&lt;TableColumn&gt;, rowCount: Int, emptyText: String, detail: (@Composable (row: Int) -&gt; Unit)?, detailLabel: (row: Int) -&gt; String?, cell: @Composable RowScope.(row: Int, column: Int) -&gt; Unit, )</ID>
+    <ID>LongMethod:HeyarrTheme.kt$private fun heyarrTypography(rubik: FontFamily, t: TypeScale): Typography</ID>
+    <ID>LongMethod:Primitives.kt$@Composable fun FilterChip( label: String, selected: Boolean, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, count: Int? = null, enabled: Boolean = true, )</ID>
+    <ID>LongMethod:Table.kt$@Composable private fun TableBody( modifier: Modifier, touch: Boolean, columns: List&lt;TableColumn&gt;, rowCount: Int, emptyText: String, detail: (@Composable (row: Int) -&gt; Unit)?, detailLabel: (row: Int) -&gt; String?, cell: @Composable RowScope.(row: Int, column: Int) -&gt; Unit, )</ID>
+    <ID>LongParameterList:Primitives.kt$( icon: ImageVector, contentDescription: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, enabled: Boolean = true, size: Dp = if (LocalHeyarrPlatform.current.touch) 40.dp else 36.dp, filled: Boolean = false, )</ID>
+    <ID>LongParameterList:Primitives.kt$( label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, compact: Boolean = false, contentDescription: String = label, )</ID>
+    <ID>LongParameterList:Primitives.kt$( label: String, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, enabled: Boolean = true, compact: Boolean = false, danger: Boolean = false, )</ID>
+    <ID>LongParameterList:Primitives.kt$( label: String, selected: Boolean, onClick: () -&gt; Unit, modifier: Modifier = Modifier, icon: ImageVector? = null, count: Int? = null, enabled: Boolean = true, )</ID>
+    <ID>LongParameterList:Primitives.kt$( label: String, value: String, modifier: Modifier = Modifier, placeholder: String? = null, secret: Boolean = false, keyboard: KeyboardType = KeyboardType.Text, onChange: (String) -&gt; Unit, )</ID>
+    <ID>LongParameterList:Table.kt$( columns: List&lt;TableColumn&gt;, rowCount: Int, modifier: Modifier = Modifier, emptyText: String = "Nothing here.", minWidth: Dp? = null, detail: (@Composable (row: Int) -&gt; Unit)? = null, detailLabel: (row: Int) -&gt; String? = { null }, cell: @Composable RowScope.(row: Int, column: Int) -&gt; Unit, )</ID>
+    <ID>LongParameterList:Table.kt$( modifier: Modifier, touch: Boolean, columns: List&lt;TableColumn&gt;, rowCount: Int, emptyText: String, detail: (@Composable (row: Int) -&gt; Unit)?, detailLabel: (row: Int) -&gt; String?, cell: @Composable RowScope.(row: Int, column: Int) -&gt; Unit, )</ID>
+    <ID>LongParameterList:Table.kt$( title: String, modifier: Modifier = Modifier, subtitle: String? = null, initiallyOpen: Boolean = true, trailing: (@Composable () -&gt; Unit)? = null, content: @Composable () -&gt; Unit, )</ID>
     <ID>MagicNumber:ArchiveGlyph.kt$.7f</ID>
     <ID>MagicNumber:ArchiveGlyph.kt$10</ID>
     <ID>MagicNumber:ArchiveGlyph.kt$11</ID>
@@ -14,6 +56,9 @@
     <ID>MagicNumber:ArchiveGlyph.kt$5</ID>
     <ID>MagicNumber:ArchiveGlyph.kt$5f</ID>
     <ID>MagicNumber:ArchiveGlyph.kt$7</ID>
+    <ID>MagicNumber:CardParts.kt$0.3f</ID>
+    <ID>MagicNumber:CardParts.kt$0.5f</ID>
+    <ID>MagicNumber:HeyarrTheme.kt$0.18f</ID>
     <ID>MagicNumber:MediaThemes.kt$CardAspect.POSTER$3f</ID>
     <ID>MagicNumber:MediaThemes.kt$CardAspect.WIDE$16f</ID>
     <ID>MagicNumber:MediaThemes.kt$CardAspect.WIDE$9f</ID>
@@ -36,6 +81,11 @@
     <ID>MagicNumber:MediaThemes.kt$MediaThemes$0xFFFF4D6D</ID>
     <ID>MagicNumber:MediaThemes.kt$MediaThemes$0xFFFF6682</ID>
     <ID>MagicNumber:MediaThemes.kt$MediaThemes$0xFFFF7F98</ID>
+    <ID>MagicNumber:Primitives.kt$0.22f</ID>
+    <ID>MagicNumber:Primitives.kt$0.55f</ID>
+    <ID>MagicNumber:Primitives.kt$0.5f</ID>
+    <ID>MagicNumber:Primitives.kt$900</ID>
+    <ID>MagicNumber:Reasons.kt$3</ID>
     <ID>MagicNumber:Tokens.kt$Tokens$0xFF00935E</ID>
     <ID>MagicNumber:Tokens.kt$Tokens$0xFF101815</ID>
     <ID>MagicNumber:Tokens.kt$Tokens$0xFF12A96E</ID>
@@ -53,6 +103,7 @@
     <ID>MagicNumber:Tokens.kt$Tokens$0xFFE5E9DC</ID>
     <ID>MagicNumber:Tokens.kt$Tokens$0xFFF5A524</ID>
     <ID>MagicNumber:Tokens.kt$Tokens$0xFFF5C518</ID>
+    <ID>MatchingDeclarationName:Table.kt$TableColumn</ID>
     <ID>MaxLineLength:ArchiveGlyph.kt$if (cell == '1') drawRect(color.copy(alpha = 0.8f), Offset((i % 5) * step, (i / 5) * step), Size(step * .7f, step * .7f))</ID>
     <ID>MaxLineLength:ArchiveGlyph.kt$val frames = listOf("0010001110111110111000100", "1111110001101011000111111", "1000110001111111000110001", "0010000100111110010000100")</ID>
     <ID>MaxLineLength:ArchiveGlyph.kt$val value by transition.animateFloat(0f, 4f, infiniteRepeatable(tween(3200, easing = LinearEasing)), label = "glyph phase")</ID>
@@ -63,5 +114,6 @@
     <ID>MaxLineLength:MediaThemes.kt$MediaThemes$ctaLabel = "Play"</ID>
     <ID>MaxLineLength:MediaThemes.kt$MediaThemes$ctaLabel = "Read"</ID>
     <ID>MaxLineLength:Tokens.kt$Tokens$*</ID>
+    <ID>TooManyFunctions:Primitives.kt$one.rarebit.heyarr.ui.components.Primitives.kt</ID>
   </CurrentIssues>
 </SmellBaseline>

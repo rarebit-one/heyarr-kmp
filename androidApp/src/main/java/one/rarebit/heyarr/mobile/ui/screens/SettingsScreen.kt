@@ -37,22 +37,22 @@ import one.rarebit.heyarr.mobile.search.FollowedSource
 import one.rarebit.heyarr.mobile.search.SessionAuthority
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.state.Connection
-import one.rarebit.heyarr.mobile.state.Toast
-import one.rarebit.heyarr.mobile.theme.MediaScope
+import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
-import one.rarebit.heyarr.mobile.ui.components.Field
-import one.rarebit.heyarr.mobile.ui.components.FilterChip
-import one.rarebit.heyarr.mobile.ui.components.GhostButton
-import one.rarebit.heyarr.mobile.ui.components.KeyValue
-import one.rarebit.heyarr.mobile.ui.components.MediaBadge
-import one.rarebit.heyarr.mobile.ui.components.Notice
-import one.rarebit.heyarr.mobile.ui.components.Panel
-import one.rarebit.heyarr.mobile.ui.components.PrimaryButton
-import one.rarebit.heyarr.mobile.ui.components.SecondaryButton
-import one.rarebit.heyarr.mobile.ui.components.SectionHeader
-import one.rarebit.heyarr.mobile.ui.components.Skeleton
+import one.rarebit.heyarr.ui.components.Field
+import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.KeyValue
+import one.rarebit.heyarr.ui.components.MediaBadge
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.Panel
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.Skeleton
 
 class SettingsState {
     var followed by mutableStateOf<List<FollowedSource>?>(null)

@@ -59,20 +59,20 @@ import one.rarebit.heyarr.mobile.state.SearchFilter
 import one.rarebit.heyarr.mobile.state.SearchGrouping
 import one.rarebit.heyarr.mobile.state.SearchRow
 import one.rarebit.heyarr.mobile.state.Segment
-import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
-import one.rarebit.heyarr.mobile.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
-import one.rarebit.heyarr.mobile.ui.components.EmptyState
-import one.rarebit.heyarr.mobile.ui.components.FilterChip
-import one.rarebit.heyarr.mobile.ui.components.GhostButton
-import one.rarebit.heyarr.mobile.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.EmptyState
+import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.mobile.ui.components.MediaRow
-import one.rarebit.heyarr.mobile.ui.components.MediaRowSkeleton
-import one.rarebit.heyarr.mobile.ui.components.Notice
-import one.rarebit.heyarr.mobile.ui.components.PrimaryButton
-import one.rarebit.heyarr.mobile.ui.components.SecondaryButton
-import one.rarebit.heyarr.mobile.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.MediaRowSkeleton
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 
 /**

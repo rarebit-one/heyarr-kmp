@@ -22,7 +22,7 @@ import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.Movie
 import one.rarebit.heyarr.desktop.ui.Experience
-import one.rarebit.heyarr.desktop.theme.RubikFamily
+import one.rarebit.heyarr.ui.theme.HeyarrFonts
 import androidx.compose.ui.semantics.selected
 import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.Explore
@@ -52,9 +52,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import one.rarebit.heyarr.desktop.state.Connection
-import one.rarebit.heyarr.desktop.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.ui.components.focusRing
 
 /** A nav destination: label, icon, route, optional keyboard hint. */
 data class NavItem(val route: Route, val label: String, val icon: ImageVector, val hint: String? = null)
@@ -77,7 +78,7 @@ val NAV_ITEMS = listOf(
 /** The rail's uppercase caption style: small sans, tracked. */
 private val RAIL_LABEL: androidx.compose.ui.text.TextStyle
     @Composable get() = androidx.compose.ui.text.TextStyle(
-        fontFamily = RubikFamily,
+        fontFamily = HeyarrFonts.rubik,
         fontSize = 9.5.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 0.9.sp,

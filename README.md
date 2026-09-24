@@ -6,7 +6,7 @@ The **Kotlin Multiplatform monorepo** for heyarr's first-party clients. heyarr i
 | Module | What it is | Targets |
 |--------|------------|---------|
 | **`:core`** | The shared, pure-Kotlin client layer: the hand-rolled JSON codec (`JsonScan` / `JsonWrite`), the `HttpTransport` seam, the MCP client + models, REST/telemetry models, `Credential` (guest / bearer / voidbind `Device`), library-status and search-grouping derivation, the `MediaType` enum, BLAKE3 + the vault codec. **No Compose, no platform APIs in `commonMain`.** | JVM; Android when an SDK is present |
-| **`:ui`** | The shared Compose design layer: `Tokens`, the media → accent table (`MediaThemes`) and the self-hosted fonts (`HeyarrFonts`, shipped once as Compose resources), plus shared glyphs. Exposes `:core` as `api`. | JVM; Android when an SDK is present |
+| **`:ui`** | The shared Compose design layer: `Tokens`, the media → accent table (`MediaThemes`) the self-hosted fonts (`HeyarrFonts`, shipped once as Compose resources), `HeyarrTheme` + `MediaScope`, and the stateless components both apps draw (buttons, chips, states, toasts, `DataTable`, rule lists), plus shared glyphs. Exposes `:core` as `api`. | JVM; Android when an SDK is present |
 | **`:composeApp`** | The **desktop** client (Compose Multiplatform, JVM): Linux x64 **and** aarch64, with macOS/Windows for free via the JVM. Also ships the headless vault-sync daemon ([docs/vault-sync-daemon.md](docs/vault-sync-daemon.md)). | JVM |
 | **`:androidApp`** | The **Android** client (Compose, Media3/ExoPlayer, Readium), with voidbind QR login and device enrolment. See [androidApp/README.md](androidApp/README.md). | Android (minSdk 33) |
 
@@ -167,7 +167,6 @@ Ctrl+F search · ↑ ↓ move · ↵ open · Esc clear / back · Ctrl-1 Watch ·
 composeApp/src/jvmMain/kotlin/one/rarebit/heyarr/desktop/
 ├── Main.kt       # entry point; wires concretes
 ├── heyarr/       HeyarrApi (the typed door: one method per tool / verified REST read)
-├── theme/        HeyarrTheme (fonts, Material mapping, MediaScope) over :ui's Tokens + MediaThemes
 ├── state/        AppSession (config, connectivity, want index, toasts), SearchController (debounced fan-out),
 │                 ArtworkLoader, RecentSearches, PlaybackSession, VaultSyncController
 ├── ui/           App (shell, keys, Want sheet), Route/Nav, EnrolPanel, components/, screens/

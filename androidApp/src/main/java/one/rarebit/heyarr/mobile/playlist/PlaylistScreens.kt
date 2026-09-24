@@ -37,20 +37,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.personalstate.PersonalStateCoordinator
-import one.rarebit.heyarr.mobile.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
-import one.rarebit.heyarr.mobile.ui.components.EmptyState
-import one.rarebit.heyarr.mobile.ui.components.Field
-import one.rarebit.heyarr.mobile.ui.components.GhostButton
-import one.rarebit.heyarr.mobile.ui.components.IconButtonRound
-import one.rarebit.heyarr.mobile.ui.components.MediaBadge
-import one.rarebit.heyarr.mobile.ui.components.MediaRowSkeleton
-import one.rarebit.heyarr.mobile.ui.components.Notice
-import one.rarebit.heyarr.mobile.ui.components.Panel
-import one.rarebit.heyarr.mobile.ui.components.PrimaryButton
-import one.rarebit.heyarr.mobile.ui.components.SecondaryButton
-import one.rarebit.heyarr.mobile.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.EmptyState
+import one.rarebit.heyarr.ui.components.Field
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.MediaBadge
+import one.rarebit.heyarr.ui.components.MediaRowSkeleton
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.Panel
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.SectionHeader
 
 /** The playlists list — device-side encrypted state, folded on this device, in the music accent. */
 @Composable

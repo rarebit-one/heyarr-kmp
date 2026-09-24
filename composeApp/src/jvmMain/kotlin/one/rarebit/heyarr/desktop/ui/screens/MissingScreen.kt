@@ -34,21 +34,21 @@ import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.core.state.LibraryStatus
-import one.rarebit.heyarr.desktop.state.Toast
+import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.desktop.ui.Route
-import one.rarebit.heyarr.desktop.ui.components.EmptyState
-import one.rarebit.heyarr.desktop.ui.components.ErrorState
-import one.rarebit.heyarr.desktop.ui.components.FilterChip
-import one.rarebit.heyarr.desktop.ui.components.GhostButton
-import one.rarebit.heyarr.desktop.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.EmptyState
+import one.rarebit.heyarr.ui.components.ErrorState
+import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.desktop.ui.components.MediaRow
-import one.rarebit.heyarr.desktop.ui.components.MediaRowSkeleton
-import one.rarebit.heyarr.desktop.ui.components.Panel
-import one.rarebit.heyarr.desktop.ui.components.PrimaryButton
-import one.rarebit.heyarr.desktop.ui.components.SecondaryButton
-import one.rarebit.heyarr.desktop.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.MediaRowSkeleton
+import one.rarebit.heyarr.ui.components.Panel
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.SectionHeader
 
 class MissingState {
     /** The session generation this state was loaded for. */

@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.desktop.ui.screens
 
-import one.rarebit.heyarr.desktop.ui.components.icon
+import one.rarebit.heyarr.ui.components.icon
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -67,22 +67,22 @@ import one.rarebit.heyarr.core.state.SearchRow
 import one.rarebit.heyarr.core.state.SearchSection
 import one.rarebit.heyarr.core.state.Segment
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
-import one.rarebit.heyarr.desktop.theme.LocalMediaTheme
-import one.rarebit.heyarr.desktop.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.desktop.ui.Route
-import one.rarebit.heyarr.desktop.ui.components.EmptyState
-import one.rarebit.heyarr.desktop.ui.components.FilterChip
-import one.rarebit.heyarr.desktop.ui.components.GhostButton
-import one.rarebit.heyarr.desktop.ui.components.IconButtonRound
-import one.rarebit.heyarr.desktop.ui.components.Kbd
+import one.rarebit.heyarr.ui.components.EmptyState
+import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.Kbd
 import one.rarebit.heyarr.desktop.ui.components.MediaRow
-import one.rarebit.heyarr.desktop.ui.components.MediaRowSkeleton
-import one.rarebit.heyarr.desktop.ui.components.Notice
-import one.rarebit.heyarr.desktop.ui.components.PrimaryButton
-import one.rarebit.heyarr.desktop.ui.components.SecondaryButton
-import one.rarebit.heyarr.desktop.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.MediaRowSkeleton
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.SectionHeader
 
 /**
  * Universal search — one box, every media kind, results grouped by type and streamed in

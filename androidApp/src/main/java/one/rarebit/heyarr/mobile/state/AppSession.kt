@@ -20,22 +20,12 @@ import one.rarebit.heyarr.core.heyarr.QualityProfile
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.mobile.settings.SettingsStore
-import one.rarebit.heyarr.mobile.theme.Appearance
+import one.rarebit.heyarr.ui.theme.Appearance
 import one.rarebit.heyarr.core.state.LibraryIndex
+import one.rarebit.heyarr.core.state.Toast
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
 enum class Connection { UNKNOWN, ONLINE, OFFLINE, UNAUTHORIZED }
-
-/** A typed toast: what happened, and — for a refusal — the tool and its rule text, verbatim. */
-data class Toast(
-    val id: Long,
-    val kind: Kind,
-    val title: String,
-    val detail: String? = null,
-    val tool: String? = null,
-) {
-    enum class Kind { INFO, SUCCESS, ERROR, REFUSED }
-}
 
 /**
  * App-wide state every signed-in screen shares — ported from heyarr-desktop's

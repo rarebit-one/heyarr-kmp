@@ -40,10 +40,11 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import one.rarebit.heyarr.mobile.playback.AudioState
 import one.rarebit.heyarr.mobile.playback.VideoSession
-import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
-import one.rarebit.heyarr.mobile.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
+import one.rarebit.heyarr.ui.components.IconButtonRound
 
 /**
  * The persistent transport above the bottom bar while something plays and the player

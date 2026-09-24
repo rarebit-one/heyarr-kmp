@@ -39,17 +39,17 @@ import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.core.mcp.PlaybackStatus
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.mobile.state.AppSession
-import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.mobile.theme.Tokens
-import one.rarebit.heyarr.mobile.ui.components.EmptyState
-import one.rarebit.heyarr.mobile.ui.components.ErrorState
-import one.rarebit.heyarr.mobile.ui.components.FilterChip
-import one.rarebit.heyarr.mobile.ui.components.IconButtonRound
-import one.rarebit.heyarr.mobile.ui.components.KeyValue
-import one.rarebit.heyarr.mobile.ui.components.Notice
-import one.rarebit.heyarr.mobile.ui.components.Panel
-import one.rarebit.heyarr.mobile.ui.components.SectionHeader
-import one.rarebit.heyarr.mobile.ui.components.Skeleton
+import one.rarebit.heyarr.ui.components.EmptyState
+import one.rarebit.heyarr.ui.components.ErrorState
+import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.KeyValue
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.Panel
+import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.Skeleton
 
 class CastState {
     var renderers by mutableStateOf<List<Renderer>?>(null)

@@ -26,20 +26,20 @@ import one.rarebit.heyarr.core.heyarr.JobInfo
 import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.core.state.LibraryStatus
-import one.rarebit.heyarr.desktop.state.Toast
+import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.desktop.ui.Route
-import one.rarebit.heyarr.desktop.ui.components.Cell
-import one.rarebit.heyarr.desktop.ui.components.Column as TableColumn
-import one.rarebit.heyarr.desktop.ui.components.DataTable
-import one.rarebit.heyarr.desktop.ui.components.GhostButton
-import one.rarebit.heyarr.desktop.ui.components.Notice
-import one.rarebit.heyarr.desktop.ui.components.SecondaryButton
-import one.rarebit.heyarr.desktop.ui.components.Section
-import one.rarebit.heyarr.desktop.ui.components.Skeleton
-import one.rarebit.heyarr.desktop.ui.components.StatusPill
-import one.rarebit.heyarr.desktop.ui.components.verdictColor
+import one.rarebit.heyarr.ui.components.Cell
+import one.rarebit.heyarr.ui.components.TableColumn
+import one.rarebit.heyarr.ui.components.DataTable
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.Section
+import one.rarebit.heyarr.ui.components.Skeleton
+import one.rarebit.heyarr.ui.components.StatusPill
+import one.rarebit.heyarr.ui.components.verdictColor
 
 class DownloadsState {
     var desired by mutableStateOf<List<DesiredItem>?>(null)

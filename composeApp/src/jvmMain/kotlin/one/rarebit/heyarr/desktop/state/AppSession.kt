@@ -41,7 +41,7 @@ import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
-import one.rarebit.heyarr.desktop.theme.Appearance
+import one.rarebit.heyarr.ui.theme.Appearance
 import one.rarebit.heyarr.desktop.vault.FileSyncIndexStore
 import one.rarebit.heyarr.desktop.vault.JdkVaultBlobStore
 import one.rarebit.heyarr.desktop.vault.RealVaultFolder
@@ -59,23 +59,6 @@ enum class Connection {
         fun fromProbe(status: Int): Connection = when (status) { 200 -> ONLINE; 401, 403 -> UNAUTHORIZED; else -> OFFLINE }
     }
 }
-
-/** A typed toast: what happened, and — for a refusal — the tool and its rule text, verbatim. */
-data class Toast(
-    val id: Long,
-    val kind: Kind,
-    val title: String,
-    val detail: String? = null,
-    val tool: String? = null,
-    // An optional single action rendered as a button on the card — e.g. "Cast anyway"
-    // on a codec refusal. Dismissing or the timeout removes the toast either way.
-    val action: ToastAction? = null,
-) {
-    enum class Kind { INFO, SUCCESS, ERROR, REFUSED }
-}
-
-/** A button on a toast: a short label and what it does. */
-data class ToastAction(val label: String, val onClick: () -> Unit)
 
 /**
  * App-wide state every screen shares: the saved connection, the [HeyarrApi] built from
