@@ -71,8 +71,8 @@ import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.heyarr.seriesWantState
 import one.rarebit.heyarr.mobile.library.Episode
 import one.rarebit.heyarr.mobile.library.Season
-import one.rarebit.heyarr.mobile.library.Series
-import one.rarebit.heyarr.mobile.library.Variants
+import one.rarebit.heyarr.core.library.Series
+import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.core.mcp.Explanation
@@ -128,6 +128,7 @@ import one.rarebit.heyarr.ui.components.TableColumn
 import one.rarebit.heyarr.ui.components.focusRing
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.verdictColor
+import one.rarebit.heyarr.core.library.Episode as CoreEpisode
 
 /** The two faces of a work: what you came to watch, and the tooling that keeps it that way. */
 enum class DetailTab(val label: String) { WATCH("Watch"), CURATE("Curate") }
@@ -453,11 +454,11 @@ private fun SeasonsBlock(session: AppSession, work: Work, seasons: List<Season>,
         val rows: List<Any> = buildList {
             val byNumber = selected.episodes.associateBy { it.number }
             for (n in 1..known) add(byNumber[n] ?: n)
-            addAll(selected.episodes.filter { it.number == null || it.number > known })
+            addAll(selected.episodes.filter { it.number.let { n -> n == null || n > known } })
         }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             for (row in rows) when (row) {
-                is Episode -> EpisodeRow(session, work, row, state, extForSeason[row.number], onPlay = { ep -> play.playVideo(work, ep.asset.id, ep.asset.blobHash!!, ep.asset.mime ?: work.mime, Series.playTitle(work, ep), null, queue, art, ep.subtitles) })
+                is CoreEpisode<*> -> EpisodeRow(session, work, row.phone(), state, extForSeason[row.number], onPlay = { ep -> play.playVideo(work, ep.asset.id, ep.asset.blobHash!!, ep.asset.mime ?: work.mime, Series.playTitle(work, ep), null, queue, art, ep.subtitles) })
                 is Int -> MissingEpisodeRow(session, selected, row, wants, extForSeason[row])
             }
         }
@@ -913,3 +914,7 @@ private fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: L
     }
 }
 
+// The episode rows mix episodes with missing numbers; an episode among them is always the
+// phone's own (`:core`'s `Episode` of a `WorkAsset`), which the type test cannot see.
+@Suppress("UNCHECKED_CAST")
+private fun CoreEpisode<*>.phone(): Episode = this as Episode

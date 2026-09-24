@@ -38,7 +38,7 @@ import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.heyarr.JobInfo
 import one.rarebit.heyarr.mobile.heyarr.McpResult
-import one.rarebit.heyarr.mobile.library.Variants
+import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute

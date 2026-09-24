@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.desktop
 
-import one.rarebit.heyarr.desktop.library.Variants
+import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.desktop.library.Work
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.desktop.library
 
+import one.rarebit.heyarr.core.library.CatalogWork
+
 /**
  * A library entry as browsed from heyarr's native resources API (`GET /api/v1/works`,
  * `GET /api/v1/works/{id}` — heyarr-core `Work`). A thin projection of the far richer
@@ -8,9 +10,9 @@ package one.rarebit.heyarr.desktop.library
  * detail screen.
  */
 data class Work(
-    val id: String,
-    val title: String,
-    val kind: String? = null,
+    override val id: String,
+    override val title: String,
+    override val kind: String? = null,
     val artist: String? = null,
     val author: String? = null,
     val year: Int? = null,
@@ -22,7 +24,7 @@ data class Work(
     val updatedAt: String? = null,
     /** The `artwork` embed's content path when the listing was asked for it (`include=artwork`). */
     val artworkPath: String? = null,
-) {
+) : CatalogWork {
     /** The timestamp "recent first" orders on: last touched, else created. */
     val recency: String? get() = updatedAt ?: createdAt
 

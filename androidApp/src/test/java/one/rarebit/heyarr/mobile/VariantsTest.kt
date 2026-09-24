@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.mobile
 
-import one.rarebit.heyarr.mobile.library.Variants
+import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.mobile.library.Work
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

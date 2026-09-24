@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.mobile.library
 
+import one.rarebit.heyarr.core.library.CatalogWork
+
 /**
  * A library entry as browsed from heyarr's native resources API
  * (`GET /api/v1/works`, `GET /api/v1/works/{id}` — heyarr-core `Work`). A thin
@@ -15,9 +17,9 @@ package one.rarebit.heyarr.mobile.library
  * actually lives; the row keeps the handle for a server that does inline it.
  */
 data class Work(
-    val id: String,
-    val title: String,
-    val kind: String? = null,
+    override val id: String,
+    override val title: String,
+    override val kind: String? = null,
     /** A directly-streamable asset's BLAKE3 content hash, when the browse row carries one. */
     val blobHash: String? = null,
     /** The primary asset's MIME, when known — drives video-vs-audio and the container hint. */
@@ -53,7 +55,7 @@ data class Work(
     /** RFC 3339 server timestamps, as sent; parsed only for ordering/display. */
     val createdAt: String? = null,
     val updatedAt: String? = null,
-) {
+) : CatalogWork {
     /** True when this row can be streamed directly (the player has a hash to point at). */
     val isPlayable: Boolean get() = !blobHash.isNullOrBlank()
 

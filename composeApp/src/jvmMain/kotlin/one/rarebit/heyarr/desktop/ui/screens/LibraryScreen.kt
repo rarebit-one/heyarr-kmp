@@ -32,7 +32,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import one.rarebit.heyarr.desktop.library.Variants
+import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.desktop.library.Work
 import androidx.compose.runtime.remember
 import one.rarebit.heyarr.desktop.state.AppSession

@@ -256,9 +256,9 @@ app/src/main/java/one/rarebit/heyarr/mobile/
   preview/      Fixtures + FakeHeyarrTransport (canned live-node shapes shared with the tests)
   catalog/      CatalogClient (GET /works pages with the embeds) · Artwork (poster URL) · ContinueClient (GET /consumption/continue)
   library/      LibraryClient (GET /works?include=artwork,primary_asset, paged) + WorksJson (Work now carries string
-                attributes) · WorkDetailClient + WorkDetailJson (assets, wants, the management writes) · Series (files →
-                seasons → episodes with thumbnail/subtitle sidecars, gaps, quality tags; shared with the desktop) ·
-                Variants (download-folder works folded under the canonical work, heyarr-core#470) · LibraryUiState
+                attributes) · WorkDetailClient + WorkDetailJson (assets, wants, the management writes) · SeriesTypes
+                (`Episode`/`Season` over `:core`'s shared `library/Series`: files → seasons → episodes with sidecars, gaps,
+                quality tags; `:core`'s `Variants` folds download-folder works, heyarr-core#470) · LibraryUiState
   music/        MusicClient (GET /artists) + MusicJson · Track (WorkAsset audio/primary-role/title helpers, Tracks.playable)
   search/       AcquireClient · FollowedSource(s)Json · FollowedSourceClient +
                 FollowedItem · SessionClient + SessionJson · DiscoverClient — the REST clients the typed door composes

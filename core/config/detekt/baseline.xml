@@ -6,6 +6,7 @@
     <ID>ComplexCondition:JsonScan.kt$JsonScan$i &lt; json.length &amp;&amp; (json[i] == ' ' || json[i] == '\t' || json[i] == '\n' || json[i] == '\r' || json[i] == ':')</ID>
     <ID>ComplexCondition:JsonScan.kt$JsonScan$j &lt; json.length &amp;&amp; (json[j] == ' ' || json[j] == '\t' || json[j] == '\n' || json[j] == '\r')</ID>
     <ID>ComplexCondition:JsonScan.kt$JsonScan$j &lt; obj.length &amp;&amp; (obj[j] == ' ' || obj[j] == '\t' || obj[j] == '\n' || obj[j] == '\r' || obj[j] == ':')</ID>
+    <ID>ComplexCondition:Series.kt$Series$mime != null &amp;&amp; (mime.startsWith("image/") || mime.startsWith("text/") || mime == "application/xml")</ID>
     <ID>CyclomaticComplexMethod:Continue.kt$ContinueJson$fun parse(obj: String): ContinueEntry?</ID>
     <ID>CyclomaticComplexMethod:DriveCrdt.kt$Drive$fun retain(policy: RetentionPolicy, nowUnix: Long): List&lt;String&gt;</ID>
     <ID>CyclomaticComplexMethod:DriveCrdt.kt$Drive.Companion$fun fromSnapshot(json: String): Drive</ID>
@@ -22,6 +23,7 @@
     <ID>LoopWithTooManyJumpStatements:DriveCrdt.kt$DriveRecord$for</ID>
     <ID>LoopWithTooManyJumpStatements:JsonScan.kt$JsonScan$for</ID>
     <ID>LoopWithTooManyJumpStatements:JsonScan.kt$JsonScan$while</ID>
+    <ID>LoopWithTooManyJumpStatements:Variants.kt$Variants$for</ID>
     <ID>LoopWithTooManyJumpStatements:VaultFrame.kt$VaultFrame$while</ID>
     <ID>MagicNumber:Blake3.kt$Blake3$0xFF</ID>
     <ID>MagicNumber:Blake3.kt$Blake3$0xFFFFFFFFL</ID>
@@ -66,6 +68,7 @@
     <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$0x80</ID>
     <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$64</ID>
     <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$7</ID>
+    <ID>MagicNumber:Series.kt$Series$4</ID>
     <ID>MagicNumber:VaultFrame.kt$VaultFrame$0xFF</ID>
     <ID>MagicNumber:VaultFrame.kt$VaultFrame$10</ID>
     <ID>MagicNumber:VaultFrame.kt$VaultFrame$16</ID>
@@ -133,6 +136,8 @@
     <ID>MaxLineLength:SearchGroupingTest.kt$SearchGroupingTest$val books = SearchGrouping.group(segments, Segment.Loaded(emptyList()), Segment.Loaded(emptyList()), SearchFilter.BOOKS)</ID>
     <ID>MaxLineLength:SearchGroupingTest.kt$SearchGroupingTest$val nothing = SearchGrouping.group(MediaType.SEARCHABLE.associateWith { Segment.Loaded(emptyList()) }, Segment.Loaded(emptyList()), Segment.Loaded(emptyList()))</ID>
     <ID>MaxLineLength:SearchGroupingTest.kt$SearchGroupingTest$val segments = mapOf(MediaType.MOVIE to Segment.Loaded(severance), MediaType.SERIES to Segment.Loaded(severance))</ID>
+    <ID>MaxLineLength:Series.kt$Series$"""\.(en|eng|es|spa|fr|fre|fra|de|ger|deu|it|ita|pt|por|ja|jpn|zh|chi|nl|dut|sv|swe|forced|sdh)(\.(forced|sdh))?$"""</ID>
+    <ID>MaxLineLength:Series.kt$Series$"""^(x|h)\.?26[45]$|^hevc$|^avc$|^av1$|^xvid$|^divx$|^vp9$|^(aac|ac3|eac3|dts|ddp?|truehd|flac|opus)(\d.*)?$"""</ID>
     <ID>MaxLineLength:Telemetry.kt$CapabilitiesJson$capabilities = JsonScan.objectsOf(h, listOf("capabilities")).mapNotNull { JsonScan.stringField(it, "name") }</ID>
     <ID>MaxLineLength:Telemetry.kt$CapabilitiesJson$val available = JsonScan.arrayOf(root, listOf("available"))?.let { one.rarebit.heyarr.core.net.JsonArrays.parseStrings(it) } ?: emptyList()</ID>
     <ID>MaxLineLength:Telemetry.kt$CapabilityHolder</ID>
@@ -169,6 +174,10 @@
     <ID>ReturnCount:JsonScan.kt$JsonScan$fun stringMap(json: String, key: String): Map&lt;String, String&gt;</ID>
     <ID>ReturnCount:McpModels.kt$SatisfactionJson$fun parse(body: String): Satisfaction?</ID>
     <ID>ReturnCount:RestModels.kt$CandidateJson$fun parse(body: String): CandidateList?</ID>
+    <ID>ReturnCount:Series.kt$Series$fun seasonOfLabel(label: String?): Int?</ID>
+    <ID>ReturnCount:Series.kt$Series$fun seasonOfPath(sourcePath: String?): Int?</ID>
+    <ID>ReturnCount:Series.kt$Series$private fun isEpisodeFile(asset: EpisodeFile): Boolean</ID>
+    <ID>ReturnCount:Series.kt$Series$private fun markerIn(stem: String): Marker?</ID>
     <ID>ThrowsCount:McpClient.kt$McpClient$fun parse(tool: String, status: Int, body: String): McpOutcome</ID>
     <ID>ThrowsCount:VaultFrame.kt$VaultFrame$fun openFrame(spaceKey: ByteArray, m: Manifest, index: Int, sealed: ByteArray): ByteArray</ID>
     <ID>ThrowsCount:VaultFrame.kt$VaultFrame$fun parseManifest(json: String): Manifest</ID>
@@ -176,6 +185,7 @@
     <ID>TooGenericExceptionCaught:VaultFrame.kt$VaultFrame$e: Exception</ID>
     <ID>TooManyFunctions:DriveCrdt.kt$Drive</ID>
     <ID>TooManyFunctions:JsonScan.kt$JsonScan</ID>
+    <ID>TooManyFunctions:Series.kt$Series</ID>
     <ID>TooManyFunctions:VaultFrame.kt$VaultFrame</ID>
   </CurrentIssues>
 </SmellBaseline>

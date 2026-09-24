@@ -2,6 +2,7 @@ package one.rarebit.heyarr.desktop.music
 
 import one.rarebit.heyarr.desktop.library.PrimaryAsset
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.library.EpisodeFile
 
 /**
  * One asset of a work — heyarr-core `WorkAsset` from `GET /api/v1/works/{id}/assets`
@@ -13,19 +14,19 @@ import one.rarebit.heyarr.core.net.JsonScan
  * [filename] (mirrors heyarr-mobile).
  */
 data class Track(
-    val id: String,
+    override val id: String,
     val editionId: String,
-    val blobHash: String? = null,
-    val filename: String? = null,
-    val mime: String? = null,
-    val role: String? = null,
+    override val blobHash: String? = null,
+    override val filename: String? = null,
+    override val mime: String? = null,
+    override val role: String? = null,
     val sizeBytes: Long? = null,
     val missingSince: String? = null,
-    val editionLabel: String? = null,
-    val sourcePath: String? = null,
-) {
+    override val editionLabel: String? = null,
+    override val sourcePath: String? = null,
+) : EpisodeFile {
     /** A blob we can stream, and the file is present. */
-    val isPlayable: Boolean get() = !blobHash.isNullOrBlank() && missingSince.isNullOrBlank()
+    override val isPlayable: Boolean get() = !blobHash.isNullOrBlank() && missingSince.isNullOrBlank()
 
     /** A `primary`-role (or unroled) asset — the album track shape, not artwork/subtitles. */
     val isPrimaryRole: Boolean get() = role.isNullOrBlank() || role == "primary"

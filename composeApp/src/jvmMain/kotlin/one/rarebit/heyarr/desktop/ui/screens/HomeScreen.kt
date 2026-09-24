@@ -80,7 +80,7 @@ fun HomeScreen(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, o
         scope.launch {
             session.io { a.works() }.fold(
                 onSuccess = { all ->
-                    val variants = one.rarebit.heyarr.desktop.library.Variants.variantIds(all)
+                    val variants = one.rarebit.heyarr.core.library.Variants.variantIds(all)
                     val works = all.filter { it.id !in variants }
                     state.recent = RailState.Loaded(works.filter { it.kind != "document" }.take(24))
                     state.spotlight = RailState.Loaded(works.filter { it.kind != "document" && it.kind != "unknown" }.take(6))

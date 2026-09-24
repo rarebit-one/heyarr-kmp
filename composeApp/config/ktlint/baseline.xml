@@ -181,13 +181,6 @@
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/library/LibraryClient.kt">
         <error line="60" column="59" source="standard:function-signature" />
     </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/library/Series.kt">
-        <error line="100" column="57" source="standard:function-signature" />
-        <error line="215" column="56" source="standard:statement-wrapping" />
-        <error line="215" column="76" source="standard:statement-wrapping" />
-        <error line="215" column="94" source="standard:statement-wrapping" />
-        <error line="215" column="105" source="standard:statement-wrapping" />
-    </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/library/WorkDetail.kt">
         <error line="35" column="62" source="standard:statement-wrapping" />
         <error line="35" column="76" source="standard:statement-wrapping" />
@@ -216,8 +209,8 @@
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/music/Track.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="78" column="43" source="standard:function-signature" />
-        <error line="81" column="44" source="standard:function-signature" />
+        <error line="79" column="43" source="standard:function-signature" />
+        <error line="82" column="44" source="standard:function-signature" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/net/JdkHttpTransport.kt">
         <error line="3" column="1" source="standard:import-ordering" />
@@ -796,154 +789,154 @@
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DetailScreen.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="149" column="5" source="standard:spacing-between-declarations-with-comments" />
-        <error line="152" column="5" source="standard:spacing-between-declarations-with-comments" />
-        <error line="154" column="5" source="standard:spacing-between-declarations-with-comments" />
-        <error line="158" column="5" source="standard:spacing-between-declarations-with-comments" />
-        <error line="161" column="5" source="standard:spacing-between-declarations-with-comments" />
-        <error line="179" column="25" source="standard:multiline-if-else" />
-        <error line="182" column="16" source="standard:function-literal" />
-        <error line="182" column="17" source="standard:wrapping" />
-        <error line="182" column="18" source="standard:statement-wrapping" />
-        <error line="185" column="10" source="standard:wrapping" />
-        <error line="185" column="11" source="standard:statement-wrapping" />
-        <error line="185" column="11" source="standard:function-literal" />
-        <error line="186" column="25" source="standard:function-literal" />
-        <error line="186" column="26" source="standard:wrapping" />
-        <error line="186" column="27" source="standard:statement-wrapping" />
-        <error line="188" column="29" source="standard:statement-wrapping" />
-        <error line="191" column="35" source="standard:statement-wrapping" />
-        <error line="191" column="60" source="standard:statement-wrapping" />
-        <error line="191" column="84" source="standard:statement-wrapping" />
-        <error line="191" column="94" source="standard:statement-wrapping" />
-        <error line="196" column="11" source="standard:wrapping" />
-        <error line="196" column="12" source="standard:statement-wrapping" />
-        <error line="196" column="12" source="standard:function-literal" />
-        <error line="205" column="30" source="standard:statement-wrapping" />
-        <error line="208" column="36" source="standard:statement-wrapping" />
-        <error line="208" column="53" source="standard:statement-wrapping" />
-        <error line="208" column="129" source="standard:statement-wrapping" />
-        <error line="237" column="36" source="standard:statement-wrapping" />
-        <error line="237" column="83" source="standard:statement-wrapping" />
-        <error line="237" column="91" source="standard:statement-wrapping" />
-        <error line="301" column="65" source="standard:argument-list-wrapping" />
-        <error line="366" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="150" column="5" source="standard:spacing-between-declarations-with-comments" />
+        <error line="153" column="5" source="standard:spacing-between-declarations-with-comments" />
+        <error line="155" column="5" source="standard:spacing-between-declarations-with-comments" />
+        <error line="159" column="5" source="standard:spacing-between-declarations-with-comments" />
+        <error line="162" column="5" source="standard:spacing-between-declarations-with-comments" />
+        <error line="180" column="25" source="standard:multiline-if-else" />
+        <error line="183" column="16" source="standard:function-literal" />
+        <error line="183" column="17" source="standard:wrapping" />
+        <error line="183" column="18" source="standard:statement-wrapping" />
+        <error line="186" column="10" source="standard:wrapping" />
+        <error line="186" column="11" source="standard:statement-wrapping" />
+        <error line="186" column="11" source="standard:function-literal" />
+        <error line="187" column="25" source="standard:function-literal" />
+        <error line="187" column="26" source="standard:wrapping" />
+        <error line="187" column="27" source="standard:statement-wrapping" />
+        <error line="189" column="29" source="standard:statement-wrapping" />
+        <error line="192" column="35" source="standard:statement-wrapping" />
+        <error line="192" column="60" source="standard:statement-wrapping" />
+        <error line="192" column="84" source="standard:statement-wrapping" />
+        <error line="192" column="94" source="standard:statement-wrapping" />
+        <error line="197" column="11" source="standard:wrapping" />
+        <error line="197" column="12" source="standard:statement-wrapping" />
+        <error line="197" column="12" source="standard:function-literal" />
+        <error line="206" column="30" source="standard:statement-wrapping" />
+        <error line="209" column="36" source="standard:statement-wrapping" />
+        <error line="209" column="53" source="standard:statement-wrapping" />
+        <error line="209" column="129" source="standard:statement-wrapping" />
+        <error line="238" column="36" source="standard:statement-wrapping" />
+        <error line="238" column="83" source="standard:statement-wrapping" />
+        <error line="238" column="91" source="standard:statement-wrapping" />
+        <error line="302" column="65" source="standard:argument-list-wrapping" />
         <error line="367" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="372" column="95" source="standard:statement-wrapping" />
-        <error line="372" column="247" source="standard:statement-wrapping" />
-        <error line="372" column="291" source="standard:statement-wrapping" />
-        <error line="376" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="368" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="373" column="95" source="standard:statement-wrapping" />
+        <error line="373" column="247" source="standard:statement-wrapping" />
+        <error line="373" column="291" source="standard:statement-wrapping" />
         <error line="377" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="379" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="378" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="380" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="381" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="415" column="37" source="standard:function-literal" />
-        <error line="415" column="37" source="standard:wrapping" />
-        <error line="415" column="39" source="standard:statement-wrapping" />
-        <error line="418" column="22" source="standard:wrapping" />
-        <error line="418" column="23" source="standard:statement-wrapping" />
-        <error line="418" column="23" source="standard:function-literal" />
-        <error line="443" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="447" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="459" column="33" source="standard:statement-wrapping" />
-        <error line="459" column="53" source="standard:statement-wrapping" />
-        <error line="459" column="61" source="standard:statement-wrapping" />
-        <error line="464" column="26" source="standard:statement-wrapping" />
-        <error line="464" column="179" source="standard:statement-wrapping" />
-        <error line="464" column="187" source="standard:statement-wrapping" />
-        <error line="482" column="31" source="standard:multiline-loop" />
-        <error line="527" column="58" source="standard:statement-wrapping" />
-        <error line="527" column="193" source="standard:statement-wrapping" />
-        <error line="527" column="217" source="standard:statement-wrapping" />
-        <error line="533" column="47" source="standard:argument-list-wrapping" />
-        <error line="533" column="63" source="standard:argument-list-wrapping" />
-        <error line="552" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="581" column="57" source="standard:argument-list-wrapping" />
-        <error line="585" column="43" source="standard:multiline-if-else" />
-        <error line="606" column="48" source="standard:multiline-if-else" />
-        <error line="632" column="57" source="standard:argument-list-wrapping" />
-        <error line="646" column="33" source="standard:multiline-if-else" />
-        <error line="648" column="106" source="standard:statement-wrapping" />
-        <error line="648" column="234" source="standard:statement-wrapping" />
-        <error line="648" column="278" source="standard:statement-wrapping" />
-        <error line="656" column="27" source="standard:statement-wrapping" />
-        <error line="656" column="47" source="standard:statement-wrapping" />
-        <error line="656" column="55" source="standard:statement-wrapping" />
-        <error line="686" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="382" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="416" column="37" source="standard:function-literal" />
+        <error line="416" column="37" source="standard:wrapping" />
+        <error line="416" column="39" source="standard:statement-wrapping" />
+        <error line="419" column="22" source="standard:wrapping" />
+        <error line="419" column="23" source="standard:statement-wrapping" />
+        <error line="419" column="23" source="standard:function-literal" />
+        <error line="444" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="448" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="460" column="33" source="standard:statement-wrapping" />
+        <error line="460" column="53" source="standard:statement-wrapping" />
+        <error line="460" column="61" source="standard:statement-wrapping" />
+        <error line="465" column="26" source="standard:statement-wrapping" />
+        <error line="465" column="179" source="standard:statement-wrapping" />
+        <error line="465" column="187" source="standard:statement-wrapping" />
+        <error line="483" column="31" source="standard:multiline-loop" />
+        <error line="528" column="58" source="standard:statement-wrapping" />
+        <error line="528" column="193" source="standard:statement-wrapping" />
+        <error line="528" column="217" source="standard:statement-wrapping" />
+        <error line="534" column="47" source="standard:argument-list-wrapping" />
+        <error line="534" column="63" source="standard:argument-list-wrapping" />
+        <error line="553" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="582" column="57" source="standard:argument-list-wrapping" />
+        <error line="586" column="43" source="standard:multiline-if-else" />
+        <error line="607" column="48" source="standard:multiline-if-else" />
+        <error line="633" column="57" source="standard:argument-list-wrapping" />
+        <error line="647" column="33" source="standard:multiline-if-else" />
+        <error line="649" column="106" source="standard:statement-wrapping" />
+        <error line="649" column="234" source="standard:statement-wrapping" />
+        <error line="649" column="278" source="standard:statement-wrapping" />
+        <error line="657" column="27" source="standard:statement-wrapping" />
+        <error line="657" column="47" source="standard:statement-wrapping" />
+        <error line="657" column="55" source="standard:statement-wrapping" />
         <error line="687" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="687" column="41" source="standard:multiline-loop" />
-        <error line="692" column="59" source="standard:multiline-if-else" />
-        <error line="698" column="44" source="standard:multiline-if-else" />
-        <error line="699" column="30" source="standard:multiline-if-else" />
-        <error line="780" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="688" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="688" column="41" source="standard:multiline-loop" />
+        <error line="693" column="59" source="standard:multiline-if-else" />
+        <error line="699" column="44" source="standard:multiline-if-else" />
+        <error line="700" column="30" source="standard:multiline-if-else" />
         <error line="781" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="807" column="24" source="standard:argument-list-wrapping" />
-        <error line="807" column="34" source="standard:argument-list-wrapping" />
-        <error line="807" column="53" source="standard:argument-list-wrapping" />
-        <error line="807" column="135" source="standard:argument-list-wrapping" />
-        <error line="808" column="50" source="standard:argument-list-wrapping" />
-        <error line="815" column="1" source="standard:no-consecutive-blank-lines" />
-        <error line="835" column="40" source="standard:argument-list-wrapping" />
-        <error line="841" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="782" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="808" column="24" source="standard:argument-list-wrapping" />
+        <error line="808" column="34" source="standard:argument-list-wrapping" />
+        <error line="808" column="53" source="standard:argument-list-wrapping" />
+        <error line="808" column="135" source="standard:argument-list-wrapping" />
+        <error line="809" column="50" source="standard:argument-list-wrapping" />
+        <error line="816" column="1" source="standard:no-consecutive-blank-lines" />
+        <error line="836" column="40" source="standard:argument-list-wrapping" />
         <error line="842" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="853" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="843" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="854" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="855" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="856" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="871" column="39" source="standard:argument-list-wrapping" />
-        <error line="875" column="33" source="standard:statement-wrapping" />
-        <error line="879" column="38" source="standard:statement-wrapping" />
-        <error line="879" column="64" source="standard:statement-wrapping" />
-        <error line="879" column="90" source="standard:statement-wrapping" />
-        <error line="879" column="110" source="standard:statement-wrapping" />
-        <error line="879" column="187" source="standard:statement-wrapping" />
-        <error line="879" column="203" source="standard:statement-wrapping" />
-        <error line="879" column="225" source="standard:statement-wrapping" />
-        <error line="879" column="241" source="standard:statement-wrapping" />
-        <error line="881" column="84" source="standard:statement-wrapping" />
-        <error line="881" column="166" source="standard:statement-wrapping" />
-        <error line="881" column="253" source="standard:statement-wrapping" />
-        <error line="889" column="37" source="standard:multiline-if-else" />
-        <error line="891" column="110" source="standard:statement-wrapping" />
-        <error line="891" column="260" source="standard:statement-wrapping" />
-        <error line="891" column="304" source="standard:statement-wrapping" />
-        <error line="896" column="40" source="standard:argument-list-wrapping" />
-        <error line="898" column="92" source="standard:statement-wrapping" />
-        <error line="898" column="131" source="standard:statement-wrapping" />
-        <error line="898" column="168" source="standard:statement-wrapping" />
-        <error line="902" column="132" source="standard:statement-wrapping" />
-        <error line="902" column="149" source="standard:statement-wrapping" />
-        <error line="902" column="282" source="standard:statement-wrapping" />
-        <error line="903" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="857" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="872" column="39" source="standard:argument-list-wrapping" />
+        <error line="876" column="33" source="standard:statement-wrapping" />
+        <error line="880" column="38" source="standard:statement-wrapping" />
+        <error line="880" column="64" source="standard:statement-wrapping" />
+        <error line="880" column="90" source="standard:statement-wrapping" />
+        <error line="880" column="110" source="standard:statement-wrapping" />
+        <error line="880" column="187" source="standard:statement-wrapping" />
+        <error line="880" column="203" source="standard:statement-wrapping" />
+        <error line="880" column="225" source="standard:statement-wrapping" />
+        <error line="880" column="241" source="standard:statement-wrapping" />
+        <error line="882" column="84" source="standard:statement-wrapping" />
+        <error line="882" column="166" source="standard:statement-wrapping" />
+        <error line="882" column="253" source="standard:statement-wrapping" />
+        <error line="890" column="37" source="standard:multiline-if-else" />
+        <error line="892" column="110" source="standard:statement-wrapping" />
+        <error line="892" column="260" source="standard:statement-wrapping" />
+        <error line="892" column="304" source="standard:statement-wrapping" />
+        <error line="897" column="40" source="standard:argument-list-wrapping" />
+        <error line="899" column="92" source="standard:statement-wrapping" />
+        <error line="899" column="131" source="standard:statement-wrapping" />
+        <error line="899" column="168" source="standard:statement-wrapping" />
+        <error line="903" column="132" source="standard:statement-wrapping" />
+        <error line="903" column="149" source="standard:statement-wrapping" />
+        <error line="903" column="282" source="standard:statement-wrapping" />
         <error line="904" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="905" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="906" column="1" source="standard:blank-line-between-when-conditions" />
         <error line="907" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="911" column="110" source="standard:statement-wrapping" />
-        <error line="911" column="131" source="standard:statement-wrapping" />
-        <error line="911" column="190" source="standard:statement-wrapping" />
-        <error line="911" column="214" source="standard:statement-wrapping" />
-        <error line="911" column="224" source="standard:statement-wrapping" />
-        <error line="911" column="226" source="standard:statement-wrapping" />
-        <error line="911" column="272" source="standard:statement-wrapping" />
-        <error line="925" column="31" source="standard:multiline-if-else" />
-        <error line="927" column="94" source="standard:statement-wrapping" />
-        <error line="927" column="221" source="standard:statement-wrapping" />
-        <error line="927" column="265" source="standard:statement-wrapping" />
-        <error line="932" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="908" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="912" column="110" source="standard:statement-wrapping" />
+        <error line="912" column="131" source="standard:statement-wrapping" />
+        <error line="912" column="190" source="standard:statement-wrapping" />
+        <error line="912" column="214" source="standard:statement-wrapping" />
+        <error line="912" column="224" source="standard:statement-wrapping" />
+        <error line="912" column="226" source="standard:statement-wrapping" />
+        <error line="912" column="272" source="standard:statement-wrapping" />
+        <error line="926" column="31" source="standard:multiline-if-else" />
+        <error line="928" column="94" source="standard:statement-wrapping" />
+        <error line="928" column="221" source="standard:statement-wrapping" />
+        <error line="928" column="265" source="standard:statement-wrapping" />
         <error line="933" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="935" column="32" source="standard:statement-wrapping" />
-        <error line="935" column="52" source="standard:statement-wrapping" />
-        <error line="935" column="87" source="standard:statement-wrapping" />
-        <error line="935" column="247" source="standard:statement-wrapping" />
-        <error line="944" column="42" source="standard:multiline-if-else" />
-        <error line="947" column="28" source="standard:statement-wrapping" />
-        <error line="947" column="47" source="standard:statement-wrapping" />
-        <error line="947" column="129" source="standard:statement-wrapping" />
-        <error line="947" column="181" source="standard:statement-wrapping" />
-        <error line="956" column="28" source="standard:statement-wrapping" />
-        <error line="956" column="68" source="standard:statement-wrapping" />
-        <error line="956" column="95" source="standard:statement-wrapping" />
+        <error line="934" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="936" column="32" source="standard:statement-wrapping" />
+        <error line="936" column="52" source="standard:statement-wrapping" />
+        <error line="936" column="87" source="standard:statement-wrapping" />
+        <error line="936" column="247" source="standard:statement-wrapping" />
+        <error line="945" column="42" source="standard:multiline-if-else" />
+        <error line="948" column="28" source="standard:statement-wrapping" />
+        <error line="948" column="47" source="standard:statement-wrapping" />
+        <error line="948" column="129" source="standard:statement-wrapping" />
+        <error line="948" column="181" source="standard:statement-wrapping" />
+        <error line="957" column="28" source="standard:statement-wrapping" />
+        <error line="957" column="68" source="standard:statement-wrapping" />
+        <error line="957" column="95" source="standard:statement-wrapping" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DiscoverScreen.kt">
         <error line="3" column="1" source="standard:import-ordering" />
