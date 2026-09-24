@@ -32,8 +32,8 @@ Rules:
 - Dependency direction: apps → `:ui` → `:core`. Never the reverse, and the two apps never
   depend on each other.
 - **Shared logic goes in `:core`, not into an app.** `:androidApp` still carries copies of code
-  that has not converged yet (its own `HeyarrApi`, `search/FollowedSource`,
-  `state/SearchGrouping`, …). When you touch one, prefer moving
+  that has not converged yet (its own `HeyarrApi`, `search/FollowedSource` — mapped to `:core`'s
+  at the search boundary by `asFeedSource()` — `state/SearchController`, …). When you touch one, prefer moving
   it toward the shared version over editing both copies. Never add a new copy.
 
 ## Build & test

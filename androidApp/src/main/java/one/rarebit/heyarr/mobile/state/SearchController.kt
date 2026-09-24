@@ -11,7 +11,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.core.mcp.McpTransportException
-import one.rarebit.heyarr.mobile.search.FollowedSource
+import one.rarebit.heyarr.core.feeds.FollowedSource
+import one.rarebit.heyarr.core.state.SearchFilter
+import one.rarebit.heyarr.core.state.SearchGrouping
+import one.rarebit.heyarr.core.state.SearchRow
+import one.rarebit.heyarr.core.state.SearchSection
+import one.rarebit.heyarr.core.state.Segment
+import one.rarebit.heyarr.mobile.search.asFeedSource
 import one.rarebit.heyarr.core.theme.MediaType
 
 /**
@@ -85,7 +91,7 @@ class SearchController(
             if (gen == generation) episodes = seg
         }
         jobs += scope.launch {
-            val list = followed ?: fetch { a.followed() }.getOrNull()?.also { followed = it }
+            val list = followed ?: fetch { a.followed().map { it.asFeedSource() } }.getOrNull()?.also { followed = it }
             val seg = if (list == null) Segment.Failed("followed sources unavailable")
             else Segment.Loaded(SearchGrouping.matchSources(q, list))
             if (gen == generation) sources = seg

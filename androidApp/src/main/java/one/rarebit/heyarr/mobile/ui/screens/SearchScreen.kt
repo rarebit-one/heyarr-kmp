@@ -55,10 +55,10 @@ import one.rarebit.heyarr.mobile.nav.detailRoute
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.mobile.state.SearchController
-import one.rarebit.heyarr.mobile.state.SearchFilter
-import one.rarebit.heyarr.mobile.state.SearchGrouping
-import one.rarebit.heyarr.mobile.state.SearchRow
-import one.rarebit.heyarr.mobile.state.Segment
+import one.rarebit.heyarr.core.state.SearchFilter
+import one.rarebit.heyarr.core.state.SearchGrouping
+import one.rarebit.heyarr.core.state.SearchRow
+import one.rarebit.heyarr.core.state.Segment
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
@@ -151,7 +151,7 @@ private fun ResultRow(session: AppSession, row: SearchRow, onOpen: () -> Unit, o
             val cover by rememberCover(session, row.type, row.source.title, null, feedRef = row.source.feedRef)
             MediaRow(
                 title = row.source.title, type = row.type, onOpen = onOpen, subtitle = row.source.feedRef,
-                meta = listOf(row.source.type, "${row.source.itemsArchived ?: 0}/${row.source.itemsKnown ?: 0} archived", row.source.health),
+                meta = listOf(row.source.type, "${row.source.itemsArchived}/${row.source.itemsKnown} archived", row.source.health),
                 artwork = cover.url, status = LibraryStatus.IN_LIBRARY,
             )
         }

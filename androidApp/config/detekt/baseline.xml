@@ -1301,7 +1301,7 @@
     <ID>MaxLineLength:SearchScreen.kt$is Segment.Loaded -&gt; items(seg.rows, key = { it.key }) { row -&gt; ResultRow(session, row, onOpen = { open(row) }, onWant = onWant, onPlayEpisode = onPlayEpisode) }</ID>
     <ID>MaxLineLength:SearchScreen.kt$item(key = "h:" + section.type) { MediaScope(section.type) { SectionHeader(section.title, Modifier.padding(top = 12.dp, bottom = 6.dp), subtitle = (section.segment as? Segment.Loaded)?.let { if (it.truncated) "Showing the first ${it.rows.size} — narrow the query for more." else null }) } }</ID>
     <ID>MaxLineLength:SearchScreen.kt$meta = listOf(hit.year?.toString(), hit.attributes["runtime"], hit.attributes["album"], hit.attributes["series"])</ID>
-    <ID>MaxLineLength:SearchScreen.kt$meta = listOf(row.source.type, "${row.source.itemsArchived ?: 0}/${row.source.itemsKnown ?: 0} archived", row.source.health)</ID>
+    <ID>MaxLineLength:SearchScreen.kt$meta = listOf(row.source.type, "${row.source.itemsArchived}/${row.source.itemsKnown} archived", row.source.health)</ID>
     <ID>MaxLineLength:SearchScreen.kt$private</ID>
     <ID>MaxLineLength:SearchScreen.kt$scope.launch { session.io { session.api.discover(query) }.onSuccess { discovery = it }; busy = false }</ID>
     <ID>MaxLineLength:SearchScreen.kt$search.isIdle -&gt; IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = { session.recent.clear(); recent = emptyList() })</ID>
