@@ -45,11 +45,6 @@ class SearchResultsJsonTest {
         assertEquals("only-id", SearchResultsJson.parse("""[{"id":"only-id"}]""")[0].title)
     }
 
-    @Test fun readsPosterWhenPresentElseNull() {
-        assertEquals("http://p/x.jpg", SearchResultsJson.parse("""[{"id":"x","poster_url":"http://p/x.jpg"}]""")[0].posterUrl)
-        assertNull(SearchResultsJson.parse("""[{"id":"x","title":"T"}]""")[0].posterUrl)
-    }
-
     @Test fun skipsElementsWithoutId() {
         val results = SearchResultsJson.parse("""[{"title":"orphan"},{"id":"ok","title":"Kept"}]""")
         assertEquals(1, results.size)

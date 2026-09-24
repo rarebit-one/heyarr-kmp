@@ -72,7 +72,6 @@ class McpModelsTest {
         assertTrue(c.candidates[0].accepted)
         assertTrue(c.candidates[0].selected)
         assertEquals(10, c.candidates[0].score)
-        assertEquals(4_500_000_000L, c.candidates[0].sizeBytes)
         assertEquals(listOf("resolution.gte", "source.nin"), c.candidates[1].rejectedBy.map { it.rule })
     }
 

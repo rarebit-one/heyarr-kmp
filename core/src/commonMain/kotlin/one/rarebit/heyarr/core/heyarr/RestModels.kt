@@ -105,7 +105,6 @@ data class Candidate(
     val score: Int,
     val terminal: Boolean,
     val selected: Boolean,
-    val sizeBytes: Long?,
     val reasons: List<Reason>,
 ) {
     val rejectedBy: List<Reason> get() = reasons.filter { it.section == "accept" && it.isFailure }
@@ -127,7 +126,6 @@ object CandidateJson {
                 score = JsonScan.intField(c, "score") ?: 0,
                 terminal = JsonScan.boolField(c, "terminal") ?: false,
                 selected = JsonScan.boolField(c, "selected") ?: false,
-                sizeBytes = JsonScan.longField(c, "size_bytes"),
                 reasons = ReasonJson.list(c),
             )
         }

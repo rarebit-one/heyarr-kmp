@@ -235,7 +235,7 @@ internal fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: 
             }, icon = Icons.Rounded.Search, compact = true)
         }) {
             DataTable(
-                columns = listOf(TableColumn("Release", width = 260.dp), TableColumn("Provider", width = 100.dp), TableColumn("Size", width = 80.dp, alignEnd = true), TableColumn("Score", width = 60.dp, alignEnd = true), TableColumn("Verdict", width = 90.dp), TableColumn("", width = 120.dp, alignEnd = true)),
+                columns = listOf(TableColumn("Release", width = 260.dp), TableColumn("Provider", width = 100.dp), TableColumn("Score", width = 60.dp, alignEnd = true), TableColumn("Verdict", width = 90.dp), TableColumn("", width = 120.dp, alignEnd = true)),
                 rowCount = cands.size, emptyText = if (wants.isEmpty()) "No want, no candidates." else "The last search found nothing${wants.firstOrNull()?.detail?.let { " — $it" } ?: ""}.", minWidth = 780.dp,
                 detailLabel = { r -> cands[r].second.title },
                 detail = { r ->
@@ -250,13 +250,11 @@ internal fun CurateTab(session: AppSession, work: Work, type: MediaType, wants: 
                     0 -> Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) { Cell(cand.title); if (cand.selected) Text("selected", style = MaterialTheme.typography.labelSmall, color = LocalMediaTheme.current.accentGradientEnd) }
                     1 -> Cell(cand.provider ?: "", muted = true, mono = true)
 
-                    2 -> Cell(cand.sizeBytes?.let { WorkAsset.formatBytes(it) } ?: "", muted = true)
+                    2 -> Cell(cand.score.toString(), muted = true, mono = true)
 
-                    3 -> Cell(cand.score.toString(), muted = true, mono = true)
+                    3 -> Text(if (cand.accepted) "accepted" else "rejected", style = MaterialTheme.typography.labelMedium, color = verdictColor(if (cand.accepted) "pass" else "fail"))
 
-                    4 -> Text(if (cand.accepted) "accepted" else "rejected", style = MaterialTheme.typography.labelMedium, color = verdictColor(if (cand.accepted) "pass" else "fail"))
-
-                    5 -> PrimaryButton("Acquire", {
+                    4 -> PrimaryButton("Acquire", {
                         scope.launch {
                             state.busy = cand.candidateId
                             session.io { session.api.acquire(w.id, cand.candidateId) }.onSuccess { res ->

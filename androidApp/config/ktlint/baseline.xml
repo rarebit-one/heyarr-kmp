@@ -194,7 +194,7 @@
         <error line="79" column="75" source="standard:function-signature" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/search/SearchResultsJson.kt">
-        <error line="55" column="59" source="standard:function-signature" />
+        <error line="50" column="59" source="standard:function-signature" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/state/SearchController.kt">
         <error line="120" column="63" source="standard:function-signature" />
@@ -239,19 +239,19 @@
         <error line="250" column="149" source="standard:statement-wrapping" />
         <error line="250" column="282" source="standard:statement-wrapping" />
         <error line="251" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="286" column="31" source="standard:multiline-if-else" />
-        <error line="287" column="104" source="standard:statement-wrapping" />
-        <error line="287" column="231" source="standard:statement-wrapping" />
-        <error line="287" column="275" source="standard:statement-wrapping" />
-        <error line="297" column="32" source="standard:statement-wrapping" />
-        <error line="297" column="52" source="standard:statement-wrapping" />
-        <error line="297" column="87" source="standard:statement-wrapping" />
-        <error line="297" column="247" source="standard:statement-wrapping" />
-        <error line="306" column="42" source="standard:multiline-if-else" />
-        <error line="309" column="28" source="standard:statement-wrapping" />
-        <error line="309" column="47" source="standard:statement-wrapping" />
-        <error line="309" column="129" source="standard:statement-wrapping" />
-        <error line="309" column="253" source="standard:statement-wrapping" />
+        <error line="284" column="31" source="standard:multiline-if-else" />
+        <error line="285" column="104" source="standard:statement-wrapping" />
+        <error line="285" column="231" source="standard:statement-wrapping" />
+        <error line="285" column="275" source="standard:statement-wrapping" />
+        <error line="295" column="32" source="standard:statement-wrapping" />
+        <error line="295" column="52" source="standard:statement-wrapping" />
+        <error line="295" column="87" source="standard:statement-wrapping" />
+        <error line="295" column="247" source="standard:statement-wrapping" />
+        <error line="304" column="42" source="standard:multiline-if-else" />
+        <error line="307" column="28" source="standard:statement-wrapping" />
+        <error line="307" column="47" source="standard:statement-wrapping" />
+        <error line="307" column="129" source="standard:statement-wrapping" />
+        <error line="307" column="253" source="standard:statement-wrapping" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/DetailScreen.kt">
         <error line="298" column="97" source="standard:function-signature" />

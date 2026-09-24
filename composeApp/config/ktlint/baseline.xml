@@ -290,19 +290,19 @@
         <error line="295" column="149" source="standard:statement-wrapping" />
         <error line="295" column="282" source="standard:statement-wrapping" />
         <error line="296" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="332" column="31" source="standard:multiline-if-else" />
-        <error line="334" column="94" source="standard:statement-wrapping" />
-        <error line="334" column="221" source="standard:statement-wrapping" />
-        <error line="334" column="265" source="standard:statement-wrapping" />
-        <error line="344" column="32" source="standard:statement-wrapping" />
-        <error line="344" column="52" source="standard:statement-wrapping" />
-        <error line="344" column="87" source="standard:statement-wrapping" />
-        <error line="344" column="247" source="standard:statement-wrapping" />
-        <error line="353" column="42" source="standard:multiline-if-else" />
-        <error line="356" column="28" source="standard:statement-wrapping" />
-        <error line="356" column="47" source="standard:statement-wrapping" />
-        <error line="356" column="129" source="standard:statement-wrapping" />
-        <error line="356" column="181" source="standard:statement-wrapping" />
+        <error line="330" column="31" source="standard:multiline-if-else" />
+        <error line="332" column="94" source="standard:statement-wrapping" />
+        <error line="332" column="221" source="standard:statement-wrapping" />
+        <error line="332" column="265" source="standard:statement-wrapping" />
+        <error line="342" column="32" source="standard:statement-wrapping" />
+        <error line="342" column="52" source="standard:statement-wrapping" />
+        <error line="342" column="87" source="standard:statement-wrapping" />
+        <error line="342" column="247" source="standard:statement-wrapping" />
+        <error line="351" column="42" source="standard:multiline-if-else" />
+        <error line="354" column="28" source="standard:statement-wrapping" />
+        <error line="354" column="47" source="standard:statement-wrapping" />
+        <error line="354" column="129" source="standard:statement-wrapping" />
+        <error line="354" column="181" source="standard:statement-wrapping" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DetailScreen.kt">
         <error line="144" column="25" source="standard:multiline-if-else" />

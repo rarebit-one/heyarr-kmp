@@ -92,7 +92,7 @@ object Fixtures {
     }
 
     fun candidates(id: String) = """{"desired_item_id":"$id","search_id":"s-1","candidates":[
-      {"candidate_id":"infohash:bf383fadc72500cab131fbdebc996cabba44c7a2","provider":"linuxtracker","title":"Sintel 2010 1080p BluRay x264","accepted":true,"score":10,"terminal":false,"selected":true,"size_bytes":4500000000,"reasons":[
+      {"candidate_id":"infohash:bf383fadc72500cab131fbdebc996cabba44c7a2","provider":"linuxtracker","title":"Sintel 2010 1080p BluRay x264","accepted":true,"score":10,"terminal":false,"selected":true,"reasons":[
         {"rule":"resolution.gte","section":"accept","result":"pass","detail":"resolution 1080, which is at least 1080"},
         {"rule":"source.nin","section":"accept","result":"pass","detail":"source bluray, which is outside [cam, telesync]"},
         {"rule":"size_bytes.lte","section":"prefer","result":"bonus","score":10,"detail":"size_bytes 4500000000, which is at most 8589934592"}]},
