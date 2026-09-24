@@ -28,7 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.mobile.catalog.ContinueEntry
-import one.rarebit.heyarr.mobile.library.Variants
+import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.core.mcp.Want

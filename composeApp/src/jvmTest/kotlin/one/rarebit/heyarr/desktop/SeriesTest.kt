@@ -1,7 +1,7 @@
 package one.rarebit.heyarr.desktop
 
 import one.rarebit.heyarr.core.heyarr.ContinueJson
-import one.rarebit.heyarr.desktop.library.Series
+import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.desktop.library.Work
 import one.rarebit.heyarr.desktop.music.Track
 import one.rarebit.heyarr.desktop.music.TracksJson

@@ -75,8 +75,8 @@ import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.library.Episode
 import one.rarebit.heyarr.desktop.library.PrimaryAsset
 import one.rarebit.heyarr.desktop.library.Season
-import one.rarebit.heyarr.desktop.library.Series
-import one.rarebit.heyarr.desktop.library.Variants
+import one.rarebit.heyarr.core.library.Series
+import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.desktop.library.Work
 import one.rarebit.heyarr.desktop.library.WorkDetail
 import one.rarebit.heyarr.core.mcp.Explanation
@@ -127,6 +127,7 @@ import one.rarebit.heyarr.ui.components.Cell
 import one.rarebit.heyarr.ui.components.TableColumn
 import one.rarebit.heyarr.ui.components.DataTable
 import one.rarebit.heyarr.ui.components.Section
+import one.rarebit.heyarr.core.library.Episode as CoreEpisode
 
 /** The two faces of a work: what you came to watch, and the tooling that keeps it that way. */
 enum class DetailTab(val label: String) { WATCH("Watch"), CURATE("Curate") }
@@ -476,11 +477,11 @@ private fun SeasonsBlock(session: AppSession, detail: WorkDetail, seasons: List<
         val rows: List<Any> = buildList {
             val byNumber = selected.episodes.associateBy { it.number }
             for (n in 1..known) add(byNumber[n] ?: n)
-            addAll(selected.episodes.filter { it.number == null || it.number > known })
+            addAll(selected.episodes.filter { it.number.let { n -> n == null || n > known } })
         }
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             for (row in rows) when (row) {
-                is Episode -> EpisodeRow(session, detail, row, state, extForSeason[row.number])
+                is CoreEpisode<*> -> EpisodeRow(session, detail, row.desktop(), state, extForSeason[row.number])
                 is Int -> MissingEpisodeRow(session, selected, row, wants, state, extForSeason[row])
             }
         }
@@ -972,3 +973,8 @@ private fun CurateTab(session: AppSession, detail: WorkDetail, type: MediaType, 
         }
     }
 }
+
+// The episode rows mix episodes with missing numbers; an episode among them is always the
+// desktop's own (`:core`'s `Episode` of a `Track`), which the type test cannot see.
+@Suppress("UNCHECKED_CAST")
+private fun CoreEpisode<*>.desktop(): Episode = this as Episode

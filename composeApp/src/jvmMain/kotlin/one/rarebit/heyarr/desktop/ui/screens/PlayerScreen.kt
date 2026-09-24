@@ -76,7 +76,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.desktop.heyarr.McpResult
-import one.rarebit.heyarr.desktop.library.Series
+import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.desktop.playback.MpvTrack
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer

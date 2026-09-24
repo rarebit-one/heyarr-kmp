@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.mobile.library
 
+import one.rarebit.heyarr.core.library.EpisodeFile
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.mobile.net.Timestamps
 
@@ -11,23 +12,23 @@ import one.rarebit.heyarr.mobile.net.Timestamps
  * view itself carries no size.
  */
 data class WorkAsset(
-    val id: String,
+    override val id: String,
     val editionId: String,
-    val role: String? = null,
-    val filename: String? = null,
-    val mime: String? = null,
-    val blobHash: String? = null,
+    override val role: String? = null,
+    override val filename: String? = null,
+    override val mime: String? = null,
+    override val blobHash: String? = null,
     /** `managed` / `linked` / `vault`. */
     val sourceClass: String? = null,
-    val sourcePath: String? = null,
+    override val sourcePath: String? = null,
     /** Set when the source path vanished (not a deletion). */
     val missingSince: String? = null,
     val sizeBytes: Long? = null,
     val createdAt: String? = null,
     /** The edition's label (`GET /editions/{id}` → `label`), e.g. "1080p BluRay". */
-    val editionLabel: String? = null,
-) {
-    val isPlayable: Boolean get() = !blobHash.isNullOrBlank() && missingSince == null
+    override val editionLabel: String? = null,
+) : EpisodeFile {
+    override val isPlayable: Boolean get() = !blobHash.isNullOrBlank() && missingSince == null
     val isMissing: Boolean get() = missingSince != null
 
     /** A one-line "quality" summary: edition label, role, MIME, size. */

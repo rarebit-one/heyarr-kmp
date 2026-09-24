@@ -1,7 +1,7 @@
 package one.rarebit.heyarr.mobile
 
+import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.mobile.catalog.ContinueClient
-import one.rarebit.heyarr.mobile.library.Series
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.library.WorkDetailJson
