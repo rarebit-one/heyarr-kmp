@@ -16,6 +16,7 @@ on:
       - "gradle/**"
       - "gradlew"
       - "gradlew.bat"
+      - ".editorconfig"
       - ".github/workflows/android.yml"
   pull_request:
     branches: [main]
@@ -29,6 +30,7 @@ on:
       - "gradle/**"
       - "gradlew"
       - "gradlew.bat"
+      - ".editorconfig"
       - ".github/workflows/android.yml"
 
 # Cancel superseded runs on the same ref.
@@ -67,6 +69,12 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+
+      # ktlint + detekt over :androidApp. Pre-existing findings are frozen in
+      # androidApp/config/{ktlint,detekt}/baseline.xml, so only NEW violations fail.
+      # (:core / :ui are linted by desktop.yml, which the same shared paths trigger.)
+      - name: Lint (ktlint + detekt)
+        run: ./gradlew :androidApp:ktlintCheck :androidApp:detekt --no-daemon --stacktrace
 
       - name: Unit tests
         run: ./gradlew :androidApp:testDebugUnitTest --no-daemon --stacktrace

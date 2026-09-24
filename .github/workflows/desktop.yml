@@ -18,6 +18,8 @@ on:
       - "gradle/**"
       - "gradlew"
       - "gradlew.bat"
+      - ".editorconfig"
+      - "config/**"
       - ".github/workflows/desktop.yml"
   pull_request:
     branches: [main]
@@ -33,6 +35,8 @@ on:
       - "gradle/**"
       - "gradlew"
       - "gradlew.bat"
+      - ".editorconfig"
+      - "config/**"
       - ".github/workflows/desktop.yml"
 
 concurrency:
@@ -81,6 +85,14 @@ jobs:
       # build :androidApp (heyarr-mobile) — that's the separate android.yml job. Since Gate B,
       # :core depends on voidbind-client (shared Credential.Device), so this job now needs the
       # packages:read token (see env above); settings.gradle.kts authenticates the repo with it.
+      # ktlint + detekt over the desktop + shared modules and the root build scripts.
+      # Pre-existing findings are frozen in each module's config/{ktlint,detekt}/baseline.xml,
+      # so only NEW violations fail. (`build` below also runs them via `check`.)
+      - name: Lint (ktlint + detekt)
+        run: >-
+          ./gradlew :ktlintCheck :core:ktlintCheck :core:detekt :ui:ktlintCheck :ui:detekt
+          :composeApp:ktlintCheck :composeApp:detekt --no-daemon --stacktrace
+
       - name: Build + JVM unit tests
         run: ./gradlew :core:build :ui:build :composeApp:build --no-daemon --stacktrace
 
