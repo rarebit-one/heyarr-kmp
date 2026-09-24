@@ -93,10 +93,10 @@ class LanguageNameTest {
     }
 
     @Test fun wikipediaYearGuard() {
-        assertTrue(one.rarebit.heyarr.desktop.state.ExternalParsers.yearAgrees("Yellowstone is a 2018 drama series.", 2018))
-        assertFalse(one.rarebit.heyarr.desktop.state.ExternalParsers.yearAgrees("Yellowstone is a 1936 American Western film.", 2018))
-        assertTrue(one.rarebit.heyarr.desktop.state.ExternalParsers.yearAgrees("No year here.", 2018))
-        assertTrue(one.rarebit.heyarr.desktop.state.ExternalParsers.yearAgrees("Released in 1936.", null))
+        assertTrue(one.rarebit.heyarr.core.state.ExternalParsers.yearAgrees("Yellowstone is a 2018 drama series.", 2018))
+        assertFalse(one.rarebit.heyarr.core.state.ExternalParsers.yearAgrees("Yellowstone is a 1936 American Western film.", 2018))
+        assertTrue(one.rarebit.heyarr.core.state.ExternalParsers.yearAgrees("No year here.", 2018))
+        assertTrue(one.rarebit.heyarr.core.state.ExternalParsers.yearAgrees("Released in 1936.", null))
     }
 }
 

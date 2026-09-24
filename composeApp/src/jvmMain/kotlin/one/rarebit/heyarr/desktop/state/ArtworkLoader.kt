@@ -79,7 +79,7 @@ class ArtworkLoader(
         if (!external && base.isEmpty()) return null
         val builder = HttpRequest.newBuilder(URI.create(if (external) contentPath else base + contentPath))
             .timeout(Duration.ofSeconds(20))
-            .header("User-Agent", ExternalMetadata.USER_AGENT)
+            .header("User-Agent", DesktopExternalMetadata.USER_AGENT)
         if (!external) builder.header("Authorization", "Bearer " + token())
         val req = builder.GET().build()
         val resp = client.send(req, HttpResponse.BodyHandlers.ofByteArray())

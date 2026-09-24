@@ -432,7 +432,7 @@
     <ID>MatchingDeclarationName:WantSheet.kt$WantRequest</ID>
     <ID>MaxLineLength:AppGraph.kt$AppGraph$/** A bare client for the public metadata sources: no interceptor, so the node's credential never leaves for another host. */</ID>
     <ID>MaxLineLength:AppGraph.kt$AppGraph$/** Cover art and synopses from keyless public sources, cached under the app's cache dir (Settings → Appearance turns it off). */</ID>
-    <ID>MaxLineLength:AppGraph.kt$AppGraph$ExternalMetadata(File(app.cacheDir, "meta"), enabled = { settings.externalMetadata }, fetch = ExternalMetadata.okHttpFetch(bareHttp))</ID>
+    <ID>MaxLineLength:AppGraph.kt$AppGraph$ExternalMetadata(File(app.cacheDir, "meta"), enabled = { settings.externalMetadata }, fetch = PhoneExternalMetadata.okHttpFetch(bareHttp))</ID>
     <ID>MaxLineLength:AppGraph.kt$AppGraph$private</ID>
     <ID>MaxLineLength:AppSession.kt$AppSession$e is McpTransportException -&gt; { noteTransportFailure(e); toast(Toast.Kind.ERROR, "Can't reach heyarr", e.message) }</ID>
     <ID>MaxLineLength:AppSession.kt$AppSession$fun noteSuccess()</ID>
@@ -627,7 +627,7 @@
     <ID>MaxLineLength:DetailScreen.kt$Text(asset.filename ?: asset.id, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:DetailScreen.kt$Text(ep.subtitles.size.toString(), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)</ID>
     <ID>MaxLineLength:DetailScreen.kt$Text(ep.title ?: ext?.name ?: ep.asset.filename ?: ep.asset.id, style = MaterialTheme.typography.titleSmall, color = if (ep.isPlayable) Tokens.textPrimary else Tokens.textDisabled, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))</ID>
-    <ID>MaxLineLength:DetailScreen.kt$Text(ext.synopsis, style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary, maxLines = 6, overflow = TextOverflow.Ellipsis)</ID>
+    <ID>MaxLineLength:DetailScreen.kt$Text(ext.synopsis.orEmpty(), style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary, maxLines = 6, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:DetailScreen.kt$Text(ext?.name ?: "Not held", style = MaterialTheme.typography.titleSmall, color = Tokens.textDisabled, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:DetailScreen.kt$Text(if (ranked.accepted) "Would be accepted" else "Would be rejected", style = MaterialTheme.typography.titleSmall, color = verdictColor(if (ranked.accepted) "pass" else "fail"))</ID>
     <ID>MaxLineLength:DetailScreen.kt$Text(if (subs.isEmpty()) "No caption files held — captions inside the container still show in the player's CC menu." else "Caption files: " + subs.joinToString(", ") { it.filename?.substringBeforeLast('.')?.substringAfterLast('.') ?: "?" }, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)</ID>

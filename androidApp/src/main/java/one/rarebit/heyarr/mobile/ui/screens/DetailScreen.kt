@@ -92,10 +92,10 @@ import one.rarebit.heyarr.mobile.playback.QueueEntry
 import one.rarebit.heyarr.mobile.reader.ReaderFormat
 import one.rarebit.heyarr.mobile.search.FollowedItem
 import one.rarebit.heyarr.mobile.state.AppSession
-import one.rarebit.heyarr.mobile.state.ExternalEpisode
-import one.rarebit.heyarr.mobile.state.ExternalMeta
+import one.rarebit.heyarr.core.state.ExternalEpisode
+import one.rarebit.heyarr.core.state.ExternalMeta
 import one.rarebit.heyarr.core.state.LibraryStatus
-import one.rarebit.heyarr.mobile.state.MetaKey
+import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
@@ -420,7 +420,7 @@ private fun SynopsisBlock(work: Work, state: DetailState, coverIsExternal: Boole
         when {
             own != null -> Text(own, style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary)
             ext?.synopsis != null -> {
-                Text(ext.synopsis, style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary, maxLines = 6, overflow = TextOverflow.Ellipsis)
+                Text(ext.synopsis.orEmpty(), style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary, maxLines = 6, overflow = TextOverflow.Ellipsis)
                 Text("Synopsis${if (coverIsExternal) " and cover" else ""} via ${ext.source} — not from your library. The node has no metadata provider (TVDB, ADR-0058).", style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled)
             }
             else -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -28,6 +28,19 @@ kotlin {
 
     jvmToolchain(17)
 
+    // `jvmAndAndroidMain`: code for both JVM-based targets that needs java.* (java.io.File,
+    // MessageDigest, URLEncoder) — today the public-metadata cache (`state/ExternalMetadata`),
+    // which both apps used to carry a copy of. Everything else stays in commonMain.
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
+    applyDefaultHierarchyTemplate {
+        common {
+            group("jvmAndAndroid") {
+                withJvm()
+                withAndroidTarget()
+            }
+        }
+    }
+
     sourceSets {
         val commonMain by getting {
             // kotlinx-coroutines-core comes back when HeyarrApi / the async layer moves in
@@ -41,6 +54,11 @@ kotlin {
                 // so :composeApp (desktop) now pulls it transitively too → desktop CI needs a
                 // read:packages token (see .github/workflows/desktop.yml).
                 implementation(libs.voidbind.client)
+            }
+        }
+        val jvmAndAndroidMain by getting {
+            dependencies {
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
         val commonTest by getting {

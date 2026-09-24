@@ -3,10 +3,10 @@ package one.rarebit.heyarr.mobile.nav
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.settings.SettingsStore
 import one.rarebit.heyarr.mobile.state.AppSession
-import one.rarebit.heyarr.mobile.state.ExternalMetadata
 import one.rarebit.heyarr.mobile.state.RecentSearches
 import one.rarebit.heyarr.mobile.state.SearchController
 import one.rarebit.heyarr.mobile.ui.screens.CastState

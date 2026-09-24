@@ -121,7 +121,7 @@ fun App(
     downloader: BlobDownloader = JdkBlobDownloader(),
     initialRoute: Route = Route.Consume(Experience.WATCH),
     artworkLoader: ArtworkLoader? = null,
-    externalMetadata: one.rarebit.heyarr.desktop.state.ExternalMetadata? = null,
+    externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null,
     /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */
     mdns: MdnsResolver = NoMdnsResolver,
     /** Preview/test seam: a query typed into search on first composition. */

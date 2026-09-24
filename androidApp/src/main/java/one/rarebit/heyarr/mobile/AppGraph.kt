@@ -17,10 +17,11 @@ import one.rarebit.heyarr.mobile.playback.SessionAudioPlayer
 import one.rarebit.heyarr.mobile.playback.VideoSession
 import one.rarebit.heyarr.mobile.settings.PrefsSettingsStore
 import one.rarebit.heyarr.mobile.settings.SettingsStore
-import one.rarebit.heyarr.mobile.state.ExternalMetadata
+import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.mobile.state.RecentSearches
 import java.io.File
 import java.util.concurrent.TimeUnit
+import one.rarebit.heyarr.mobile.state.PhoneExternalMetadata
 
 /**
  * The process-wide object graph — by hand, on purpose. A container would add a
@@ -79,7 +80,7 @@ class AppGraph(app: Application, scope: CoroutineScope) {
 
     /** Cover art and synopses from keyless public sources, cached under the app's cache dir (Settings → Appearance turns it off). */
     val external: ExternalMetadata by lazy {
-        ExternalMetadata(File(app.cacheDir, "meta"), enabled = { settings.externalMetadata }, fetch = ExternalMetadata.okHttpFetch(bareHttp))
+        ExternalMetadata(File(app.cacheDir, "meta"), enabled = { settings.externalMetadata }, fetch = PhoneExternalMetadata.okHttpFetch(bareHttp))
     }
 
     /** Recent search queries — kept on this phone only, and labelled so. */

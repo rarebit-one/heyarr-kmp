@@ -10,6 +10,7 @@
     <ID>CyclomaticComplexMethod:Continue.kt$ContinueJson$fun parse(obj: String): ContinueEntry?</ID>
     <ID>CyclomaticComplexMethod:DriveCrdt.kt$Drive$fun retain(policy: RetentionPolicy, nowUnix: Long): List&lt;String&gt;</ID>
     <ID>CyclomaticComplexMethod:DriveCrdt.kt$Drive.Companion$fun fromSnapshot(json: String): Drive</ID>
+    <ID>CyclomaticComplexMethod:ExternalMetadata.kt$ExternalMetadata$private suspend fun resolve(key: MetaKey): ExternalMeta?</ID>
     <ID>CyclomaticComplexMethod:JsonScan.kt$JsonScan$fun stringMap(json: String, key: String): Map&lt;String, String&gt;</ID>
     <ID>CyclomaticComplexMethod:JsonScan.kt$JsonScan$private fun topLevelKey(json: String, key: String): Int?</ID>
     <ID>CyclomaticComplexMethod:JsonWrite.kt$JsonWrite$@Suppress("UNCHECKED_CAST") private fun writeValue(sb: StringBuilder, v: Any?)</ID>
@@ -21,6 +22,7 @@
     <ID>LongParameterList:Fixtures.kt$Fixtures$(id: String, type: String, title: String, year: Int?, art: Boolean = false, attrs: String = "{}")</ID>
     <ID>LoopWithTooManyJumpStatements:DriveCrdt.kt$Drive$for</ID>
     <ID>LoopWithTooManyJumpStatements:DriveCrdt.kt$DriveRecord$for</ID>
+    <ID>LoopWithTooManyJumpStatements:ExternalMetadata.kt$ExternalMetadata$for</ID>
     <ID>LoopWithTooManyJumpStatements:JsonScan.kt$JsonScan$for</ID>
     <ID>LoopWithTooManyJumpStatements:JsonScan.kt$JsonScan$while</ID>
     <ID>LoopWithTooManyJumpStatements:Variants.kt$Variants$for</ID>
@@ -51,6 +53,8 @@
     <ID>MagicNumber:Continue.kt$ContinueEntry$100.0</ID>
     <ID>MagicNumber:Continue.kt$ContinueEntry$3600</ID>
     <ID>MagicNumber:Continue.kt$ContinueEntry$60</ID>
+    <ID>MagicNumber:ExternalMetadata.kt$ExternalMetadata$32</ID>
+    <ID>MagicNumber:ExternalMetadata.kt$ExternalParsers$400</ID>
     <ID>MagicNumber:HttpTransport.kt$HttpTransport$405</ID>
     <ID>MagicNumber:JsonEscapes.kt$JsonEscapes$16</ID>
     <ID>MagicNumber:JsonEscapes.kt$JsonEscapes$5</ID>
@@ -89,6 +93,16 @@
     <ID>MaxLineLength:DriveCrdtVectorsTest.kt$DriveCrdtVectorsTest$assertEquals(expectedResolved, d.resolved().map { Live(it.path, it.blob, it.conflicted) }, "[$name] resolved tree")</ID>
     <ID>MaxLineLength:DriveCrdtVectorsTest.kt$DriveCrdtVectorsTest$val</ID>
     <ID>MaxLineLength:DriveRetainTest.kt$DriveRetainTest$if (array[i] == '\\' &amp;&amp; i + 1 &lt; array.length) { sb.append(array[i + 1]); i += 2 } else { sb.append(array[i]); i++ }</ID>
+    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$assertEquals("e75c0549-ad55-39e3-8025-c72c5d4a3c5d", ExternalParsers.musicBrainzReleaseGroup("""{"release-groups":[{"id":"e75c0549-ad55-39e3-8025-c72c5d4a3c5d","title":"Kid A"}]}"""))</ID>
+    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$assertEquals("https://blog.cloudflare.com/favicon.ico", ExternalParsers.feedImage(plain), "a favicon is a last resort but still an image")</ID>
+    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val atom = """&lt;feed xmlns="http://www.w3.org/2005/Atom"&gt;&lt;title&gt;Blog&lt;/title&gt;&lt;subtitle&gt;Notes on things&lt;/subtitle&gt;&lt;logo&gt;https://blog/logo.png&lt;/logo&gt;&lt;/feed&gt;"""</ID>
+    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val eps = ExternalParsers.tvmazeEpisodes("""[{"id":1,"season":4,"number":2,"name":"Phantom Pain","airdate":"2021-11-07","image":{"medium":"https://static.tvmaze.com/e.jpg"},"summary":"&lt;p&gt;The Yellowstone recovers.&lt;/p&gt;"},{"id":2,"season":5,"number":8,"name":"Desire Is All You Need","airdate":"2022-12-31","image":null,"summary":null}]""")</ID>
+    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val it = ExternalParsers.itunes("""{"results":[{"collectionName":"ATP","artworkUrl100":"https://a/100.jpg","artworkUrl600":"https://a/600.jpg","collectionViewUrl":"https://podcasts.apple.com/x"}]}""")!!</ID>
+    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val ol = ExternalParsers.openLibrary("""{"docs":[{"author_name":["Susanna Clarke"],"cover_i":10226290,"first_publish_year":2020,"title":"Piranesi","first_sentence":["When the Moon rose in the Third Northern Hall I went to the Ninth Vestibule."]}]}""")!!</ID>
+    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val plain = """&lt;rss&gt;&lt;channel&gt;&lt;title&gt;Cloudflare&lt;/title&gt;&lt;image&gt;&lt;url&gt;https://blog.cloudflare.com/favicon.ico&lt;/url&gt;&lt;title&gt;Cloudflare&lt;/title&gt;&lt;/image&gt;&lt;/channel&gt;&lt;/rss&gt;"""</ID>
+    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val rss = """&lt;?xml version="1.0"?&gt;&lt;rss&gt;&lt;channel&gt;&lt;title&gt;ATP&lt;/title&gt;&lt;description&gt;&lt;![CDATA[Three &lt;b&gt;nerds&lt;/b&gt; discussing tech.]]&gt;&lt;/description&gt;&lt;itunes:image href="https://cdn/atp.jpg"/&gt;&lt;image&gt;&lt;url&gt;https://cdn/small.png&lt;/url&gt;&lt;title&gt;x&lt;/title&gt;&lt;/image&gt;&lt;/channel&gt;&lt;/rss&gt;"""</ID>
+    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val show = ExternalParsers.tvmazeShow("""{"id":24594,"url":"https://www.tvmaze.com/shows/24594/yellowstone","name":"Yellowstone","premiered":"2018-06-20","image":{"medium":"https://static.tvmaze.com/m.jpg","original":"https://static.tvmaze.com/o.jpg"},"summary":"&lt;p&gt;&lt;b&gt;Yellowstone &lt;/b&gt;follows the Dutton family &amp;amp; co.&lt;/p&gt;"}""")!!</ID>
+    <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$val w = ExternalParsers.wikipedia("""{"type":"standard","title":"Sintel","thumbnail":{"source":"https://upload.wikimedia.org/x/330px-Sintel_poster.jpg?utm_source=en"},"extract":"Sintel is a 2010 animated fantasy short film.","content_urls":{"desktop":{"page":"https://en.wikipedia.org/wiki/Sintel"}}}""")!!</ID>
     <ID>MaxLineLength:Fixtures.kt$Fixtures$"""{"id":"$id","work_id":"$id","content_type":"$type","title":"$title","sort_title":"${title.lowercase()}","year":${year ?: "null"},"attributes":$attrs,"created_at":"2026-08-24T07:40:09Z","updated_at":"2026-09-01T10:00:00Z","artwork":${if (art) """{"asset_id":"a-$id","blob_hash":"$HASH","mime":"image/jpeg","content_url":"/api/v1/blobs/$HASH/content"}""" else "null"}}"""</ID>
     <ID>MaxLineLength:Fixtures.kt$Fixtures$"""{"id":"ep-1","kind":"edition","title":"S04E02 — Phantom Pain","work_id":"$YELLOWSTONE","work_title":"Yellowstone","content_type":"series","primary_asset":{"asset_id":"as-1","blob_hash":"$HASH"}}"""</ID>
     <ID>MaxLineLength:Fixtures.kt$Fixtures$"d-yellowstone" -&gt; """{"desired_item_id":"d-yellowstone","state":"FULLY_SATISFIED","content":{"satisfaction":"satisfied","assets":[{"asset_id":"01a032b7-8f86-7a18-a130-1e030d633f69","accepted":true,"score":0,"terminal":false,"reasons":$reasonsHeld}]},"placement":{"satisfaction":"unknown","detail":"","unproven":true},"upgrade":{"eligible":true,"status":"eligible","detail":"a 2160p remux would finish this want"}}"""</ID>
@@ -165,6 +179,15 @@
     <ID>ReturnCount:Continue.kt$ContinueJson$private fun doubleField(json: String, key: String): Double?</ID>
     <ID>ReturnCount:Discovery.kt$NodeDiscovery$fun discover(manual: String? = null): DiscoveredServer</ID>
     <ID>ReturnCount:DriveCrdt.kt$Drive$fun get(path: String): DriveEntry?</ID>
+    <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$private suspend fun feedImage(key: MetaKey): ExternalMeta?</ID>
+    <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$private suspend fun musicBrainz(key: MetaKey): ExternalMeta?</ID>
+    <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$suspend fun episodes(tvmazeId: Long): List&lt;ExternalEpisode&gt;</ID>
+    <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$suspend fun lookup(key: MetaKey): ExternalMeta?</ID>
+    <ID>ReturnCount:ExternalMetadata.kt$ExternalParsers$fun feedImage(xml: String): String?</ID>
+    <ID>ReturnCount:ExternalMetadata.kt$ExternalParsers$fun itunes(body: String): ExternalMeta?</ID>
+    <ID>ReturnCount:ExternalMetadata.kt$ExternalParsers$fun openLibrary(body: String): ExternalMeta?</ID>
+    <ID>ReturnCount:ExternalMetadata.kt$ExternalParsers$fun wikipedia(body: String): ExternalMeta?</ID>
+    <ID>ReturnCount:ExternalMetadata.kt$ExternalParsers$fun yearAgrees(text: String?, year: Int?): Boolean</ID>
     <ID>ReturnCount:JsonEscapes.kt$JsonEscapes$fun append(sb: StringBuilder, json: String, i: Int): Int</ID>
     <ID>ReturnCount:JsonScan.kt$JsonScan$fun arrayOf(body: String, keys: List&lt;String&gt;): String?</ID>
     <ID>ReturnCount:JsonScan.kt$JsonScan$fun doubleField(json: String, key: String): Double?</ID>
@@ -184,6 +207,7 @@
     <ID>TooGenericExceptionCaught:McpClient.kt$McpClient$e: Exception</ID>
     <ID>TooGenericExceptionCaught:VaultFrame.kt$VaultFrame$e: Exception</ID>
     <ID>TooManyFunctions:DriveCrdt.kt$Drive</ID>
+    <ID>TooManyFunctions:ExternalMetadata.kt$ExternalMetadata</ID>
     <ID>TooManyFunctions:JsonScan.kt$JsonScan</ID>
     <ID>TooManyFunctions:Series.kt$Series</ID>
     <ID>TooManyFunctions:VaultFrame.kt$VaultFrame</ID>

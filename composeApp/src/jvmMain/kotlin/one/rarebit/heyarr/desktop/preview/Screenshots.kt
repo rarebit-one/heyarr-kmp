@@ -77,7 +77,7 @@ private fun render(file: File, width: Int, height: Int, route: Route, query: Str
             App(
                 settings = settings, transport = transport, player = NoPlayer, opener = NoOpener, downloader = NoDownloader,
                 initialAudioQueue = if (audio) listOf(Route.Player("w-album", "track-a", Fixtures.HASH, "Fixture album", "First track", MediaType.MUSIC), Route.Player("w-album", "track-b", Fixtures.HASH, "Fixture album", "Next track", MediaType.MUSIC)) else emptyList(),
-                initialRoute = route, artworkLoader = art, externalMetadata = one.rarebit.heyarr.desktop.state.ExternalMetadata.NONE, initialQuery = query, initialConnectionSheet = connection, initialLibraryTab = if (downloads) 1 else 0,
+                initialRoute = route, artworkLoader = art, externalMetadata = one.rarebit.heyarr.desktop.state.DesktopExternalMetadata.NONE, initialQuery = query, initialConnectionSheet = connection, initialLibraryTab = if (downloads) 1 else 0,
             )
         }
         // Let effects (fixture fetches on IO) land: render, wait, re-render until quiet.
@@ -116,7 +116,7 @@ private fun verifyShelfSwitch() {
         settings, FakeHeyarrTransport(), NoPlayer,
         one.rarebit.heyarr.desktop.open.OpenExternally(NoDownloader, NoOpener), scope,
         ArtworkLoader({ "" }, { "" }, fetcher = { PlaceholderArt.bytes(it) }),
-        one.rarebit.heyarr.desktop.state.ExternalMetadata.NONE,
+        one.rarebit.heyarr.desktop.state.DesktopExternalMetadata.NONE,
     )
     val selected = mutableStateOf(Experience.WATCH)
     val states = Experience.entries.associateWith { one.rarebit.heyarr.desktop.ui.screens.LibraryState() }
