@@ -17,12 +17,12 @@ import one.rarebit.heyarr.desktop.device.KeyTier
 import one.rarebit.heyarr.desktop.device.PairingState
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.ui.theme.Tokens
-import one.rarebit.heyarr.desktop.ui.components.GhostButton
-import one.rarebit.heyarr.desktop.ui.components.KeyValue
-import one.rarebit.heyarr.desktop.ui.components.Notice
-import one.rarebit.heyarr.desktop.ui.components.Panel
-import one.rarebit.heyarr.desktop.ui.components.PrimaryButton
-import one.rarebit.heyarr.desktop.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.KeyValue
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.Panel
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.desktop.ui.screens.Field
 
 /**

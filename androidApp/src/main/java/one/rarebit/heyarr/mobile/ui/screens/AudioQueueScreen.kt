@@ -43,15 +43,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.mobile.playback.AudioState
-import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
-import one.rarebit.heyarr.mobile.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Artwork
-import one.rarebit.heyarr.mobile.ui.components.GhostButton
-import one.rarebit.heyarr.mobile.ui.components.IconButtonRound
-import one.rarebit.heyarr.mobile.ui.components.Notice
-import one.rarebit.heyarr.mobile.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.mobile.ui.components.clockShort
 
 /** The full audio screen: cover, transport, scrubber, and the queue — the music accent throughout. */

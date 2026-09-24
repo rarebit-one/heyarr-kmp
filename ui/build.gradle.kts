@@ -33,6 +33,10 @@ kotlin {
                 implementation(compose.runtime)
                 implementation(compose.foundation)
                 implementation(compose.ui)
+                // The shared components (buttons, chips, tables, toasts) and the theme are
+                // Material 3; its types (Typography, ColorScheme) are part of this API.
+                api(compose.material3)
+                implementation(compose.materialIconsExtended)
                 // Compose resources: the self-hosted fonts ship ONCE, from this module's
                 // composeResources/font, to both apps (desktop jar + android assets).
                 implementation(compose.components.resources)

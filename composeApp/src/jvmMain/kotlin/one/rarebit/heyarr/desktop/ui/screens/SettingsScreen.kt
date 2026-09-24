@@ -33,22 +33,22 @@ import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.state.SyncStatus
-import one.rarebit.heyarr.desktop.state.Toast
+import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.desktop.state.VaultPhase
-import one.rarebit.heyarr.desktop.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
-import one.rarebit.heyarr.desktop.ui.components.FilterChip
-import one.rarebit.heyarr.desktop.ui.components.GhostButton
-import one.rarebit.heyarr.desktop.ui.components.KeyValue
-import one.rarebit.heyarr.desktop.ui.components.MediaBadge
-import one.rarebit.heyarr.desktop.ui.components.Notice
-import one.rarebit.heyarr.desktop.ui.components.Panel
-import one.rarebit.heyarr.desktop.ui.components.PrimaryButton
-import one.rarebit.heyarr.desktop.ui.components.SecondaryButton
-import one.rarebit.heyarr.desktop.ui.components.SectionHeader
-import one.rarebit.heyarr.desktop.ui.components.Skeleton
+import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.KeyValue
+import one.rarebit.heyarr.ui.components.MediaBadge
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.Panel
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.Skeleton
 
 class SettingsState {
     var followed by mutableStateOf<List<FollowedSource>?>(null)

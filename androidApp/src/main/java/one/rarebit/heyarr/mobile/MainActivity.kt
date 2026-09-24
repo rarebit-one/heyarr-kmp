@@ -57,11 +57,11 @@ import one.rarebit.heyarr.mobile.nav.HeyarrNavHost
 import one.rarebit.heyarr.mobile.playback.MediaCodecCapabilities
 import one.rarebit.heyarr.mobile.theme.HeyarrTheme
 import one.rarebit.heyarr.mobile.theme.Tokens
-import one.rarebit.heyarr.mobile.ui.components.GhostButton
-import one.rarebit.heyarr.mobile.ui.components.IconButtonRound
-import one.rarebit.heyarr.mobile.ui.components.Panel
-import one.rarebit.heyarr.mobile.ui.components.SectionHeader
 import one.rarebit.heyarr.mobile.ui.screens.ConnectionFields
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.Panel
+import one.rarebit.heyarr.ui.components.SectionHeader
 
 /**
  * A pairing invite that arrived by deep link (`heyarr-mobile://pair?invite=…`) — from

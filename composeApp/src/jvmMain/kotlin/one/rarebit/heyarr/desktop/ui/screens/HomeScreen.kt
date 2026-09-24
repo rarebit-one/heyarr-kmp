@@ -35,20 +35,20 @@ import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.theme.CardAspect
-import one.rarebit.heyarr.desktop.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.desktop.ui.Route
-import one.rarebit.heyarr.desktop.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.desktop.ui.components.Hero
 import one.rarebit.heyarr.desktop.ui.components.HeroSkeleton
 import one.rarebit.heyarr.desktop.ui.components.MediaCard
-import one.rarebit.heyarr.desktop.ui.components.Notice
-import one.rarebit.heyarr.desktop.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.desktop.ui.components.Rail
-import one.rarebit.heyarr.desktop.ui.components.RailState
-import one.rarebit.heyarr.desktop.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.RailState
+import one.rarebit.heyarr.ui.components.SecondaryButton
 
 /** Everything the Home screen shows, loaded rail by rail so a slow one never blanks the page. */
 class HomeState {

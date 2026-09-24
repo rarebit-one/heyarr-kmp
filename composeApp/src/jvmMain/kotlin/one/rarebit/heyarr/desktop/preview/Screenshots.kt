@@ -123,7 +123,7 @@ private fun verifyShelfSwitch() {
     try {
         ImageComposeScene(width = 1280, height = 900, density = Density(1f)).use { scene ->
             scene.setContent {
-                one.rarebit.heyarr.desktop.theme.HeyarrTheme {
+                one.rarebit.heyarr.ui.theme.HeyarrTheme {
                     one.rarebit.heyarr.desktop.ui.screens.LibraryScreen(
                         session, states.getValue(selected.value), {}, { _, _, _ -> }, experience = selected.value,
                     )

@@ -42,9 +42,10 @@ import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.ui.isListening
 import androidx.compose.runtime.produceState
 import one.rarebit.heyarr.desktop.state.PlaybackSession
-import one.rarebit.heyarr.desktop.theme.LocalMediaTheme
-import one.rarebit.heyarr.desktop.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.Tokens
+import one.rarebit.heyarr.ui.components.IconButtonRound
 
 /**
  * The persistent transport at the foot of the window while something plays and the

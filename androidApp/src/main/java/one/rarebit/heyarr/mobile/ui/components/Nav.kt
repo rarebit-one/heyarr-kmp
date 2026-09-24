@@ -53,9 +53,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import one.rarebit.heyarr.mobile.state.Connection
-import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
-import one.rarebit.heyarr.mobile.theme.RubikFamily
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.HeyarrFonts
 import one.rarebit.heyarr.mobile.theme.Tokens
+import one.rarebit.heyarr.ui.components.focusRing
 
 /** The top-level destinations, in bar order. No Forum. */
 enum class NavSection(val label: String, val icon: ImageVector) {
@@ -71,7 +72,7 @@ enum class NavSection(val label: String, val icon: ImageVector) {
 /** The tracked UPPERCASE Rubik caption under each tile — the desktop rail's, sized for a phone. */
 private val TILE_LABEL: TextStyle
     @Composable get() = TextStyle(
-        fontFamily = RubikFamily,
+        fontFamily = HeyarrFonts.rubik,
         fontSize = 8.5.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 0.6.sp,
@@ -79,7 +80,7 @@ private val TILE_LABEL: TextStyle
     )
 private val RAIL_LABEL: TextStyle
     @Composable get() = TextStyle(
-        fontFamily = RubikFamily,
+        fontFamily = HeyarrFonts.rubik,
         fontSize = 9.5.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 0.9.sp,

@@ -36,18 +36,18 @@ import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.core.mcp.PlaybackStatus
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.desktop.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.Tokens
-import one.rarebit.heyarr.desktop.ui.components.EmptyState
-import one.rarebit.heyarr.desktop.ui.components.ErrorState
-import one.rarebit.heyarr.desktop.ui.components.FilterChip
-import one.rarebit.heyarr.desktop.ui.components.GhostButton
-import one.rarebit.heyarr.desktop.ui.components.IconButtonRound
-import one.rarebit.heyarr.desktop.ui.components.KeyValue
-import one.rarebit.heyarr.desktop.ui.components.Notice
-import one.rarebit.heyarr.desktop.ui.components.Panel
-import one.rarebit.heyarr.desktop.ui.components.SectionHeader
-import one.rarebit.heyarr.desktop.ui.components.Skeleton
+import one.rarebit.heyarr.ui.components.EmptyState
+import one.rarebit.heyarr.ui.components.ErrorState
+import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.KeyValue
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.Panel
+import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.Skeleton
 
 class NowPlayingState {
     /** The session generation this state was loaded for. */

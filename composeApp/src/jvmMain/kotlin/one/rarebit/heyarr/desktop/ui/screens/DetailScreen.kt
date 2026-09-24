@@ -94,39 +94,39 @@ import one.rarebit.heyarr.desktop.state.ExternalMeta
 import one.rarebit.heyarr.desktop.state.MetaKey
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.core.state.LibraryStatus
-import one.rarebit.heyarr.desktop.state.Toast
+import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.desktop.state.rememberArtwork
-import one.rarebit.heyarr.desktop.theme.LocalMediaTheme
-import one.rarebit.heyarr.desktop.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
-import one.rarebit.heyarr.desktop.ui.components.ErrorState
-import one.rarebit.heyarr.desktop.ui.components.FilterChip
-import one.rarebit.heyarr.desktop.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.ErrorState
+import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.desktop.ui.components.Hero
 import one.rarebit.heyarr.desktop.ui.components.HeroSkeleton
-import one.rarebit.heyarr.desktop.ui.components.IconButtonRound
-import one.rarebit.heyarr.desktop.ui.components.KeyValue
-import one.rarebit.heyarr.desktop.ui.components.MediaRowSkeleton
-import one.rarebit.heyarr.desktop.ui.components.Notice
-import one.rarebit.heyarr.desktop.ui.components.Panel
-import one.rarebit.heyarr.desktop.ui.components.PrimaryButton
-import one.rarebit.heyarr.desktop.ui.components.ReasonList
-import one.rarebit.heyarr.desktop.ui.components.RejectedBy
-import one.rarebit.heyarr.desktop.ui.components.RuleCode
-import one.rarebit.heyarr.desktop.ui.components.SecondaryButton
-import one.rarebit.heyarr.desktop.ui.components.SectionHeader
-import one.rarebit.heyarr.desktop.ui.components.Skeleton
-import one.rarebit.heyarr.desktop.ui.components.StatusPill
-import one.rarebit.heyarr.desktop.ui.components.focusRing
-import one.rarebit.heyarr.desktop.ui.components.verdictColor
-import one.rarebit.heyarr.desktop.ui.components.Cell
-import one.rarebit.heyarr.desktop.ui.components.Column as TableColumn
-import one.rarebit.heyarr.desktop.ui.components.DataTable
-import one.rarebit.heyarr.desktop.ui.components.Section
+import one.rarebit.heyarr.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.KeyValue
+import one.rarebit.heyarr.ui.components.MediaRowSkeleton
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.Panel
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.ReasonList
+import one.rarebit.heyarr.ui.components.RejectedBy
+import one.rarebit.heyarr.ui.components.RuleCode
+import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.Skeleton
+import one.rarebit.heyarr.ui.components.StatusPill
+import one.rarebit.heyarr.ui.components.focusRing
+import one.rarebit.heyarr.ui.components.verdictColor
+import one.rarebit.heyarr.ui.components.Cell
+import one.rarebit.heyarr.ui.components.TableColumn
+import one.rarebit.heyarr.ui.components.DataTable
+import one.rarebit.heyarr.ui.components.Section
 
 /** The two faces of a work: what you came to watch, and the tooling that keeps it that way. */
 enum class DetailTab(val label: String) { WATCH("Watch"), CURATE("Curate") }
@@ -183,7 +183,7 @@ fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, o
             Text("Stops following this title and removes its catalogue entry and download requests. Files are not deleted immediately; unused managed data may be reclaimed later.")
             removalError?.let { Text(it, color = Tokens.danger) }
         } },
-        confirmButton = { one.rarebit.heyarr.desktop.ui.components.PrimaryButton(if (removing) "Removing…" else "Remove", enabled = !removing, onClick = {
+        confirmButton = { one.rarebit.heyarr.ui.components.PrimaryButton(if (removing) "Removing…" else "Remove", enabled = !removing, onClick = {
             val api = session.api ?: return@PrimaryButton
             removing = true; removalError = null
             scope.launch {

@@ -61,24 +61,23 @@ import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.ui.theme.CardAspect
-import one.rarebit.heyarr.desktop.theme.LocalAppearance
-import one.rarebit.heyarr.desktop.theme.LocalMediaTheme
-import one.rarebit.heyarr.desktop.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.LocalAppearance
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
+import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.Tokens
-
-/** The glyph a type's placeholder art shows. */
-fun MediaType.icon(): ImageVector = when (this) {
-    MediaType.MOVIE -> Icons.Rounded.Movie
-    MediaType.SERIES -> Icons.Rounded.Tv
-    MediaType.BOOK -> Icons.Rounded.MenuBook
-    MediaType.AUDIOBOOK -> Icons.Rounded.Headphones
-    MediaType.PODCAST -> Icons.Rounded.Podcasts
-    MediaType.MUSIC -> Icons.Rounded.MusicNote
-    MediaType.FEED -> Icons.Rounded.RssFeed
-    MediaType.UNKNOWN -> Icons.Rounded.HelpOutline
-}
+import one.rarebit.heyarr.ui.components.MediaBadge
+import one.rarebit.heyarr.ui.components.MetaLine
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.RailState
+import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.Skeleton
+import one.rarebit.heyarr.ui.components.StatusPill
+import one.rarebit.heyarr.ui.components.focusRing
+import one.rarebit.heyarr.ui.components.icon
+import one.rarebit.heyarr.ui.components.interactiveSurface
 
 /**
  * Artwork with a blur-up: an accent-tinted gradient placeholder (with the type glyph)
@@ -93,26 +92,6 @@ fun Artwork(bitmap: ImageBitmap?, type: MediaType, modifier: Modifier = Modifier
     Box(modifier.background(Brush.linearGradient(listOf(theme.accent.copy(alpha = 0.35f), Tokens.surface2, Tokens.surface1))), contentAlignment = Alignment.Center) {
         if (bitmap == null) Icon(type.icon(), contentDescription = null, tint = theme.accent.copy(alpha = 0.55f), modifier = Modifier.size(glyphSize))
         if (bitmap != null) Image(bitmap, contentDescription = contentDescription, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().alpha(alpha))
-    }
-}
-
-/** Library status as a small pill: In library (accent), Wanted (gold), Missing (danger), Not tracked (muted). */
-@Composable
-fun StatusPill(status: LibraryStatus, modifier: Modifier = Modifier, compact: Boolean = false) {
-    val accent = LocalMediaTheme.current.accentGradientEnd
-    val (tone, dot) = when (status) {
-        LibraryStatus.IN_LIBRARY -> accent to accent
-        LibraryStatus.WANTED -> Tokens.ratingGold to Tokens.ratingGold
-        LibraryStatus.MISSING -> Tokens.danger to Tokens.danger
-        LibraryStatus.NOT_TRACKED -> Tokens.textMuted to Tokens.textDisabled
-    }
-    Row(
-        modifier.background(Tokens.bgBase.copy(alpha = 0.72f), RectangleShape).border(Tokens.hairline, tone.copy(alpha = 0.45f), RectangleShape).padding(horizontal = if (compact) 6.dp else 8.dp, vertical = 2.dp)
-            .semantics { this.contentDescription = "Status: ${status.label}" },
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp),
-    ) {
-        Box(Modifier.size(6.dp).background(dot, RectangleShape))
-        if (!compact) Text(status.label.uppercase(), style = MaterialTheme.typography.labelSmall, color = tone, maxLines = 1)
     }
 }
 
@@ -161,7 +140,7 @@ fun MediaCard(
         modifier.width(width)
             .focusRing(interaction, shape, inset = 2.dp)
             .clip(shape)
-            .hoverSurface(interaction, shape)
+            .interactiveSurface(interaction, shape)
             .border(Tokens.hairline, if (hovered) theme.accent.copy(alpha = 0.6f) else Tokens.border, shape)
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen)
             .semantics { this.contentDescription = "${type.label}: $title${status?.let { ", ${it.label}" } ?: ""}" },
@@ -243,28 +222,6 @@ fun MediaRow(
         if (status != null) StatusPill(status)
         if (trailing != null) trailing()
     }
-}
-
-/** Skeleton rows for a list. */
-@Composable
-fun MediaRowSkeleton(count: Int = 4) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        repeat(count) {
-            Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Skeleton(Modifier.width(40.dp).height(52.dp))
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Skeleton(Modifier.fillMaxWidth(0.5f).height(12.dp)); Skeleton(Modifier.fillMaxWidth(0.3f).height(10.dp))
-                }
-            }
-        }
-    }
-}
-
-/** The state a rail can be in; the rail renders skeletons / an inline error / an empty line itself. */
-sealed interface RailState<out T> {
-    data object Loading : RailState<Nothing>
-    data class Loaded<T>(val items: List<T>) : RailState<T>
-    data class Failed(val message: String) : RailState<Nothing>
 }
 
 /**

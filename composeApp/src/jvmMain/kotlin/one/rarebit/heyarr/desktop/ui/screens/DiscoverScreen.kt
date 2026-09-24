@@ -34,9 +34,9 @@ import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.Tokens
 import one.rarebit.heyarr.desktop.ui.components.MediaRow
-import one.rarebit.heyarr.desktop.ui.components.Notice
-import one.rarebit.heyarr.desktop.ui.components.PrimaryButton
-import one.rarebit.heyarr.desktop.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.SectionHeader
 
 /** A discovery hit the user chose to want: the sheet opens by title with the year and type filled in. */
 typealias WantByTitle = (title: String, year: Int?, type: MediaType) -> Unit

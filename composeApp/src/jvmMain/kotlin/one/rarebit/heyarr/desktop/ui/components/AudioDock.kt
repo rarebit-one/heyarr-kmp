@@ -16,8 +16,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.desktop.state.AppSession
-import one.rarebit.heyarr.desktop.theme.LocalMediaTheme
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.ui.components.ArchiveActivity
+import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.theme.LocalAppearance
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.Tokens
 
 /** Full-height session transport; the cover uses the same authenticated artwork path as the catalog. */
@@ -46,7 +51,7 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
         val error = playback.startError ?: ps.error
         if (error != null) Notice(error)
         else if (ps.buffering || playback.pendingStart) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            one.rarebit.heyarr.ui.components.ArchiveActivity(one.rarebit.heyarr.desktop.theme.LocalAppearance.current.reduceMotion)
+            ArchiveActivity(LocalAppearance.current.reduceMotion)
             Text("Buffering…", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
         }
         var dragging by remember(item.assetId) { mutableStateOf<Float?>(null) }

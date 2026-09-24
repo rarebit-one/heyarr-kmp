@@ -224,14 +224,13 @@ app/src/main/java/one/rarebit/heyarr/mobile/
                 controller, the VideoSession, the public-metadata cache, recent searches — no DI container) ·
   AppViewModel.kt (session/config/enrol; playback planning lives in playback/PlaybackCoordinator) · HeyarrConfig.kt ·
   SessionText.kt (the "signed in as … · scope" line)
-  theme/        Tokens (the phone's design tokens over `:ui`'s) · HeyarrTheme (Material 3
-                colour scheme + the Montserrat/Inter/Rubik type ramp; LocalMediaTheme, LocalAppearance, MediaScope)
-  ui/components/ Primitives (PrimaryButton gradient pill, SecondaryButton, GhostButton, IconButtonRound, FilterChip, MediaBadge,
-                MetaLine, SectionHeader, Field, Skeleton, EmptyState, ErrorState, Notice, OfflineBanner, ToastCard) ·
-                Cards (Artwork blur-up over Coil, StatusPill, MediaCard with long-press actions, MediaRow, Rail, Hero + scrim,
-                skeletons) · Reasons (RuleCode, ReasonList, RejectedBy, Panel, KeyValue) · Table (DataTable that scrolls sideways
-                on a phone, Cell, Section) · Nav (NavSection, HeyarrBottomBar, HeyarrNavRail) · NowPlayingBar (one bar for the
-                video session and the audio queue) · Cover (rememberCover: node art, else a labelled public cover)
+  theme/        Tokens (the phone's design tokens over `:ui`'s) · HeyarrTheme (`:ui`'s theme with `PhonePlatform`: the
+                phone's type ramp, touch conventions, pinned content colour; LocalMediaTheme/MediaScope are `:ui`'s)
+  ui/components/ Cards (Artwork blur-up over Coil, MediaCard with long-press actions, MediaRow, Rail, Hero + scrim,
+                skeletons; StatusPill/RailState are `:ui`'s) · Nav (NavSection, HeyarrBottomBar, HeyarrNavRail) · NowPlayingBar (one bar for the
+                video session and the audio queue) · Cover (rememberCover: node art, else a labelled public cover). The
+                primitives (buttons, chips, Field, states, OfflineBanner, ToastCard), DataTable/Cell/Section and the
+                Reasons set are `:ui`'s `components/`, shared with the desktop
   ui/screens/   HomeScreen (spotlight hero, Continue, Starred/Recently played when decrypted here, per-type rails, wanted/upgrade
                 rails, Following; Discover = the same with the discover_content notice) · SearchScreen (universal search over
                 state/SearchController, per-type sections streaming in, local recent searches) · DetailScreen (Watch tab: art,
