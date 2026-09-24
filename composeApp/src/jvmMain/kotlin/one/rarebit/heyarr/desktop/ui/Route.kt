@@ -44,8 +44,6 @@ class Nav(start: Route = Route.Consume(Experience.WATCH)) {
     var current: Route by mutableStateOf(start)
         private set
 
-    val canGoBack: Boolean get() = stack.size > 1
-
     fun go(route: Route) {
         if (route == current) return
         if (route is Route.Player) stack.removeAll { it is Route.Player }

@@ -79,7 +79,7 @@ device another member removed shows an honest "removed" state instead of looping
 ## Design system
 
 Tokens live in one place — `theme/Tokens.kt` (surfaces, text ramp, radii, spacing,
-type scale) — and the media table in `theme/MediaType.kt`:
+type scale) — and the media table in `:ui`'s `MediaThemes` (over `:core`'s `MediaType`):
 
 | Media | Accent | Card | CTA |
 |-------|--------|------|-----|

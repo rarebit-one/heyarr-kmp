@@ -292,9 +292,6 @@ class EmbeddedPlayer(
         return err
     }
 
-    /** Where playback was when mpv went away, for the re-embed. */
-    val resumePosition: Double? get() = resumeAt
-
     fun togglePause() = send("cycle", "pause")
     fun play() = send("set_property", "pause", false)
     fun pause() = send("set_property", "pause", true)

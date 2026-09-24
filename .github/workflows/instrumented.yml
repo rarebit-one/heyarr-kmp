@@ -5,11 +5,36 @@ name: instrumented
 # measure time — and both have shipped past them (heyarr-mobile #47, #49). Runs
 # alongside unit tests on PRs and main so post-merge regressions remain visible.
 
+# Path-filtered: a change that cannot affect this build does not run it. The shared
+# modules and the Gradle build itself trigger every workflow; only :androidApp
+# triggers the android ones.
 on:
   push:
     branches: [main]
+    paths:
+      - "androidApp/**"
+      - "core/**"
+      - "ui/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - ".github/workflows/instrumented.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "androidApp/**"
+      - "core/**"
+      - "ui/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - ".github/workflows/instrumented.yml"
   workflow_dispatch:
 
 concurrency:

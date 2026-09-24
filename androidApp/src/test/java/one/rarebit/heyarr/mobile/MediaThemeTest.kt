@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.mobile
 
 import androidx.compose.ui.graphics.Color
-import one.rarebit.heyarr.mobile.theme.CardAspect
-import one.rarebit.heyarr.mobile.theme.MediaThemes
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.ui.theme.CardAspect
+import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

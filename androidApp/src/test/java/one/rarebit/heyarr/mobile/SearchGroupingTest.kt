@@ -7,7 +7,7 @@ import one.rarebit.heyarr.mobile.state.SearchFilter
 import one.rarebit.heyarr.mobile.state.SearchGrouping
 import one.rarebit.heyarr.mobile.state.SearchRow
 import one.rarebit.heyarr.mobile.state.Segment
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

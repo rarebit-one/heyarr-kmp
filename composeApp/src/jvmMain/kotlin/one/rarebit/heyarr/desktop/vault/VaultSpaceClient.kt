@@ -138,25 +138,6 @@ class VaultSpaceClient(
         )
     }
 
-    /** Push an encrypted snapshot; returns its content-addressed id (framed, like a change's). */
-    fun pushSnapshot(spaceId: String, frontier: List<String>, ciphertext: ByteArray): String {
-        val canonicalFrontier = PersonalStateId.canonical(frontier)
-        val snapshotId = PersonalStateId.snapshotId(spaceId, canonicalFrontier, ciphertext)
-        val body = JsonWrite.obj(
-            linkedMapOf(
-                "space_id" to spaceId,
-                "snapshot_id" to snapshotId,
-                "frontier" to canonicalFrontier,
-                "ciphertext" to b64(ciphertext),
-            ),
-        )
-        val resp = http.post(snapshotsUrl(baseUrl, spaceId), body, "application/json", credential.asHeader())
-        require(resp.status == 201) { "vault: POST snapshot failed: HTTP ${resp.status}" }
-        val acked = JsonScan.stringField(resp.body, "snapshot_id")
-        require(acked == snapshotId) { "vault: server acked snapshot id $acked, expected $snapshotId" }
-        return snapshotId
-    }
-
     /** The space keys sealed for each recipient — the caller picks its own to unwrap. */
     override fun listKeys(spaceId: String): List<WrappedKey> {
         val resp = http.get(keysUrl(baseUrl, spaceId), credential.asHeader())
@@ -237,7 +218,6 @@ class VaultSpaceClient(
         fun spacesUrl(baseUrl: String) = base(baseUrl) + "/spaces"
         fun changesUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/changes"
         fun snapshotUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/snapshot"
-        fun snapshotsUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/snapshots"
         fun keysUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/keys"
         fun placementsUrl(baseUrl: String) = base(baseUrl) + "/vault/placements"
     }

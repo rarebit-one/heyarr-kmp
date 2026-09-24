@@ -48,9 +48,19 @@ import one.rarebit.heyarr.mobile.search.FollowedItem
 import one.rarebit.heyarr.mobile.search.FollowedSource
 import one.rarebit.heyarr.mobile.search.FollowedSourceClient
 import one.rarebit.heyarr.mobile.search.FollowedSourcesJson
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 import java.io.IOException
 import java.net.URLEncoder
+import one.rarebit.heyarr.core.heyarr.Capabilities
+import one.rarebit.heyarr.core.heyarr.CapabilitiesJson
+import one.rarebit.heyarr.core.heyarr.JobInfo
+import one.rarebit.heyarr.core.heyarr.JobJson
+import one.rarebit.heyarr.core.heyarr.LibraryInfo
+import one.rarebit.heyarr.core.heyarr.LibraryInfoJson
+import one.rarebit.heyarr.core.heyarr.ProviderInfo
+import one.rarebit.heyarr.core.heyarr.ProviderJson
+import one.rarebit.heyarr.core.heyarr.SessionInfo
+import one.rarebit.heyarr.core.heyarr.SessionInfoJson
 
 /**
  * The one typed door to heyarr for every screen — ported from heyarr-desktop's

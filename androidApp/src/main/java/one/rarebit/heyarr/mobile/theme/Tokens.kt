@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import one.rarebit.heyarr.ui.theme.MediaTheme
 
 /**
  * THE design-token layer — ported verbatim from heyarr-desktop's `theme/Tokens.kt`.
@@ -65,7 +66,6 @@ object Tokens {
     val navWidth: Dp = one.rarebit.heyarr.ui.theme.Tokens.navWidth
     val railBreakpoint: Dp = 600.dp
     val posterWidth: Dp = 132.dp
-    val posterWidthWide: Dp = 160.dp
     val squareWidth: Dp = 148.dp
     val screenPadding: Dp = 16.dp
 

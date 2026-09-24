@@ -4,7 +4,6 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.mobile.discover.DiscoverClient
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.heyarr.mobile.search.AcquireClient
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -54,10 +53,5 @@ class DiscoverClientTest {
         val out = DiscoverClient(t, base, cred).discover("  ")
         assertTrue(out is DiscoverClient.Outcome.Found && out.results.isEmpty())
         assertEquals(null, t.lastUrl)
-    }
-
-    @Test fun followFeedBodyNamesTheTitleNeverAWorkId() {
-        val body = AcquireClient.followFeedBody("The Expanse", "280619", "living-room")
-        assertEquals("""{"title":"The Expanse","tvdb_id":"280619","quality_profile":"living-room","monitor":true,"backfill":"from_now"}""", body)
     }
 }

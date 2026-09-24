@@ -31,11 +31,11 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import one.rarebit.heyarr.mobile.heyarr.Capabilities
-import one.rarebit.heyarr.mobile.heyarr.JobInfo
-import one.rarebit.heyarr.mobile.heyarr.LibraryInfo
-import one.rarebit.heyarr.mobile.heyarr.ProviderInfo
-import one.rarebit.heyarr.mobile.heyarr.SessionInfo
+import one.rarebit.heyarr.core.heyarr.Capabilities
+import one.rarebit.heyarr.core.heyarr.JobInfo
+import one.rarebit.heyarr.core.heyarr.LibraryInfo
+import one.rarebit.heyarr.core.heyarr.ProviderInfo
+import one.rarebit.heyarr.core.heyarr.SessionInfo
 import one.rarebit.heyarr.core.mcp.PeerStatus
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.state.Connection

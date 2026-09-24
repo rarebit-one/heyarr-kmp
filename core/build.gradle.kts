@@ -1,17 +1,15 @@
 import com.android.build.gradle.LibraryExtension
 
 plugins {
-    id("org.jetbrains.kotlin.multiplatform")
+    alias(libs.plugins.kotlin.multiplatform)
 }
 
 // Register the android target only when an SDK is actually available (CI, or a dev box
 // with one). Applying `com.android.library` unconditionally makes AGP demand an SDK at
 // CONFIGURATION time, which would break plain JVM/desktop builds on an SDK-less machine.
-// Detection: ANDROID_HOME / ANDROID_SDK_ROOT env, or a `sdk.dir` line in local.properties.
-val hasAndroidSdk =
-    System.getenv("ANDROID_HOME") != null ||
-    System.getenv("ANDROID_SDK_ROOT") != null ||
-    rootProject.file("local.properties").takeIf { it.exists() }?.readText()?.contains("sdk.dir") == true
+// Detection (ANDROID_HOME / ANDROID_SDK_ROOT env, or a `sdk.dir` line in local.properties)
+// happens once, in settings.gradle.kts, which hands every project the result.
+val hasAndroidSdk = extra["hasAndroidSdk"] as Boolean
 
 if (hasAndroidSdk) apply(plugin = "com.android.library")
 
@@ -42,7 +40,7 @@ kotlin {
                 // variants and resolve per target. This puts voidbind on :core's classpath,
                 // so :composeApp (desktop) now pulls it transitively too → desktop CI needs a
                 // read:packages token (see .github/workflows/desktop.yml).
-                implementation("one.rarebit.voidbind:voidbind-client:0.8.0")
+                implementation(libs.voidbind.client)
             }
         }
         val commonTest by getting {
@@ -53,7 +51,7 @@ kotlin {
                 // provider as `implementation`, and :composeApp adds it for the app — but
                 // :core's own tests must bring it themselves or every encrypt/decrypt
                 // throws at runtime with no compile error.
-                implementation("dev.whyoleg.cryptography:cryptography-provider-optimal:0.6.0")
+                implementation(libs.cryptography.provider.optimal)
             }
         }
     }

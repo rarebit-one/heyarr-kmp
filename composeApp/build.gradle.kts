@@ -1,9 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    id("org.jetbrains.kotlin.multiplatform")
-    id("org.jetbrains.kotlin.plugin.compose")
-    id("org.jetbrains.compose")
+    alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.compose.multiplatform)
 }
 
 kotlin {
@@ -29,20 +29,19 @@ kotlin {
                 implementation(compose.foundation)
                 implementation(compose.material3)
                 implementation(compose.ui)
-                implementation(compose.components.resources)
                 // Material's extended icon set is the Compose analog of lucide-react: one
                 // dependency, vector icons, no font or CDN.
                 implementation(compose.materialIconsExtended)
                 // JNA only for Native.getComponentID: the X11 window id of the AWT canvas
                 // the embedded mpv renders into (--wid). No other native call.
-                implementation("net.java.dev.jna:jna:5.14.0")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
+                implementation(libs.jna)
+                implementation(libs.kotlinx.coroutines.swing)
 
                 // mDNS / DNS-SD browser for auto-discovery of the `_heyarr._tcp` node
                 // (heyarr-core Phase 2). jmdns is a small pure-JVM Bonjour implementation
                 // on Maven Central (not GitHub Packages) with no native bits — the desktop
                 // MdnsResolver actual wraps it; the fallback chain itself lives in pure :core.
-                implementation("org.jmdns:jmdns:3.5.9")
+                implementation(libs.jmdns)
 
                 // ── Voidbind device login (device enrolment + QR/pairing) ─────────────
                 // The shared device-auth brain: DeviceIdentity, DevicePairing (relay
@@ -53,7 +52,7 @@ kotlin {
                 // drive the pairing flow. Resolves from the org's GitHub Packages repo
                 // (settings.gradle.kts) — CI passes GITHUB_ACTOR/GITHUB_TOKEN (desktop.yml),
                 // locally gpr.user/gpr.token in ~/.gradle/gradle.properties.
-                implementation("one.rarebit.voidbind:voidbind-client:0.8.0")
+                implementation(libs.voidbind.client)
 
                 // The plain-JVM DeviceKeyStore actual voidbind ships is a NON-persisted,
                 // process-lifetime software key (regenerated each launch) and never exposes
@@ -63,14 +62,14 @@ kotlin {
                 // (cryptography-kotlin 0.6.0) so seed / public-key / signature bytes are
                 // wire-identical. voidbind depends on this only as `implementation`, so it
                 // must be declared here to reach :composeApp's COMPILE classpath.
-                implementation("dev.whyoleg.cryptography:cryptography-core:0.6.0")
-                implementation("dev.whyoleg.cryptography:cryptography-provider-optimal:0.6.0")
+                implementation(libs.cryptography.core)
+                implementation(libs.cryptography.provider.optimal)
             }
         }
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+                implementation(libs.kotlinx.coroutines.test)
             }
         }
     }

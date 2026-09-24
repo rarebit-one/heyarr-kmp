@@ -1,10 +1,39 @@
 name: desktop
 
+# Path-filtered: a change that cannot affect this build does not run it. The shared
+# modules and the Gradle build itself trigger every workflow; only :composeApp (and
+# the deploy/ and scripts/ it ships) triggers the desktop one.
 on:
   push:
     branches: [main]
+    paths:
+      - "composeApp/**"
+      - "deploy/**"
+      - "scripts/**"
+      - "core/**"
+      - "ui/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - ".github/workflows/desktop.yml"
   pull_request:
     branches: [main]
+    paths:
+      - "composeApp/**"
+      - "deploy/**"
+      - "scripts/**"
+      - "core/**"
+      - "ui/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - ".github/workflows/desktop.yml"
 
 concurrency:
   group: desktop-${{ github.ref }}

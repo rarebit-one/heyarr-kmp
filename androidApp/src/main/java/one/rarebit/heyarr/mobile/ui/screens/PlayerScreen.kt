@@ -77,7 +77,7 @@ import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.state.Toast
 import one.rarebit.heyarr.mobile.theme.LocalMediaTheme
 import one.rarebit.heyarr.mobile.theme.MediaScope
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Artwork
 import one.rarebit.heyarr.mobile.ui.components.FilterChip

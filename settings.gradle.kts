@@ -26,9 +26,11 @@ dependencyResolutionManagement {
         //     `packages: read` — see .github/workflows/android.yml).
         //   - Locally: `gpr.user` / `gpr.token` in ~/.gradle/gradle.properties, or the env
         //     vars, e.g. `GITHUB_ACTOR=<login> GITHUB_TOKEN=$(gh auth token) ./gradlew …`.
-        // Scoped to the voidbind group so the desktop modules (which don't depend on it)
-        // never probe this repo. The desktop app (:composeApp) still keeps its bearer-token
-        // login stub and does NOT depend on the artifact — only :androidApp does (PR #3a).
+        // Scoped to the voidbind group so no other dependency ever probes this repo. EVERY
+        // module needs it: :core consumes voidbind-client in commonMain (so :ui, :composeApp
+        // and :androidApp all get it transitively), and :composeApp and :androidApp also
+        // depend on it directly for device enrolment and pairing. Its version is pinned
+        // once, in gradle/libs.versions.toml.
         maven {
             name = "GitHubPackagesVoidbindKmp"
             url = uri("https://maven.pkg.github.com/rarebit-one/voidbind-kmp")
@@ -54,9 +56,11 @@ include(":composeApp")
 // dev box (the Asahi laptop, the screenshots flow). So it joins the build ONLY when an SDK
 // is present: CI (setup-android) and any dev machine with the SDK get the full project;
 // desktop-only boxes silently skip the android app, exactly as they skip the android
-// variants of :core/:ui. Keep this guard identical to the one in :core/:ui build scripts.
+// variants of :core/:ui. This is the ONE place the SDK is detected: every project reads the
+// result as the `hasAndroidSdk` extra property (see :core/:ui), so the guards cannot drift.
 val hasAndroidSdk =
     System.getenv("ANDROID_HOME") != null ||
     System.getenv("ANDROID_SDK_ROOT") != null ||
     file("local.properties").takeIf { it.exists() }?.readText()?.contains("sdk.dir") == true
 if (hasAndroidSdk) include(":androidApp")
+gradle.beforeProject { extensions.extraProperties["hasAndroidSdk"] = hasAndroidSdk }
