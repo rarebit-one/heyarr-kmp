@@ -29,7 +29,7 @@ Rules:
   depend on each other.
 - **Shared logic goes in `:core`, not into an app.** `:androidApp` still carries copies of code
   that has not converged yet (its own `HeyarrApi`, `search/FollowedSource`,
-  `state/SearchGrouping`, `personalstate/ChangeId`, …). When you touch one, prefer moving
+  `state/SearchGrouping`, …). When you touch one, prefer moving
   it toward the shared version over editing both copies. Never add a new copy.
 
 ## Build & test

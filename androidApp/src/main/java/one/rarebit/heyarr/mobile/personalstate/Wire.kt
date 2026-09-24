@@ -1,6 +1,7 @@
 package one.rarebit.heyarr.mobile.personalstate
 
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.vault.PersonalStateId
 import java.util.Base64
 
 /**
@@ -36,13 +37,13 @@ internal data class EncryptedChange(
 
     fun validate(): Boolean =
         changeId.isNotEmpty() && spaceId.isNotEmpty() && ciphertext.isNotEmpty() &&
-            changeId == ChangeId.computeChange(spaceId, parents, ciphertext)
+            changeId == PersonalStateId.changeId(spaceId, parents, ciphertext)
 
     companion object {
         /** Mint a change at the given causal [parents] (the space's current heads). */
         fun mint(spaceId: String, parents: List<String>, ciphertext: ByteArray): EncryptedChange {
-            val canonical = ChangeId.canonicalParents(parents)
-            return EncryptedChange(spaceId, ChangeId.computeChange(spaceId, canonical, ciphertext), canonical, ciphertext)
+            val canonical = PersonalStateId.canonical(parents)
+            return EncryptedChange(spaceId, PersonalStateId.changeId(spaceId, canonical, ciphertext), canonical, ciphertext)
         }
 
         fun parse(obj: String): EncryptedChange = EncryptedChange(
@@ -62,7 +63,7 @@ internal data class EncryptedSnapshot(
 ) {
     fun validate(): Boolean =
         snapshotId.isNotEmpty() && spaceId.isNotEmpty() && ciphertext.isNotEmpty() &&
-            snapshotId == ChangeId.computeSnapshot(spaceId, frontier, ciphertext)
+            snapshotId == PersonalStateId.snapshotId(spaceId, frontier, ciphertext)
 
     companion object {
         fun parse(obj: String): EncryptedSnapshot = EncryptedSnapshot(
