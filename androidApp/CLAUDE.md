@@ -124,7 +124,7 @@ instead of re-joining a dead session; re-firing the same link while live is a no
 
 ## voidbind-kmp is consumed as the published `voidbind-client` artifact
 
-`one.rarebit.voidbind:voidbind-client` (currently **0.8.0**, pinned once for every module in
+`one.rarebit.voidbind:voidbind-client` (currently **0.9.0**, pinned once for every module in
 `gradle/libs.versions.toml`) from GitHub Packages (private; needs a
 `read:packages` token — `settings.gradle.kts` reads `gpr.user`/`gpr.token` gradle
 properties or `GITHUB_ACTOR`/`GITHUB_TOKEN`; CI passes its own token). The library's
