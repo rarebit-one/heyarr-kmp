@@ -58,7 +58,7 @@ host, runs the command there, and syncs reports and screenshots back.
 | AGP | 8.7.3 (compileSdk 35, minSdk 33) |
 | Compose Multiplatform | 1.9.3 (desktop, `:ui`) |
 | Compose compiler | bundled with Kotlin (`org.jetbrains.kotlin.plugin.compose`) |
-| voidbind-client | 0.8.0 (GitHub Packages, private) |
+| voidbind-client | 0.9.0 (GitHub Packages, private) |
 
 ---
 

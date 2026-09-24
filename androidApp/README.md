@@ -54,7 +54,7 @@ ones this phone decrypts itself (`personalstate/`), and they say so.
 ### voidbind-kmp consumption
 
 This app depends on the **published** shared client,
-`one.rarebit.voidbind:voidbind-client` (currently 0.8.0, pinned in `gradle/libs.versions.toml`;
+`one.rarebit.voidbind:voidbind-client` (currently 0.9.0, pinned in `gradle/libs.versions.toml`;
 GitHub Packages, private — a token with
 `read:packages` is required even for a same-org read). `settings.gradle.kts` reads
 `gpr.user` / `gpr.token` from `~/.gradle/gradle.properties`, or `GITHUB_ACTOR` /
