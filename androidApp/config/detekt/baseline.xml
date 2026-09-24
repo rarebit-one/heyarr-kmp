@@ -10,8 +10,6 @@
     <ID>ComplexCondition:SearchResultsJson.kt$SearchResultsJson$i &lt; json.length &amp;&amp; (json[i] == ' ' || json[i] == '\t' || json[i] == ':')</ID>
     <ID>ComplexCondition:Series.kt$Series$mime != null &amp;&amp; (mime.startsWith("image/") || mime.startsWith("text/") || mime == "application/xml")</ID>
     <ID>ComplexCondition:SessionJson.kt$SessionJson$i &lt; json.length &amp;&amp; (json[i] == ' ' || json[i] == '\t' || json[i] == ':')</ID>
-    <ID>CyclomaticComplexMethod:AppViewModel.kt$AppViewModel$private fun refreshMembership(): Boolean</ID>
-    <ID>CyclomaticComplexMethod:AppViewModel.kt$AppViewModel$private suspend fun reflectPairing(ps: PairingState)</ID>
     <ID>CyclomaticComplexMethod:Cards.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: String? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The card width; null fills the parent (a grid cell). */ width: Dp? = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, actions: List&lt;CardAction&gt; = emptyList(), )</ID>
     <ID>CyclomaticComplexMethod:CastScreen.kt$@Composable fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modifier)</ID>
     <ID>CyclomaticComplexMethod:ClientCapabilities.kt$ClientCapabilities.Companion$fun codecName(mediaCodecMime: String): String?</ID>
@@ -23,6 +21,8 @@
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun EpisodeRow(session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun SeasonsBlock(session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?)</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun WantSeasonsPanel(session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
+    <ID>CyclomaticComplexMethod:DeviceEnrolment.kt$DeviceEnrolment$fun refreshMembership(): Boolean</ID>
+    <ID>CyclomaticComplexMethod:DeviceEnrolment.kt$DeviceEnrolment$private suspend fun reflectPairing(ps: PairingState)</ID>
     <ID>CyclomaticComplexMethod:EnrolScreen.kt$@Composable fun EnrolScreen( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
     <ID>CyclomaticComplexMethod:ExternalMetadata.kt$ExternalMetadata$private suspend fun resolve(key: MetaKey): ExternalMeta?</ID>
     <ID>CyclomaticComplexMethod:Fixtures.kt$FakeHeyarrTransport$override fun get(url: String, headers: Map&lt;String, String&gt;): HttpResponse</ID>
@@ -1483,6 +1483,10 @@
     <ID>ReturnCount:AuthInterceptor.kt$AuthInterceptor$override fun intercept(chain: Interceptor.Chain): Response</ID>
     <ID>ReturnCount:AuthInterceptor.kt$AuthInterceptor.Companion$fun shouldStamp(requestUrl: String, baseUrl: String, hasAuth: Boolean): Boolean</ID>
     <ID>ReturnCount:DeviceAuthTransport.kt$DeviceAuthTransport$private inline fun withDeviceAuth(headers: Map&lt;String, String&gt;, send: (Map&lt;String, String&gt;) -&gt; HttpResponse): HttpResponse</ID>
+    <ID>ReturnCount:DeviceEnrolment.kt$DeviceEnrolment$fun refreshMembership(): Boolean</ID>
+    <ID>ReturnCount:DeviceEnrolment.kt$DeviceEnrolment$private fun joinPairing(inviteQr: String, sameDevice: Boolean)</ID>
+    <ID>ReturnCount:DeviceEnrolment.kt$DeviceEnrolment$private suspend fun reflectPairing(ps: PairingState)</ID>
+    <ID>ReturnCount:DevicePersonalState.kt$DevicePersonalState$private fun memberEncRecipients(ring: DeviceKeyring): List&lt;ByteArray&gt;</ID>
     <ID>ReturnCount:EnrolClient.kt$EnrolClient$fun register( certToken: String, proof: String, name: String, credential: Credential?, ops: List&lt;String&gt; = emptyList(), ): Outcome</ID>
     <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$private suspend fun feedImage(key: MetaKey): ExternalMeta?</ID>
     <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$private suspend fun musicBrainz(key: MetaKey): ExternalMeta?</ID>
@@ -1545,6 +1549,7 @@
     <ID>TooManyFunctions:AppSession.kt$AppSession</ID>
     <ID>TooManyFunctions:AppViewModel.kt$AppViewModel : ViewModel</ID>
     <ID>TooManyFunctions:DetailScreen.kt$one.rarebit.heyarr.mobile.ui.screens.DetailScreen.kt</ID>
+    <ID>TooManyFunctions:DeviceEnrolment.kt$DeviceEnrolment</ID>
     <ID>TooManyFunctions:DeviceKeyring.kt$DeviceKeyring</ID>
     <ID>TooManyFunctions:ExternalMetadata.kt$ExternalMetadata</ID>
     <ID>TooManyFunctions:Fixtures.kt$Fixtures</ID>
