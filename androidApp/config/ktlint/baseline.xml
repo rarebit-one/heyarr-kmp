@@ -17,36 +17,12 @@
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/AppViewModel.kt">
         <error line="3" column="1" source="standard:import-ordering" />
-        <error line="178" column="75" source="standard:function-signature" />
-        <error line="185" column="108" source="standard:function-signature" />
-        <error line="288" column="53" source="standard:function-signature" />
-        <error line="333" column="48" source="standard:function-signature" />
-        <error line="403" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="404" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="428" column="17" source="standard:backing-property-naming" />
-        <error line="432" column="5" source="standard:spacing-between-declarations-with-comments" />
-        <error line="456" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="461" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="466" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="471" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="485" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="522" column="39" source="standard:statement-wrapping" />
-        <error line="522" column="86" source="standard:statement-wrapping" />
-        <error line="522" column="108" source="standard:statement-wrapping" />
-        <error line="523" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="524" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="554" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="569" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="575" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="580" column="41" source="standard:statement-wrapping" />
-        <error line="580" column="68" source="standard:statement-wrapping" />
-        <error line="580" column="108" source="standard:statement-wrapping" />
-        <error line="583" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="683" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="704" column="5" source="standard:spacing-between-declarations-with-comments" />
-        <error line="742" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="745" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="745" column="19" source="standard:wrapping" />
+        <error line="150" column="108" source="standard:function-signature" />
+        <error line="253" column="53" source="standard:function-signature" />
+        <error line="298" column="48" source="standard:function-signature" />
+        <error line="368" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="369" column="1" source="standard:blank-line-between-when-conditions" />
+        <error line="452" column="5" source="standard:spacing-between-declarations-with-comments" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/HeyarrApp.kt">
         <error line="3" column="1" source="standard:import-ordering" />

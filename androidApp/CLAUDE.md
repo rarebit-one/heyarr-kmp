@@ -59,7 +59,7 @@ This is a **scaffold**: a buildable, tested foundation. Feature work lands as PR
   op** (a v3 membership op; a v1/v2 cert IS a genesis add and still works) and the
   header carries the membership **ops** the device knows — `device/MembershipOps`
   picks ≤ 64, the justifying closure of the device's own admission first. After a
-  401, BEFORE the retry, `AppViewModel.refreshMembership` re-reads
+  401, BEFORE the retry, `DeviceEnrolment.refreshMembership` re-reads
   `GET /membership/{usr}` (`device/MembershipClient`, 404 tolerated), merges it into
   the replica and evaluates; a device no longer a member drops its credential and
   shows `EnrolUiState.Removed` — no retry, no loop.
@@ -222,7 +222,8 @@ app/src/main/java/one/rarebit/heyarr/mobile/
                    nav/HeyarrNavHost) · HeyarrApp.kt (Application: the app-scoped pairing holder + Coil ImageLoaderFactory) ·
   AppGraph.kt (by-hand object graph: settings, ONE OkHttp client + AuthInterceptor, AuthHeaderSource, the audio queue
                 controller, the VideoSession, the public-metadata cache, recent searches — no DI container) ·
-  AppViewModel.kt (session/config/enrol; playback planning lives in playback/PlaybackCoordinator) · HeyarrConfig.kt ·
+  AppViewModel.kt (session/config/login/library; enrolment lives in device/DeviceEnrolment, personal-state wiring in
+                personalstate/DevicePersonalState, playback planning in playback/PlaybackCoordinator) · HeyarrConfig.kt ·
   SessionText.kt (the "signed in as … · scope" line)
   theme/        Tokens (the phone's design tokens over `:ui`'s) · HeyarrTheme (`:ui`'s theme with `PhonePlatform`: the
                 phone's type ramp, touch conventions, pinned content colour; LocalMediaTheme/MediaScope are `:ui`'s)
