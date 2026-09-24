@@ -36,11 +36,11 @@ import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
 import one.rarebit.heyarr.mobile.search.FollowedSource
 import one.rarebit.heyarr.mobile.state.AppSession
-import one.rarebit.heyarr.mobile.state.LibraryStatus
-import one.rarebit.heyarr.mobile.theme.CardAspect
+import one.rarebit.heyarr.core.state.LibraryStatus
+import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.mobile.theme.MediaScope
-import one.rarebit.heyarr.mobile.theme.MediaThemes
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.CardAction
 import one.rarebit.heyarr.mobile.ui.components.GhostButton

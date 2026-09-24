@@ -172,7 +172,7 @@ key (`SpaceCrypto` over voidbind-client **0.7.0** `VoidbindEncryption` — X2551
 KAT-proven; **no wire format is re-derived here**), decrypts the snapshot + changes, and folds
 them through the four CRDT ports (`Playlist`/`StarSet`/`ReadingPositions`/`PlayLog`). A write is
 minted at the current heads, encrypted, and pushed; the node re-derives the content-addressed id
-(pure-Kotlin `Blake3` + `ChangeId`) and refuses a mismatch, so every CRDT + the id framing are
+(`:core`'s pure-Kotlin `Blake3` + `ChangeId`) and refuses a mismatch, so every CRDT + the id framing are
 pinned **byte-for-byte** to heyarr-core's parity vectors (copied into `app/src/test/resources/`;
 regenerate in heyarr-core with `-update` and re-copy). `PersonalStateCoordinator` is the app-facing
 façade; `SpaceRegistry` is the device-side role map the gateway keeps as `SpaceRoles` (every
@@ -184,8 +184,8 @@ A local **Personal MCP** (#372/#387) is still a device-gated follow-up.
 The UI is the **Heyarr Desktop design language**, ported verbatim where the platform
 allows: tokens in `theme/Tokens.kt` (bg #080709, surfaces #131116/#1B1922/#232029,
 border #2A2833, text #F5F5F4/#A09F9D/#6E6D72, rating gold #F5C518, default accent emerald
-#00935E→#21C063; radii 14/10/999; 4-px spacing) and the media → theme table in
-`theme/MediaType.kt` (Movie emerald · Series violet · Book amber with a spine shadow ·
+#00935E→#21C063; radii 14/10/999; 4-px spacing) and the media → theme table
+(`:core`'s `MediaType` + `:ui`'s `MediaThemes`) (Movie emerald · Series violet · Book amber with a spine shadow ·
 Audiobook teal · Podcast magenta with light-safe CTA · Music rose · feeds/documents/unknown
 slate). The accent drives the CTA gradient, pressed/focus states, the active nav tile,
 progress bars and the section underline; surfaces and text never change.
@@ -219,7 +219,7 @@ app/src/main/java/one/rarebit/heyarr/mobile/
                 controller, the VideoSession, the public-metadata cache, recent searches — no DI container) ·
   AppViewModel.kt (session/config/enrol; playback planning lives in playback/PlaybackCoordinator) · HeyarrConfig.kt ·
   SessionText.kt (the "signed in as … · scope" line)
-  theme/        Tokens (the design tokens) · MediaType/MediaTheme/MediaThemes (the media table) · HeyarrTheme (Material 3
+  theme/        Tokens (the phone's design tokens over `:ui`'s) · HeyarrTheme (Material 3
                 colour scheme + the Montserrat/Inter/Rubik type ramp; LocalMediaTheme, LocalAppearance, MediaScope)
   ui/components/ Primitives (PrimaryButton gradient pill, SecondaryButton, GhostButton, IconButtonRound, FilterChip, MediaBadge,
                 MetaLine, SectionHeader, Field, Skeleton, EmptyState, ErrorState, Notice, OfflineBanner, ToastCard) ·
@@ -239,14 +239,13 @@ app/src/main/java/one/rarebit/heyarr/mobile/
                 PlayerScreen (the in-app ExoPlayer: transport, captions menu with language names, cast, up next, fullscreen) ·
                 AudioQueueScreen · WantSheet (a bottom sheet: profile, monitor, reason)
   state/        AppSession (per node+credential: HeyarrApi, heartbeat/connection, the want-derived LibraryIndex, quality
-                profiles, appearance prefs, toasts, optimistic want) · LibraryStatus (In library / Wanted / Missing / Not
-                tracked from /desired ONLY) · SearchController + SearchGrouping (the fan-out and the pure grouping) ·
+                profiles, appearance prefs, toasts, optimistic want; LibraryStatus/LibraryIndex come from `:core`) · SearchController + SearchGrouping (the fan-out and the pure grouping) ·
                 RecentSearches (a local file, labelled local) · ExternalMetadata (keyless public covers/synopses behind an
                 OkHttp seam, disk-cached; ExternalParsers pure)
   mcp/          McpClient (JSON-RPC tools/call → Ok text | Refused error, transport failures thrown) · McpModels (Reason,
                 Want, Satisfaction, Explanation, Renderer, PlaybackStatus, Peer, Replica, SearchHit/EpisodeHit, …)
   heyarr/       HeyarrApi (the one typed door: every MCP tool + the REST reads) · RestModels (QualityProfile, DesiredItem,
-                Candidate) · Telemetry (SessionInfo, ProviderInfo, Capabilities, LibraryInfo, JobInfo)
+                Candidate); the Telemetry reads (SessionInfo, ProviderInfo, …) are `:core`'s
   nav/          Routes (typed, @Serializable — ids and display hints ONLY; Player is argless) · HeyarrNavHost (the shell) ·
                 SessionHolder (a ViewModel keyed on ApiEnv holding AppSession + every screen's state) · Decisions (pure:
                 player content, bar visibility, nav section, album → queue) · ApiEnv
@@ -257,9 +256,9 @@ app/src/main/java/one/rarebit/heyarr/mobile/
                 seasons → episodes with thumbnail/subtitle sidecars, gaps, quality tags; shared with the desktop) ·
                 Variants (download-folder works folded under the canonical work, heyarr-core#470) · LibraryUiState
   music/        MusicClient (GET /artists) + MusicJson · Track (WorkAsset audio/primary-role/title helpers, Tracks.playable)
-  search/       SearchClient (POST /search) · AcquireClient · FollowingClient · FollowedSource(s)Json · FollowedSourceClient +
+  search/       AcquireClient · FollowedSource(s)Json · FollowedSourceClient +
                 FollowedItem · SessionClient + SessionJson · DiscoverClient — the REST clients the typed door composes
-  acquisition/  WantsClient (GET /desired paged, candidates, POST /desired/{id}/select) + CandidatesJson
+  acquisition/  WantsClient (candidates, POST /desired/{id}/select) + CandidatesJson
   playback/     PlaybackCoordinator (plan against real capabilities, blob fallback, ONE re-plan) · PlaybackClient ·
                 PlaybackTarget · HeyarrDataSource · VideoSession (the app-scoped ExoPlayer the now-playing bar carries
                 between screens: transport, captions, restart-seek for streams, up-next queue, fullscreen flag) ·
@@ -267,7 +266,7 @@ app/src/main/java/one/rarebit/heyarr/mobile/
                 AudioSessionBridge · PlaybackDiagnostics · Subtitles · MediaMime · ClientCapabilities
   reader/       ReaderActivity (Readium 3: EPUB / PDF / comic) + ReaderHttp + ReadingPositionStore/Sync · ReaderAsset (formats)
   consumption/  ConsumptionClient · DeviceIdStore · ProgressReporter + ConsumptionReporter
-  personalstate/ the M9 engine (Blake3, ChangeId, the four CRDTs, SpaceCrypto, PersonalStateClient, SpaceSession,
+  personalstate/ the M9 engine (ChangeId over `:core`'s Blake3, the four CRDTs, SpaceCrypto, PersonalStateClient, SpaceSession,
                 SpaceRegistry, PersonalStateCoordinator)
   playlist/     PersonalActionsViewModel (star / add-to-playlist / record play + the Home rows) · PlaylistScreens (restyled)
                 + PlaylistViewModels + AddToPlaylistDialog

@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.mobile.personalstate
 
+import one.rarebit.heyarr.core.crypto.Blake3
 import java.io.ByteArrayOutputStream
 
 /**
@@ -40,7 +41,7 @@ internal object ChangeId {
         writeUvarint(buf, canonical.size.toLong())
         for (p in canonical) writeField(buf, p.encodeToByteArray())
         writeField(buf, ciphertext)
-        return "blake3:" + Hex.encode(Blake3.hash256(buf.toByteArray()))
+        return "blake3:" + Hex.encode(Blake3.hash(buf.toByteArray()))
     }
 
     private fun writeField(buf: ByteArrayOutputStream, b: ByteArray) {

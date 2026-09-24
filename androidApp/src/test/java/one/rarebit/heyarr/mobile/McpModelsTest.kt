@@ -16,7 +16,7 @@ import one.rarebit.heyarr.core.mcp.SearchHitsJson
 import one.rarebit.heyarr.core.mcp.WantJson
 import one.rarebit.heyarr.mobile.preview.FakeHeyarrTransport
 import one.rarebit.heyarr.mobile.preview.Fixtures
-import one.rarebit.heyarr.mobile.theme.MediaType
+import one.rarebit.heyarr.core.theme.MediaType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

@@ -17,6 +17,9 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import one.rarebit.heyarr.mobile.R
+import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.ui.theme.MediaTheme
+import one.rarebit.heyarr.ui.theme.MediaThemes
 
 /** The media theme in force for this subtree — cards, buttons and pressed states read it. */
 val LocalMediaTheme = compositionLocalOf { MediaThemes.default }

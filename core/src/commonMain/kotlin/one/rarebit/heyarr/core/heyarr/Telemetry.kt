@@ -3,7 +3,15 @@ package one.rarebit.heyarr.core.heyarr
 import one.rarebit.heyarr.core.net.JsonScan
 
 /** `GET /api/v1/session` — what this credential is and may do. */
-data class SessionInfo(val kind: String, val principalId: String?, val scopes: List<String>, val canWrite: Boolean, val managementAuthorized: Boolean)
+data class SessionInfo(
+    val kind: String,
+    val principalId: String?,
+    val scopes: List<String>,
+    val canWrite: Boolean,
+    val managementAuthorized: Boolean,
+    /** The enrolled device key a `Device` credential names (`device_key`); null for other kinds. */
+    val deviceKey: String? = null,
+)
 
 object SessionInfoJson {
     fun parse(body: String): SessionInfo? {
@@ -14,6 +22,7 @@ object SessionInfoJson {
             scopes = JsonScan.arrayOf(o, listOf("scopes"))?.let { one.rarebit.heyarr.core.net.JsonArrays.parseStrings(it) } ?: emptyList(),
             canWrite = JsonScan.boolField(o, "can_write") ?: false,
             managementAuthorized = JsonScan.boolField(o, "management_authorized") ?: false,
+            deviceKey = JsonScan.stringField(o, "device_key"),
         )
     }
 }
