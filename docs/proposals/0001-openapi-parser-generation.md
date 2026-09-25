@@ -12,7 +12,7 @@
 
 Every heyarr response in this repo is read by hand. The readers are built on `JsonScan`, a
 tolerant field scanner, and this repo uses no serialization library on the wire (see
-CLAUDE.md, "Wire JSON is hand-read"). heyarr-core publishes a hand-written OpenAPI 3.1 document
+AGENTS.md, "Wire JSON is hand-read"). heyarr-core publishes a hand-written OpenAPI 3.1 document
 at `api/openapi.yaml`. Its `openapi_test.go` holds the document to the router, but only for
 **routes**, not for response fields.
 
@@ -121,7 +121,7 @@ heyarr-core `main` breaks a parser.
 - The parsers keep their tolerance and their UI defaults in one place.
 
 **What it costs.**
-- Duplication stays, and needs converging into `:core` by hand. CLAUDE.md already asks for that.
+- Duplication stays, and needs converging into `:core` by hand. AGENTS.md already asks for that.
 - New fields are adopted by hand.
 - The check is name-level. It cannot tell *which* object a name was read on, and it does not
   check types. An `intField` on a string field reads null. So a field that moved between
