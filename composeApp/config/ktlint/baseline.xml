@@ -100,19 +100,19 @@
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/components/NowPlayingBar.kt">
         <error line="159" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DetailCurate.kt">
-        <error line="294" column="121" source="standard:max-line-length" />
-        <error line="395" column="121" source="standard:max-line-length" />
-        <error line="452" column="121" source="standard:max-line-length" />
-        <error line="599" column="121" source="standard:max-line-length" />
-        <error line="627" column="121" source="standard:max-line-length" />
+    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/CurateSections.kt">
+        <error line="80" column="121" source="standard:max-line-length" />
+        <error line="253" column="121" source="standard:max-line-length" />
+    </file>
+    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/CurateWants.kt">
+        <error line="64" column="121" source="standard:max-line-length" />
+        <error line="188" column="121" source="standard:max-line-length" />
+    </file>
+    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DetailEpisodes.kt">
+        <error line="342" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DetailScreen.kt">
-        <error line="165" column="121" source="standard:max-line-length" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DetailWatch.kt">
-        <error line="349" column="121" source="standard:max-line-length" />
-        <error line="548" column="121" source="standard:max-line-length" />
+        <error line="284" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DiscoverScreen.kt">
         <error line="142" column="121" source="standard:max-line-length" />
