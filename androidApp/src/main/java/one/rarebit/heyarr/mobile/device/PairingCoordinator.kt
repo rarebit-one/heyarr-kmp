@@ -249,7 +249,14 @@ class PairingCoordinator(
         val checked = PairInvite.check(inviteQr)
         if (checked !is PairInvite.Valid) {
             cancelLive()
-            _state.value = PairingState.Failed(null, inviteQr, sameDevice, PairingFailure.INVALID, (checked as PairInvite.Invalid).message)
+            _state.value =
+                PairingState.Failed(
+                    null,
+                    inviteQr,
+                    sameDevice,
+                    PairingFailure.INVALID,
+                    (checked as PairInvite.Invalid).message,
+                )
             return
         }
         val session = checked.session

@@ -21,7 +21,15 @@ class LandscapeArtworkTest {
     }
 
     @Test fun missingOrUnsuitableBackgroundLeavesPosterFallbackAvailable() {
-        for (body in listOf("[]", "{}", "garbage", "[{}]", "[" + image("background", 1920, 0, "https://art/broken") + "]", "[" + image("background", 300, 169, "https://art/tiny") + "]", "[" + image("poster", 1000, 1500, "https://art/poster") + "]")) {
+        for (body in listOf(
+            "[]",
+            "{}",
+            "garbage",
+            "[{}]",
+            "[" + image("background", 1920, 0, "https://art/broken") + "]",
+            "[" + image("background", 300, 169, "https://art/tiny") + "]",
+            "[" + image("poster", 1000, 1500, "https://art/poster") + "]",
+        )) {
             assertNull(LandscapeArtwork.tvmaze(body), body)
         }
     }

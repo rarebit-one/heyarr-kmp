@@ -120,7 +120,9 @@ data class StatusSnapshot(
             val tmp = Files.createTempFile(parent, path.fileName.toString(), ".tmp")
             try {
                 Files.write(tmp, (json + "\n").toByteArray(Charsets.UTF_8))
-                runCatching { Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING) }
+                runCatching {
+                    Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+                }
                     .onFailure { Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING) }
             } finally {
                 runCatching { Files.deleteIfExists(tmp) }

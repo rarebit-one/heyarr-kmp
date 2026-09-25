@@ -1,42 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <baseline version="1.0">
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/books/BooksClient.kt">
-        <error line="68" column="58" source="standard:function-signature" />
-        <error line="71" column="74" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/catalog/Grouping.kt">
-        <error line="36" column="44" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/device/DevicePairingSteps.kt">
-        <error line="97" column="52" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/device/EnrolClient.kt">
-        <error line="81" column="49" source="standard:function-signature" />
-    </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/device/LibSecretBackend.kt">
-        <error line="88" column="9" source="standard:function-naming" />
-        <error line="98" column="9" source="standard:function-naming" />
-        <error line="105" column="9" source="standard:function-naming" />
-        <error line="112" column="9" source="standard:function-naming" />
-        <error line="116" column="9" source="standard:function-naming" />
+        <error line="86" column="9" source="standard:function-naming" />
+        <error line="96" column="9" source="standard:function-naming" />
+        <error line="103" column="9" source="standard:function-naming" />
+        <error line="110" column="9" source="standard:function-naming" />
+        <error line="114" column="9" source="standard:function-naming" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/device/MacKeychainBackend.kt">
+        <error line="153" column="9" source="standard:function-naming" />
+        <error line="154" column="9" source="standard:function-naming" />
         <error line="155" column="9" source="standard:function-naming" />
-        <error line="156" column="9" source="standard:function-naming" />
-        <error line="157" column="9" source="standard:function-naming" />
-        <error line="158" column="9" source="standard:function-naming" />
-        <error line="159" column="9" source="standard:function-naming" />
-        <error line="160" column="9" source="standard:function-naming" />
         <error line="161" column="9" source="standard:function-naming" />
-        <error line="165" column="9" source="standard:function-naming" />
-        <error line="166" column="9" source="standard:function-naming" />
-        <error line="167" column="9" source="standard:function-naming" />
+        <error line="162" column="9" source="standard:function-naming" />
+        <error line="163" column="9" source="standard:function-naming" />
+        <error line="164" column="9" source="standard:function-naming" />
         <error line="168" column="9" source="standard:function-naming" />
-        <error line="201" column="42" source="standard:function-expression-body" />
-        <error line="212" column="48" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/device/SecretStores.kt">
-        <error line="21" column="65" source="standard:function-signature" />
+        <error line="169" column="9" source="standard:function-naming" />
+        <error line="170" column="9" source="standard:function-naming" />
+        <error line="171" column="9" source="standard:function-naming" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/feeds/FeedsClient.kt">
         <error line="4" column="1" source="standard:no-wildcard-imports" />
@@ -44,75 +26,13 @@
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/heyarr/HeyarrApi.kt">
         <error line="6" column="1" source="standard:no-wildcard-imports" />
         <error line="49" column="1" source="standard:kdoc" />
-        <error line="96" column="68" source="standard:function-signature" />
-        <error line="100" column="65" source="standard:function-signature" />
-        <error line="106" column="132" source="standard:function-signature" />
-        <error line="113" column="168" source="standard:function-signature" />
-        <error line="117" column="35" source="standard:argument-list-wrapping" />
-        <error line="117" column="67" source="standard:argument-list-wrapping" />
-        <error line="118" column="33" source="standard:argument-list-wrapping" />
-        <error line="118" column="55" source="standard:argument-list-wrapping" />
-        <error line="123" column="76" source="standard:function-signature" />
-        <error line="133" column="72" source="standard:function-signature" />
-        <error line="137" column="101" source="standard:function-signature" />
-        <error line="142" column="70" source="standard:function-signature" />
-        <error line="146" column="84" source="standard:function-signature" />
-        <error line="150" column="61" source="standard:function-signature" />
-        <error line="154" column="63" source="standard:function-signature" />
-        <error line="158" column="56" source="standard:function-signature" />
-        <error line="164" column="62" source="standard:function-signature" />
-        <error line="203" column="69" source="standard:function-signature" />
-        <error line="207" column="71" source="standard:function-signature" />
-        <error line="259" column="59" source="standard:function-signature" />
-        <error line="263" column="193" source="standard:function-signature" />
-        <error line="267" column="49" source="standard:argument-list-wrapping" />
-        <error line="267" column="88" source="standard:argument-list-wrapping" />
-        <error line="268" column="54" source="standard:argument-list-wrapping" />
-        <error line="268" column="78" source="standard:argument-list-wrapping" />
-        <error line="268" column="94" source="standard:argument-list-wrapping" />
-        <error line="273" column="54" source="standard:function-signature" />
-        <error line="280" column="55" source="standard:function-signature" />
-        <error line="326" column="61" source="standard:function-signature" />
-        <error line="330" column="92" source="standard:function-signature" />
-        <error line="345" column="60" source="standard:function-signature" />
-        <error line="361" column="37" source="standard:multiline-if-else" />
-        <error line="362" column="169" source="standard:trailing-comma-on-call-site" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/library/Epub.kt">
-        <error line="88" column="49" source="standard:function-signature" />
-        <error line="96" column="59" source="standard:function-signature" />
-        <error line="99" column="58" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/library/LibraryClient.kt">
-        <error line="60" column="59" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/library/WorkDetailClient.kt">
-        <error line="32" column="59" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/library/WorksJson.kt">
-        <error line="27" column="44" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/login/VoidbindLogin.kt">
-        <error line="41" column="45" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/music/MusicClient.kt">
-        <error line="78" column="58" source="standard:function-signature" />
-        <error line="81" column="74" source="standard:function-signature" />
-        <error line="90" column="89" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/music/Track.kt">
-        <error line="81" column="44" source="standard:function-signature" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/net/JdkHttpTransport.kt">
         <error line="3" column="1" source="standard:no-wildcard-imports" />
-        <error line="39" column="80" source="standard:function-signature" />
-        <error line="42" column="118" source="standard:function-signature" />
-        <error line="50" column="119" source="standard:function-signature" />
-        <error line="58" column="83" source="standard:function-signature" />
-        <error line="61" column="120" source="standard:function-signature" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/playback/EmbeddedPlayer.kt">
-        <error line="373" column="62" source="standard:function-signature" />
+        <error line="345" column="121" source="standard:max-line-length" />
+        <error line="599" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/playback/Libmpv.kt">
         <error line="29" column="9" source="standard:function-naming" />
@@ -127,19 +47,27 @@
         <error line="38" column="9" source="standard:function-naming" />
         <error line="39" column="9" source="standard:function-naming" />
     </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/playback/MpvPlayer.kt">
-        <error line="29" column="86" source="standard:function-signature" />
-    </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/preview/Fixtures.kt">
-        <error line="18" column="120" source="standard:function-signature" />
-        <error line="45" column="13" source="standard:multiline-if-else" />
-        <error line="45" column="219" source="standard:multiline-if-else" />
+        <error line="112" column="121" source="standard:max-line-length" />
+        <error line="113" column="121" source="standard:max-line-length" />
+        <error line="137" column="120" source="standard:max-line-length" />
+        <error line="138" column="121" source="standard:max-line-length" />
+        <error line="145" column="121" source="standard:max-line-length" />
+        <error line="158" column="121" source="standard:max-line-length" />
+        <error line="163" column="121" source="standard:max-line-length" />
+        <error line="179" column="121" source="standard:max-line-length" />
+        <error line="180" column="121" source="standard:max-line-length" />
+        <error line="230" column="120" source="standard:max-line-length" />
+        <error line="232" column="120" source="standard:max-line-length" />
+        <error line="234" column="120" source="standard:max-line-length" />
+        <error line="236" column="120" source="standard:max-line-length" />
+        <error line="238" column="120" source="standard:max-line-length" />
+        <error line="244" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/preview/Screenshots.kt">
         <error line="7" column="1" source="standard:no-wildcard-imports" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/settings/SettingsStore.kt">
-        <error line="44" column="77" source="standard:function-signature" />
+        <error line="114" column="121" source="standard:max-line-length" />
+        <error line="137" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/state/AppSession.kt">
         <error line="28" column="1" source="standard:no-wildcard-imports" />
@@ -147,7 +75,6 @@
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/state/ArtworkLoader.kt">
         <error line="13" column="1" source="standard:no-wildcard-imports" />
-        <error line="99" column="60" source="standard:function-signature" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/state/PlaybackSession.kt">
         <error line="6" column="1" source="standard:no-wildcard-imports" />
@@ -156,89 +83,13 @@
         <error line="6" column="1" source="standard:no-wildcard-imports" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/App.kt">
-        <error line="277" column="174" source="standard:statement-wrapping" />
-        <error line="277" column="187" source="standard:statement-wrapping" />
-        <error line="277" column="193" source="standard:statement-wrapping" />
-        <error line="278" column="56" source="standard:statement-wrapping" />
-        <error line="278" column="79" source="standard:statement-wrapping" />
-        <error line="278" column="85" source="standard:statement-wrapping" />
-        <error line="279" column="54" source="standard:statement-wrapping" />
-        <error line="279" column="71" source="standard:statement-wrapping" />
-        <error line="279" column="112" source="standard:statement-wrapping" />
-        <error line="279" column="118" source="standard:statement-wrapping" />
-        <error line="280" column="54" source="standard:statement-wrapping" />
-        <error line="280" column="71" source="standard:statement-wrapping" />
-        <error line="280" column="113" source="standard:statement-wrapping" />
-        <error line="280" column="119" source="standard:statement-wrapping" />
-        <error line="281" column="56" source="standard:statement-wrapping" />
-        <error line="281" column="73" source="standard:statement-wrapping" />
-        <error line="281" column="113" source="standard:statement-wrapping" />
-        <error line="281" column="119" source="standard:statement-wrapping" />
-        <error line="282" column="55" source="standard:statement-wrapping" />
-        <error line="282" column="77" source="standard:statement-wrapping" />
-        <error line="282" column="83" source="standard:statement-wrapping" />
-        <error line="283" column="55" source="standard:statement-wrapping" />
-        <error line="283" column="80" source="standard:statement-wrapping" />
-        <error line="283" column="86" source="standard:statement-wrapping" />
-        <error line="284" column="68" source="standard:statement-wrapping" />
-        <error line="284" column="91" source="standard:statement-wrapping" />
-        <error line="284" column="97" source="standard:statement-wrapping" />
-        <error line="285" column="64" source="standard:statement-wrapping" />
-        <error line="285" column="83" source="standard:statement-wrapping" />
-        <error line="285" column="89" source="standard:statement-wrapping" />
-        <error line="286" column="66" source="standard:statement-wrapping" />
-        <error line="286" column="78" source="standard:statement-wrapping" />
-        <error line="286" column="84" source="standard:statement-wrapping" />
-        <error line="287" column="106" source="standard:statement-wrapping" />
-        <error line="287" column="117" source="standard:statement-wrapping" />
-        <error line="287" column="123" source="standard:statement-wrapping" />
-        <error line="311" column="46" source="standard:multiline-if-else" />
-        <error line="312" column="68" source="standard:statement-wrapping" />
-        <error line="312" column="85" source="standard:statement-wrapping" />
-        <error line="312" column="126" source="standard:statement-wrapping" />
-        <error line="313" column="68" source="standard:statement-wrapping" />
-        <error line="313" column="86" source="standard:statement-wrapping" />
-        <error line="313" column="108" source="standard:statement-wrapping" />
-        <error line="329" column="54" source="standard:function-literal" />
-        <error line="329" column="55" source="standard:wrapping" />
-        <error line="329" column="56" source="standard:statement-wrapping" />
-        <error line="339" column="159" source="standard:statement-wrapping" />
-        <error line="339" column="196" source="standard:statement-wrapping" />
-        <error line="339" column="208" source="standard:statement-wrapping" />
-        <error line="341" column="30" source="standard:wrapping" />
-        <error line="341" column="31" source="standard:statement-wrapping" />
-        <error line="341" column="31" source="standard:function-literal" />
-        <error line="479" column="41" source="standard:statement-wrapping" />
-        <error line="479" column="136" source="standard:statement-wrapping" />
-        <error line="479" column="158" source="standard:statement-wrapping" />
-        <error line="484" column="58" source="standard:statement-wrapping" />
-        <error line="484" column="162" source="standard:statement-wrapping" />
-        <error line="484" column="186" source="standard:statement-wrapping" />
-        <error line="484" column="197" source="standard:statement-wrapping" />
+        <error line="429" column="121" source="standard:max-line-length" />
+        <error line="433" column="120" source="standard:max-line-length" />
+        <error line="523" column="120" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/ConnectionSheet.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="107" column="61" source="standard:string-template" />
-        <error line="118" column="60" source="standard:statement-wrapping" />
-        <error line="118" column="70" source="standard:statement-wrapping" />
-        <error line="118" column="84" source="standard:statement-wrapping" />
-        <error line="125" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="136" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="136" column="50" source="standard:multiline-if-else" />
-        <error line="137" column="30" source="standard:multiline-if-else" />
-        <error line="137" column="43" source="standard:multiline-loop" />
-        <error line="153" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="170" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="170" column="50" source="standard:multiline-if-else" />
-        <error line="171" column="30" source="standard:multiline-if-else" />
-        <error line="171" column="45" source="standard:multiline-loop" />
-        <error line="172" column="75" source="standard:statement-wrapping" />
-        <error line="172" column="105" source="standard:statement-wrapping" />
-        <error line="172" column="132" source="standard:statement-wrapping" />
-        <error line="172" column="158" source="standard:statement-wrapping" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/Experience.kt">
-        <error line="15" column="100" source="standard:function-signature" />
+        <error line="153" column="121" source="standard:max-line-length" />
+        <error line="174" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/components/AudioDock.kt">
         <error line="5" column="1" source="standard:no-wildcard-imports" />
@@ -246,253 +97,61 @@
         <error line="10" column="1" source="standard:no-wildcard-imports" />
         <error line="11" column="1" source="standard:no-wildcard-imports" />
     </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/components/Cards.kt">
-        <error line="106" column="69" source="standard:function-signature" />
-        <error line="150" column="35" source="standard:multiline-if-else" />
-        <error line="257" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="257" column="63" source="standard:multiline-if-else" />
-        <error line="258" column="18" source="standard:multiline-if-else" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/components/Cover.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="22" column="178" source="standard:function-signature" />
-        <error line="26" column="32" source="standard:statement-wrapping" />
-        <error line="26" column="51" source="standard:statement-wrapping" />
-        <error line="26" column="72" source="standard:statement-wrapping" />
-        <error line="30" column="146" source="standard:statement-wrapping" />
-        <error line="30" column="172" source="standard:statement-wrapping" />
-        <error line="30" column="193" source="standard:statement-wrapping" />
-    </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/components/NowPlayingBar.kt">
-        <error line="86" column="24" source="standard:multiline-if-else" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/components/VideoSurface.kt">
-        <error line="59" column="86" source="standard:multiline-if-else" />
-        <error line="60" column="49" source="standard:multiline-if-else" />
-        <error line="61" column="103" source="standard:statement-wrapping" />
-        <error line="63" column="18" source="standard:multiline-if-else" />
-        <error line="67" column="28" source="standard:statement-wrapping" />
-        <error line="67" column="66" source="standard:statement-wrapping" />
-        <error line="67" column="90" source="standard:statement-wrapping" />
-        <error line="67" column="119" source="standard:statement-wrapping" />
+        <error line="159" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DetailCurate.kt">
-        <error line="277" column="37" source="standard:multiline-if-else" />
-        <error line="279" column="110" source="standard:statement-wrapping" />
-        <error line="279" column="260" source="standard:statement-wrapping" />
-        <error line="279" column="304" source="standard:statement-wrapping" />
-        <error line="284" column="40" source="standard:argument-list-wrapping" />
-        <error line="295" column="132" source="standard:statement-wrapping" />
-        <error line="295" column="149" source="standard:statement-wrapping" />
-        <error line="295" column="282" source="standard:statement-wrapping" />
-        <error line="296" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="330" column="31" source="standard:multiline-if-else" />
-        <error line="332" column="94" source="standard:statement-wrapping" />
-        <error line="332" column="221" source="standard:statement-wrapping" />
-        <error line="332" column="265" source="standard:statement-wrapping" />
-        <error line="342" column="32" source="standard:statement-wrapping" />
-        <error line="342" column="52" source="standard:statement-wrapping" />
-        <error line="342" column="87" source="standard:statement-wrapping" />
-        <error line="342" column="247" source="standard:statement-wrapping" />
-        <error line="351" column="42" source="standard:multiline-if-else" />
-        <error line="354" column="28" source="standard:statement-wrapping" />
-        <error line="354" column="47" source="standard:statement-wrapping" />
-        <error line="354" column="129" source="standard:statement-wrapping" />
-        <error line="354" column="181" source="standard:statement-wrapping" />
+        <error line="294" column="121" source="standard:max-line-length" />
+        <error line="395" column="121" source="standard:max-line-length" />
+        <error line="452" column="121" source="standard:max-line-length" />
+        <error line="599" column="121" source="standard:max-line-length" />
+        <error line="627" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DetailScreen.kt">
-        <error line="144" column="25" source="standard:multiline-if-else" />
-        <error line="147" column="16" source="standard:function-literal" />
-        <error line="147" column="17" source="standard:wrapping" />
-        <error line="147" column="18" source="standard:statement-wrapping" />
-        <error line="150" column="10" source="standard:wrapping" />
-        <error line="150" column="11" source="standard:statement-wrapping" />
-        <error line="150" column="11" source="standard:function-literal" />
-        <error line="151" column="25" source="standard:function-literal" />
-        <error line="151" column="26" source="standard:wrapping" />
-        <error line="151" column="27" source="standard:statement-wrapping" />
-        <error line="153" column="29" source="standard:statement-wrapping" />
-        <error line="156" column="35" source="standard:statement-wrapping" />
-        <error line="156" column="60" source="standard:statement-wrapping" />
-        <error line="156" column="84" source="standard:statement-wrapping" />
-        <error line="156" column="94" source="standard:statement-wrapping" />
-        <error line="161" column="11" source="standard:wrapping" />
-        <error line="161" column="12" source="standard:statement-wrapping" />
-        <error line="161" column="12" source="standard:function-literal" />
-        <error line="347" column="95" source="standard:statement-wrapping" />
-        <error line="347" column="247" source="standard:statement-wrapping" />
-        <error line="347" column="291" source="standard:statement-wrapping" />
+        <error line="165" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DetailWatch.kt">
-        <error line="111" column="26" source="standard:statement-wrapping" />
-        <error line="111" column="179" source="standard:statement-wrapping" />
-        <error line="111" column="187" source="standard:statement-wrapping" />
-        <error line="176" column="58" source="standard:statement-wrapping" />
-        <error line="176" column="193" source="standard:statement-wrapping" />
-        <error line="176" column="217" source="standard:statement-wrapping" />
-        <error line="238" column="43" source="standard:multiline-if-else" />
-        <error line="259" column="48" source="standard:multiline-if-else" />
-        <error line="301" column="33" source="standard:multiline-if-else" />
-        <error line="303" column="106" source="standard:statement-wrapping" />
-        <error line="303" column="234" source="standard:statement-wrapping" />
-        <error line="303" column="278" source="standard:statement-wrapping" />
-        <error line="346" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="346" column="41" source="standard:multiline-loop" />
-        <error line="351" column="59" source="standard:multiline-if-else" />
-        <error line="357" column="44" source="standard:multiline-if-else" />
-        <error line="358" column="30" source="standard:multiline-if-else" />
+        <error line="349" column="121" source="standard:max-line-length" />
+        <error line="548" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/DiscoverScreen.kt">
-        <error line="103" column="27" source="standard:multiline-if-else" />
-        <error line="104" column="14" source="standard:multiline-if-else" />
-        <error line="105" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="106" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="106" column="56" source="standard:multiline-if-else" />
-        <error line="107" column="14" source="standard:multiline-if-else" />
-        <error line="127" column="32" source="standard:argument-list-wrapping" />
-        <error line="127" column="38" source="standard:argument-list-wrapping" />
-        <error line="128" column="46" source="standard:argument-list-wrapping" />
-        <error line="128" column="91" source="standard:argument-list-wrapping" />
-        <error line="128" column="106" source="standard:argument-list-wrapping" />
+        <error line="142" column="121" source="standard:max-line-length" />
+        <error line="148" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/HomeScreen.kt">
-        <error line="150" column="41" source="standard:multiline-loop" />
-        <error line="153" column="31" source="standard:argument-list-wrapping" />
-        <error line="153" column="69" source="standard:argument-list-wrapping" />
-        <error line="154" column="64" source="standard:argument-list-wrapping" />
-        <error line="154" column="175" source="standard:argument-list-wrapping" />
-        <error line="168" column="31" source="standard:multiline-if-else" />
-        <error line="173" column="34" source="standard:argument-list-wrapping" />
-        <error line="173" column="58" source="standard:argument-list-wrapping" />
-        <error line="174" column="47" source="standard:argument-list-wrapping" />
-        <error line="174" column="119" source="standard:argument-list-wrapping" />
-        <error line="174" column="143" source="standard:argument-list-wrapping" />
-        <error line="193" column="33" source="standard:statement-wrapping" />
-        <error line="193" column="156" source="standard:statement-wrapping" />
-        <error line="193" column="164" source="standard:statement-wrapping" />
+        <error line="184" column="121" source="standard:max-line-length" />
+        <error line="193" column="121" source="standard:max-line-length" />
+        <error line="305" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/LibraryScreen.kt">
-        <error line="146" column="172" source="standard:argument-list-wrapping" />
-        <error line="146" column="234" source="standard:argument-list-wrapping" />
-        <error line="147" column="65" source="standard:argument-list-wrapping" />
+        <error line="290" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/MissingScreen.kt">
-        <error line="149" column="34" source="standard:argument-list-wrapping" />
-        <error line="149" column="53" source="standard:argument-list-wrapping" />
+        <error line="259" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/NowPlayingScreen.kt">
-        <error line="167" column="26" source="standard:multiline-if-else" />
-        <error line="168" column="18" source="standard:multiline-if-else" />
+        <error line="128" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/PlayerScreen.kt">
-        <error line="239" column="35" source="standard:statement-wrapping" />
-        <error line="239" column="84" source="standard:statement-wrapping" />
-        <error line="239" column="147" source="standard:statement-wrapping" />
-        <error line="239" column="311" source="standard:statement-wrapping" />
-        <error line="240" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="340" column="77" source="standard:statement-wrapping" />
-        <error line="340" column="110" source="standard:statement-wrapping" />
-        <error line="340" column="247" source="standard:statement-wrapping" />
-        <error line="394" column="172" source="standard:statement-wrapping" />
-        <error line="394" column="192" source="standard:statement-wrapping" />
-        <error line="394" column="206" source="standard:statement-wrapping" />
-        <error line="395" column="41" source="standard:multiline-loop" />
-        <error line="396" column="39" source="standard:statement-wrapping" />
-        <error line="396" column="161" source="standard:statement-wrapping" />
-        <error line="396" column="340" source="standard:statement-wrapping" />
-        <error line="397" column="33" source="standard:statement-wrapping" />
-        <error line="397" column="53" source="standard:statement-wrapping" />
-        <error line="397" column="67" source="standard:statement-wrapping" />
-        <error line="402" column="197" source="standard:statement-wrapping" />
-        <error line="402" column="214" source="standard:statement-wrapping" />
-        <error line="402" column="228" source="standard:statement-wrapping" />
-        <error line="460" column="160" source="standard:argument-list-wrapping" />
+        <error line="347" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/SearchScreen.kt">
-        <error line="197" column="110" source="standard:multiline-if-else" />
-        <error line="198" column="26" source="standard:multiline-if-else" />
+        <error line="189" column="121" source="standard:max-line-length" />
+        <error line="211" column="121" source="standard:max-line-length" />
+        <error line="399" column="121" source="standard:max-line-length" />
+        <error line="447" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/SettingsScreen.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="80" column="30" source="standard:multiline-if-else" />
-        <error line="89" column="52" source="standard:statement-wrapping" />
-        <error line="89" column="59" source="standard:statement-wrapping" />
-        <error line="89" column="79" source="standard:statement-wrapping" />
-        <error line="124" column="32" source="standard:statement-wrapping" />
-        <error line="124" column="48" source="standard:statement-wrapping" />
-        <error line="124" column="65" source="standard:statement-wrapping" />
-        <error line="124" column="221" source="standard:statement-wrapping" />
-        <error line="171" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="172" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="220" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="220" column="41" source="standard:multiline-if-else" />
-        <error line="221" column="18" source="standard:multiline-if-else" />
-        <error line="221" column="34" source="standard:multiline-loop" />
-        <error line="230" column="85" source="standard:statement-wrapping" />
-        <error line="230" column="106" source="standard:statement-wrapping" />
-        <error line="230" column="193" source="standard:statement-wrapping" />
-        <error line="230" column="203" source="standard:statement-wrapping" />
-        <error line="230" column="205" source="standard:statement-wrapping" />
-        <error line="230" column="249" source="standard:statement-wrapping" />
-        <error line="257" column="46" source="standard:statement-wrapping" />
-        <error line="257" column="133" source="standard:statement-wrapping" />
-        <error line="257" column="143" source="standard:statement-wrapping" />
-        <error line="257" column="154" source="standard:statement-wrapping" />
-        <error line="257" column="166" source="standard:statement-wrapping" />
-        <error line="257" column="176" source="standard:statement-wrapping" />
-        <error line="273" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="274" column="39" source="standard:multiline-loop" />
-        <error line="279" column="39" source="standard:multiline-if-else" />
-        <error line="281" column="107" source="standard:statement-wrapping" />
-        <error line="281" column="257" source="standard:statement-wrapping" />
-        <error line="281" column="301" source="standard:statement-wrapping" />
-        <error line="308" column="62" source="standard:string-template" />
-        <error line="309" column="21" source="standard:string-template" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/vault/VaultBlobStore.kt">
-        <error line="29" column="114" source="standard:function-signature" />
-        <error line="39" column="92" source="standard:function-signature" />
-        <error line="138" column="63" source="standard:function-signature" />
-        <error line="141" column="64" source="standard:function-signature" />
+        <error line="94" column="121" source="standard:max-line-length" />
+        <error line="188" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/vault/VaultSyncEngine.kt">
-        <error line="27" column="5" source="standard:spacing-between-declarations-with-comments" />
-        <error line="129" column="20" source="standard:statement-wrapping" />
-        <error line="129" column="34" source="standard:statement-wrapping" />
-        <error line="129" column="46" source="standard:statement-wrapping" />
-        <error line="132" column="48" source="standard:statement-wrapping" />
-        <error line="132" column="104" source="standard:statement-wrapping" />
-        <error line="132" column="110" source="standard:statement-wrapping" />
-        <error line="133" column="51" source="standard:statement-wrapping" />
-        <error line="133" column="113" source="standard:statement-wrapping" />
-        <error line="133" column="121" source="standard:statement-wrapping" />
-        <error line="134" column="49" source="standard:statement-wrapping" />
-        <error line="134" column="76" source="standard:statement-wrapping" />
-        <error line="134" column="101" source="standard:statement-wrapping" />
-        <error line="134" column="107" source="standard:statement-wrapping" />
-        <error line="135" column="48" source="standard:statement-wrapping" />
-        <error line="135" column="69" source="standard:statement-wrapping" />
-        <error line="135" column="94" source="standard:statement-wrapping" />
-        <error line="135" column="100" source="standard:statement-wrapping" />
-        <error line="191" column="75" source="standard:no-multi-spaces" />
-        <error line="194" column="76" source="standard:no-multi-spaces" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/vault/daemon/DaemonConfig.kt">
-        <error line="104" column="60" source="standard:function-signature" />
-        <error line="179" column="49" source="standard:statement-wrapping" />
-    </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/vault/daemon/DaemonMain.kt">
-        <error line="78" column="44" source="standard:multiline-if-else" />
-        <error line="79" column="13" source="standard:multiline-if-else" />
-        <error line="133" column="67" source="standard:function-signature" />
+        <error line="215" column="121" source="standard:max-line-length" />
+        <error line="218" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/ArchiveExperienceTest.kt">
         <error line="5" column="1" source="standard:no-wildcard-imports" />
         <error line="6" column="1" source="standard:no-wildcard-imports" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/LandscapeMetadataTest.kt">
-        <error line="21" column="46" source="standard:multiline-if-else" />
-        <error line="22" column="22" source="standard:multiline-if-else" />
     </file>
     <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/MovieArtworkTest.kt">
         <error line="7" column="1" source="standard:no-wildcard-imports" />
@@ -501,58 +160,19 @@
         <error line="19" column="17" source="standard:property-naming" />
         <error line="20" column="17" source="standard:property-naming" />
     </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/OpenExternallyTest.kt">
-        <error line="85" column="99" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/PairingCoordinatorTest.kt">
-        <error line="52" column="120" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/ProbeRecoveryTest.kt">
-        <error line="56" column="36" source="standard:statement-wrapping" />
-        <error line="56" column="149" source="standard:statement-wrapping" />
-        <error line="58" column="39" source="standard:statement-wrapping" />
-        <error line="58" column="180" source="standard:statement-wrapping" />
-        <error line="59" column="39" source="standard:statement-wrapping" />
-        <error line="59" column="101" source="standard:statement-wrapping" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/RelaySmokeTest.kt">
-        <error line="75" column="108" source="standard:function-signature" />
-        <error line="178" column="112" source="standard:function-signature" />
+    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/PlayerEventsTest.kt">
+        <error line="82" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/RemoveWorkTest.kt">
         <error line="8" column="1" source="standard:no-wildcard-imports" />
-        <error line="14" column="63" source="standard:comma-spacing" />
-        <error line="15" column="101" source="standard:comma-spacing" />
-        <error line="16" column="66" source="standard:comma-spacing" />
-        <error line="28" column="63" source="standard:comma-spacing" />
-        <error line="29" column="101" source="standard:comma-spacing" />
-        <error line="30" column="66" source="standard:comma-spacing" />
-        <error line="38" column="63" source="standard:comma-spacing" />
-        <error line="39" column="101" source="standard:comma-spacing" />
     </file>
     <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/SearchShortcutTest.kt">
         <error line="7" column="1" source="standard:no-wildcard-imports" />
-        <error line="11" column="75" source="standard:function-signature" />
     </file>
     <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/SeriesTest.kt">
-        <error line="23" column="205" source="standard:function-signature" />
+        <error line="33" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/WorkDetailTest.kt">
         <error line="20" column="17" source="standard:property-naming" />
-        <error line="99" column="112" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/WorksJsonTest.kt">
-        <error line="68" column="112" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/vault/VaultBlobStoreTest.kt">
-        <error line="25" column="124" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/vault/VaultSyncEngineTest.kt">
-        <error line="25" column="124" source="standard:function-signature" />
-        <error line="57" column="88" source="standard:function-signature" />
-        <error line="72" column="88" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/vault/daemon/VaultSyncDaemonTest.kt">
-        <error line="88" column="64" source="standard:function-signature" />
     </file>
 </baseline>

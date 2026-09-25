@@ -27,13 +27,32 @@ object Fixtures {
     val works = listOf(
         work(YELLOWSTONE, "series", "Yellowstone", 2018, art = true),
         work(SINTEL, "movie", "Sintel", 2010),
-        work("w-dune", "movie", "Dune: Part Two", 2024, art = true, attrs = """{"runtime":"166 min","genre":"Sci-fi"}"""),
+        work(
+            "w-dune",
+            "movie",
+            "Dune: Part Two",
+            2024,
+            art = true,
+            attrs = """{"runtime":"166 min","genre":"Sci-fi"}""",
+        ),
         work("w-severance", "series", "Severance", 2022, art = true),
         work("w-piranesi", "book", "Piranesi", 2020, attrs = """{"author":"Susanna Clarke","pages":"245"}"""),
-        work("w-dune-book", "book", "Dune", 1965, attrs = """{"author":"Frank Herbert","pages":"412","series":"Dune"}"""),
+        work(
+            "w-dune-book",
+            "book",
+            "Dune",
+            1965,
+            attrs = """{"author":"Frank Herbert","pages":"412","series":"Dune"}""",
+        ),
         work("w-kid-a", "music", "Kid A", 2000, attrs = """{"artist":"Radiohead","album":"Kid A"}"""),
         work("w-blue", "music", "Blue", 1971, attrs = """{"artist":"Joni Mitchell"}"""),
-        work("w-project-hail", "book", "Project Hail Mary", 2021, attrs = """{"author":"Andy Weir","narrator":"Ray Porter"}"""),
+        work(
+            "w-project-hail",
+            "book",
+            "Project Hail Mary",
+            2021,
+            attrs = """{"author":"Andy Weir","narrator":"Ray Porter"}""",
+        ),
         work("w-cloudflare", "document", "Cloudflare Blog", null),
         work("w-ys-s4", "series", "Yellowstone Season 4 Mp4", null),
     )
@@ -45,8 +64,11 @@ object Fixtures {
             val t = JsonScan.stringField(w, "content_type")
             (type == null || t == type) && (q.isEmpty() || title.contains(q)) && t != "document"
         }
-        val episodes = if (q.isNotEmpty() && "yellowstone".contains(q) && type == null)
-            """{"id":"ep-1","kind":"edition","title":"S04E02 — Phantom Pain","work_id":"$YELLOWSTONE","work_title":"Yellowstone","content_type":"series","primary_asset":{"asset_id":"as-1","blob_hash":"$HASH"}}""" else ""
+        val episodes = if (q.isNotEmpty() && "yellowstone".contains(q) && type == null) {
+            """{"id":"ep-1","kind":"edition","title":"S04E02 — Phantom Pain","work_id":"$YELLOWSTONE","work_title":"Yellowstone","content_type":"series","primary_asset":{"asset_id":"as-1","blob_hash":"$HASH"}}"""
+        } else {
+            ""
+        }
         return """{"count":${hits.size},"truncated":false,"works":[${hits.joinToString(",")}],"episodes":[$episodes]}"""
     }
 

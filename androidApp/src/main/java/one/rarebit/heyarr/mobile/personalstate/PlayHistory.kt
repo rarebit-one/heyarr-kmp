@@ -10,11 +10,7 @@ import one.rarebit.heyarr.core.net.JsonScan
  *
  * Wire change = `json.Marshal(crdt.PlayChange)`: `ItemID`, `Tag`, `At`.
  */
-internal data class PlayChange(
-    val itemId: String,
-    val tag: String = "",
-    val at: ULong = 0UL,
-) {
+internal data class PlayChange(val itemId: String, val tag: String = "", val at: ULong = 0UL) {
     fun encode(): String = "{\"ItemID\":${PsJson.goJsonString(itemId)}" +
         ",\"Tag\":${PsJson.goJsonString(tag)}" +
         ",\"At\":$at}"

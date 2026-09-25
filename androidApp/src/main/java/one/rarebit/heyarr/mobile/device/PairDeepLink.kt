@@ -87,7 +87,9 @@ sealed interface PairDeepLink {
             val q = rest.indexOf('?')
             val query = if (q < 0) "" else rest.substring(q + 1)
             val raw = queryParam(query, PARAM)
-                ?: return Invalid("The link from Cruciform carried no invite. Tap \"Send to heyarr\" again on its Add-a-device screen.")
+                ?: return Invalid(
+                    "The link from Cruciform carried no invite. Tap \"Send to heyarr\" again on its Add-a-device screen.",
+                )
             val decoded = try {
                 percentDecode(raw)
             } catch (e: IllegalArgumentException) {

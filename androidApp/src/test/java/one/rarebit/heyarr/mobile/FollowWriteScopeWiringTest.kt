@@ -80,7 +80,10 @@ class FollowWriteScopeWiringTest {
 
     @Test fun sessionClientReadsTheAuthorityAndHitsTheRightRoute() {
         val t = CapturingTransport(
-            get = HttpResponse(200, """{"kind":"session","device_key":"ed25519:phone","scopes":["read"],"can_write":false,"management_authorized":false}"""),
+            get = HttpResponse(
+                200,
+                """{"kind":"session","device_key":"ed25519:phone","scopes":["read"],"can_write":false,"management_authorized":false}""",
+            ),
         )
         val client = SessionClient(t, "https://h.example", Credential.Session("tok"))
         val a = client.authority()!!
@@ -107,7 +110,12 @@ class FollowWriteScopeWiringTest {
             return get
         }
 
-        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
+        override fun post(
+            url: String,
+            body: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse {
             lastPostBody = body
             return post
         }

@@ -37,7 +37,8 @@ class PlaylistFlowTest {
     /** A transport that 404s everything — the library resolves no works, isolating the personal-state path. */
     private class NotFound : HttpTransport {
         override fun get(url: String, headers: Map<String, String>) = HttpResponse(404, "")
-        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(404, "")
+        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+            HttpResponse(404, "")
     }
 
     private fun coordinator(server: FakeServer): PersonalStateCoordinator {
@@ -75,7 +76,12 @@ class PlaylistFlowTest {
 
     @Test
     fun starToggleReflectsOptimisticallyAndReconciles() {
-        val actions = PersonalActionsViewModel(coordinator(FakeServer()), LibraryClient(NotFound(), "https://n", Credential.Session("t")), io = dispatcher)
+        val actions =
+            PersonalActionsViewModel(
+                coordinator(FakeServer()),
+                LibraryClient(NotFound(), "https://n", Credential.Session("t")),
+                io = dispatcher,
+            )
         assertTrue(actions.starredIds.value.isEmpty())
 
         actions.toggleStar("m1")
@@ -90,7 +96,12 @@ class PlaylistFlowTest {
         val server = FakeServer()
         val coord = coordinator(server)
         val space = coord.createPlaylist("Mix")
-        val actions = PersonalActionsViewModel(coord, LibraryClient(NotFound(), "https://n", Credential.Session("t")), io = dispatcher)
+        val actions =
+            PersonalActionsViewModel(
+                coord,
+                LibraryClient(NotFound(), "https://n", Credential.Session("t")),
+                io = dispatcher,
+            )
 
         actions.openAddToPlaylist("song-x")
         assertEquals("song-x", actions.addTarget.value)

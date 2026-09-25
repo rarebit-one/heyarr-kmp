@@ -22,8 +22,13 @@ class VaultSyncEngineTest {
             blobs[hash] = bytes
             return PutResult.Stored(hash, bytes.size.toLong())
         }
-        override fun fetchRange(baseUrl: String, hash: String, start: Long, end: Long, credential: Credential): ByteArray =
-            blobs.getValue(hash).copyOfRange(start.toInt(), end.toInt())
+        override fun fetchRange(
+            baseUrl: String,
+            hash: String,
+            start: Long,
+            end: Long,
+            credential: Credential,
+        ): ByteArray = blobs.getValue(hash).copyOfRange(start.toInt(), end.toInt())
         override fun fetchAll(baseUrl: String, hash: String, credential: Credential): ByteArray = blobs.getValue(hash)
     }
 

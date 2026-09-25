@@ -23,8 +23,13 @@ object MusicJson {
     fun groupByArtist(works: List<Work>): List<Artist> =
         works.groupBy { it.artist?.takeIf { a -> a.isNotBlank() } ?: UNKNOWN }
             .map { (name, albums) ->
-                val first = albums.sortedWith(compareBy({ it.year ?: Int.MAX_VALUE }, { it.sortTitle ?: it.title.lowercase() }, { it.id }))
-                    .firstOrNull { it.artworkPath != null } ?: albums.first()
+                val first =
+                    albums.sortedWith(
+                        compareBy({
+                            it.year ?: Int.MAX_VALUE
+                        }, { it.sortTitle ?: it.title.lowercase() }, { it.id }),
+                    )
+                        .firstOrNull { it.artworkPath != null } ?: albums.first()
                 Artist(name = name, workCount = albums.size, artworkPath = first.artworkPath, artworkWorkId = first.id)
             }
             .sortedWith(compareBy({ it.name == UNKNOWN }, { it.name.lowercase() }, { it.name }))

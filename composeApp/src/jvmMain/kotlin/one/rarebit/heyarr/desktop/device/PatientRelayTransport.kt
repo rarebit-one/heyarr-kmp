@@ -36,11 +36,14 @@ class PatientRelayTransport(
         }
     }
 
-    override fun post(url: String, body: ByteArray?, contentType: String?): HttpResponse = inner.post(url, body, contentType)
+    override fun post(url: String, body: ByteArray?, contentType: String?): HttpResponse =
+        inner.post(url, body, contentType)
 
-    override fun put(url: String, body: ByteArray, contentType: String?): HttpResponse = inner.put(url, body, contentType)
+    override fun put(url: String, body: ByteArray, contentType: String?): HttpResponse =
+        inner.put(url, body, contentType)
 
-    override fun delete(url: String, body: ByteArray?, contentType: String?): HttpResponse = inner.delete(url, body, contentType)
+    override fun delete(url: String, body: ByteArray?, contentType: String?): HttpResponse =
+        inner.delete(url, body, contentType)
 
     override fun sleep(millis: Long) = inner.sleep(millis)
 

@@ -102,7 +102,14 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
     fun openExternally() {
         scope.launch {
             val msg = session.io {
-                session.openExternally.open(session.config.baseUrl, route.blobHash, session.config.bearerToken.trim(), route.filename, route.mime, route.title)
+                session.openExternally.open(
+                    session.config.baseUrl,
+                    route.blobHash,
+                    session.config.bearerToken.trim(),
+                    route.filename,
+                    route.mime,
+                    route.title,
+                )
             }.getOrNull()
             if (msg != null) session.toast(Toast.Kind.INFO, msg)
         }
@@ -118,11 +125,28 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
             ) {
                 IconButtonRound(Icons.Rounded.ArrowBack, "Back", onBack)
                 Column(Modifier.weight(1f)) {
-                    Text(book?.title ?: route.title, style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary, maxLines = 1)
-                    book?.let { Text("${it.chapters.size} sections", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted) }
+                    Text(
+                        book?.title ?: route.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Tokens.textPrimary,
+                        maxLines = 1,
+                    )
+                    book?.let {
+                        Text(
+                            "${it.chapters.size} sections",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Tokens.textMuted,
+                        )
+                    }
                 }
-                IconButtonRound(Icons.Rounded.TextDecrease, "Decrease reading text size", { readingSize = (readingSize - 1).coerceAtLeast(14) }, enabled = readingSize > 14)
-                IconButtonRound(Icons.Rounded.TextIncrease, "Increase reading text size", { readingSize = (readingSize + 1).coerceAtMost(32) }, enabled = readingSize < 32)
+                IconButtonRound(Icons.Rounded.TextDecrease, "Decrease reading text size", {
+                    readingSize =
+                        (readingSize - 1).coerceAtLeast(14)
+                }, enabled = readingSize > 14)
+                IconButtonRound(Icons.Rounded.TextIncrease, "Increase reading text size", {
+                    readingSize =
+                        (readingSize + 1).coerceAtMost(32)
+                }, enabled = readingSize < 32)
             }
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                 when {
@@ -135,8 +159,18 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text("In-app reading isn’t available for this format yet.", style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary, textAlign = TextAlign.Center)
-                        Text("Open it in your default reader instead.", style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted, textAlign = TextAlign.Center)
+                        Text(
+                            "In-app reading isn’t available for this format yet.",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Tokens.textPrimary,
+                            textAlign = TextAlign.Center,
+                        )
+                        Text(
+                            "Open it in your default reader instead.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Tokens.textMuted,
+                            textAlign = TextAlign.Center,
+                        )
                         PrimaryButton("Open externally", ::openExternally, icon = Icons.Rounded.MenuBook)
                     }
 
@@ -154,12 +188,31 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                                         ch.title,
                                         style = MaterialTheme.typography.titleLarge,
                                         color = accent,
-                                        modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth().padding(top = if (i == 0) 0.dp else 28.dp, bottom = 10.dp),
+                                        modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth().padding(
+                                            top = if (i ==
+                                                0
+                                            ) {
+                                                0.dp
+                                            } else {
+                                                28.dp
+                                            },
+                                            bottom = 10.dp,
+                                        ),
                                     )
                                 }
                                 item(key = "t$i") {
                                     SelectionContainer(Modifier.widthIn(max = 760.dp).fillMaxWidth()) {
-                                        Text(ch.text, style = MaterialTheme.typography.bodyLarge.copy(fontSize = readingSize.sp, lineHeight = (readingSize * 1.6f).sp), color = Tokens.textPrimary)
+                                        Text(
+                                            ch.text,
+                                            style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontSize = readingSize.sp,
+                                                lineHeight = (
+                                                    readingSize *
+                                                        1.6f
+                                                    ).sp,
+                                            ),
+                                            color = Tokens.textPrimary,
+                                        )
                                     }
                                 }
                             }

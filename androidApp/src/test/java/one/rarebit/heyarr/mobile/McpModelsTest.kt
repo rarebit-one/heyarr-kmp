@@ -34,7 +34,12 @@ class McpModelsTest {
         assertEquals(listOf("r1", "r2"), e.ranked.map { it.id })
         val r1 = e.ranked[0]
         assertTrue(r1.accepted)
-        assertEquals(listOf("resolution.gte", "source.nin", "video_codec.eq", "hdr.eq", "resolution.gte"), r1.reasons.map { it.rule })
+        assertEquals(
+            listOf("resolution.gte", "source.nin", "video_codec.eq", "hdr.eq", "resolution.gte"),
+            r1.reasons.map {
+                it.rule
+            },
+        )
         assertEquals(listOf("accept", "accept", "prefer", "prefer", "terminal"), r1.reasons.map { it.section })
         assertEquals("the provider could not determine hdr", r1.reasons[3].detail)
         assertTrue(r1.reasons[3].isUndetermined)
@@ -61,7 +66,10 @@ class McpModelsTest {
         val missing = SatisfactionJson.parse(Fixtures.satisfaction("x"))!!
         assertEquals("not_satisfied", missing.contentSatisfaction)
         assertTrue(missing.assets.isEmpty())
-        assertEquals("nothing acceptable is held, so this is an acquisition rather than an upgrade", missing.upgradeDetail)
+        assertEquals(
+            "nothing acceptable is held, so this is an acquisition rather than an upgrade",
+            missing.upgradeDetail,
+        )
     }
 
     @Test
@@ -115,14 +123,20 @@ class McpModelsTest {
         assertEquals(1425L, p.elapsedSeconds)
         assertEquals(5520L, p.durationSeconds)
 
-        val bare = PlaybackStatusJson.parse("""{"elapsed_seconds":0,"playing":false,"renderer":"Phantom II 95 dB-a98d","state":"NO_MEDIA_PRESENT"}""")!!
+        val bare = PlaybackStatusJson.parse(
+            """{"elapsed_seconds":0,"playing":false,"renderer":"Phantom II 95 dB-a98d","state":"NO_MEDIA_PRESENT"}""",
+        )!!
         assertEquals("NO_MEDIA_PRESENT", bare.state)
         assertNull(bare.durationSeconds)
     }
 
     @Test
     fun releaseAttributesLeaveUnknownsOut() {
-        val args = ReleaseToExplain("r", "t", ReleaseAttributes(resolution = 1080, source = "", hdr = null)).toArguments()
+        val args = ReleaseToExplain(
+            "r",
+            "t",
+            ReleaseAttributes(resolution = 1080, source = "", hdr = null),
+        ).toArguments()
 
         @Suppress("UNCHECKED_CAST")
         val attrs = args["attributes"] as Map<String, Any?>
@@ -149,7 +163,10 @@ class McpModelsTest {
         assertEquals(4, api.jobs().size)
         assertTrue(api.sessionInfo()!!.canWrite)
         assertEquals(3, api.providers().size)
-        assertEquals(listOf("download", "ffmpeg", "ffmpeg.encoder.h264", "ffprobe", "indexer"), api.capabilities().available)
+        assertEquals(
+            listOf("download", "ffmpeg", "ffmpeg.encoder.h264", "ffprobe", "indexer"),
+            api.capabilities().available,
+        )
         // A refusal comes back as a value with the server's wording, naming the tool.
         val refused = api.discover("severance") as McpResult.Refused
         assertEquals("discover_content", refused.tool)

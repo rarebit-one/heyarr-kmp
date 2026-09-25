@@ -58,7 +58,10 @@ class PairingCoordinatorTest {
         var receiveDeadline = 0L
         var handshakeInvite: String? = null
 
-        override suspend fun handshake(inviteQr: String, deadlineMillis: Long): PairingOutcome<PairingSteps.Handshaked> {
+        override suspend fun handshake(
+            inviteQr: String,
+            deadlineMillis: Long,
+        ): PairingOutcome<PairingSteps.Handshaked> {
             handshakeInvite = inviteQr
             handshakeDeadline = deadlineMillis
             return handshakeGate.await()
@@ -110,81 +113,84 @@ class PairingCoordinatorTest {
 
     private fun failed(kind: PairingFailureKind) = PairingOutcome.Failed(kind, "msg:$kind", "relay")
 
-    @Test fun `the happy path - join, SAS, match, admission, enrol - lands Enrolled and clears the pending record`() = runTest(StandardTestDispatcher()) {
-        val h = Harness(this, { now })
-        val c = h.coordinator
+    @Test fun `the happy path - join, SAS, match, admission, enrol - lands Enrolled and clears the pending record`() =
+        runTest(StandardTestDispatcher()) {
+            val h = Harness(this, { now })
+            val c = h.coordinator
 
-        c.start(inviteA, sameDevice = true)
-        advanceUntilIdle()
-        val joining = h.state as PairingState.Joining
-        assertEquals("sessA", joining.session)
-        assertTrue(joining.sameDevice)
-        assertEquals(now + ttl, joining.deadlineMillis)
-        assertEquals(now + ttl, h.last.handshakeDeadline)
-        assertEquals(inviteA, h.last.handshakeInvite)
-        assertEquals(PendingPairing("sessA", inviteA, true, now), h.store.pending)
+            c.start(inviteA, sameDevice = true)
+            advanceUntilIdle()
+            val joining = h.state as PairingState.Joining
+            assertEquals("sessA", joining.session)
+            assertTrue(joining.sameDevice)
+            assertEquals(now + ttl, joining.deadlineMillis)
+            assertEquals(now + ttl, h.last.handshakeDeadline)
+            assertEquals(inviteA, h.last.handshakeInvite)
+            assertEquals(PendingPairing("sessA", inviteA, true, now), h.store.pending)
 
-        h.last.handshakeGate.complete(PairingOutcome.Ready(PairingSteps.Handshaked("1234567", DEVICE_ID)))
-        advanceUntilIdle()
-        val compare = h.state as PairingState.CompareSas
-        assertEquals("1234567", compare.sas)
-        assertFalse(compare.awaitingAdmission)
-        assertEquals(now + ttl, compare.deadlineMillis)
+            h.last.handshakeGate.complete(PairingOutcome.Ready(PairingSteps.Handshaked("1234567", DEVICE_ID)))
+            advanceUntilIdle()
+            val compare = h.state as PairingState.CompareSas
+            assertEquals("1234567", compare.sas)
+            assertFalse(compare.awaitingAdmission)
+            assertEquals(now + ttl, compare.deadlineMillis)
 
-        c.confirmMatch()
-        advanceUntilIdle()
-        val awaiting = h.state as PairingState.CompareSas
-        assertTrue("the SAS stays up while the admission is awaited", awaiting.awaitingAdmission)
-        assertEquals("1234567", awaiting.sas)
-        assertEquals(now + ttl, h.last.receiveDeadline)
-        assertNotNull("still pending while the relay is waited on", h.store.pending)
+            c.confirmMatch()
+            advanceUntilIdle()
+            val awaiting = h.state as PairingState.CompareSas
+            assertTrue("the SAS stays up while the admission is awaited", awaiting.awaitingAdmission)
+            assertEquals("1234567", awaiting.sas)
+            assertEquals(now + ttl, h.last.receiveDeadline)
+            assertNotNull("still pending while the relay is waited on", h.store.pending)
 
-        h.last.receiveGate.complete(PairingOutcome.Ready("op-token"))
-        advanceUntilIdle()
-        val enrolled = h.state as PairingState.Enrolled
-        assertTrue(enrolled.registered)
-        assertEquals("op-token", enrolled.op)
-        assertEquals(1, h.last.registerCalls)
-        assertNull("the admission is on disk — nothing to resume", h.store.pending)
-    }
+            h.last.receiveGate.complete(PairingOutcome.Ready("op-token"))
+            advanceUntilIdle()
+            val enrolled = h.state as PairingState.Enrolled
+            assertTrue(enrolled.registered)
+            assertEquals("op-token", enrolled.op)
+            assertEquals(1, h.last.registerCalls)
+            assertNull("the admission is on disk — nothing to resume", h.store.pending)
+        }
 
-    @Test fun `Cruciform's refusal ends the wait now, with its wording, and only for the live session`() = runTest(StandardTestDispatcher()) {
-        val h = Harness(this, { now }, announcer = RecordingAnnouncer(taken = true))
-        h.coordinator.start(inviteA, sameDevice = true)
-        advanceUntilIdle()
-        h.last.handshakeGate.complete(PairingOutcome.Ready(PairingSteps.Handshaked("1234567", DEVICE_ID)))
-        advanceUntilIdle()
-        assertTrue((h.state as PairingState.CompareSas).handedOff)
-        h.coordinator.refuse("sessB", "not ours")
-        assertTrue(h.state is PairingState.CompareSas)
-        h.coordinator.refuse("sessA", "the SAS differed.")
-        val failed = h.state as PairingState.Failed
-        assertEquals(PairingFailure.MISMATCH, failed.kind)
-        assertEquals("Cruciform refused the pairing: the SAS differed. Nothing was exchanged.", failed.message)
-        assertEquals(null, h.store.pending)
-    }
+    @Test fun `Cruciform's refusal ends the wait now, with its wording, and only for the live session`() =
+        runTest(StandardTestDispatcher()) {
+            val h = Harness(this, { now }, announcer = RecordingAnnouncer(taken = true))
+            h.coordinator.start(inviteA, sameDevice = true)
+            advanceUntilIdle()
+            h.last.handshakeGate.complete(PairingOutcome.Ready(PairingSteps.Handshaked("1234567", DEVICE_ID)))
+            advanceUntilIdle()
+            assertTrue((h.state as PairingState.CompareSas).handedOff)
+            h.coordinator.refuse("sessB", "not ours")
+            assertTrue(h.state is PairingState.CompareSas)
+            h.coordinator.refuse("sessA", "the SAS differed.")
+            val failed = h.state as PairingState.Failed
+            assertEquals(PairingFailure.MISMATCH, failed.kind)
+            assertEquals("Cruciform refused the pairing: the SAS differed. Nothing was exchanged.", failed.message)
+            assertEquals(null, h.store.pending)
+        }
 
-    @Test fun `re-firing the same invite while it is live is a no-op and a different one supersedes it`() = runTest(StandardTestDispatcher()) {
-        val h = Harness(this, { now })
-        val c = h.coordinator
-        c.start(inviteA, sameDevice = true)
-        advanceUntilIdle()
-        val first = h.last
-        c.start(inviteA, sameDevice = true) // Android re-delivering the launching intent
-        advanceUntilIdle()
-        assertEquals(1, h.created.size)
-        assertSame(first, h.last)
+    @Test fun `re-firing the same invite while it is live is a no-op and a different one supersedes it`() =
+        runTest(StandardTestDispatcher()) {
+            val h = Harness(this, { now })
+            val c = h.coordinator
+            c.start(inviteA, sameDevice = true)
+            advanceUntilIdle()
+            val first = h.last
+            c.start(inviteA, sameDevice = true) // Android re-delivering the launching intent
+            advanceUntilIdle()
+            assertEquals(1, h.created.size)
+            assertSame(first, h.last)
 
-        c.start(inviteB, sameDevice = false)
-        advanceUntilIdle()
-        assertEquals(2, h.created.size)
-        assertEquals("sessB", (h.state as PairingState.Joining).session)
-        assertEquals("sessB", h.store.pending?.session)
-        // The old session's late result must not resurface.
-        first.handshakeGate.complete(PairingOutcome.Ready(PairingSteps.Handshaked("0000000", DEVICE_ID)))
-        advanceUntilIdle()
-        assertTrue(h.state is PairingState.Joining)
-    }
+            c.start(inviteB, sameDevice = false)
+            advanceUntilIdle()
+            assertEquals(2, h.created.size)
+            assertEquals("sessB", (h.state as PairingState.Joining).session)
+            assertEquals("sessB", h.store.pending?.session)
+            // The old session's late result must not resurface.
+            first.handshakeGate.complete(PairingOutcome.Ready(PairingSteps.Handshaked("0000000", DEVICE_ID)))
+            advanceUntilIdle()
+            assertTrue(h.state is PairingState.Joining)
+        }
 
     @Test fun `a relay timeout and an unreachable relay are told apart`() = runTest(StandardTestDispatcher()) {
         val h = Harness(this, { now })
@@ -221,7 +227,9 @@ class PairingCoordinatorTest {
         assertNull(h.store.pending)
     }
 
-    @Test fun `cancel during the relay wait returns to idle and clears the record`() = runTest(StandardTestDispatcher()) {
+    @Test fun `cancel during the relay wait returns to idle and clears the record`() = runTest(
+        StandardTestDispatcher(),
+    ) {
         val h = Harness(this, { now })
         h.coordinator.start(inviteA, true)
         advanceUntilIdle()
@@ -262,30 +270,37 @@ class PairingCoordinatorTest {
         assertEquals("not retriable: no third call", 2, h.last.registerCalls)
     }
 
-    @Test fun `a pending record from a previous process reports interrupted, and expired past the TTL`() = runTest(StandardTestDispatcher()) {
-        val store = InMemoryPendingPairingStore().apply { pending = PendingPairing("sessA", inviteA, true, now - 60_000) }
-        val h = Harness(this, { now }, store)
-        val f = h.state as PairingState.Failed
-        assertEquals(PairingFailure.INTERRUPTED, f.kind)
-        assertEquals("sessA", f.session)
-        assertTrue(f.sameDevice)
-        assertNull("reported once, then forgotten", store.pending)
-        // The re-delivered launching intent for that same session must NOT re-join it
-        // (the relay's slots are write-once; it would only be refused).
-        h.coordinator.start(inviteA, true)
-        advanceUntilIdle()
-        assertEquals(0, h.created.size)
-        assertEquals(PairingFailure.INTERRUPTED, (h.state as PairingState.Failed).kind)
-        // A fresh invite is fine.
-        h.coordinator.start(inviteB, true)
-        advanceUntilIdle()
-        assertEquals("sessB", (h.state as PairingState.Joining).session)
+    @Test fun `a pending record from a previous process reports interrupted, and expired past the TTL`() =
+        runTest(StandardTestDispatcher()) {
+            val store = InMemoryPendingPairingStore().apply {
+                pending = PendingPairing("sessA", inviteA, true, now - 60_000)
+            }
+            val h = Harness(this, { now }, store)
+            val f = h.state as PairingState.Failed
+            assertEquals(PairingFailure.INTERRUPTED, f.kind)
+            assertEquals("sessA", f.session)
+            assertTrue(f.sameDevice)
+            assertNull("reported once, then forgotten", store.pending)
+            // The re-delivered launching intent for that same session must NOT re-join it
+            // (the relay's slots are write-once; it would only be refused).
+            h.coordinator.start(inviteA, true)
+            advanceUntilIdle()
+            assertEquals(0, h.created.size)
+            assertEquals(PairingFailure.INTERRUPTED, (h.state as PairingState.Failed).kind)
+            // A fresh invite is fine.
+            h.coordinator.start(inviteB, true)
+            advanceUntilIdle()
+            assertEquals("sessB", (h.state as PairingState.Joining).session)
 
-        val old = InMemoryPendingPairingStore().apply { pending = PendingPairing("sessA", inviteA, false, now - ttl) }
-        assertEquals(PairingFailure.EXPIRED, (Harness(this, { now }, old).state as PairingState.Failed).kind)
-    }
+            val old = InMemoryPendingPairingStore().apply {
+                pending = PendingPairing("sessA", inviteA, false, now - ttl)
+            }
+            assertEquals(PairingFailure.EXPIRED, (Harness(this, { now }, old).state as PairingState.Failed).kind)
+        }
 
-    @Test fun `something that is not an invite fails as INVALID without a session`() = runTest(StandardTestDispatcher()) {
+    @Test fun `something that is not an invite fails as INVALID without a session`() = runTest(
+        StandardTestDispatcher(),
+    ) {
         val h = Harness(this, { now })
         h.coordinator.start("voidbind:login?id=x&rp=http%3A%2F%2Fh", true)
         advanceUntilIdle()
@@ -298,46 +313,48 @@ class PairingCoordinatorTest {
 
     // ── the same-phone one-tap channel (voidbind-kmp ADR-0008) ──────────────────
 
-    @Test fun `a deep-linked invite reports its key and SAS to Cruciform and skips the human comparison`() = runTest(StandardTestDispatcher()) {
-        val announcer = RecordingAnnouncer(taken = true)
-        val h = Harness(this, { now }, announcer = announcer)
-        val c = h.coordinator
+    @Test fun `a deep-linked invite reports its key and SAS to Cruciform and skips the human comparison`() =
+        runTest(StandardTestDispatcher()) {
+            val announcer = RecordingAnnouncer(taken = true)
+            val h = Harness(this, { now }, announcer = announcer)
+            val c = h.coordinator
 
-        c.start(inviteA, sameDevice = true)
-        advanceUntilIdle()
-        h.last.handshakeGate.complete(PairingOutcome.Ready(PairingSteps.Handshaked("1234567", DEVICE_ID)))
-        advanceUntilIdle()
+            c.start(inviteA, sameDevice = true)
+            advanceUntilIdle()
+            h.last.handshakeGate.complete(PairingOutcome.Ready(PairingSteps.Handshaked("1234567", DEVICE_ID)))
+            advanceUntilIdle()
 
-        // Exactly what Cruciform compares against the relay: our session, our key, our SAS.
-        assertEquals(listOf(Triple("sessA", DEVICE_ID, "1234567")), announcer.reports)
-        val compare = h.state as PairingState.CompareSas
-        assertTrue("the apps compared — no human gate on this side", compare.handedOff)
-        assertTrue("straight to awaiting Cruciform's admission", compare.awaitingAdmission)
-        // The SAS is still carried: the screen reveals it if Cruciform never comes back.
-        assertEquals("1234567", compare.sas)
-        // And the pipeline really did advance — receive() is running against the deadline.
-        assertEquals(now + ttl, h.last.receiveDeadline)
+            // Exactly what Cruciform compares against the relay: our session, our key, our SAS.
+            assertEquals(listOf(Triple("sessA", DEVICE_ID, "1234567")), announcer.reports)
+            val compare = h.state as PairingState.CompareSas
+            assertTrue("the apps compared — no human gate on this side", compare.handedOff)
+            assertTrue("straight to awaiting Cruciform's admission", compare.awaitingAdmission)
+            // The SAS is still carried: the screen reveals it if Cruciform never comes back.
+            assertEquals("1234567", compare.sas)
+            // And the pipeline really did advance — receive() is running against the deadline.
+            assertEquals(now + ttl, h.last.receiveDeadline)
 
-        h.last.receiveGate.complete(PairingOutcome.Ready("op-token"))
-        advanceUntilIdle()
-        assertTrue(h.state is PairingState.Enrolled)
-    }
+            h.last.receiveGate.complete(PairingOutcome.Ready("op-token"))
+            advanceUntilIdle()
+            assertTrue(h.state is PairingState.Enrolled)
+        }
 
-    @Test fun `a scanned invite never reports to Cruciform - the human comparison is the only channel there is`() = runTest(StandardTestDispatcher()) {
-        // sameDevice=false is a QR from another phone or the Mac: there IS no local
-        // channel, and firing one would be reporting to an app that is not the peer.
-        val announcer = RecordingAnnouncer(taken = true)
-        val h = Harness(this, { now }, announcer = announcer)
-        h.coordinator.start(inviteA, sameDevice = false)
-        advanceUntilIdle()
-        h.last.handshakeGate.complete(PairingOutcome.Ready(PairingSteps.Handshaked("1234567", DEVICE_ID)))
-        advanceUntilIdle()
+    @Test fun `a scanned invite never reports to Cruciform - the human comparison is the only channel there is`() =
+        runTest(StandardTestDispatcher()) {
+            // sameDevice=false is a QR from another phone or the Mac: there IS no local
+            // channel, and firing one would be reporting to an app that is not the peer.
+            val announcer = RecordingAnnouncer(taken = true)
+            val h = Harness(this, { now }, announcer = announcer)
+            h.coordinator.start(inviteA, sameDevice = false)
+            advanceUntilIdle()
+            h.last.handshakeGate.complete(PairingOutcome.Ready(PairingSteps.Handshaked("1234567", DEVICE_ID)))
+            advanceUntilIdle()
 
-        assertTrue(announcer.reports.isEmpty())
-        val compare = h.state as PairingState.CompareSas
-        assertFalse(compare.handedOff)
-        assertFalse("the human still has to compare", compare.awaitingAdmission)
-    }
+            assertTrue(announcer.reports.isEmpty())
+            val compare = h.state as PairingState.CompareSas
+            assertFalse(compare.handedOff)
+            assertFalse("the human still has to compare", compare.awaitingAdmission)
+        }
 
     @Test fun `a report nothing takes falls back to the human comparison`() = runTest(StandardTestDispatcher()) {
         // Cruciform absent, or an older build with no `pair-joined` filter: the launch

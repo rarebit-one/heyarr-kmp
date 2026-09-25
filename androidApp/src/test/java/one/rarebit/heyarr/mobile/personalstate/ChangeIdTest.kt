@@ -23,7 +23,11 @@ class ChangeIdTest {
             val parents = PsJson.stringArray(v, "parents")
             val ct = Base64.getDecoder().decode(JsonScan.stringField(v, "ciphertext_b64")!!)
             val want = JsonScan.stringField(v, "change_id")!!
-            assertEquals("change ${JsonScan.stringField(v, "name")}", want, PersonalStateId.changeId(space, parents, ct))
+            assertEquals(
+                "change ${JsonScan.stringField(v, "name")}",
+                want,
+                PersonalStateId.changeId(space, parents, ct),
+            )
             seen++
         }
         assertEquals("expected several change vectors", true, seen >= 4)
@@ -38,7 +42,11 @@ class ChangeIdTest {
             val frontier = PsJson.stringArray(v, "frontier")
             val ct = Base64.getDecoder().decode(JsonScan.stringField(v, "ciphertext_b64")!!)
             val want = JsonScan.stringField(v, "snapshot_id")!!
-            assertEquals("snapshot ${JsonScan.stringField(v, "name")}", want, PersonalStateId.snapshotId(space, frontier, ct))
+            assertEquals(
+                "snapshot ${JsonScan.stringField(v, "name")}",
+                want,
+                PersonalStateId.snapshotId(space, frontier, ct),
+            )
             seen++
         }
         assertEquals("expected snapshot vectors", true, seen >= 2)

@@ -52,7 +52,13 @@ data class WorkAsset(
                 value /= 1024
                 unit++
             }
-            return if (value >= 100) "${value.toLong()} ${units[unit]}" else String.format(java.util.Locale.ROOT, "%.1f %s", value, units[unit])
+            return if (value >=
+                100
+            ) {
+                "${value.toLong()} ${units[unit]}"
+            } else {
+                String.format(java.util.Locale.ROOT, "%.1f %s", value, units[unit])
+            }
         }
     }
 }

@@ -54,11 +54,7 @@ data class DeviceKeyInfo(
  * Keystore calls that need a fresh user authentication (first provisioning, and
  * every signature) go through the [BiometricGate]; run this off the main thread.
  */
-class DeviceKeyring(
-    context: Context,
-    private val gate: BiometricGate,
-    private val alias: String = DEFAULT_ALIAS,
-) {
+class DeviceKeyring(context: Context, private val gate: BiometricGate, private val alias: String = DEFAULT_ALIAS) {
     private val app = context.applicationContext
     private val secrets = SealedSecretStore(app)
 

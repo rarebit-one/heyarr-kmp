@@ -78,7 +78,8 @@ class DetailScreenSmokeTest {
         val state = DetailState(workId)
         compose.setContent {
             HeyarrTheme {
-                DetailScreen(s, Route.Detail(workId, type, title), state, noPlayback, onBack = {}, onOpen = {}, onWant = { _, _ -> })
+                DetailScreen(s, Route.Detail(workId, type, title), state, noPlayback, onBack = {
+                }, onOpen = {}, onWant = { _, _ -> })
             }
         }
         compose.waitUntil(timeoutMillis = 10_000) {

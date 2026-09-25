@@ -79,7 +79,8 @@ class FeedsClientTest {
                 seenAuth += headers["Authorization"].orEmpty()
                 return HttpResponse(200, """{"followed_sources":[{"id":"fs1","title":"X"}]}""")
             }
-            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(405, "")
+            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+                HttpResponse(405, "")
         }
         val sources = FeedsClient(transport, "https://h.example", Credential.Bearer("heyarr_1_s")).listSources()
         assertEquals(1, sources.size)

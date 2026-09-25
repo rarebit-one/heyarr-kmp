@@ -88,7 +88,10 @@ class RelaySmokeTest {
         }
 
         val pkgDir = File(goDir, ".heyarr-smoke-" + UUID.randomUUID().toString().take(8))
-        val dataDir = File(System.getProperty("java.io.tmpdir"), "heyarr-smoke-dev-" + UUID.randomUUID().toString().take(8))
+        val dataDir = File(
+            System.getProperty("java.io.tmpdir"),
+            "heyarr-smoke-dev-" + UUID.randomUUID().toString().take(8),
+        )
         var proc: Process? = null
         try {
             pkgDir.mkdirs()
@@ -152,7 +155,11 @@ class RelaySmokeTest {
             assertEquals(keyring.info().deviceKey, op.device, "admits this desktop's device key")
 
             // The resulting Credential.Device is presentable and its possession proof verifies.
-            val device = assertNotNull(DesktopDeviceEnroller(keyring).enrolled(), "the enroller reports a live Device credential")
+            val device =
+                assertNotNull(
+                    DesktopDeviceEnroller(keyring).enrolled(),
+                    "the enroller reports a live Device credential",
+                )
             assertEquals(cert, device.cert)
             PossessionProof.verify(
                 proof = device.proof,

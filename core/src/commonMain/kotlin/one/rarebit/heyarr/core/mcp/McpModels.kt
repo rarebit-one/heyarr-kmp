@@ -155,11 +155,7 @@ data class RankedRelease(
 )
 
 /** The `explain_release` answer: which release the scorer would pick, and every rule it weighed. */
-data class Explanation(
-    val qualityProfile: String,
-    val selected: String?,
-    val ranked: List<RankedRelease>,
-)
+data class Explanation(val qualityProfile: String, val selected: String?, val ranked: List<RankedRelease>)
 
 object ExplanationJson {
     fun parse(body: String): Explanation? {
@@ -213,16 +209,15 @@ data class ReleaseAttributes(
 
 /** A release to explain: your own [id] (breaks ties), its [title], and what you know about it. */
 data class ReleaseToExplain(val id: String, val title: String, val attributes: ReleaseAttributes) {
-    fun toArguments(): Map<String, Any?> = linkedMapOf("id" to id, "title" to title, "attributes" to attributes.toArguments())
+    fun toArguments(): Map<String, Any?> = linkedMapOf(
+        "id" to id,
+        "title" to title,
+        "attributes" to attributes.toArguments(),
+    )
 }
 
 /** A network renderer (`list_renderers`): a television, speaker or projector heyarr can play to. */
-data class Renderer(
-    val udn: String,
-    val name: String,
-    val manufacturer: String?,
-    val model: String?,
-) {
+data class Renderer(val udn: String, val name: String, val manufacturer: String?, val model: String?) {
     val subtitle: String get() = listOfNotNull(manufacturer, model).joinToString(" · ")
 }
 
@@ -267,13 +262,7 @@ object PlaybackStatusJson {
 }
 
 /** A peer of this node (`get_peer_status`). */
-data class Peer(
-    val peerId: String,
-    val name: String,
-    val site: String?,
-    val mode: String?,
-    val isSelf: Boolean,
-)
+data class Peer(val peerId: String, val name: String, val site: String?, val mode: String?, val isSelf: Boolean)
 
 data class PeerStatus(val peers: List<Peer>, val note: String?)
 
@@ -323,7 +312,8 @@ data class SearchHit(
     val tvdbId: String?,
     val attributes: Map<String, String>,
 ) {
-    val creator: String? get() = attributes["artist"] ?: attributes["author"] ?: attributes["host"] ?: attributes["narrator"]
+    val creator: String? get() = attributes["artist"] ?: attributes["author"] ?: attributes["host"]
+        ?: attributes["narrator"]
 }
 
 /** An episode/part hit (`episodes`) — a scanned episode with its file, or a followed source's projected item. */
@@ -383,7 +373,8 @@ object SearchHitsJson {
         return out
     }
 
-    private val ATTRIBUTE_KEYS = listOf("artist", "author", "album", "narrator", "host", "series", "genre", "runtime", "pages", "duration")
+    private val ATTRIBUTE_KEYS =
+        listOf("artist", "author", "album", "narrator", "host", "series", "genre", "runtime", "pages", "duration")
 }
 
 /** A followed source's identity for the UI — `list_followed` (the MCP twin of `/followed-sources`). */
@@ -445,7 +436,8 @@ data class DiscoveryHit(
     val backdropUrl: String? = null,
 ) {
     /** True for the four followed-source kinds; false for movie/book/music. */
-    val followable: Boolean get() = type == "tv_series" || type == "podcast" || type == "youtube_channel" || type == "rss_feed"
+    val followable: Boolean get() = type == "tv_series" || type == "podcast" || type == "youtube_channel" ||
+        type == "rss_feed"
 }
 
 object DiscoveryJson {
@@ -473,7 +465,8 @@ object ExternalIdJson {
     fun list(body: String): List<ExternalId> =
         JsonScan.objectsOf(body, listOf("external_ids", "items")).mapNotNull { e ->
             val source = JsonScan.firstString(e, listOf("source", "scheme")) ?: return@mapNotNull null
-            val value = JsonScan.stringField(e, "value") ?: JsonScan.longField(e, "value")?.toString() ?: return@mapNotNull null
+            val value =
+                JsonScan.stringField(e, "value") ?: JsonScan.longField(e, "value")?.toString() ?: return@mapNotNull null
             ExternalId(source, value)
         }
 }

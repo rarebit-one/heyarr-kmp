@@ -16,7 +16,8 @@ private class OneTransport(private val response: HttpResponse) : HttpTransport {
         lastUrl = url
         return response
     }
-    override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(405, "")
+    override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+        HttpResponse(405, "")
 }
 
 class ContinueClientTest {
@@ -71,13 +72,27 @@ class ContinueClientTest {
         assertTrue(rail is ContinueClient.Outcome.Rail && rail.entries.size == 2)
         assertEquals("$base/api/v1/consumption/continue?limit=5", ok.lastUrl)
 
-        assertTrue(ContinueClient(OneTransport(HttpResponse(404, "")), base, cred).rail() is ContinueClient.Outcome.Unavailable)
-        assertTrue(ContinueClient(OneTransport(HttpResponse(403, "")), base, cred).rail() is ContinueClient.Outcome.Unavailable)
+        assertTrue(
+            ContinueClient(
+                OneTransport(HttpResponse(404, "")),
+                base,
+                cred,
+            ).rail() is ContinueClient.Outcome.Unavailable,
+        )
+        assertTrue(
+            ContinueClient(
+                OneTransport(HttpResponse(403, "")),
+                base,
+                cred,
+            ).rail() is ContinueClient.Outcome.Unavailable,
+        )
         assertTrue(runCatching { ContinueClient(OneTransport(HttpResponse(500, "")), base, cred).rail() }.isFailure)
     }
 
     @Test fun anEntryMissingItsWorkOrAssetIsSkipped() {
-        val entries = ContinueClient.parse("""{"items":[{"session":{"id":"s1"},"work":{"id":"w1"}},{"session":{"id":"s2"},"asset":{"asset_id":"a"}}]}""")
+        val entries = ContinueClient.parse(
+            """{"items":[{"session":{"id":"s1"},"work":{"id":"w1"}},{"session":{"id":"s2"},"asset":{"asset_id":"a"}}]}""",
+        )
         assertEquals(0, entries.size)
         assertEquals(emptyList<ContinueEntry>(), ContinueClient.parse("""{"items":[]}"""))
     }

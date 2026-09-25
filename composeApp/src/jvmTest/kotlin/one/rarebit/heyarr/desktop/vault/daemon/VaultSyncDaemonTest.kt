@@ -170,7 +170,10 @@ class VaultSyncDaemonTest {
             val paused = ask(dir.resolve("vault-sync.sock"), """{"cmd":"pause"}""")
             assertEquals(true, JsonScan.boolField(paused, "ok"))
             assertEquals("paused", JsonScan.stringField(paused, "phase"))
-            assertEquals("paused", JsonScan.stringField(ask(dir.resolve("vault-sync.sock"), """{"cmd":"status"}"""), "phase"))
+            assertEquals(
+                "paused",
+                JsonScan.stringField(ask(dir.resolve("vault-sync.sock"), """{"cmd":"status"}"""), "phase"),
+            )
 
             val resumed = ask(dir.resolve("vault-sync.sock"), """{"cmd":"resume"}""")
             assertEquals(true, JsonScan.boolField(resumed, "ok"))
@@ -191,7 +194,9 @@ class VaultSyncDaemonTest {
             val daemon = VaultSyncDaemon(
                 configIn(dir),
                 scope,
-                resolve = { VaultSyncDaemon.Resolved(FakeSync { noStats }, FakeChanges(), "ed25519:test", watching = true) },
+                resolve = {
+                    VaultSyncDaemon.Resolved(FakeSync { noStats }, FakeChanges(), "ed25519:test", watching = true)
+                },
             )
             daemon.start()
             awaitSocket(dir.resolve("vault-sync.sock"))

@@ -23,13 +23,16 @@ internal class RoutedTransport(private val routes: Map<String, HttpResponse>) : 
         calls.add(Triple(method, url, body))
         lastAuth = headers["Authorization"]
         val path = url.substringAfter("/api/v1")
-        return routes["$method $path"] ?: routes[path] ?: HttpResponse(404, """{"status":404,"detail":"no such route in the fake"}""")
+        return routes["$method $path"] ?: routes[path]
+            ?: HttpResponse(404, """{"status":404,"detail":"no such route in the fake"}""")
     }
 
     override fun get(url: String, headers: Map<String, String>) = answer("GET", url, null, headers)
-    override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = answer("POST", url, body, headers)
+    override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+        answer("POST", url, body, headers)
     override fun delete(url: String, headers: Map<String, String>) = answer("DELETE", url, null, headers)
-    override fun patch(url: String, body: String?, contentType: String?, headers: Map<String, String>) = answer("PATCH", url, body, headers)
+    override fun patch(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+        answer("PATCH", url, body, headers)
 }
 
 class WorkDetailClientTest {
@@ -39,14 +42,20 @@ class WorkDetailClientTest {
 
     @Test fun buildsTheLiveRoutes() {
         assertEquals("$base/api/v1/works/w1/assets?limit=200", WorkDetailClient.workAssetsUrl(base, "w1"))
-        assertEquals("$base/api/v1/works/w1/assets?limit=200&cursor=a%2Fb", WorkDetailClient.workAssetsUrl(base, "w1", "a/b"))
+        assertEquals(
+            "$base/api/v1/works/w1/assets?limit=200&cursor=a%2Fb",
+            WorkDetailClient.workAssetsUrl(base, "w1", "a/b"),
+        )
         assertEquals("$base/api/v1/works/w1", WorkDetailClient.workUrl(base, "w1"))
         assertEquals("$base/api/v1/assets/a1", WorkDetailClient.assetUrl(base, "a1"))
         assertEquals("$base/api/v1/desired?work_id=w1&limit=200", WorkDetailClient.wantsUrl(base, "w1"))
         assertEquals("$base/api/v1/desired/d1", WorkDetailClient.wantUrl(base, "d1"))
         assertEquals("""{"monitor":false}""", WorkDetailClient.monitorBody(false))
         assertEquals("$base/api/v1/works?limit=200&include=artwork%2Cprimary_asset", LibraryClient.worksUrl(base, null))
-        assertEquals("$base/api/v1/works?limit=200&include=artwork%2Cprimary_asset&cursor=c1", LibraryClient.worksUrl(base, "c1"))
+        assertEquals(
+            "$base/api/v1/works?limit=200&include=artwork%2Cprimary_asset&cursor=c1",
+            LibraryClient.worksUrl(base, "c1"),
+        )
     }
 
     @Test fun assetsForWorkReadsTheJoinedPerWorkRoute() {
@@ -100,8 +109,13 @@ class WorkDetailClientTest {
         val t = RoutedTransport(
             mapOf(
                 "DELETE /desired/d1" to HttpResponse(204, ""),
-                "PATCH /desired/d1" to HttpResponse(200, """{"id":"d1","scope":"work","work_id":"w1","quality_profile_id":"q","monitor":false,"created_at":"x","updated_at":"y"}"""),
-                "POST /desired/d1/reconcile" to HttpResponse(202, """{"desired_item_id":"d1","job_id":"j1","status":"queued"}"""),
+                "PATCH /desired/d1" to
+                    HttpResponse(
+                        200,
+                        """{"id":"d1","scope":"work","work_id":"w1","quality_profile_id":"q","monitor":false,"created_at":"x","updated_at":"y"}""",
+                    ),
+                "POST /desired/d1/reconcile" to
+                    HttpResponse(202, """{"desired_item_id":"d1","job_id":"j1","status":"queued"}"""),
                 "POST /desired/d1/search" to HttpResponse(202, """{"job_id":"j2"}"""),
                 "DELETE /assets/a1" to HttpResponse(204, ""),
             ),
@@ -113,7 +127,13 @@ class WorkDetailClientTest {
         assertTrue(c.searchAgain("d1") is WorkDetailClient.Outcome.Done)
         assertTrue(c.removeAsset("a1") is WorkDetailClient.Outcome.Done)
         assertEquals(
-            listOf("DELETE /desired/d1", "PATCH /desired/d1", "POST /desired/d1/reconcile", "POST /desired/d1/search", "DELETE /assets/a1"),
+            listOf(
+                "DELETE /desired/d1",
+                "PATCH /desired/d1",
+                "POST /desired/d1/reconcile",
+                "POST /desired/d1/search",
+                "DELETE /assets/a1",
+            ),
             t.calls.map { it.first + " " + it.second.substringAfter("/api/v1") },
         )
         assertEquals("""{"monitor":false}""", t.calls[1].third)
@@ -122,7 +142,11 @@ class WorkDetailClientTest {
     @Test fun editWorkPatchesTheWorkAndCarriesTheBody() {
         val t = RoutedTransport(
             mapOf(
-                "PATCH /works/w1" to HttpResponse(200, """{"id":"w1","content_type":"movie","work_key":"k","title":"The Conversation","sort_title":"conversation, the","year":1974,"attributes":{},"created_at":"x","updated_at":"y"}"""),
+                "PATCH /works/w1" to
+                    HttpResponse(
+                        200,
+                        """{"id":"w1","content_type":"movie","work_key":"k","title":"The Conversation","sort_title":"conversation, the","year":1974,"attributes":{},"created_at":"x","updated_at":"y"}""",
+                    ),
             ),
         )
         val out = WorkDetailClient(t, base, cred).editWork("w1", WorkPatch(title = "The Conversation", year = 1974))
@@ -151,7 +175,8 @@ class WorkDetailClientTest {
     @Test fun a403IsTheHonestReadOnlyHintAndA400CarriesTheDetail() {
         val t = RoutedTransport(
             mapOf(
-                "DELETE /desired/d1" to HttpResponse(403, """{"status":403,"detail":"this token does not carry the write scope"}"""),
+                "DELETE /desired/d1" to
+                    HttpResponse(403, """{"status":403,"detail":"this token does not carry the write scope"}"""),
                 "DELETE /assets/a1" to HttpResponse(404, """{"status":404,"detail":"asset not found"}"""),
                 "POST /desired/d1/reconcile" to HttpResponse(500, """{"status":500}"""),
             ),
@@ -171,8 +196,13 @@ class WorkDetailClientTest {
     @Test fun libraryListFollowsNextCursorAndOrdersRecentFirst() {
         val t = RoutedTransport(
             mapOf(
-                "GET /works?limit=200&include=artwork%2Cprimary_asset" to HttpResponse(200, """{"items":[{"id":"a","title":"A","updated_at":"2026-01-01T00:00:00Z"}],"next_cursor":"n"}"""),
-                "GET /works?limit=200&include=artwork%2Cprimary_asset&cursor=n" to HttpResponse(200, """{"items":[{"id":"b","title":"B","updated_at":"2026-05-01T00:00:00Z"}]}"""),
+                "GET /works?limit=200&include=artwork%2Cprimary_asset" to
+                    HttpResponse(
+                        200,
+                        """{"items":[{"id":"a","title":"A","updated_at":"2026-01-01T00:00:00Z"}],"next_cursor":"n"}""",
+                    ),
+                "GET /works?limit=200&include=artwork%2Cprimary_asset&cursor=n" to
+                    HttpResponse(200, """{"items":[{"id":"b","title":"B","updated_at":"2026-05-01T00:00:00Z"}]}"""),
             ),
         )
         assertEquals(listOf("b", "a"), LibraryClient(t, base, cred).listWorks().map { it.id })

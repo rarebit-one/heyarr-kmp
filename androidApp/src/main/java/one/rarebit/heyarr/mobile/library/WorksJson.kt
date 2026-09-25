@@ -29,7 +29,8 @@ object WorksJson {
     private val ENVELOPE_KEYS = listOf("items", "works", "data")
 
     // The string attributes worth carrying to a detail screen (a provider's synopsis, the creator, a genre).
-    private val ATTRIBUTE_KEYS = listOf("overview", "synopsis", "description", "summary", "author", "artist", "narrator", "genre", "runtime", "pages", "album", "series", "host")
+    private val ATTRIBUTE_KEYS =
+        listOf("overview", "synopsis", "description", "summary", "author", "artist", "narrator", "genre", "runtime", "pages", "album", "series", "host")
 
     /** Parse a works-list response body into [Work]s, skipping any element missing an id. */
     fun parse(body: String): List<Work> = JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
@@ -60,7 +61,11 @@ object WorksJson {
             artworkPath = artwork?.let { JsonScan.stringField(it, "content_url") },
             artist = attributes?.let { JsonScan.stringField(it, "artist") },
             author = attributes?.let { JsonScan.stringField(it, "author") },
-            attributes = attributes?.let { a -> ATTRIBUTE_KEYS.mapNotNull { k -> JsonScan.stringField(a, k)?.let { k to it } }.toMap() } ?: emptyMap(),
+            attributes =
+            attributes?.let { a ->
+                ATTRIBUTE_KEYS.mapNotNull { k -> JsonScan.stringField(a, k)?.let { k to it } }.toMap()
+            }
+                ?: emptyMap(),
             year = JsonScan.intField(obj, "year"),
             workKey = JsonScan.stringField(obj, "work_key"),
             sortTitle = JsonScan.stringField(obj, "sort_title"),

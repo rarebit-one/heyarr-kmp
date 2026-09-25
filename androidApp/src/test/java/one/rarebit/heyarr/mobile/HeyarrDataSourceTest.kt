@@ -16,7 +16,10 @@ class HeyarrDataSourceTest {
 
     @Test
     fun theLiveHeaderWinsAndTheFrozenOneIsOnlyAFallback() {
-        assertEquals("Device cert.token proof.fresh", HeyarrDataSource.authorization("Device cert.token proof.fresh", planned))
+        assertEquals(
+            "Device cert.token proof.fresh",
+            HeyarrDataSource.authorization("Device cert.token proof.fresh", planned),
+        )
         assertEquals(planned.authHeaders()["Authorization"], HeyarrDataSource.authorization(null, planned))
         assertEquals(planned.authHeaders()["Authorization"], HeyarrDataSource.authorization("", planned))
     }

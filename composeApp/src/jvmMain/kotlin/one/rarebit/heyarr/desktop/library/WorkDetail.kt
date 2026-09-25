@@ -82,7 +82,25 @@ object WorkDetailJson {
             parsePrimaryAsset(obj),
             artworkPath = artwork?.let { JsonScan.stringField(it, "content_url") },
             artworkHash = artwork?.let { JsonScan.stringField(it, "blob_hash") },
-            attributes = JsonScan.objectAt(obj, "attributes")?.let { a -> listOf("overview", "synopsis", "description", "summary", "author", "artist", "narrator", "genre").mapNotNull { k -> JsonScan.stringField(a, k)?.let { k to it } }.toMap() } ?: emptyMap(),
+            attributes =
+            JsonScan.objectAt(obj, "attributes")?.let { a ->
+                listOf(
+                    "overview",
+                    "synopsis",
+                    "description",
+                    "summary",
+                    "author",
+                    "artist",
+                    "narrator",
+                    "genre",
+                ).mapNotNull { k ->
+                    JsonScan.stringField(a, k)?.let {
+                        k to
+                            it
+                    }
+                }.toMap()
+            }
+                ?: emptyMap(),
         )
     }
 

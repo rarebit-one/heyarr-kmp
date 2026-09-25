@@ -56,7 +56,9 @@ object CruciformPairCallback {
         for (b in bytes) {
             val c = b.toInt() and 0xFF
             val ch = c.toChar()
-            if (ch in 'A'..'Z' || ch in 'a'..'z' || ch in '0'..'9' || ch == '-' || ch == '_' || ch == '.' || ch == '~') {
+            if (ch in 'A'..'Z' || ch in 'a'..'z' || ch in '0'..'9' || ch == '-' || ch == '_' || ch == '.' ||
+                ch == '~'
+            ) {
                 out.append(ch)
             } else {
                 out.append('%').append(HEX[c ushr 4]).append(HEX[c and 0x0F])

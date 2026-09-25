@@ -55,7 +55,15 @@ class AudioSessionBridgeTest {
         audio.flow.value = AudioState(queue = listOf(a, b), index = 1, playing = true, positionMs = 0)
         audio.flow.value = AudioState() // queue cleared
         assertEquals(
-            listOf("begin:a1:listen", "progress:30", "pause:31", "resume:31", "end:0:false", "begin:a2:listen", "end:0:false"),
+            listOf(
+                "begin:a1:listen",
+                "progress:30",
+                "pause:31",
+                "resume:31",
+                "end:0:false",
+                "begin:a2:listen",
+                "end:0:false",
+            ),
             rep.events,
         )
     }

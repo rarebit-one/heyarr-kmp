@@ -56,11 +56,7 @@ data class SessionAuthority(
  * the three reads the server doc names: learn the scope, surface the [deviceKey][SessionAuthority.deviceKey]
  * to authorise, and re-check after — [refresh] is that re-check.
  */
-class SessionClient(
-    private val http: HttpTransport,
-    private val baseUrl: String,
-    private val credential: Credential,
-) {
+class SessionClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
     /**
      * Fetch the caller's authority. Returns null when the session endpoint cannot be
      * read (a transport failure, or an unexpected status) — the caller treats an

@@ -34,7 +34,14 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
     val work by produceState<one.rarebit.heyarr.desktop.library.WorkDetail?>(null, item.workId, session.generation) {
         value = session.io { session.api?.work(item.workId) }.getOrNull()
     }
-    val cover by rememberCover(session, playback.type, item.title, work?.artworkPath, work?.work?.year, work?.work?.artist ?: work?.work?.author)
+    val cover by rememberCover(
+        session,
+        playback.type,
+        item.title,
+        work?.artworkPath,
+        work?.work?.year,
+        work?.work?.artist ?: work?.work?.author,
+    )
     val accent = LocalMediaTheme.current.accentGradientEnd
     Column(
         modifier.width(280.dp).fillMaxHeight().background(Tokens.surface1).border(Tokens.hairline, Tokens.border)
@@ -43,10 +50,20 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.Headphones, null, tint = accent, modifier = Modifier.size(20.dp))
-            Text("Listening now", style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, modifier = Modifier.weight(1f).padding(start = 8.dp))
+            Text(
+                "Listening now",
+                style = MaterialTheme.typography.titleSmall,
+                color = Tokens.textPrimary,
+                modifier = Modifier.weight(1f).padding(start = 8.dp),
+            )
             IconButtonRound(Icons.Rounded.Close, "Stop audio", playback::stop)
         }
-        Artwork(cover.bitmap, playback.type, Modifier.fillMaxWidth().aspectRatio(1f), contentDescription = "Cover for ${item.title}")
+        Artwork(
+            cover.bitmap,
+            playback.type,
+            Modifier.fillMaxWidth().aspectRatio(1f),
+            contentDescription = "Cover for ${item.title}",
+        )
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(item.subtitle ?: item.title, style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)
             Text(item.title, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
@@ -68,15 +85,44 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
             }, enabled = ps.duration > 0, modifier = Modifier.semantics { contentDescription = "Audio position" })
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(clockShort(ps.position), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-                Text(if (ps.duration > 0) clockShort(ps.duration) else "—", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+                Text(
+                    if (ps.duration >
+                        0
+                    ) {
+                        clockShort(ps.duration)
+                    } else {
+                        "—"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Tokens.textMuted,
+                )
             }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             val previous = playback.previousAudio()
-            IconButtonRound(Icons.Rounded.SkipPrevious, "Previous track", { previous?.let(playback::play) }, enabled = previous != null, size = 44.dp)
-            IconButtonRound(if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause, if (ps.paused) "Play audio" else "Pause audio", playback.player::togglePause, size = 48.dp, filled = true)
+            IconButtonRound(
+                Icons.Rounded.SkipPrevious,
+                "Previous track",
+                { previous?.let(playback::play) },
+                enabled =
+                previous != null,
+                size = 44.dp,
+            )
+            IconButtonRound(
+                if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause,
+                if (ps.paused) "Play audio" else "Pause audio",
+                playback.player::togglePause,
+                size = 48.dp,
+                filled = true,
+            )
             val next = playback.next()
-            IconButtonRound(Icons.Rounded.SkipNext, "Next track", { next?.let(playback::play) }, enabled = next != null, size = 44.dp)
+            IconButtonRound(Icons.Rounded.SkipNext, "Next track", {
+                next?.let(playback::play)
+            }, enabled = next != null, size = 44.dp)
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Rounded.VolumeUp, null, tint = Tokens.textMuted, modifier = Modifier.size(20.dp))
@@ -91,11 +137,26 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
         val currentIndex = playback.audioQueue.indexOfFirst { it.assetId == item.assetId }
         val upcoming = if (currentIndex >= 0) playback.audioQueue.drop(currentIndex + 1) else emptyList()
         Text("Up next", style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary)
-        if (upcoming.isEmpty()) Text("End of queue", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+        if (upcoming.isEmpty()) {
+            Text(
+                "End of queue",
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
+            )
+        }
         for (track in upcoming) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(track.subtitle ?: track.title, style = MaterialTheme.typography.bodyMedium, color = Tokens.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                IconButtonRound(Icons.Rounded.PlayArrow, "Play ${track.subtitle ?: track.title}", { playback.play(track) })
+                Text(
+                    track.subtitle ?: track.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Tokens.textPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButtonRound(Icons.Rounded.PlayArrow, "Play ${track.subtitle ?: track.title}", {
+                    playback.play(track)
+                })
             }
         }
     }

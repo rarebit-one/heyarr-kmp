@@ -33,7 +33,8 @@ class PlaybackClient(
         data class Direct(val url: String?, val reason: String?) : PlanResult
 
         /** Play [url] as a node-repackaged progressive fMP4 stream. */
-        data class Stream(val url: String, val mime: String?, val reason: String?, val source: PlaybackJson.Source?) : PlanResult
+        data class Stream(val url: String, val mime: String?, val reason: String?, val source: PlaybackJson.Source?) :
+            PlanResult
 
         /** The node doesn't speak the contract (400 on `client`), or could not be asked. */
         data class Unavailable(val why: String) : PlanResult
@@ -100,7 +101,13 @@ class PlaybackClient(
      * the node judged it, unplanned when the node couldn't be asked). Never null:
      * a hash always yields SOMETHING to play, exactly as before #432.
      */
-    fun resolve(assetId: String, hash: String, isVideo: Boolean, mimeType: String?, caps: ClientCapabilities): PlaybackTarget {
+    fun resolve(
+        assetId: String,
+        hash: String,
+        isVideo: Boolean,
+        mimeType: String?,
+        caps: ClientCapabilities,
+    ): PlaybackTarget {
         val direct = blobTarget(hash, isVideo, mimeType)
         return when (val r = plan(assetId, caps)) {
             is PlanResult.Stream -> PlaybackTarget(

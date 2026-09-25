@@ -17,7 +17,10 @@ import kotlin.test.assertTrue
 /** Grouping is pure: sections in a fixed order, per-type segments landing independently, rows re-homed by their own type. */
 class SearchGroupingTest {
 
-    private fun rows(query: String, type: String?) = SearchHitsJson.parse(Fixtures.searchContent(query, type)).works.map { SearchRow.WorkRow(it) }
+    private fun rows(query: String, type: String?) =
+        SearchHitsJson.parse(Fixtures.searchContent(query, type)).works.map {
+            SearchRow.WorkRow(it)
+        }
 
     @Test
     fun sectionsFollowTheFixedOrderAndPendingSegmentsDoNotBlockOthers() {
@@ -28,7 +31,12 @@ class SearchGroupingTest {
             MediaType.BOOK to Segment.Loaded(rows("dune", "book")),
         )
         val sections = SearchGrouping.group(segments, Segment.Loaded(emptyList()), Segment.Loaded(emptyList()))
-        assertEquals(listOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.PODCAST), sections.map { it.type })
+        assertEquals(
+            listOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.PODCAST),
+            sections.map {
+                it.type
+            },
+        )
         assertEquals(listOf("Dune: Part Two"), sections[0].rows.map { it.title })
         assertIs<Segment.Pending>(sections[1].segment)
         assertEquals("indexer timeout", assertIs<Segment.Failed>(sections[2].segment).message)
@@ -41,7 +49,8 @@ class SearchGroupingTest {
     fun rowsAreReHomedByTheirOwnTypeAndDeduplicated() {
         // A series work returned by the untyped call must land under Series, not Movies, and only once.
         val severance = rows("severance", null)
-        val segments = mapOf(MediaType.MOVIE to Segment.Loaded(severance), MediaType.SERIES to Segment.Loaded(severance))
+        val segments =
+            mapOf(MediaType.MOVIE to Segment.Loaded(severance), MediaType.SERIES to Segment.Loaded(severance))
         val sections = SearchGrouping.group(segments, Segment.Loaded(emptyList()), Segment.Loaded(emptyList()))
         assertTrue(sections.first { it.type == MediaType.MOVIE }.rows.isEmpty())
         assertEquals(1, sections.first { it.type == MediaType.SERIES }.rows.size)
@@ -53,7 +62,12 @@ class SearchGroupingTest {
         val episodes = Segment.Loaded(hits.episodes.map { SearchRow.EpisodeRow(it) })
         val sources = Segment.Loaded(SearchGrouping.matchSources("blog", FollowedSourcesJson.parse(Fixtures.followed)))
         val sections = SearchGrouping.group(emptyMap(), episodes, sources)
-        assertEquals(listOf("S04E02 — Phantom Pain"), sections.first { it.type == MediaType.SERIES }.rows.map { it.title })
+        assertEquals(
+            listOf("S04E02 — Phantom Pain"),
+            sections.first {
+                it.type == MediaType.SERIES
+            }.rows.map { it.title },
+        )
         assertEquals(listOf("Cloudflare Blog"), sections.first { it.type == MediaType.PODCAST }.rows.map { it.title })
         assertEquals(MediaType.FEED, sections.first { it.type == MediaType.PODCAST }.rows[0].type)
     }
@@ -65,10 +79,21 @@ class SearchGroupingTest {
         val flat = SearchGrouping.flatten(all)
         assertEquals(flat.size, all.sumOf { it.rows.size })
         assertEquals(MediaType.MOVIE, flat.first().type)
-        val books = SearchGrouping.group(segments, Segment.Loaded(emptyList()), Segment.Loaded(emptyList()), SearchFilter.BOOKS)
+        val books = SearchGrouping.group(
+            segments,
+            Segment.Loaded(emptyList()),
+            Segment.Loaded(emptyList()),
+            SearchFilter.BOOKS,
+        )
         assertEquals(listOf(MediaType.BOOK), books.map { it.type })
         assertEquals(3, books[0].rows.size)
-        val nothing = SearchGrouping.group(MediaType.SEARCHABLE.associateWith { Segment.Loaded(emptyList()) }, Segment.Loaded(emptyList()), Segment.Loaded(emptyList()))
+        val nothing = SearchGrouping.group(
+            MediaType.SEARCHABLE.associateWith {
+                Segment.Loaded(emptyList())
+            },
+            Segment.Loaded(emptyList()),
+            Segment.Loaded(emptyList()),
+        )
         assertTrue(SearchGrouping.empty(nothing))
     }
 }

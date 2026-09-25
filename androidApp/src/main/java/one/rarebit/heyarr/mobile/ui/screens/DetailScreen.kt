@@ -131,7 +131,17 @@ class DetailState(val workId: String) {
 /** How the detail screen starts playback — the phone's players, wired by the shell. */
 data class DetailPlayback(
     /** Play a video file in the in-app player, with the work's other episodes as "up next". */
-    val playVideo: (work: Work, assetId: String, blobHash: String, mime: String?, title: String, startSeconds: Double?, queue: List<QueueEntry>, artworkUrl: String?, subtitles: List<WorkAsset>) -> Unit,
+    val playVideo: (
+        work: Work,
+        assetId: String,
+        blobHash: String,
+        mime: String?,
+        title: String,
+        startSeconds: Double?,
+        queue: List<QueueEntry>,
+        artworkUrl: String?,
+        subtitles: List<WorkAsset>,
+    ) -> Unit,
     /** Queue audio tracks (an album, an audiobook) from [start]. */
     val playAudio: (work: Work, tracks: List<WorkAsset>, start: Int) -> Unit,
     /** Open a readable file (EPUB / PDF / comic) in the reader. */
@@ -164,7 +174,9 @@ internal fun AssetPersonalActions(personal: DetailPersonal, assetId: String, tit
         { personal.onToggleStar(entryId) },
         size = 36.dp,
     )
-    IconButtonRound(Icons.Rounded.PlaylistAdd, "Add $title to a playlist", { personal.onAddToPlaylist(entryId) }, size = 36.dp)
+    IconButtonRound(Icons.Rounded.PlaylistAdd, "Add $title to a playlist", {
+        personal.onAddToPlaylist(entryId)
+    }, size = 36.dp)
 }
 
 /**
@@ -177,7 +189,17 @@ internal fun AssetPersonalActions(personal: DetailPersonal, assetId: String, tit
  * indexer candidates, scoring, health, captions and artwork, variants — one tab away.
  */
 @Composable
-fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -> Unit, onOpen: (Route) -> Unit, onWant: (String, String) -> Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal()) {
+fun DetailScreen(
+    session: AppSession,
+    route: Route.Detail,
+    state: DetailState,
+    play: DetailPlayback,
+    onBack: () -> Unit,
+    onOpen: (Route) -> Unit,
+    onWant: (String, String) -> Unit,
+    modifier: Modifier = Modifier,
+    personal: DetailPersonal = DetailPersonal(),
+) {
     val scope = rememberCoroutineScope()
     val wants: List<DesiredItem> = session.index.wantsFor(route.workId)
     val detail = state.detail
@@ -199,7 +221,13 @@ fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, p
             val d = state.detail ?: return@launch
             if (session.externalMetadata) {
                 val t = MediaType.from(d.kind)
-                val feedRef = if (t == MediaType.FEED || t == MediaType.PODCAST) session.io { a.followed() }.getOrNull()?.firstOrNull { it.workId == d.id }?.feedRef else null
+                val feedRef = if (t == MediaType.FEED ||
+                    t == MediaType.PODCAST
+                ) {
+                    session.io { a.followed() }.getOrNull()?.firstOrNull { it.workId == d.id }?.feedRef
+                } else {
+                    null
+                }
                 val meta = session.external.lookup(MetaKey(t, d.title, d.year, d.artist ?: d.author, feedRef))
                 state.external = meta
                 meta?.tvmazeId?.let { id -> state.externalEpisodes = session.external.episodes(id) }
@@ -207,15 +235,35 @@ fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, p
         }
         scope.launch { session.io { a.assets(route.workId) }.onSuccess { state.assets = it } }
         scope.launch { session.io { a.externalIds(route.workId) }.onSuccess { state.externalIds = it } }
-        scope.launch { session.io { a.works() }.onSuccess { all -> state.variants = Variants.group(all)[route.workId].orEmpty() } }
-        scope.launch { session.io { a.continueRail() }.onSuccess { list -> state.continueEntry = list.firstOrNull { it.workId == route.workId } } }
+        scope.launch {
+            session.io { a.works() }.onSuccess { all ->
+                state.variants =
+                    Variants.group(all)[route.workId].orEmpty()
+            }
+        }
+        scope.launch {
+            session.io { a.continueRail() }.onSuccess { list ->
+                state.continueEntry =
+                    list.firstOrNull { it.workId == route.workId }
+            }
+        }
     }
     fun loadWants() {
         val a = session.api
         for (w in wants) {
             if (w.id.startsWith("pending:")) continue
-            scope.launch { session.io { a.satisfaction(w.id) }.onSuccess { r -> state.satisfaction = state.satisfaction + (w.id to r) } }
-            scope.launch { session.io { a.candidates(w.id) }.onSuccess { c -> state.candidates = state.candidates + (w.id to (c?.candidates ?: emptyList())) } }
+            scope.launch {
+                session.io { a.satisfaction(w.id) }.onSuccess { r ->
+                    state.satisfaction =
+                        state.satisfaction + (w.id to r)
+                }
+            }
+            scope.launch {
+                session.io { a.candidates(w.id) }.onSuccess { c ->
+                    state.candidates =
+                        state.candidates + (w.id to (c?.candidates ?: emptyList()))
+                }
+            }
         }
     }
     LaunchedEffect(route.workId) {
@@ -229,15 +277,36 @@ fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, p
     }
     LaunchedEffect(type, route.workId) {
         if (type != MediaType.FEED && type != MediaType.PODCAST) return@LaunchedEffect
-        val source = session.io { session.api.followed() }.getOrNull()?.firstOrNull { it.workId == route.workId } ?: return@LaunchedEffect
+        val source =
+            session.io { session.api.followed() }.getOrNull()?.firstOrNull { it.workId == route.workId }
+                ?: return@LaunchedEffect
         session.io { session.api.followedItems(source.id) }.onSuccess { state.feedItems = it }
     }
 
-    val seasons = remember(state.assets, type) { if (type == MediaType.SERIES || Series.isSeries(detail?.kind)) Series.seasons(state.assets.orEmpty()) else emptyList() }
-    val cover by rememberCover(session, type, detail?.title ?: route.title ?: "", detail?.artworkPath, detail?.year, detail?.artist ?: detail?.author)
+    val seasons = remember(state.assets, type) {
+        if (type == MediaType.SERIES ||
+            Series.isSeries(detail?.kind)
+        ) {
+            Series.seasons(state.assets.orEmpty())
+        } else {
+            emptyList()
+        }
+    }
+    val cover by rememberCover(
+        session,
+        type,
+        detail?.title ?: route.title ?: "",
+        detail?.artworkPath,
+        detail?.year,
+        detail?.artist ?: detail?.author,
+    )
 
     MediaScope(type) {
-        LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = Tokens.screenPadding, vertical = Tokens.s3), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        LazyColumn(
+            modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = Tokens.screenPadding, vertical = Tokens.s3),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
             item {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     GhostButton(route.from, onBack, icon = Icons.Rounded.ArrowBack)
@@ -256,10 +325,18 @@ fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, p
                 item { SynopsisBlock(detail, state, cover.url != null && detail.artworkPath == null) }
                 if (state.tab == DetailTab.WATCH) {
                     when (type) {
-                        MediaType.SERIES -> item { SeasonsBlock(session, detail, seasons, state, wants, play, cover.url) }
-                        MediaType.MUSIC, MediaType.AUDIOBOOK -> item { TracksBlock(session, detail, state, play, personal) }
+                        MediaType.SERIES -> item {
+                            SeasonsBlock(session, detail, seasons, state, wants, play, cover.url)
+                        }
+
+                        MediaType.MUSIC, MediaType.AUDIOBOOK -> item {
+                            TracksBlock(session, detail, state, play, personal)
+                        }
+
                         MediaType.FEED, MediaType.PODCAST -> item { ArchiveBlock(state, onOpen) }
+
                         MediaType.BOOK -> item { BookFilesBlock(detail, state, play, personal) }
+
                         else -> item { FileBlock(detail, state) }
                     }
                 } else {
@@ -273,7 +350,13 @@ fun DetailScreen(session: AppSession, route: Route.Detail, state: DetailState, p
 
 @Composable
 private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -> Unit) {
-    Row(Modifier.background(Tokens.surface1, RectangleShape).border(Tokens.hairline, Tokens.border, RectangleShape).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    Row(
+        Modifier.background(
+            Tokens.surface1,
+            RectangleShape,
+        ).border(Tokens.hairline, Tokens.border, RectangleShape).padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
         for (t in DetailTab.entries) {
             val active = t == current
             val theme = LocalMediaTheme.current
@@ -281,14 +364,31 @@ private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -> Unit) {
             Row(
                 Modifier.focusRing(interaction, RectangleShape).clip(RectangleShape)
                     .background(if (active) theme.tint(0.22f) else Color.Transparent, RectangleShape)
-                    .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = { onSelect(t) })
+                    .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = {
+                        onSelect(t)
+                    })
                     .semantics { contentDescription = t.label + if (active) ", selected" else "" }
                     .padding(horizontal = 14.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Icon(if (t == DetailTab.WATCH) Icons.Rounded.PlayArrow else Icons.Rounded.Build, contentDescription = null, tint = if (active) theme.accentGradientEnd else Tokens.textMuted, modifier = Modifier.size(14.dp))
-                Text(t.label.uppercase(), style = MaterialTheme.typography.labelLarge, color = if (active) Tokens.textPrimary else Tokens.textMuted)
+                Icon(
+                    if (t ==
+                        DetailTab.WATCH
+                    ) {
+                        Icons.Rounded.PlayArrow
+                    } else {
+                        Icons.Rounded.Build
+                    },
+                    contentDescription = null,
+                    tint = if (active) theme.accentGradientEnd else Tokens.textMuted,
+                    modifier = Modifier.size(14.dp),
+                )
+                Text(
+                    t.label.uppercase(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (active) Tokens.textPrimary else Tokens.textMuted,
+                )
             }
         }
     }
@@ -297,11 +397,32 @@ private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -> Unit) {
 /** The work's playable episodes as the player's "up next" list. */
 internal fun queueOf(work: Work, seasons: List<Season>, session: AppSession): List<QueueEntry> =
     seasons.flatMap { it.episodes }.filter { it.isPlayable }.map { e ->
-        QueueEntry(e.asset.id, e.asset.blobHash!!, work.title, e.label, e.asset.mime ?: work.mime, work.kind, e.thumbnailPath?.let { HeyarrApi.blobUrlFromPath(session.baseUrl, it) }, e.asset.sizeBytes)
+        QueueEntry(
+            e.asset.id,
+            e.asset.blobHash!!,
+            work.title,
+            e.label,
+            e.asset.mime ?: work.mime,
+            work.kind,
+            e.thumbnailPath?.let {
+                HeyarrApi.blobUrlFromPath(session.baseUrl, it)
+            },
+            e.asset.sizeBytes,
+        )
     }
 
 @Composable
-private fun DetailHero(session: AppSession, work: Work, type: MediaType, wants: List<DesiredItem>, state: DetailState, seasons: List<Season>, art: String?, play: DetailPlayback, onWant: (String, String) -> Unit) {
+private fun DetailHero(
+    session: AppSession,
+    work: Work,
+    type: MediaType,
+    wants: List<DesiredItem>,
+    state: DetailState,
+    seasons: List<Season>,
+    art: String?,
+    play: DetailPlayback,
+    onWant: (String, String) -> Unit,
+) {
     val scope = rememberCoroutineScope()
     val theme = MediaThemes.of(type)
     val status = session.index.statusOf(work.id)
@@ -311,13 +432,46 @@ private fun DetailHero(session: AppSession, work: Work, type: MediaType, wants: 
     val held = seasons.sumOf { it.held }
     val primaryFile = state.assets?.firstOrNull { it.blobHash == hash }
     val meta = when (type) {
-        MediaType.SERIES -> listOf(work.year?.toString(), if (seasons.isNotEmpty()) "${seasons.count { it.number != null && it.number != 0 }} seasons" else null, if (state.assets != null) "$held episodes held" else null)
-        MediaType.MOVIE -> listOf(work.year?.toString(), primaryFile?.let { Series.qualityTags(it).joinToString(" · ").ifBlank { null } }, primaryFile?.sizeBytes?.let { WorkAsset.formatBytes(it) })
+        MediaType.SERIES -> listOf(
+            work.year?.toString(),
+            if (seasons.isNotEmpty()) {
+                "${seasons.count {
+                    it.number != null && it.number != 0
+                }} seasons"
+            } else {
+                null
+            },
+            if (state.assets !=
+                null
+            ) {
+                "$held episodes held"
+            } else {
+                null
+            },
+        )
+
+        MediaType.MOVIE -> listOf(
+            work.year?.toString(),
+            primaryFile?.let {
+                Series.qualityTags(it).joinToString(" · ").ifBlank { null }
+            },
+            primaryFile?.sizeBytes?.let { WorkAsset.formatBytes(it) },
+        )
+
         MediaType.BOOK -> listOf(work.author, work.year?.toString(), work.mime?.substringAfter('/')?.uppercase())
-        MediaType.MUSIC, MediaType.AUDIOBOOK -> listOf(work.artist ?: work.author, work.year?.toString(), "${Tracks.playable(state.assets.orEmpty()).size} tracks")
+
+        MediaType.MUSIC, MediaType.AUDIOBOOK -> listOf(
+            work.artist ?: work.author,
+            work.year?.toString(),
+            "${Tracks.playable(state.assets.orEmpty()).size} tracks",
+        )
+
         else -> listOf(work.year?.toString(), work.kind)
     }
-    val readable = state.assets.orEmpty().firstOrNull { it.isPlayable && ReaderFormat.of(it.mime, it.filename)?.let { f -> f != ReaderFormat.AUDIOBOOK } == true }
+    val readable = state.assets.orEmpty().firstOrNull {
+        it.isPlayable &&
+            ReaderFormat.of(it.mime, it.filename)?.let { f -> f != ReaderFormat.AUDIOBOOK } == true
+    }
     val audioTracks = Tracks.playable(state.assets.orEmpty())
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -326,52 +480,154 @@ private fun DetailHero(session: AppSession, work: Work, type: MediaType, wants: 
             kicker = cont?.let { "Continue · ${it.editionLabel ?: ""} ${it.progressLabel ?: ""}".trim() },
             primary = {
                 when {
-                    cont?.blobHash != null && type != MediaType.BOOK && type != MediaType.MUSIC && type != MediaType.AUDIOBOOK ->
-                        PrimaryButton("Continue", { play.playVideo(work, cont.assetId, cont.blobHash, cont.mime ?: work.mime, "${work.title} — ${cont.subtitle ?: cont.editionLabel ?: ""}".trimEnd(' ', '—'), cont.positionSeconds, queueOf(work, seasons, session), art, emptyList()) }, icon = Icons.Rounded.PlayArrow, enabled = state.busy == null)
+                    cont?.blobHash != null && type != MediaType.BOOK && type != MediaType.MUSIC &&
+                        type != MediaType.AUDIOBOOK ->
+                        PrimaryButton(
+                            "Continue",
+                            {
+                                play.playVideo(
+                                    work, cont.assetId, cont.blobHash,
+                                    cont.mime ?: work.mime,
+                                    "${work.title} — ${cont.subtitle ?: cont.editionLabel ?: ""}".trimEnd(
+                                        ' ',
+                                        '—',
+                                    ),
+                                    cont.positionSeconds, queueOf(work, seasons, session), art, emptyList(),
+                                )
+                            },
+                            icon = Icons.Rounded.PlayArrow,
+                            enabled =
+                            state.busy == null,
+                        )
 
                     type == MediaType.SERIES && first != null ->
-                        PrimaryButton("Play ${first.code ?: ""}".trim(), { play.playVideo(work, first.asset.id, first.asset.blobHash!!, first.asset.mime ?: work.mime, Series.playTitle(work, first), null, queueOf(work, seasons, session), art, first.subtitles) }, icon = Icons.Rounded.PlayArrow, enabled = state.busy == null)
+                        PrimaryButton(
+                            "Play ${first.code ?: ""}".trim(),
+                            {
+                                play.playVideo(
+                                    work, first.asset.id, first.asset.blobHash!!,
+                                    first.asset.mime ?: work.mime,
+                                    Series.playTitle(
+                                        work,
+                                        first,
+                                    ),
+                                    null, queueOf(work, seasons, session), art, first.subtitles,
+                                )
+                            },
+                            icon = Icons.Rounded.PlayArrow,
+                            enabled =
+                            state.busy == null,
+                        )
 
                     (type == MediaType.MUSIC || type == MediaType.AUDIOBOOK) && audioTracks.isNotEmpty() ->
-                        PrimaryButton(theme.ctaLabel, { play.playAudio(work, audioTracks, 0) }, icon = if (type == MediaType.AUDIOBOOK) Icons.Rounded.Headphones else Icons.Rounded.PlayArrow)
+                        PrimaryButton(
+                            theme.ctaLabel,
+                            { play.playAudio(work, audioTracks, 0) },
+                            icon = if (type ==
+                                MediaType.AUDIOBOOK
+                            ) {
+                                Icons.Rounded.Headphones
+                            } else {
+                                Icons.Rounded.PlayArrow
+                            },
+                        )
 
                     type == MediaType.BOOK && readable != null ->
                         PrimaryButton("Read", { play.read(work, readable) }, icon = Icons.Rounded.MenuBook)
 
                     type == MediaType.BOOK && audioTracks.isNotEmpty() ->
-                        PrimaryButton("Listen", { play.playAudio(work, audioTracks, 0) }, icon = Icons.Rounded.Headphones)
+                        PrimaryButton("Listen", {
+                            play.playAudio(work, audioTracks, 0)
+                        }, icon = Icons.Rounded.Headphones)
 
                     hash == null && wants.isNotEmpty() -> PrimaryButton("Look for it", {
                         val w = wants.first()
                         scope.launch {
                             state.busy = "search"
-                            session.io { session.api.searchReleases(w.id) }.onSuccess { r -> when (r) { is McpResult.Ok -> session.toast(Toast.Kind.INFO, "Search queued", "An indexer can take thirty seconds to answer; open Curate → Indexer candidates in a moment."); is McpResult.Refused -> session.refused(r) } }
+                            session.io { session.api.searchReleases(w.id) }.onSuccess { r ->
+                                when (r) {
+                                    is McpResult.Ok -> session.toast(
+                                        Toast.Kind.INFO,
+                                        "Search queued",
+                                        "An indexer can take thirty seconds to answer; open Curate → Indexer candidates in a moment.",
+                                    )
+
+                                    is McpResult.Refused -> session.refused(r)
+                                }
+                            }
                             state.busy = null
                         }
                     }, icon = Icons.Rounded.Search, enabled = state.busy == null)
 
-                    hash == null -> PrimaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add, enabled = status == LibraryStatus.NOT_TRACKED)
+                    hash == null -> PrimaryButton(
+                        "Want",
+                        {
+                            onWant(work.id, work.title)
+                        },
+                        icon = Icons.Rounded.Add,
+                        enabled =
+                        status == LibraryStatus.NOT_TRACKED,
+                    )
 
                     // Reached only past the `hash == null` branches above.
-                    type == MediaType.FEED || type == MediaType.PODCAST -> PrimaryButton(theme.ctaLabel, { play.playVideo(work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList()) }, icon = Icons.Rounded.OpenInNew, enabled = state.busy == null)
+                    type == MediaType.FEED || type == MediaType.PODCAST -> PrimaryButton(
+                        theme.ctaLabel,
+                        {
+                            play.playVideo(
+                                work,
+                                work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList(),
+                            )
+                        },
+                        icon = Icons.Rounded.OpenInNew,
+                        enabled =
+                        state.busy == null,
+                    )
 
-                    else -> PrimaryButton(theme.ctaLabel, { play.playVideo(work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList()) }, icon = Icons.Rounded.PlayArrow, enabled = state.busy == null)
+                    else -> PrimaryButton(
+                        theme.ctaLabel,
+                        {
+                            play.playVideo(work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList())
+                        },
+                        icon = Icons.Rounded.PlayArrow,
+                        enabled =
+                        state.busy == null,
+                    )
                 }
             },
             secondary = {
                 val castId = if (type == MediaType.SERIES) first?.asset?.id else work.primaryAssetId
-                if (castId != null && type != MediaType.BOOK && type != MediaType.FEED) SecondaryButton("Play on…", { toggleCast(session, state, castId, scope) }, icon = Icons.Rounded.Cast)
-                if (status == LibraryStatus.NOT_TRACKED && (hash != null || type == MediaType.SERIES)) SecondaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add)
+                if (castId != null && type != MediaType.BOOK &&
+                    type != MediaType.FEED
+                ) {
+                    SecondaryButton("Play on…", {
+                        toggleCast(session, state, castId, scope)
+                    }, icon = Icons.Rounded.Cast)
+                }
+                if (status == LibraryStatus.NOT_TRACKED &&
+                    (hash != null || type == MediaType.SERIES)
+                ) {
+                    SecondaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add)
+                }
             },
         )
-        if (hash == null && type != MediaType.SERIES && type != MediaType.FEED && type != MediaType.PODCAST && type != MediaType.MUSIC) Notice("Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Indexer candidates shows what the indexers found."}")
+        if (hash == null && type != MediaType.SERIES && type != MediaType.FEED && type != MediaType.PODCAST &&
+            type != MediaType.MUSIC
+        ) {
+            Notice(
+                "Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Indexer candidates shows what the indexers found."}",
+            )
+        }
         CastPicker(session, state)
     }
 }
 
 internal fun toggleCast(session: AppSession, state: DetailState, assetId: String, scope: CoroutineScope) {
     state.castAssetId = if (state.castAssetId == assetId) null else assetId
-    if (state.renderers == null) scope.launch { session.io { session.api.renderers() }.onSuccess { state.renderers = it } }
+    if (state.renderers ==
+        null
+    ) {
+        scope.launch { session.io { session.api.renderers() }.onSuccess { state.renderers = it } }
+    }
 }
 
 @Composable
@@ -395,9 +651,27 @@ private fun CastPicker(session: AppSession, state: DetailState) {
         val r = state.renderers
         when {
             r == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
-            r.isEmpty() -> Text("No renderers found. A device that is switched off will not be listed — that is not the same as it not existing.", style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted)
-            else -> Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) { for (x in r) FilterChip(x.name, false, { playOn(x) }, icon = Icons.Rounded.Cast) }
+
+            r.isEmpty() -> Text(
+                "No renderers found. A device that is switched off will not be listed — that is not the same as it not existing.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Tokens.textMuted,
+            )
+
+            else -> Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                for (x in r) FilterChip(x.name, false, { playOn(x) }, icon = Icons.Rounded.Cast)
+            }
         }
-        GhostButton("Search the network again", { scope.launch { session.io { session.api.renderers(refresh = true) }.onSuccess { state.renderers = it } } })
+        GhostButton("Search the network again", {
+            scope.launch {
+                session.io { session.api.renderers(refresh = true) }.onSuccess {
+                    state.renderers =
+                        it
+                }
+            }
+        })
     }
 }

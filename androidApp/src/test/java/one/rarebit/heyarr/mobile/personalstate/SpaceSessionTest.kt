@@ -136,7 +136,8 @@ class SpaceSessionTest {
 
         assertEquals(setOf(device.recipientId(), peer.recipientId()), server.recipients(id))
         // The peer — a different device — opens and reads the very same playlist.
-        val peerSession = SpaceSession(PersonalStateClient(server, server.base, Credential.Session("t")), peer, IdentityCrypto())
+        val peerSession =
+            SpaceSession(PersonalStateClient(server, server.base, Credential.Session("t")), peer, IdentityCrypto())
         assertTrue(peerSession.canOpen(id))
         assertEquals(listOf("song"), peerSession.playlist(id)!!.ids())
     }

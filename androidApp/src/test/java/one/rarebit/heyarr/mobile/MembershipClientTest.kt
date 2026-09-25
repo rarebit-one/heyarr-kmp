@@ -17,7 +17,8 @@ class MembershipClientTest {
             urls += url
             return HttpResponse(status, body)
         }
-        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(405, "")
+        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+            HttpResponse(405, "")
     }
 
     private val usr = "ed25519:" + "ab".repeat(32)
@@ -29,7 +30,10 @@ class MembershipClientTest {
     }
 
     @Test fun anEmptyLogIsAnEmptyList() {
-        assertEquals(emptyList<String>(), MembershipClient(Fake(200, """{"usr":"$usr","ops":[]}"""), "http://h").fetch(usr))
+        assertEquals(
+            emptyList<String>(),
+            MembershipClient(Fake(200, """{"usr":"$usr","ops":[]}"""), "http://h").fetch(usr),
+        )
         assertEquals(emptyList<String>(), MembershipClient.parse("""{"usr":"x"}"""))
     }
 

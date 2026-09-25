@@ -18,19 +18,27 @@ class VaultSpaceClientTest {
 
     private class Req(val method: String, val url: String, val body: String?)
 
-    private class FakeTransport(
-        val responses: MutableMap<String, HttpResponse> = mutableMapOf(),
-    ) : HttpTransport {
+    private class FakeTransport(val responses: MutableMap<String, HttpResponse> = mutableMapOf()) : HttpTransport {
         val requests = ArrayList<Req>()
         override fun get(url: String, headers: Map<String, String>): HttpResponse {
             requests.add(Req("GET", url, null))
             return responses["GET $url"] ?: HttpResponse(404, "")
         }
-        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
+        override fun post(
+            url: String,
+            body: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse {
             requests.add(Req("POST", url, body))
             return responses["POST $url"] ?: HttpResponse(500, "")
         }
-        override fun delete(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
+        override fun delete(
+            url: String,
+            body: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse {
             requests.add(Req("DELETE", url, body))
             return responses["DELETE $url"] ?: HttpResponse(500, "")
         }
@@ -70,7 +78,9 @@ class VaultSpaceClientTest {
         val url = VaultSpaceClient.changesUrl(base, "s")
         fake.responses["GET $url"] = HttpResponse(
             200,
-            """{"space_id":"s","changes":[{"space_id":"s","change_id":"blake3:cc","parents":["blake3:aa"],"ciphertext":"${b64(ct)}"}]}""",
+            """{"space_id":"s","changes":[{"space_id":"s","change_id":"blake3:cc","parents":["blake3:aa"],"ciphertext":"${b64(
+                ct,
+            )}"}]}""",
         )
         val changes = VaultSpaceClient(fake, base, cred).pullChanges("s")
         assertEquals(1, changes.size)
@@ -87,7 +97,10 @@ class VaultSpaceClientTest {
 
         val ct = byteArrayOf(4, 4, 4)
         fake.responses["GET $url"] =
-            HttpResponse(200, """{"space_id":"s","snapshot_id":"blake3:dd","frontier":["blake3:cc"],"ciphertext":"${b64(ct)}"}""")
+            HttpResponse(
+                200,
+                """{"space_id":"s","snapshot_id":"blake3:dd","frontier":["blake3:cc"],"ciphertext":"${b64(ct)}"}""",
+            )
         val snap = VaultSpaceClient(fake, base, cred).getSnapshot("s")!!
         assertEquals("blake3:dd", snap.snapshotId)
         assertEquals(listOf("blake3:cc"), snap.frontier)
@@ -150,7 +163,12 @@ class VaultSpaceClientTest {
         val fake = FakeTransport()
         val url = VaultSpaceClient.keysUrl(base, "s")
         fake.responses["GET $url"] =
-            HttpResponse(200, """{"space_id":"s","wrapped_keys":[{"recipient":"x25519:ab","wrapped":"${b64(w)}","created_at":"t"}]}""")
+            HttpResponse(
+                200,
+                """{"space_id":"s","wrapped_keys":[{"recipient":"x25519:ab","wrapped":"${b64(
+                    w,
+                )}","created_at":"t"}]}""",
+            )
         val keys = VaultSpaceClient(fake, base, cred).listKeys("s")
         assertEquals(1, keys.size)
         assertEquals("x25519:ab", keys[0].recipient)

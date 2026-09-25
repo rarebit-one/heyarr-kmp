@@ -136,7 +136,9 @@ class PlaybackSession {
      * 4K/HEVC asset is transcoded down to a smoothly-decodable stream. It runs a
      * network call, so callers on the start path invoke it off the UI thread.
      */
-    var resolvePlaybackTarget: (Route.Player) -> PlaybackTarget = { PlaybackTarget(HeyarrApi.blobUrl(baseUrl, it.blobHash)) }
+    var resolvePlaybackTarget: (
+        Route.Player,
+    ) -> PlaybackTarget = { PlaybackTarget(HeyarrApi.blobUrl(baseUrl, it.blobHash)) }
     var accentHex: String = "#00935E"
 
     fun title(item: Route.Player): String = item.title + (item.subtitle?.let { " — $it" } ?: "")

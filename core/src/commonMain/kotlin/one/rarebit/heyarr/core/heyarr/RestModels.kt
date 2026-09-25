@@ -17,7 +17,12 @@ import one.rarebit.heyarr.core.net.JsonScan
  * It is metadata for deciding which profiles to OFFER for a given want; nothing
  * in evaluation reads it server-side, so it never changes what a profile accepts.
  */
-data class QualityProfile(val id: String, val name: String, val description: String?, val contentTypes: List<String> = emptyList())
+data class QualityProfile(
+    val id: String,
+    val name: String,
+    val description: String?,
+    val contentTypes: List<String> = emptyList(),
+)
 
 object QualityProfileJson {
     fun list(body: String): List<QualityProfile> =

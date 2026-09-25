@@ -1,484 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
 <baseline version="1.0">
-    <file name="src/main/java/one/rarebit/heyarr/mobile/AppViewModel.kt">
-        <error line="150" column="108" source="standard:function-signature" />
-        <error line="297" column="48" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/catalog/CatalogClient.kt">
-        <error line="38" column="79" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/catalog/ContinueClient.kt">
-        <error line="96" column="63" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/consumption/ConsumptionClient.kt">
-        <error line="82" column="83" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/device/DevicePairingSteps.kt">
-        <error line="39" column="50" source="standard:function-signature" />
-        <error line="42" column="118" source="standard:function-signature" />
-        <error line="54" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="69" column="81" source="standard:function-signature" />
-        <error line="76" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="85" column="69" source="standard:function-signature" />
-        <error line="94" column="21" source="standard:argument-list-wrapping" />
-        <error line="94" column="28" source="standard:argument-list-wrapping" />
-        <error line="94" column="42" source="standard:argument-list-wrapping" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/device/EnrolAdvance.kt">
-        <error line="47" column="98" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/device/EnrolClient.kt">
-        <error line="110" column="49" source="standard:function-signature" />
+    <file name="src/main/java/one/rarebit/heyarr/mobile/HeyarrApp.kt">
+        <error line="57" column="121" source="standard:max-line-length" />
+        <error line="61" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/device/EnrolScreen.kt">
-        <error line="361" column="26" source="standard:wrapping" />
-        <error line="361" column="26" source="standard:argument-list-wrapping" />
-        <error line="361" column="46" source="standard:argument-list-wrapping" />
-        <error line="362" column="133" source="standard:wrapping" />
-        <error line="362" column="134" source="standard:argument-list-wrapping" />
-        <error line="362" column="134" source="standard:trailing-comma-on-call-site" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/device/MembershipOps.kt">
-        <error line="37" column="73" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/discover/DiscoverClient.kt">
-        <error line="63" column="56" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/heyarr/HeyarrApi.kt">
-        <error line="95" column="68" source="standard:function-signature" />
-        <error line="99" column="65" source="standard:function-signature" />
-        <error line="105" column="132" source="standard:function-signature" />
-        <error line="112" column="168" source="standard:function-signature" />
-        <error line="116" column="35" source="standard:argument-list-wrapping" />
-        <error line="116" column="67" source="standard:argument-list-wrapping" />
-        <error line="117" column="33" source="standard:argument-list-wrapping" />
-        <error line="117" column="55" source="standard:argument-list-wrapping" />
-        <error line="122" column="76" source="standard:function-signature" />
-        <error line="132" column="72" source="standard:function-signature" />
-        <error line="136" column="101" source="standard:function-signature" />
-        <error line="141" column="70" source="standard:function-signature" />
-        <error line="145" column="84" source="standard:function-signature" />
-        <error line="149" column="61" source="standard:function-signature" />
-        <error line="153" column="63" source="standard:function-signature" />
-        <error line="157" column="56" source="standard:function-signature" />
-        <error line="163" column="62" source="standard:function-signature" />
-        <error line="188" column="69" source="standard:function-signature" />
-        <error line="192" column="71" source="standard:function-signature" />
-        <error line="198" column="59" source="standard:function-signature" />
-        <error line="202" column="193" source="standard:function-signature" />
-        <error line="206" column="49" source="standard:argument-list-wrapping" />
-        <error line="206" column="88" source="standard:argument-list-wrapping" />
-        <error line="207" column="54" source="standard:argument-list-wrapping" />
-        <error line="207" column="78" source="standard:argument-list-wrapping" />
-        <error line="207" column="94" source="standard:argument-list-wrapping" />
-        <error line="212" column="83" source="standard:function-signature" />
-        <error line="219" column="55" source="standard:function-signature" />
-        <error line="287" column="60" source="standard:function-signature" />
+        <error line="364" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/heyarr/SeriesWant.kt">
         <error line="1" column="1" source="standard:filename" />
     </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/library/LibraryClient.kt">
-        <error line="89" column="59" source="standard:function-signature" />
-        <error line="93" column="60" source="standard:function-signature" />
-        <error line="97" column="62" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/library/WorkDetail.kt">
-        <error line="102" column="53" source="standard:function-signature" />
-        <error line="139" column="47" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/library/WorkDetailClient.kt">
-        <error line="85" column="46" source="standard:function-signature" />
-        <error line="95" column="45" source="standard:function-signature" />
-        <error line="99" column="47" source="standard:function-signature" />
-        <error line="103" column="48" source="standard:function-signature" />
-        <error line="112" column="62" source="standard:function-signature" />
-        <error line="122" column="46" source="standard:function-signature" />
-        <error line="153" column="64" source="standard:function-signature" />
-    </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/library/WorksJson.kt">
-        <error line="41" column="44" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/login/VoidbindHandoff.kt">
-        <error line="29" column="78" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/music/MusicJson.kt">
-        <error line="23" column="57" source="standard:function-signature" />
+        <error line="33" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/music/Track.kt">
         <error line="6" column="1" source="standard:kdoc" />
-        <error line="29" column="61" source="standard:function-signature" />
+    </file>
+    <file name="src/main/java/one/rarebit/heyarr/mobile/nav/HeyarrNavHost.kt">
+        <error line="370" column="121" source="standard:max-line-length" />
+        <error line="374" column="120" source="standard:max-line-length" />
+        <error line="421" column="121" source="standard:max-line-length" />
+        <error line="468" column="121" source="standard:max-line-length" />
+        <error line="515" column="121" source="standard:max-line-length" />
+        <error line="602" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/nav/Routes.kt">
         <error line="1" column="1" source="standard:filename" />
-        <error line="67" column="132" source="standard:function-signature" />
     </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/net/DeviceAuthTransport.kt">
-        <error line="54" column="80" source="standard:function-signature" />
-        <error line="57" column="118" source="standard:function-signature" />
-        <error line="60" column="83" source="standard:function-signature" />
-        <error line="63" column="119" source="standard:function-signature" />
-        <error line="82" column="77" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/net/NsdMdnsResolver.kt">
-        <error line="94" column="74" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/net/ProblemDetail.kt">
-        <error line="52" column="76" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/net/VoidbindTransport.kt">
-        <error line="81" column="95" source="standard:function-signature" />
-        <error line="84" column="93" source="standard:function-signature" />
-        <error line="87" column="97" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/personalstate/PersonalStateClient.kt">
-        <error line="106" column="70" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/personalstate/PersonalStateCoordinator.kt">
-        <error line="33" column="51" source="standard:function-signature" />
-        <error line="45" column="72" source="standard:function-signature" />
-        <error line="48" column="77" source="standard:function-signature" />
-        <error line="69" column="44" source="standard:function-signature" />
-        <error line="75" column="50" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/personalstate/Playlist.kt">
-        <error line="99" column="57" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/personalstate/SpaceSession.kt">
-        <error line="128" column="98" source="standard:function-signature" />
-        <error line="155" column="82" source="standard:function-signature" />
-        <error line="158" column="80" source="standard:function-signature" />
-        <error line="161" column="80" source="standard:function-signature" />
-        <error line="164" column="89" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/personalstate/Starred.kt">
-        <error line="85" column="57" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/personalstate/Wire.kt">
-        <error line="91" column="56" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/playback/ClientCapabilities.kt">
-        <error line="21" column="53" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/playback/HeyarrDataSource.kt">
-        <error line="40" column="72" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/playback/PlaybackDiagnostics.kt">
-        <error line="90" column="50" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/playback/VideoSession.kt">
-        <error line="210" column="49" source="standard:function-signature" />
-        <error line="219" column="41" source="standard:function-signature" />
-        <error line="365" column="28" source="standard:multiline-if-else" />
-        <error line="366" column="14" source="standard:multiline-if-else" />
+    <file name="src/main/java/one/rarebit/heyarr/mobile/playback/PlaybackCoordinator.kt">
+        <error line="55" column="121" source="standard:max-line-length" />
+        <error line="169" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/preview/Fixtures.kt">
-        <error line="20" column="120" source="standard:function-signature" />
-        <error line="47" column="13" source="standard:multiline-if-else" />
-        <error line="47" column="219" source="standard:multiline-if-else" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/reader/ReaderActivity.kt">
-        <error line="132" column="92" source="standard:function-signature" />
+        <error line="114" column="121" source="standard:max-line-length" />
+        <error line="115" column="121" source="standard:max-line-length" />
+        <error line="139" column="120" source="standard:max-line-length" />
+        <error line="140" column="121" source="standard:max-line-length" />
+        <error line="147" column="121" source="standard:max-line-length" />
+        <error line="160" column="121" source="standard:max-line-length" />
+        <error line="165" column="121" source="standard:max-line-length" />
+        <error line="181" column="121" source="standard:max-line-length" />
+        <error line="182" column="121" source="standard:max-line-length" />
+        <error line="232" column="120" source="standard:max-line-length" />
+        <error line="234" column="120" source="standard:max-line-length" />
+        <error line="236" column="120" source="standard:max-line-length" />
+        <error line="238" column="120" source="standard:max-line-length" />
+        <error line="244" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/reader/ReaderAsset.kt">
         <error line="1" column="1" source="standard:filename" />
     </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/reader/ReadingPositionSync.kt">
-        <error line="46" column="50" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/search/FollowedItem.kt">
-        <error line="68" column="44" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/search/FollowedSource.kt">
-        <error line="72" column="52" source="standard:function-signature" />
-        <error line="79" column="75" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/search/SearchResultsJson.kt">
-        <error line="50" column="59" source="standard:function-signature" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/ui/components/Cards.kt">
-        <error line="155" column="39" source="standard:multiline-if-else" />
-        <error line="168" column="22" source="standard:multiline-if-else" />
-        <error line="169" column="175" source="standard:statement-wrapping" />
-        <error line="169" column="192" source="standard:statement-wrapping" />
-        <error line="169" column="202" source="standard:statement-wrapping" />
-        <error line="170" column="190" source="standard:statement-wrapping" />
-        <error line="170" column="207" source="standard:statement-wrapping" />
-        <error line="170" column="225" source="standard:statement-wrapping" />
-        <error line="171" column="208" source="standard:statement-wrapping" />
-        <error line="171" column="225" source="standard:statement-wrapping" />
-        <error line="171" column="238" source="standard:statement-wrapping" />
-        <error line="259" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="259" column="63" source="standard:multiline-if-else" />
-        <error line="260" column="18" source="standard:multiline-if-else" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/ui/components/Cover.kt">
-        <error line="23" column="178" source="standard:function-signature" />
-        <error line="25" column="36" source="standard:statement-wrapping" />
-        <error line="25" column="107" source="standard:statement-wrapping" />
-        <error line="25" column="128" source="standard:statement-wrapping" />
-        <error line="26" column="61" source="standard:statement-wrapping" />
-        <error line="26" column="81" source="standard:statement-wrapping" />
-        <error line="26" column="102" source="standard:statement-wrapping" />
-    </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/CastScreen.kt">
-        <error line="158" column="26" source="standard:multiline-if-else" />
-        <error line="159" column="18" source="standard:multiline-if-else" />
+        <error line="121" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/DetailCurate.kt">
-        <error line="233" column="37" source="standard:multiline-if-else" />
-        <error line="234" column="120" source="standard:statement-wrapping" />
-        <error line="234" column="270" source="standard:statement-wrapping" />
-        <error line="234" column="314" source="standard:statement-wrapping" />
-        <error line="239" column="40" source="standard:argument-list-wrapping" />
-        <error line="239" column="192" source="standard:argument-list-wrapping" />
-        <error line="250" column="132" source="standard:statement-wrapping" />
-        <error line="250" column="149" source="standard:statement-wrapping" />
-        <error line="250" column="282" source="standard:statement-wrapping" />
-        <error line="251" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="284" column="31" source="standard:multiline-if-else" />
-        <error line="285" column="104" source="standard:statement-wrapping" />
-        <error line="285" column="231" source="standard:statement-wrapping" />
-        <error line="285" column="275" source="standard:statement-wrapping" />
-        <error line="295" column="32" source="standard:statement-wrapping" />
-        <error line="295" column="52" source="standard:statement-wrapping" />
-        <error line="295" column="87" source="standard:statement-wrapping" />
-        <error line="295" column="247" source="standard:statement-wrapping" />
-        <error line="304" column="42" source="standard:multiline-if-else" />
-        <error line="307" column="28" source="standard:statement-wrapping" />
-        <error line="307" column="47" source="standard:statement-wrapping" />
-        <error line="307" column="129" source="standard:statement-wrapping" />
-        <error line="307" column="253" source="standard:statement-wrapping" />
+        <error line="248" column="121" source="standard:max-line-length" />
+        <error line="339" column="121" source="standard:max-line-length" />
+        <error line="397" column="121" source="standard:max-line-length" />
+        <error line="542" column="121" source="standard:max-line-length" />
+        <error line="570" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/DetailScreen.kt">
-        <error line="298" column="97" source="standard:function-signature" />
-        <error line="348" column="105" source="standard:statement-wrapping" />
-        <error line="348" column="267" source="standard:statement-wrapping" />
-        <error line="348" column="311" source="standard:statement-wrapping" />
+        <error line="578" column="121" source="standard:max-line-length" />
+        <error line="589" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/DetailWatch.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="90" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="94" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="105" column="33" source="standard:statement-wrapping" />
-        <error line="105" column="53" source="standard:statement-wrapping" />
-        <error line="105" column="61" source="standard:statement-wrapping" />
-        <error line="109" column="26" source="standard:statement-wrapping" />
-        <error line="109" column="189" source="standard:statement-wrapping" />
-        <error line="109" column="197" source="standard:statement-wrapping" />
-        <error line="128" column="31" source="standard:multiline-loop" />
-        <error line="168" column="58" source="standard:statement-wrapping" />
-        <error line="168" column="193" source="standard:statement-wrapping" />
-        <error line="168" column="217" source="standard:statement-wrapping" />
-        <error line="174" column="47" source="standard:argument-list-wrapping" />
-        <error line="174" column="63" source="standard:argument-list-wrapping" />
-        <error line="187" column="50" source="standard:statement-wrapping" />
-        <error line="187" column="242" source="standard:statement-wrapping" />
-        <error line="187" column="266" source="standard:statement-wrapping" />
-        <error line="196" column="65" source="standard:multiline-if-else" />
-        <error line="197" column="176" source="standard:statement-wrapping" />
-        <error line="197" column="197" source="standard:statement-wrapping" />
-        <error line="197" column="309" source="standard:statement-wrapping" />
-        <error line="197" column="333" source="standard:statement-wrapping" />
-        <error line="197" column="335" source="standard:statement-wrapping" />
-        <error line="197" column="379" source="standard:statement-wrapping" />
-        <error line="200" column="45" source="standard:multiline-if-else" />
-        <error line="201" column="31" source="standard:multiline-if-else" />
-        <error line="202" column="18" source="standard:multiline-if-else" />
-        <error line="203" column="57" source="standard:argument-list-wrapping" />
-        <error line="223" column="57" source="standard:argument-list-wrapping" />
-        <error line="241" column="48" source="standard:multiline-if-else" />
-        <error line="265" column="57" source="standard:argument-list-wrapping" />
-        <error line="277" column="33" source="standard:multiline-if-else" />
-        <error line="278" column="116" source="standard:statement-wrapping" />
-        <error line="278" column="254" source="standard:statement-wrapping" />
-        <error line="278" column="298" source="standard:statement-wrapping" />
-        <error line="286" column="27" source="standard:statement-wrapping" />
-        <error line="286" column="47" source="standard:statement-wrapping" />
-        <error line="286" column="55" source="standard:statement-wrapping" />
-        <error line="315" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="316" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="316" column="41" source="standard:multiline-loop" />
-        <error line="348" column="27" source="standard:statement-wrapping" />
-        <error line="348" column="47" source="standard:statement-wrapping" />
-        <error line="348" column="55" source="standard:statement-wrapping" />
+        <error line="197" column="121" source="standard:max-line-length" />
+        <error line="393" column="121" source="standard:max-line-length" />
+        <error line="535" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/HomeScreen.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="118" column="31" source="standard:statement-wrapping" />
-        <error line="118" column="87" source="standard:statement-wrapping" />
-        <error line="118" column="147" source="standard:statement-wrapping" />
-        <error line="121" column="41" source="standard:multiline-loop" />
-        <error line="129" column="59" source="standard:statement-wrapping" />
-        <error line="130" column="60" source="standard:statement-wrapping" />
-        <error line="149" column="23" source="standard:multiline-if-else" />
-        <error line="158" column="67" source="standard:multiline-if-else" />
-        <error line="170" column="44" source="standard:multiline-if-else" />
-        <error line="175" column="51" source="standard:multiline-if-else" />
-        <error line="185" column="41" source="standard:multiline-loop" />
-        <error line="189" column="31" source="standard:argument-list-wrapping" />
-        <error line="189" column="69" source="standard:argument-list-wrapping" />
-        <error line="190" column="64" source="standard:argument-list-wrapping" />
-        <error line="190" column="136" source="standard:argument-list-wrapping" />
-        <error line="204" column="31" source="standard:multiline-if-else" />
-        <error line="210" column="34" source="standard:argument-list-wrapping" />
-        <error line="210" column="40" source="standard:argument-list-wrapping" />
-        <error line="211" column="47" source="standard:argument-list-wrapping" />
-        <error line="211" column="129" source="standard:argument-list-wrapping" />
-        <error line="211" column="150" source="standard:argument-list-wrapping" />
-        <error line="246" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="247" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="250" column="33" source="standard:statement-wrapping" />
-        <error line="250" column="156" source="standard:statement-wrapping" />
-        <error line="250" column="164" source="standard:statement-wrapping" />
+        <error line="230" column="121" source="standard:max-line-length" />
+        <error line="238" column="121" source="standard:max-line-length" />
+        <error line="367" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/LibraryScreen.kt">
-        <error line="155" column="138" source="standard:argument-list-wrapping" />
-        <error line="155" column="195" source="standard:argument-list-wrapping" />
-        <error line="156" column="65" source="standard:argument-list-wrapping" />
+        <error line="264" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/MissingScreen.kt">
-        <error line="139" column="34" source="standard:argument-list-wrapping" />
-        <error line="139" column="53" source="standard:argument-list-wrapping" />
+        <error line="245" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/PlayerScreen.kt">
-        <error line="153" column="77" source="standard:statement-wrapping" />
-        <error line="153" column="110" source="standard:statement-wrapping" />
-        <error line="153" column="231" source="standard:statement-wrapping" />
-        <error line="247" column="156" source="standard:argument-list-wrapping" />
-        <error line="272" column="173" source="standard:statement-wrapping" />
-        <error line="272" column="196" source="standard:statement-wrapping" />
-        <error line="272" column="210" source="standard:statement-wrapping" />
-        <error line="273" column="38" source="standard:multiline-loop" />
-        <error line="274" column="35" source="standard:statement-wrapping" />
-        <error line="274" column="156" source="standard:statement-wrapping" />
-        <error line="274" column="257" source="standard:statement-wrapping" />
-        <error line="275" column="29" source="standard:statement-wrapping" />
-        <error line="275" column="49" source="standard:statement-wrapping" />
-        <error line="275" column="63" source="standard:statement-wrapping" />
-        <error line="295" column="30" source="standard:multiline-loop" />
-        <error line="299" column="117" source="standard:statement-wrapping" />
-        <error line="299" column="216" source="standard:statement-wrapping" />
-        <error line="299" column="262" source="standard:statement-wrapping" />
+        <error line="449" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/SearchScreen.kt">
-        <error line="239" column="56" source="standard:argument-list-wrapping" />
-        <error line="254" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="254" column="55" source="standard:multiline-if-else" />
-        <error line="255" column="18" source="standard:multiline-if-else" />
+        <error line="162" column="121" source="standard:max-line-length" />
+        <error line="311" column="121" source="standard:max-line-length" />
+        <error line="351" column="121" source="standard:max-line-length" />
+        <error line="353" column="121" source="standard:max-line-length" />
+        <error line="367" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/SettingsScreen.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="109" column="26" source="standard:wrapping" />
-        <error line="109" column="26" source="standard:argument-list-wrapping" />
-        <error line="109" column="38" source="standard:wrapping" />
-        <error line="109" column="39" source="standard:argument-list-wrapping" />
-        <error line="115" column="17" source="standard:wrapping" />
-        <error line="115" column="18" source="standard:argument-list-wrapping" />
-        <error line="119" column="34" source="standard:multiline-if-else" />
-        <error line="120" column="26" source="standard:multiline-if-else" />
-        <error line="131" column="62" source="standard:statement-wrapping" />
-        <error line="131" column="69" source="standard:statement-wrapping" />
-        <error line="131" column="89" source="standard:statement-wrapping" />
-        <error line="151" column="57" source="standard:argument-list-wrapping" />
-        <error line="172" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="172" column="41" source="standard:multiline-if-else" />
-        <error line="173" column="18" source="standard:multiline-if-else" />
-        <error line="173" column="34" source="standard:multiline-loop" />
-        <error line="181" column="95" source="standard:statement-wrapping" />
-        <error line="181" column="116" source="standard:statement-wrapping" />
-        <error line="181" column="203" source="standard:statement-wrapping" />
-        <error line="181" column="213" source="standard:statement-wrapping" />
-        <error line="181" column="215" source="standard:statement-wrapping" />
-        <error line="181" column="259" source="standard:statement-wrapping" />
-        <error line="205" column="46" source="standard:statement-wrapping" />
-        <error line="205" column="133" source="standard:statement-wrapping" />
-        <error line="205" column="143" source="standard:statement-wrapping" />
-        <error line="205" column="154" source="standard:statement-wrapping" />
-        <error line="205" column="166" source="standard:statement-wrapping" />
-        <error line="205" column="176" source="standard:statement-wrapping" />
-        <error line="221" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="222" column="39" source="standard:multiline-loop" />
-        <error line="227" column="39" source="standard:multiline-if-else" />
-        <error line="228" column="117" source="standard:statement-wrapping" />
-        <error line="228" column="267" source="standard:statement-wrapping" />
-        <error line="228" column="311" source="standard:statement-wrapping" />
+        <error line="147" column="121" source="standard:max-line-length" />
+        <error line="189" column="121" source="standard:max-line-length" />
+        <error line="191" column="120" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/TelemetryScreen.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="123" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="137" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="137" column="46" source="standard:multiline-if-else" />
-        <error line="138" column="26" source="standard:multiline-if-else" />
-        <error line="138" column="39" source="standard:multiline-loop" />
-        <error line="156" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="169" column="1" source="standard:blank-line-between-when-conditions" />
-        <error line="169" column="46" source="standard:multiline-if-else" />
-        <error line="170" column="26" source="standard:multiline-if-else" />
-        <error line="170" column="41" source="standard:multiline-loop" />
-        <error line="171" column="71" source="standard:statement-wrapping" />
-        <error line="171" column="101" source="standard:statement-wrapping" />
-        <error line="171" column="136" source="standard:statement-wrapping" />
-        <error line="171" column="162" source="standard:statement-wrapping" />
+        <error line="152" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/WantSheet.kt">
-        <error line="3" column="1" source="standard:import-ordering" />
-        <error line="77" column="37" source="standard:statement-wrapping" />
-        <error line="77" column="98" source="standard:statement-wrapping" />
-        <error line="77" column="120" source="standard:statement-wrapping" />
-        <error line="82" column="54" source="standard:statement-wrapping" />
-        <error line="82" column="158" source="standard:statement-wrapping" />
-        <error line="82" column="182" source="standard:statement-wrapping" />
-        <error line="82" column="193" source="standard:statement-wrapping" />
+        <error line="168" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/ConsumptionClientTest.kt">
-        <error line="83" column="138" source="standard:function-signature" />
+    <file name="src/test/java/one/rarebit/heyarr/mobile/McpClientTest.kt">
+        <error line="61" column="121" source="standard:max-line-length" />
+        <error line="75" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/DeviceSessionTest.kt">
-        <error line="34" column="62" source="standard:function-signature" />
-    </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/EnrolClientTest.kt">
-        <error line="92" column="112" source="standard:function-signature" />
-        <error line="103" column="112" source="standard:function-signature" />
-    </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/Fakes.kt">
-        <error line="64" column="77" source="standard:function-signature" />
-        <error line="67" column="133" source="standard:function-signature" />
-    </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/LibraryClientTest.kt">
-        <error line="20" column="118" source="standard:function-signature" />
-    </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/PairDeepLinkTest.kt">
-        <error line="24" column="121" source="standard:multiline-if-else" />
-        <error line="25" column="18" source="standard:multiline-if-else" />
+    <file name="src/test/java/one/rarebit/heyarr/mobile/MembershipOpsTest.kt">
+        <error line="92" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/test/java/one/rarebit/heyarr/mobile/PairingCoordinatorTest.kt">
         <error line="41" column="17" source="standard:property-naming" />
-        <error line="42" column="42" source="standard:function-signature" />
-        <error line="78" column="5" source="standard:kdoc" />
-    </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/PatientRelayTransportTest.kt">
-        <error line="37" column="129" source="standard:statement-wrapping" />
-        <error line="37" column="141" source="standard:statement-wrapping" />
-        <error line="37" column="152" source="standard:statement-wrapping" />
-    </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/PlaybackUrlTest.kt">
-        <error line="21" column="118" source="standard:function-signature" />
-        <error line="45" column="13" source="standard:multiline-loop" />
-        <error line="45" column="19" source="standard:statement-wrapping" />
-        <error line="45" column="75" source="standard:statement-wrapping" />
-        <error line="45" column="114" source="standard:statement-wrapping" />
-        <error line="46" column="13" source="standard:keyword-spacing" />
+        <error line="81" column="5" source="standard:kdoc" />
     </file>
     <file name="src/test/java/one/rarebit/heyarr/mobile/PossessionProofTest.kt">
-        <error line="29" column="50" source="standard:function-signature" />
-        <error line="32" column="47" source="standard:function-signature" />
-        <error line="138" column="69" source="standard:function-signature" />
+        <error line="69" column="121" source="standard:max-line-length" />
+        <error line="70" column="121" source="standard:max-line-length" />
+        <error line="76" column="121" source="standard:max-line-length" />
+        <error line="77" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/SeriesTest.kt">
-        <error line="23" column="205" source="standard:function-signature" />
+    <file name="src/test/java/one/rarebit/heyarr/mobile/ReaderPositionTest.kt">
+        <error line="12" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/test/java/one/rarebit/heyarr/mobile/TaggedItemIdentityTest.kt">
-        <error line="36" column="70" source="standard:function-signature" />
+    <file name="src/test/java/one/rarebit/heyarr/mobile/StreamSeekDurationTest.kt">
+        <error line="26" column="121" source="standard:max-line-length" />
+    </file>
+    <file name="src/test/java/one/rarebit/heyarr/mobile/WorkDetailJsonTest.kt">
+        <error line="82" column="121" source="standard:max-line-length" />
+    </file>
+    <file name="src/test/java/one/rarebit/heyarr/mobile/WorksJsonTest.kt">
+        <error line="102" column="121" source="standard:max-line-length" />
     </file>
 </baseline>

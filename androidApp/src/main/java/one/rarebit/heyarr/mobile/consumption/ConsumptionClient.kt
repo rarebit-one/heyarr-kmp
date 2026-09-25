@@ -55,7 +55,12 @@ class ConsumptionClient(
     /** `POST /consumption/sessions/{id}/transitions` — start/pause/resume/progress/stop/complete, with a position. */
     fun transition(sessionId: String, transition: String, pos: Position?): Outcome {
         val h = headers() ?: return Outcome.Refused(401, "no credential")
-        val resp = http.post(transitionUrl(baseUrl(), sessionId), transitionBody(transition, pos), "application/json", h)
+        val resp = http.post(
+            transitionUrl(baseUrl(), sessionId),
+            transitionBody(transition, pos),
+            "application/json",
+            h,
+        )
         return if (resp.status == 200) {
             Outcome.Ok(sessionId)
         } else {
@@ -66,13 +71,15 @@ class ConsumptionClient(
     companion object {
         fun devicesUrl(base: String) = base.trimEnd('/') + "/api/v1/devices"
         fun sessionsUrl(base: String) = base.trimEnd('/') + "/api/v1/consumption/sessions"
-        fun transitionUrl(base: String, id: String) = sessionsUrl(base) + "/" + URLEncoder.encode(id, "UTF-8") + "/transitions"
+        fun transitionUrl(base: String, id: String) =
+            sessionsUrl(base) + "/" + URLEncoder.encode(id, "UTF-8") + "/transitions"
 
         /** The `registerDeviceRequest`: key, name, platform and what this phone decodes. Pure. */
         fun registerBody(deviceKey: String, name: String, caps: ClientCapabilities?): String {
             val j = AcquireClient::jsonString
             val profile = caps?.let {
-                "{\"containers\":" + arr(it.containers) + ",\"video_codecs\":" + arr(it.video) + ",\"audio_codecs\":" + arr(it.audio) +
+                "{\"containers\":" + arr(it.containers) + ",\"video_codecs\":" + arr(it.video) + ",\"audio_codecs\":" +
+                    arr(it.audio) +
                     ",\"max_width\":0,\"max_height\":" + it.maxHeight + ",\"max_bitrate_bps\":0,\"supports_hdr\":false}"
             }
             return "{\"device_key\":" + j(deviceKey) + ",\"name\":" + j(name) + ",\"platform\":\"android\"" +
@@ -80,11 +87,21 @@ class ConsumptionClient(
         }
 
         fun sessionBody(assetId: String, deviceId: String, verb: String): String =
-            "{\"asset_id\":" + AcquireClient.jsonString(assetId) + ",\"device_id\":" + AcquireClient.jsonString(deviceId) + ",\"verb\":" + AcquireClient.jsonString(verb) + "}"
+            "{\"asset_id\":" + AcquireClient.jsonString(assetId) + ",\"device_id\":" +
+                AcquireClient.jsonString(deviceId) +
+                ",\"verb\":" +
+                AcquireClient.jsonString(verb) +
+                "}"
 
         /** A position rides as `progress {locator, unit}`. Pure. */
         fun transitionBody(transition: String, pos: Position?): String {
-            val progress = pos?.let { ",\"progress\":{\"locator\":" + AcquireClient.jsonString(it.locator) + ",\"unit\":" + AcquireClient.jsonString(it.unit) + "}" } ?: ""
+            val progress =
+                pos?.let {
+                    ",\"progress\":{\"locator\":" + AcquireClient.jsonString(it.locator) + ",\"unit\":" +
+                        AcquireClient.jsonString(it.unit) +
+                        "}"
+                }
+                    ?: ""
             return "{\"transition\":" + AcquireClient.jsonString(transition) + progress + "}"
         }
 
@@ -93,7 +110,13 @@ class ConsumptionClient(
         fun locator(seconds: Double): String {
             val s = seconds.coerceAtLeast(0.0)
             val whole = s.toLong()
-            return if (s == whole.toDouble()) whole.toString() else String.format(java.util.Locale.ROOT, "%.3f", s).trimEnd('0').trimEnd('.')
+            return if (s ==
+                whole.toDouble()
+            ) {
+                whole.toString()
+            } else {
+                String.format(java.util.Locale.ROOT, "%.3f", s).trimEnd('0').trimEnd('.')
+            }
         }
 
         private fun arr(xs: List<String>) = xs.joinToString(",", "[", "]") { AcquireClient.jsonString(it) }

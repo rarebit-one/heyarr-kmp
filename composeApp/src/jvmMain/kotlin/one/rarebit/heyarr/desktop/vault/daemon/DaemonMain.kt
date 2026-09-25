@@ -75,8 +75,11 @@ fun main(args: Array<String>) {
     log("starting: folder=${config.folder ?: "<none>"} space=${config.spaceId} controller=${config.controller}")
     log("device store: ${config.deviceDir}")
     log(
-        "api auth: " + if (bearer != null) "bearer write token" else
-            "device credential (read-floor, ADR-0067 — writes will 403; set a write token to sync)",
+        "api auth: " + if (bearer != null) {
+            "bearer write token"
+        } else {
+            "device credential (read-floor, ADR-0067 — writes will 403; set a write token to sync)"
+        },
     )
     log("status file: ${config.statusFile}  control socket: ${config.socketPath}")
     daemon.start()

@@ -10,7 +10,9 @@ import org.junit.Test
 class PlaybackJsonTest {
 
     @Test fun parsesADirectPlan() {
-        val plan = PlaybackJson.parse("""{"mode":"direct","url":"https://h/api/v1/blobs/x/content","mime":"video/mp4","reason":"ok"}""")
+        val plan = PlaybackJson.parse(
+            """{"mode":"direct","url":"https://h/api/v1/blobs/x/content","mime":"video/mp4","reason":"ok"}""",
+        )
         assertTrue(plan.isDirect)
         assertFalse(plan.isStream)
         assertEquals("https://h/api/v1/blobs/x/content", plan.url)
@@ -39,7 +41,9 @@ class PlaybackJsonTest {
 
     @Test fun sourceFieldsDoNotLeakIntoTopLevel() {
         // "mime"/"url" inside source-shaped nesting must not be mistaken for the plan's.
-        val plan = PlaybackJson.parse("""{"source":{"container":"mkv","video":"hevc","audio":"eac3"},"mode":"stream","url":"/s"}""")
+        val plan = PlaybackJson.parse(
+            """{"source":{"container":"mkv","video":"hevc","audio":"eac3"},"mode":"stream","url":"/s"}""",
+        )
         assertEquals("/s", plan.url)
         assertNull(plan.mime)
         assertEquals("hevc", plan.source?.video)

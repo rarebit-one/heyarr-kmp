@@ -13,7 +13,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** A transport that records the last POST and returns a canned response (or throws). */
-private class RecordingTransport(private val response: HttpResponse?, private val failure: Exception? = null) : HttpTransport {
+private class RecordingTransport(private val response: HttpResponse?, private val failure: Exception? = null) :
+    HttpTransport {
     var lastPostUrl: String? = null
         private set
     var lastPostBody: String? = null
@@ -42,7 +43,8 @@ private val CAPS = ClientCapabilities(video = listOf("h264", "hevc"), audio = li
 class PlaybackClientTest {
 
     @Test fun blobTargetPointsAtRangeCapableUrlUnderCredential() {
-        val client = PlaybackClient(RecordingTransport(HttpResponse(200, "")), "https://h.example/", Credential.Session("tok"))
+        val client =
+            PlaybackClient(RecordingTransport(HttpResponse(200, "")), "https://h.example/", Credential.Session("tok"))
         val target = client.blobTarget(HASH, isVideo = true, mimeType = "video/mp4")
         assertEquals("https://h.example/api/v1/blobs/$HASH/content", target.contentUrl)
         assertEquals("Bearer tok", target.authHeaders()["Authorization"])
@@ -143,7 +145,13 @@ class PlaybackClientTest {
     }
 
     @Test fun resolveBuildsAnUnseekableStreamTargetUnderTheSameCredential() {
-        val t = RecordingTransport(HttpResponse(200, """{"mode":"stream","url":"/api/v1/playback/stream/abc","mime":"video/mp4","reason":"remux"}"""))
+        val t =
+            RecordingTransport(
+                HttpResponse(
+                    200,
+                    """{"mode":"stream","url":"/api/v1/playback/stream/abc","mime":"video/mp4","reason":"remux"}""",
+                ),
+            )
         val client = PlaybackClient(t, "https://h.example", Credential.Device("cert", "proof"))
         val target = client.resolve("asset-1", HASH, isVideo = true, mimeType = "video/x-msvideo", caps = CAPS)
         assertEquals("https://h.example/api/v1/playback/stream/abc", target.contentUrl)

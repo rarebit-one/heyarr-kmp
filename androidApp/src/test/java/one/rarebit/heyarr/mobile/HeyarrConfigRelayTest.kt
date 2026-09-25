@@ -6,7 +6,10 @@ import org.junit.Test
 class HeyarrConfigRelayTest {
     @Test fun relayDefaultsToTheNodesPairMountBeforeTheV1TheWireAdds() {
         assertEquals("http://h:7777/pair", HeyarrConfig(baseUrl = "http://h:7777/").effectiveRelayBase)
-        assertEquals("https://relay.example", HeyarrConfig(baseUrl = "http://h", relayBaseUrl = "https://relay.example/").effectiveRelayBase)
+        assertEquals(
+            "https://relay.example",
+            HeyarrConfig(baseUrl = "http://h", relayBaseUrl = "https://relay.example/").effectiveRelayBase,
+        )
     }
 
     /**
@@ -22,6 +25,9 @@ class HeyarrConfigRelayTest {
             "http://192.168.16.224:7777/pair/v1/sessions",
             cfg.effectiveRelayBase.trimEnd('/') + "/v1/sessions", // exactly RelayClient.createSession's composition
         )
-        assertEquals("https://relay.example/v1/sessions", cfg.copy(relayBaseUrl = "https://relay.example/").relaySessionsUrl)
+        assertEquals(
+            "https://relay.example/v1/sessions",
+            cfg.copy(relayBaseUrl = "https://relay.example/").relaySessionsUrl,
+        )
     }
 }

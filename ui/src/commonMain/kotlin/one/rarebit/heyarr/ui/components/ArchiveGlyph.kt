@@ -37,15 +37,37 @@ fun ArchiveActivity(reduceMotion: Boolean, modifier: Modifier = Modifier, color:
         0f
     } else {
         val transition = rememberInfiniteTransition(label = "archive activity")
-        val value by transition.animateFloat(0f, 4f, infiniteRepeatable(tween(3200, easing = LinearEasing)), label = "glyph phase")
+        val value by transition.animateFloat(
+            0f,
+            4f,
+            infiniteRepeatable(tween(3200, easing = LinearEasing)),
+            label = "glyph phase",
+        )
         value
     }
-    val frames = listOf("0010001110111110111000100", "1111110001101011000111111", "1000110001111111000110001", "0010000100111110010000100")
+    val frames =
+        listOf(
+            "0010001110111110111000100",
+            "1111110001101011000111111",
+            "1000110001111111000110001",
+            "0010000100111110010000100",
+        )
     val mask = frames[phase.toInt().coerceIn(0, 3)]
     Canvas(modifier.size(24.dp)) {
         val step = size.minDimension / 5f
         mask.forEachIndexed { i, cell ->
-            if (cell == '1') drawRect(color.copy(alpha = 0.8f), Offset((i % 5) * step, (i / 5) * step), Size(step * .7f, step * .7f))
+            if (cell ==
+                '1'
+            ) {
+                drawRect(
+                    color.copy(alpha = 0.8f),
+                    Offset((i % 5) * step, (i / 5) * step),
+                    Size(
+                        step * .7f,
+                        step * .7f,
+                    ),
+                )
+            }
         }
     }
 }

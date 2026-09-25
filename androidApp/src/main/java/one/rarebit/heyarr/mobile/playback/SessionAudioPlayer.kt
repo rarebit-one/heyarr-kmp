@@ -28,10 +28,7 @@ import kotlinx.coroutines.launch
  * controller only knows MediaItems), and the position ticks while playing.
  */
 @UnstableApi
-class SessionAudioPlayer(
-    private val context: Context,
-    private val scope: CoroutineScope,
-) : AudioPlayer {
+class SessionAudioPlayer(private val context: Context, private val scope: CoroutineScope) : AudioPlayer {
 
     private val _state = MutableStateFlow(AudioState())
     override val state: StateFlow<AudioState> = _state.asStateFlow()
@@ -49,7 +46,14 @@ class SessionAudioPlayer(
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
             val c = controller ?: return
-            _state.update { it.copy(index = c.currentMediaItemIndex, positionMs = 0, durationMs = c.duration.coerceAtLeast(0), error = null) }
+            _state.update {
+                it.copy(
+                    index = c.currentMediaItemIndex,
+                    positionMs = 0,
+                    durationMs = c.duration.coerceAtLeast(0),
+                    error = null,
+                )
+            }
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -130,7 +134,14 @@ class SessionAudioPlayer(
         stopTicker()
         ticker = scope.launch {
             while (isActive) {
-                controller?.let { c -> _state.update { it.copy(positionMs = c.currentPosition.coerceAtLeast(0), durationMs = c.duration.coerceAtLeast(0)) } }
+                controller?.let { c ->
+                    _state.update {
+                        it.copy(
+                            positionMs = c.currentPosition.coerceAtLeast(0),
+                            durationMs = c.duration.coerceAtLeast(0),
+                        )
+                    }
+                }
                 delay(500)
             }
         }

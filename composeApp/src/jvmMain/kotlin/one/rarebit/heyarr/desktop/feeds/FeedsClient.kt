@@ -15,11 +15,7 @@ import java.net.URLEncoder
  * `WorkDetailClient` (`GET /works/{item.workId}` → `primary_asset`), because a
  * followed-item carries no blob/content URL of its own.
  */
-class FeedsClient(
-    private val http: HttpTransport,
-    private val baseUrl: String,
-    private val credential: Credential,
-) {
+class FeedsClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
     /** All followed sources (the list endpoint is unpaged: `{ "followed_sources": [ … ] }`). */
     fun listSources(): List<FollowedSource> {
         val resp = http.get(sourcesUrl(baseUrl), credential.asHeader())

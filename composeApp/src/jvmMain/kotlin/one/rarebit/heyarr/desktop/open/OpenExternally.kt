@@ -8,10 +8,7 @@ package one.rarebit.heyarr.desktop.open
  *
  * Returns a UI-safe status string (never a thrown exception, never the token).
  */
-class OpenExternally(
-    private val downloader: BlobDownloader,
-    private val opener: ExternalOpener,
-) {
+class OpenExternally(private val downloader: BlobDownloader, private val opener: ExternalOpener) {
     /**
      * Download the blob [blobHash] and open it. [filename]/[mime] pick the temp extension so
      * the right handler is chosen; [displayName] names the thing in the returned status.

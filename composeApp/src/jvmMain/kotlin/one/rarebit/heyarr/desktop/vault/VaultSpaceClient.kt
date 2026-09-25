@@ -160,7 +160,9 @@ class VaultSpaceClient(
             linkedMapOf(
                 "id" to id,
                 "kind" to kind,
-                "wrapped_keys" to wrapped.map { linkedMapOf("recipient" to it.recipient, "wrapped" to b64(it.wrapped)) },
+                "wrapped_keys" to wrapped.map {
+                    linkedMapOf("recipient" to it.recipient, "wrapped" to b64(it.wrapped))
+                },
             ),
         )
         val resp = http.post(spacesUrl(baseUrl), body, "application/json", credential.asHeader())

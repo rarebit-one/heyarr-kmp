@@ -14,7 +14,10 @@ import org.junit.Test
  * decoded back to an equal change (so a change this device mints is Go-readable).
  */
 class CrdtParityTest {
-    private fun forEachVector(file: String, block: (name: String, changes: List<String>, encode: String, snapshot: String) -> Unit) {
+    private fun forEachVector(
+        file: String,
+        block: (name: String, changes: List<String>, encode: String, snapshot: String) -> Unit,
+    ) {
         val body = Vectors.load(file)
         val vectors = JsonScan.objectsOf(body, listOf("vectors"))
         assertEquals("$file has vectors", true, vectors.isNotEmpty())

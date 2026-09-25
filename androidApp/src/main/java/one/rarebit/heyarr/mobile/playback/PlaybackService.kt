@@ -46,7 +46,12 @@ class PlaybackService : MediaSessionService() {
             )
             .build()
         session = MediaSession.Builder(this, player)
-            .setBitmapLoader(DataSourceBitmapLoader(MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()), dataSources))
+            .setBitmapLoader(
+                DataSourceBitmapLoader(
+                    MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()),
+                    dataSources,
+                ),
+            )
             .build()
     }
 

@@ -101,7 +101,11 @@ object JsonScan {
                 c == '"' -> {
                     val k = readStringAt(obj, i) ?: break
                     var j = k.second
-                    while (j < obj.length && (obj[j] == ' ' || obj[j] == '\t' || obj[j] == '\n' || obj[j] == '\r' || obj[j] == ':')) j++
+                    while (j < obj.length &&
+                        (obj[j] == ' ' || obj[j] == '\t' || obj[j] == '\n' || obj[j] == '\r' || obj[j] == ':')
+                    ) {
+                        j++
+                    }
                     if (j < obj.length && obj[j] == '"') {
                         val v = readStringAt(obj, j) ?: break
                         out[k.first] = v.first
@@ -210,7 +214,11 @@ object JsonScan {
     fun valueStart(json: String, key: String): Int? {
         var i = topLevelKey(json, key) ?: return null
         i += key.length + 2
-        while (i < json.length && (json[i] == ' ' || json[i] == '\t' || json[i] == '\n' || json[i] == '\r' || json[i] == ':')) i++
+        while (i < json.length &&
+            (json[i] == ' ' || json[i] == '\t' || json[i] == '\n' || json[i] == '\r' || json[i] == ':')
+        ) {
+            i++
+        }
         return if (i >= json.length || json.startsWith("null", i)) null else i
     }
 
@@ -243,7 +251,11 @@ object JsonScan {
                 '"' -> {
                     if (depth == 1 && json.startsWith(needle, i)) {
                         var j = i + needle.length
-                        while (j < json.length && (json[j] == ' ' || json[j] == '\t' || json[j] == '\n' || json[j] == '\r')) j++
+                        while (j < json.length &&
+                            (json[j] == ' ' || json[j] == '\t' || json[j] == '\n' || json[j] == '\r')
+                        ) {
+                            j++
+                        }
                         if (j < json.length && json[j] == ':') return i
                     }
                     inStr = true

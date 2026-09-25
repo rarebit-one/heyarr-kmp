@@ -13,7 +13,12 @@ class EnrolClientTest {
     private class Fake(private val byUrl: Map<String, Int>) : HttpTransport {
         val posts = ArrayList<Triple<String, String?, Map<String, String>>>()
         override fun get(url: String, headers: Map<String, String>) = HttpResponse(404, "")
-        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
+        override fun post(
+            url: String,
+            body: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse {
             posts += Triple(url, body, headers)
             return HttpResponse(byUrl[url] ?: 404, """{"detail":"nope"}""")
         }
@@ -45,9 +50,21 @@ class EnrolClientTest {
         val f = object : HttpTransport {
             val bodies = ArrayList<String?>()
             override fun get(url: String, headers: Map<String, String>) = HttpResponse(404, "")
-            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
+            override fun post(
+                url: String,
+                body: String?,
+                contentType: String?,
+                headers: Map<String, String>,
+            ): HttpResponse {
                 bodies += body
-                return if (body!!.contains("\"ops\"")) HttpResponse(400, """{"detail":"json: unknown field \"ops\""}""") else HttpResponse(201, "{}")
+                return if (body!!.contains(
+                        "\"ops\"",
+                    )
+                ) {
+                    HttpResponse(400, """{"detail":"json: unknown field \"ops\""}""")
+                } else {
+                    HttpResponse(201, "{}")
+                }
             }
         }
         val out = EnrolClient(f, base).register("OP", "PROOF", "phone", null, ops = listOf("A.a"))
@@ -103,6 +120,9 @@ class EnrolClientTest {
             override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
                 HttpResponse(204, "")
         }
-        assertEquals(EnrolClient.Outcome.Registered("POST /enrol", null), EnrolClient(f, base).register("C", "P", "n", null))
+        assertEquals(
+            EnrolClient.Outcome.Registered("POST /enrol", null),
+            EnrolClient(f, base).register("C", "P", "n", null),
+        )
     }
 }

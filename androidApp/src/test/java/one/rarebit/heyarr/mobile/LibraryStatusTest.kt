@@ -23,7 +23,10 @@ class LibraryStatusTest {
     @Test
     fun theBestSatisfiedWantWins() {
         assertEquals(LibraryStatus.NOT_TRACKED, LibraryStatus.combine(emptyList()))
-        assertEquals(LibraryStatus.IN_LIBRARY, LibraryStatus.combine(listOf(LibraryStatus.MISSING, LibraryStatus.IN_LIBRARY)))
+        assertEquals(
+            LibraryStatus.IN_LIBRARY,
+            LibraryStatus.combine(listOf(LibraryStatus.MISSING, LibraryStatus.IN_LIBRARY)),
+        )
         assertEquals(LibraryStatus.WANTED, LibraryStatus.combine(listOf(LibraryStatus.MISSING, LibraryStatus.WANTED)))
         assertEquals(LibraryStatus.MISSING, LibraryStatus.combine(listOf(LibraryStatus.MISSING)))
     }

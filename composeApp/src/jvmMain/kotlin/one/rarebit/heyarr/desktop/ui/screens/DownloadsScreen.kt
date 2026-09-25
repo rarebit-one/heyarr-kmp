@@ -57,16 +57,28 @@ class DownloadsState {
  * relay yet. Refreshes every 10 s while open.
  */
 @Composable
-fun DownloadsScreen(session: AppSession, state: DownloadsState, onOpen: (Route) -> Unit, modifier: Modifier = Modifier) {
+fun DownloadsScreen(
+    session: AppSession,
+    state: DownloadsState,
+    onOpen: (Route) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val scope = rememberCoroutineScope()
     fun load() {
         val a = session.api ?: return
         state.error = null
         scope.launch {
-            session.io { a.desired() }.fold(onSuccess = { state.desired = it }, onFailure = { state.error = it.message })
+            session.io {
+                a.desired()
+            }.fold(onSuccess = { state.desired = it }, onFailure = { state.error = it.message })
             session.io { a.jobs(40) }.onSuccess { state.jobs = it }
             val wanted = state.desired.orEmpty().mapNotNull { it.workId }.distinct().filter { it !in state.titles }
-            if (wanted.isNotEmpty()) session.io { a.works() }.onSuccess { works -> state.titles = state.titles + works.associate { it.id to it.title } }
+            if (wanted.isNotEmpty()) {
+                session.io { a.works() }.onSuccess { works ->
+                    state.titles =
+                        state.titles + works.associate { it.id to it.title }
+                }
+            }
         }
     }
     LaunchedEffect(session.config) {
@@ -80,15 +92,30 @@ fun DownloadsScreen(session: AppSession, state: DownloadsState, onOpen: (Route) 
     val recentJobs = state.jobs.orEmpty().sortedByDescending { it.updatedAt ?: "" }
 
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-        Notice("The node reports each want's acquisition state and phase, not a percentage — a transfer's byte count lives in the download client (Transmission) and heyarr does not relay it yet.", tone = Tokens.slate)
-        Section("Acquiring", subtitle = "${inFlight.size} wants not yet satisfied", trailing = { GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh) }) {
+        Notice(
+            "The node reports each want's acquisition state and phase, not a percentage — a transfer's byte count lives in the download client (Transmission) and heyarr does not relay it yet.",
+            tone = Tokens.slate,
+        )
+        Section("Acquiring", subtitle = "${inFlight.size} wants not yet satisfied", trailing = {
+            GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh)
+        }) {
             when {
-                state.error != null && state.desired == null -> Notice("Couldn't load wants: ${state.error}", tone = Tokens.danger)
+                state.error != null && state.desired == null -> Notice(
+                    "Couldn't load wants: ${state.error}",
+                    tone = Tokens.danger,
+                )
 
                 state.desired == null -> Skeleton(Modifier.fillMaxWidth().height(80.dp))
 
                 else -> DataTable(
-                    columns = listOf(TableColumn("Want", 2.2f), TableColumn("Status", width = 110.dp), TableColumn("Phase", width = 110.dp), TableColumn("Client", width = 80.dp), TableColumn("Detail", 2.4f), TableColumn("", width = 130.dp, alignEnd = true)),
+                    columns = listOf(
+                        TableColumn("Want", 2.2f),
+                        TableColumn("Status", width = 110.dp),
+                        TableColumn("Phase", width = 110.dp),
+                        TableColumn("Client", width = 80.dp),
+                        TableColumn("Detail", 2.4f),
+                        TableColumn("", width = 130.dp, alignEnd = true),
+                    ),
                     rowCount = inFlight.size,
                     emptyText = "Nothing in flight — every want is satisfied.",
                 ) { r, c ->
@@ -106,7 +133,21 @@ fun DownloadsScreen(session: AppSession, state: DownloadsState, onOpen: (Route) 
 
                         5 -> Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             val wid = w.workId
-                            if (wid != null) GhostButton("Open", { onOpen(Route.Detail(wid, MediaType.UNKNOWN, state.titles[wid], from = "Downloads", curate = true)) })
+                            if (wid !=
+                                null
+                            ) {
+                                GhostButton("Open", {
+                                    onOpen(
+                                        Route.Detail(
+                                            wid,
+                                            MediaType.UNKNOWN,
+                                            state.titles[wid],
+                                            from = "Downloads",
+                                            curate = true,
+                                        ),
+                                    )
+                                })
+                            }
                             SecondaryButton("Search", {
                                 session.api?.let { a ->
                                     scope.launch {
@@ -124,12 +165,22 @@ fun DownloadsScreen(session: AppSession, state: DownloadsState, onOpen: (Route) 
                 }
             }
         }
-        Section("Job queue", subtitle = "The node's recent work — searches, ingests, probes, scans", initiallyOpen = true) {
+        Section(
+            "Job queue",
+            subtitle = "The node's recent work — searches, ingests, probes, scans",
+            initiallyOpen = true,
+        ) {
             when (val jobs = state.jobs) {
                 null -> Skeleton(Modifier.fillMaxWidth().height(80.dp))
 
                 else -> DataTable(
-                    columns = listOf(TableColumn("Job", 1.4f), TableColumn("State", width = 100.dp), TableColumn("Attempts", width = 80.dp, alignEnd = true), TableColumn("Updated", width = 150.dp), TableColumn("Last error", 2f)),
+                    columns = listOf(
+                        TableColumn("Job", 1.4f),
+                        TableColumn("State", width = 100.dp),
+                        TableColumn("Attempts", width = 80.dp, alignEnd = true),
+                        TableColumn("Updated", width = 150.dp),
+                        TableColumn("Last error", 2f),
+                    ),
                     rowCount = minOf(recentJobs.size, 25),
                     emptyText = "The queue is empty.",
                 ) { r, c ->

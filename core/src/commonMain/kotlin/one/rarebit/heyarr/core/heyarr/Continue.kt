@@ -46,8 +46,12 @@ data class ContinueEntry(
             val v = locator?.toDoubleOrNull()
             return when {
                 v == null -> locator
-                unit == "seconds" || unit == "s" -> clock(v.toLong()) + (durationSeconds?.let { " / " + clock(it.toLong()) } ?: "")
+
+                unit == "seconds" || unit == "s" -> clock(v.toLong()) +
+                    (durationSeconds?.let { " / " + clock(it.toLong()) } ?: "")
+
                 unit == "percent" || unit == "%" -> "${v.toInt()}%"
+
                 else -> "$locator ${unit ?: ""}".trim()
             }
         }
@@ -97,7 +101,11 @@ object ContinueJson {
         val i = JsonScan.valueStart(json, key) ?: return null
         if (json[i] == '"') return null
         var j = i
-        while (j < json.length && (json[j].isDigit() || json[j] == '.' || json[j] == '-' || json[j] == '+' || json[j] == 'e' || json[j] == 'E')) j++
+        while (j < json.length &&
+            (json[j].isDigit() || json[j] == '.' || json[j] == '-' || json[j] == '+' || json[j] == 'e' || json[j] == 'E')
+        ) {
+            j++
+        }
         return json.substring(i, j).toDoubleOrNull()
     }
 }

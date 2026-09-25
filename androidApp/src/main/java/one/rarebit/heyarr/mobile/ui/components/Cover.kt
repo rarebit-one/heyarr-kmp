@@ -20,10 +20,45 @@ data class Cover(val url: String?, val external: ExternalMeta? = null)
  * the card is composed, and Coil fetches nothing until it is drawn.
  */
 @Composable
-fun rememberCover(session: AppSession, type: MediaType, title: String, nodeArtPath: String?, year: Int? = null, creator: String? = null, feedRef: String? = null): State<Cover> =
-    produceState(initialValue = Cover(nodeArtPath?.let { HeyarrApi.blobUrlFromPath(session.baseUrl, it) }), nodeArtPath, title, type, session.externalMetadata) {
-        if (nodeArtPath != null) { value = Cover(HeyarrApi.blobUrlFromPath(session.baseUrl, nodeArtPath)); return@produceState }
-        if (!session.externalMetadata || title.isBlank()) { value = Cover(null); return@produceState }
-        val meta = session.external.lookup(MetaKey(type, title, year, creator, feedRef)) ?: return@produceState
-        value = Cover(if (type == MediaType.SERIES || type == MediaType.MOVIE) meta.landscapeImageUrl ?: meta.imageUrl else meta.imageUrl, meta)
+fun rememberCover(
+    session: AppSession,
+    type: MediaType,
+    title: String,
+    nodeArtPath: String?,
+    year: Int? = null,
+    creator: String? = null,
+    feedRef: String? = null,
+): State<Cover> = produceState(
+    initialValue = Cover(
+        nodeArtPath?.let {
+            HeyarrApi.blobUrlFromPath(session.baseUrl, it)
+        },
+    ),
+    nodeArtPath,
+    title,
+    type,
+    session.externalMetadata,
+) {
+    if (nodeArtPath !=
+        null
+    ) {
+        value = Cover(HeyarrApi.blobUrlFromPath(session.baseUrl, nodeArtPath))
+        return@produceState
     }
+    if (!session.externalMetadata || title.isBlank()) {
+        value = Cover(null)
+        return@produceState
+    }
+    val meta = session.external.lookup(MetaKey(type, title, year, creator, feedRef)) ?: return@produceState
+    value =
+        Cover(
+            if (type == MediaType.SERIES ||
+                type == MediaType.MOVIE
+            ) {
+                meta.landscapeImageUrl ?: meta.imageUrl
+            } else {
+                meta.imageUrl
+            },
+            meta,
+        )
+}

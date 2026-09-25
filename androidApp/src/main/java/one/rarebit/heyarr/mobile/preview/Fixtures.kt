@@ -23,13 +23,32 @@ object Fixtures {
     val works = listOf(
         work(YELLOWSTONE, "series", "Yellowstone", 2018, art = true),
         work(SINTEL, "movie", "Sintel", 2010),
-        work("w-dune", "movie", "Dune: Part Two", 2024, art = true, attrs = """{"runtime":"166 min","genre":"Sci-fi"}"""),
+        work(
+            "w-dune",
+            "movie",
+            "Dune: Part Two",
+            2024,
+            art = true,
+            attrs = """{"runtime":"166 min","genre":"Sci-fi"}""",
+        ),
         work("w-severance", "series", "Severance", 2022, art = true),
         work("w-piranesi", "book", "Piranesi", 2020, attrs = """{"author":"Susanna Clarke","pages":"245"}"""),
-        work("w-dune-book", "book", "Dune", 1965, attrs = """{"author":"Frank Herbert","pages":"412","series":"Dune"}"""),
+        work(
+            "w-dune-book",
+            "book",
+            "Dune",
+            1965,
+            attrs = """{"author":"Frank Herbert","pages":"412","series":"Dune"}""",
+        ),
         work("w-kid-a", "music", "Kid A", 2000, attrs = """{"artist":"Radiohead","album":"Kid A"}"""),
         work("w-blue", "music", "Blue", 1971, attrs = """{"artist":"Joni Mitchell"}"""),
-        work("w-project-hail", "book", "Project Hail Mary", 2021, attrs = """{"author":"Andy Weir","narrator":"Ray Porter"}"""),
+        work(
+            "w-project-hail",
+            "book",
+            "Project Hail Mary",
+            2021,
+            attrs = """{"author":"Andy Weir","narrator":"Ray Porter"}""",
+        ),
         work("w-cloudflare", "document", "Cloudflare Blog", null),
         work("w-ys-s4", "series", "Yellowstone Season 4 Mp4", null),
     )
@@ -43,8 +62,11 @@ object Fixtures {
             val t = JsonScan.stringField(w, "content_type")
             (type == null || t == type) && (q.isEmpty() || title.contains(q)) && t != "document"
         }
-        val episodes = if (q.isNotEmpty() && "yellowstone".contains(q) && type == null)
-            """{"id":"ep-1","kind":"edition","title":"S04E02 — Phantom Pain","work_id":"$YELLOWSTONE","work_title":"Yellowstone","content_type":"series","primary_asset":{"asset_id":"as-1","blob_hash":"$HASH"}}""" else ""
+        val episodes = if (q.isNotEmpty() && "yellowstone".contains(q) && type == null) {
+            """{"id":"ep-1","kind":"edition","title":"S04E02 — Phantom Pain","work_id":"$YELLOWSTONE","work_title":"Yellowstone","content_type":"series","primary_asset":{"asset_id":"as-1","blob_hash":"$HASH"}}"""
+        } else {
+            ""
+        }
         return """{"count":${hits.size},"truncated":false,"works":[${hits.joinToString(",")}],"episodes":[$episodes]}"""
     }
 
@@ -139,8 +161,18 @@ object Fixtures {
         return w.dropLast(1) + ""","external_ids":{},"primary_asset":$primary}"""
     }
 
-    private val S4 = listOf("Half the Money", "Phantom Pain", "All I See Is You", "Winning or Learning", "Under a Blanket of Red", "I Want to Be Him", "Keep the Wolves Close", "No Kindness for the Coward", "No Such Thing as Fair", "Grass on the Streets and Weeds on the Rooftops")
-    private val S5 = listOf("One Hundred Years Is Nothing", "The Sting of Wisdom", "Tall Drink of Water", "Horses in Heaven", "Watch 'Em Ride Away", "Cigarettes Whiskey a Meadow and You", "The Dream Is Not Me")
+    private val S4 =
+        listOf("Half the Money", "Phantom Pain", "All I See Is You", "Winning or Learning", "Under a Blanket of Red", "I Want to Be Him", "Keep the Wolves Close", "No Kindness for the Coward", "No Such Thing as Fair", "Grass on the Streets and Weeds on the Rooftops")
+    private val S5 =
+        listOf(
+            "One Hundred Years Is Nothing",
+            "The Sting of Wisdom",
+            "Tall Drink of Water",
+            "Horses in Heaven",
+            "Watch 'Em Ride Away",
+            "Cigarettes Whiskey a Meadow and You",
+            "The Dream Is Not Me",
+        )
 
     private fun ep(season: Int, n: Int, title: String, held: Boolean): String {
         val code = "S%02dE%02d".format(season, n)
@@ -148,7 +180,13 @@ object Fixtures {
         val label = "Season %02d".format(season)
         val thumb = """{"id":"th-$code","edition_id":"e$season","blob_hash":"$HASH","filename":"$stem-thumb.jpg","mime":"image/jpeg","role":"artwork","blob_size":48511,"edition_label":"$label"}"""
         val video = if (held) """,{"id":"as-$code","edition_id":"e$season","blob_hash":"$HASH","filename":"$stem.mp4","mime":"video/mp4","role":"primary","blob_size":${1_300_000_000L + n * 37_000_000L},"edition_label":"$label"}""" else ""
-        val sub = if (held && n == 1) """,{"id":"sub-$code","edition_id":"e$season","blob_hash":"$HASH","filename":"$stem.en.srt","mime":"text/plain","role":"subtitle","blob_size":61234,"edition_label":"$label"}""" else ""
+        val sub = if (held &&
+            n == 1
+        ) {
+            """,{"id":"sub-$code","edition_id":"e$season","blob_hash":"$HASH","filename":"$stem.en.srt","mime":"text/plain","role":"subtitle","blob_size":61234,"edition_label":"$label"}"""
+        } else {
+            ""
+        }
         return thumb + video + sub
     }
 
@@ -167,7 +205,8 @@ object Fixtures {
 
     /** JSON-RPC envelope around a tool result. */
     fun rpc(text: String) = """{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":${quote(text)}}]}}"""
-    fun rpcError(message: String, tool: String) = """{"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":${quote(message)},"data":{"tool":"$tool"}}}"""
+    fun rpcError(message: String, tool: String) =
+        """{"jsonrpc":"2.0","id":1,"error":{"code":-32602,"message":${quote(message)},"data":{"tool":"$tool"}}}"""
     private fun quote(s: String) = buildString { JsonWrite.writeString(this, s) }
 }
 
@@ -181,18 +220,41 @@ class FakeHeyarrTransport(private val delayMs: Long = 0) : HttpTransport {
         val path = url.substringAfter("/api/v1/").substringBefore('?')
         val body = when {
             path == "works" -> Fixtures.worksList()
+
             path == "quality-profiles" -> Fixtures.profiles
+
             path == "desired" -> Fixtures.desired
+
             path == "consumption/continue" -> Fixtures.continueRail
+
             path == "jobs" -> Fixtures.jobs
+
             path == "session" -> """{"kind":"service","principal_id":"01a07aaf-da04-7e12-9228-cb645d86fc6c","scopes":["write"],"can_write":true,"management_authorized":false}"""
+
             path == "providers" -> """{"providers":[{"name":"linuxtracker","capabilities":["indexer"],"healthy":true,"detail":"reachable — Prowlarr","version":"unreported","checked_at":"2026-09-07T14:19:19Z"},{"name":"transmission","capabilities":["download"],"healthy":true,"detail":"reachable","version":"4.1.3","checked_at":"2026-09-07T14:19:19Z"},{"name":"internet-archive","capabilities":["indexer"],"healthy":false,"detail":"the indexer is rate limiting","checked_at":"2026-09-07T14:19:19Z"}],"capabilities":["indexer","download"]}"""
+
             path == "capabilities" -> """{"holders":[{"worker_id":"hyperion/19403/01a0723e","peer_id":"p1","peer_name":"hyperion-1","capabilities":[{"name":"download"},{"name":"ffmpeg"},{"name":"ffmpeg.encoder.h264"},{"name":"ffprobe"},{"name":"indexer"}],"expires_at":"2026-09-07T14:30:18Z"}],"available":["download","ffmpeg","ffmpeg.encoder.h264","ffprobe","indexer"]}"""
+
             path == "libraries" -> """{"items":[{"id":"l1","name":"shows","content_type":"show","enabled":true,"roots":[{"path":"/srv/nas-seed/media/tvseries"}]},{"id":"l2","name":"films","content_type":"movie","enabled":true,"roots":[{"path":"/srv/nas-seed/media/movies"}]}]}"""
-            path.startsWith("followed-sources/") && path.endsWith("/items") -> """{"items":[{"id":"fi-1","title":"Post-quantum by default","work_id":"w-cf-1","item_key":"2026-09-05","published_at":"2026-09-05T10:00:00Z","archived":true},{"id":"fi-2","title":"Workers AI: what shipped this month","work_id":"w-cf-2","item_key":"2026-09-02","published_at":"2026-09-02T09:30:00Z","archived":false}]}"""
-            path.startsWith("desired/") && path.endsWith("/candidates") -> Fixtures.candidates(path.removePrefix("desired/").removeSuffix("/candidates"))
-            path.startsWith("works/") && path.endsWith("/assets") -> Fixtures.assets(path.removePrefix("works/").removeSuffix("/assets"))
+
+            path.startsWith(
+                "followed-sources/",
+            ) && path.endsWith(
+                "/items",
+            ) -> """{"items":[{"id":"fi-1","title":"Post-quantum by default","work_id":"w-cf-1","item_key":"2026-09-05","published_at":"2026-09-05T10:00:00Z","archived":true},{"id":"fi-2","title":"Workers AI: what shipped this month","work_id":"w-cf-2","item_key":"2026-09-02","published_at":"2026-09-02T09:30:00Z","archived":false}]}"""
+
+            path.startsWith(
+                "desired/",
+            ) && path.endsWith(
+                "/candidates",
+            ) -> Fixtures.candidates(path.removePrefix("desired/").removeSuffix("/candidates"))
+
+            path.startsWith(
+                "works/",
+            ) && path.endsWith("/assets") -> Fixtures.assets(path.removePrefix("works/").removeSuffix("/assets"))
+
             path.startsWith("works/") -> Fixtures.workDetail(path.removePrefix("works/"))
+
             else -> return HttpResponse(404, """{"title":"Not Found","detail":"no route matches /api/v1/$path"}""")
         }
         return HttpResponse(200, body)
@@ -206,23 +268,64 @@ class FakeHeyarrTransport(private val delayMs: Long = 0) : HttpTransport {
         val tool = JsonScan.stringField(params, "name") ?: return HttpResponse(400, "")
         val args = JsonScan.objectAt(params, "arguments") ?: "{}"
         val text = when (tool) {
-            "search_content" -> Fixtures.searchContent(JsonScan.stringField(args, "query"), JsonScan.stringField(args, "content_type"))
+            "search_content" -> Fixtures.searchContent(
+                JsonScan.stringField(args, "query"),
+                JsonScan.stringField(args, "content_type"),
+            )
+
             "list_followed" -> Fixtures.followed
+
             "get_missing_content" -> Fixtures.missing
+
             "get_upgrade_candidates" -> Fixtures.upgrades
+
             "get_content_satisfaction" -> Fixtures.satisfaction(JsonScan.stringField(args, "desired_item_id") ?: "")
+
             "explain_release" -> Fixtures.explain
+
             "list_renderers" -> Fixtures.renderers
+
             "playback_status" -> Fixtures.playback
+
             "get_peer_status" -> Fixtures.peers
+
             "get_replica_status" -> Fixtures.replicas
+
             "get_external_ids" -> Fixtures.externalIds
-            "want_content" -> """{"desired_item_id":"d-new","work_id":"${JsonScan.stringField(args, "work_id") ?: "w-new"}","state":"MISSING","title":"${JsonScan.stringField(args, "title") ?: ""}"}"""
+
+            "want_content" -> """{"desired_item_id":"d-new","work_id":"${JsonScan.stringField(
+                args,
+                "work_id",
+            ) ?: "w-new"}","state":"MISSING","title":"${JsonScan.stringField(args, "title") ?: ""}"}"""
+
             "monitor_content", "control_playback", "play_here", "unfollow" -> """{"ok":true}"""
+
             "search_releases", "verify_blob", "sync_peer" -> """{"job":{"id":"job-1","state":"queued"}}"""
-            "discover_content" -> return HttpResponse(200, Fixtures.rpcError("no metadata provider is configured that can search for new content — configure a TVDB provider (ADR-0058) to enable discovery", tool))
-            "acquire_release" -> return HttpResponse(200, Fixtures.rpcError("candidate rejected by rule source.nin: source cam, which is not outside [cam, telesync] — change the profile if it should be acceptable", tool))
-            "follow_source" -> """{"id":"fs-new","title":"${JsonScan.stringField(args, "title") ?: JsonScan.stringField(args, "url") ?: "new"}","type":"podcast","items_known":0,"items_archived":0,"health":"unknown"}"""
+
+            "discover_content" -> return HttpResponse(
+                200,
+                Fixtures.rpcError(
+                    "no metadata provider is configured that can search for new content — configure a TVDB provider (ADR-0058) to enable discovery",
+                    tool,
+                ),
+            )
+
+            "acquire_release" -> return HttpResponse(
+                200,
+                Fixtures.rpcError(
+                    "candidate rejected by rule source.nin: source cam, which is not outside [cam, telesync] — change the profile if it should be acceptable",
+                    tool,
+                ),
+            )
+
+            "follow_source" -> """{"id":"fs-new","title":"${JsonScan.stringField(
+                args,
+                "title",
+            ) ?: JsonScan.stringField(
+                args,
+                "url",
+            ) ?: "new"}","type":"podcast","items_known":0,"items_archived":0,"health":"unknown"}"""
+
             else -> return HttpResponse(200, Fixtures.rpcError("unknown tool", tool))
         }
         return HttpResponse(200, Fixtures.rpc(text))

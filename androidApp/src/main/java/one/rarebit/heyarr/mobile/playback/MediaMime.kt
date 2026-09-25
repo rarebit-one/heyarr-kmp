@@ -23,5 +23,6 @@ object MediaMime {
         return ext in AUDIO_EXTENSIONS
     }
 
-    private val AUDIO_EXTENSIONS = setOf("mp3", "flac", "ogg", "oga", "opus", "m4a", "aac", "wav", "wma", "alac", "aiff")
+    private val AUDIO_EXTENSIONS =
+        setOf("mp3", "flac", "ogg", "oga", "opus", "m4a", "aac", "wav", "wma", "alac", "aiff")
 }

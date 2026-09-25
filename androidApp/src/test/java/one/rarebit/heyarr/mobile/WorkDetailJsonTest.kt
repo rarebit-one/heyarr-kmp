@@ -32,10 +32,17 @@ class WorkDetailJsonTest {
     }
 
     @Test fun parsesEditionAndBlobSize() {
-        val e = WorkDetailJson.parseEdition("""{"id":"e1","work_id":"w1","label":"1080p BluRay","edition_type":"release","language":null,"attributes":{},"created_at":"2026-09-01T10:00:00Z"}""")!!
+        val e = WorkDetailJson.parseEdition(
+            """{"id":"e1","work_id":"w1","label":"1080p BluRay","edition_type":"release","language":null,"attributes":{},"created_at":"2026-09-01T10:00:00Z"}""",
+        )!!
         assertEquals("w1", e.workId)
         assertEquals("1080p BluRay", e.label)
-        assertEquals(4_294_967_296L, WorkDetailJson.parseBlobSize("""{"hash":"blake3:ab","size":4294967296,"mime":"video/x-matroska","chunked":false,"chunk_manifest":"not_required","first_seen_at":"2026-09-01T10:00:00Z"}"""))
+        assertEquals(
+            4_294_967_296L,
+            WorkDetailJson.parseBlobSize(
+                """{"hash":"blake3:ab","size":4294967296,"mime":"video/x-matroska","chunked":false,"chunk_manifest":"not_required","first_seen_at":"2026-09-01T10:00:00Z"}""",
+            ),
+        )
         assertNull(WorkDetailJson.parseBlobSize("""{"status":404}"""))
     }
 
@@ -64,7 +71,9 @@ class WorkDetailJsonTest {
     }
 
     @Test fun parsesASingleWantFromAPatchResponse() {
-        val w = WorkDetailJson.parseWant("""{"id":"d1","scope":"work","work_id":"w1","quality_profile_id":"qp1","monitor":false,"created_at":"2026-09-01T10:00:00Z","updated_at":"2026-09-02T10:00:00Z"}""")!!
+        val w = WorkDetailJson.parseWant(
+            """{"id":"d1","scope":"work","work_id":"w1","quality_profile_id":"qp1","monitor":false,"created_at":"2026-09-01T10:00:00Z","updated_at":"2026-09-02T10:00:00Z"}""",
+        )!!
         assertFalse(w.monitor)
         assertNull(WorkDetailJson.parseWant("[]"))
     }
@@ -91,7 +100,16 @@ class WorkDetailJsonTest {
     }
 
     @Test fun qualityLineSkipsDefaults() {
-        val a = WorkAsset(id = "a", editionId = "e", role = "primary", mime = "video/mp4", sourceClass = "managed", sizeBytes = 1024, editionLabel = "720p")
+        val a =
+            WorkAsset(
+                id = "a",
+                editionId = "e",
+                role = "primary",
+                mime = "video/mp4",
+                sourceClass = "managed",
+                sizeBytes = 1024,
+                editionLabel = "720p",
+            )
         assertEquals("720p · video/mp4 · 1.0 KB", a.quality)
         val b = WorkAsset(id = "b", editionId = "e", role = "subtitle", sourceClass = "vault")
         assertEquals("subtitle · vault", b.quality)

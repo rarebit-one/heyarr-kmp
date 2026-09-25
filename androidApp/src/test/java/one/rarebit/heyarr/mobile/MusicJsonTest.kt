@@ -46,10 +46,36 @@ class MusicJsonTest {
 
     @Test fun tracksAreThePlayableAudioFilesInFilenameOrder() {
         val assets = listOf(
-            WorkAsset(id = "a2", editionId = "e", filename = "02 - Two.flac", mime = "audio/flac", blobHash = "blake3:2"),
-            WorkAsset(id = "a1", editionId = "e", filename = "01 - One.flac", mime = "audio/flac", blobHash = "blake3:1"),
-            WorkAsset(id = "a3", editionId = "e", filename = "cover.jpg", mime = "image/jpeg", blobHash = "blake3:3", role = "artwork"),
-            WorkAsset(id = "a4", editionId = "e", filename = "03 - Gone.flac", mime = "audio/flac", blobHash = "blake3:4", missingSince = "2026-01-01T00:00:00Z"),
+            WorkAsset(
+                id = "a2",
+                editionId = "e",
+                filename = "02 - Two.flac",
+                mime = "audio/flac",
+                blobHash = "blake3:2",
+            ),
+            WorkAsset(
+                id = "a1",
+                editionId = "e",
+                filename = "01 - One.flac",
+                mime = "audio/flac",
+                blobHash = "blake3:1",
+            ),
+            WorkAsset(
+                id = "a3",
+                editionId = "e",
+                filename = "cover.jpg",
+                mime = "image/jpeg",
+                blobHash = "blake3:3",
+                role = "artwork",
+            ),
+            WorkAsset(
+                id = "a4",
+                editionId = "e",
+                filename = "03 - Gone.flac",
+                mime = "audio/flac",
+                blobHash = "blake3:4",
+                missingSince = "2026-01-01T00:00:00Z",
+            ),
             WorkAsset(id = "a5", editionId = "e", filename = "linked.mp3", mime = "audio/mpeg", blobHash = null),
         )
         assertEquals(listOf("a1", "a2"), Tracks.playable(assets).map { it.id })

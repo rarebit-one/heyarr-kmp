@@ -96,7 +96,13 @@ fun LoginScreen(
                     ) { Text("Approve on this phone") }
                 }
                 Text(
-                    if (onApproveOnThisPhone != null) "…or scan this with your authenticator:" else "Scan this with your authenticator:",
+                    if (onApproveOnThisPhone !=
+                        null
+                    ) {
+                        "…or scan this with your authenticator:"
+                    } else {
+                        "Scan this with your authenticator:"
+                    },
                     modifier = Modifier.padding(top = 16.dp),
                 )
                 QrImage(state.qrTuple, modifier = Modifier.padding(top = 16.dp))
