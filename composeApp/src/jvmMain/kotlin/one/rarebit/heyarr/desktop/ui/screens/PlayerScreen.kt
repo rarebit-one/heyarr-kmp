@@ -276,28 +276,7 @@ fun PlayerScreen(
                         )
                     }
 
-                    playback.popout -> Column(
-                        Modifier.align(Alignment.Center),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(
-                            Icons.Rounded.OpenInNew,
-                            contentDescription = null,
-                            tint = Tokens.textMuted,
-                            modifier = Modifier.size(40.dp),
-                        )
-                        Text(
-                            "Playing in a separate mpv window",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = Tokens.textPrimary,
-                        )
-                        Text(
-                            "The controls below still drive it; closing that window brings playback back in here.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Tokens.textMuted,
-                        )
-                    }
+                    playback.popout -> PopoutNotice(Modifier.align(Alignment.Center))
 
                     else -> {
                         VideoSurface(p, Modifier.fillMaxSize())
@@ -366,45 +345,11 @@ fun PlayerScreen(
                         style = MaterialTheme.typography.labelLarge,
                         color = Tokens.textPrimary,
                     )
-                    // Warm-up and mid-stream stalls read differently: "starting…" is the first
-                    // fill (nothing shown yet); "buffering…" is a cache stall once it is going.
-                    if (ps.warmingUp) {
-                        Text("starting…", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-                    } else if (ps.buffering || ps.stalled) {
-                        Text("buffering…", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-                    }
-                    if (ps.eof) Text("finished", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+                    PlaybackStatusText(ps)
                     Spacer(Modifier.weight(1f))
                     TrackMenu(ps, p)
                     Spacer(Modifier.width(8.dp))
-                    IconButtonRound(
-                        if (ps.muted ||
-                            ps.volume <= 0
-                        ) {
-                            Icons.Rounded.VolumeOff
-                        } else {
-                            Icons.Rounded.VolumeUp
-                        },
-                        if (ps.muted) "Unmute (M)" else "Mute (M)",
-                        { p.toggleMute() },
-                        size = 32.dp,
-                    )
-                    Slider(
-                        value = (ps.volume / 100.0).toFloat().coerceIn(0f, 1.3f),
-                        onValueChange = {
-                            p.setVolume(it * 100.0)
-                        },
-                        valueRange = 0f..1.3f,
-                        modifier = Modifier.width(110.dp).semantics {
-                            contentDescription =
-                                "Volume ${ps.volume.toInt()}%"
-                        },
-                        colors = SliderDefaults.colors(
-                            thumbColor = theme.accent,
-                            activeTrackColor = theme.accent,
-                            inactiveTrackColor = Tokens.surface3,
-                        ),
-                    )
+                    VolumeControl(ps, p)
                     IconButtonRound(
                         if (fullscreen) Icons.Rounded.FullscreenExit else Icons.Rounded.Fullscreen,
                         if (fullscreen) "Exit fullscreen (Esc)" else "Fullscreen (F)",
@@ -607,116 +552,6 @@ fun PlayerScreen(
                             playback.play(next)
                         }, icon = Icons.Rounded.SkipNext, compact = true)
                     }
-                }
-            }
-        }
-    }
-}
-
-/** Captions (and audio, when there is a choice) as a menu: Off, then each track by language name, title and origin. */
-@Composable
-private fun TrackMenu(ps: PlayerState, p: EmbeddedPlayer) {
-    var open by remember { mutableStateOf(false) }
-    val current = ps.subtitles.firstOrNull { it.id == ps.subtitleId }
-    Box {
-        SecondaryButton(
-            if (ps.subtitles.isEmpty()) "No captions" else current?.let { trackLabel(it) } ?: "Captions off",
-            { open = !open },
-            icon = Icons.Rounded.ClosedCaption,
-            compact = true,
-            enabled = ps.subtitles.isNotEmpty() || ps.audio.size > 1,
-        )
-        if (ps.subtitles.isNotEmpty() &&
-            ps.subtitles.size > 1
-        ) {
-            Text(
-                "+${ps.subtitles.size - 1}",
-                style = MaterialTheme.typography.labelSmall,
-                color = Tokens.textMuted,
-                modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 4.dp),
-            )
-        }
-        DropdownMenu(expanded = open, onDismissRequest = {
-            open = false
-        }, modifier = Modifier.background(Tokens.surface3)) {
-            if (ps.subtitles.isNotEmpty()) {
-                Text(
-                    "Captions",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Tokens.textMuted,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-                DropdownMenuItem(text = {
-                    Text(
-                        "Off",
-                        color = if (ps.subtitleId ==
-                            null
-                        ) {
-                            LocalMediaTheme.current.accentGradientEnd
-                        } else {
-                            Tokens.textPrimary
-                        },
-                    )
-                }, onClick = {
-                    p.setSubtitle(null)
-                    open =
-                        false
-                })
-                for (t in ps.subtitles) {
-                    DropdownMenuItem(
-                        text = {
-                            Column {
-                                Text(
-                                    trackLabel(t),
-                                    color = if (t.id ==
-                                        ps.subtitleId
-                                    ) {
-                                        LocalMediaTheme.current.accentGradientEnd
-                                    } else {
-                                        Tokens.textPrimary
-                                    },
-                                )
-                                Text(
-                                    listOfNotNull(
-                                        t.title,
-                                        if (t.external) "sidecar file" else "in the container",
-                                    ).joinToString("  ·  "),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Tokens.textMuted,
-                                )
-                            }
-                        },
-                        onClick = {
-                            p.setSubtitle(t.id)
-                            open = false
-                        },
-                    )
-                }
-            }
-            if (ps.audio.size > 1) {
-                Text(
-                    "Audio",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Tokens.textMuted,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                )
-                for (t in ps.audio) {
-                    DropdownMenuItem(text = {
-                        Text(
-                            trackLabel(t),
-                            color = if (t.id ==
-                                ps.audioId
-                            ) {
-                                LocalMediaTheme.current.accentGradientEnd
-                            } else {
-                                Tokens.textPrimary
-                            },
-                        )
-                    }, onClick = {
-                        p.setAudio(t.id)
-                        open =
-                            false
-                    })
                 }
             }
         }

@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -96,18 +97,7 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
             delay(2000)
         }
     }
-    fun control(action: String) {
-        val r = state.selected ?: return
-        val a = session.api ?: return
-        scope.launch {
-            state.busy = true
-            session.io {
-                a.control(r.name, action)
-            }.onSuccess { res -> if (res is McpResult.Refused) session.refused(res) }
-            session.io { a.playbackStatus(r.name) }.onSuccess { state.status = it }
-            state.busy = false
-        }
-    }
+    fun control(action: String) = controlRenderer(session, state, action, scope)
 
     Column(
         modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp),
@@ -138,39 +128,56 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
                 }
             }
         }
-        val r = state.selected
-        if (r != null) {
-            Panel(r.name) {
-                if (r.subtitle.isNotBlank()) {
-                    Text(
-                        r.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Tokens.textMuted,
-                    )
-                }
-                when (val s = state.status) {
-                    null -> Skeleton(Modifier.fillMaxWidth().height(60.dp))
-
-                    is McpResult.Refused -> Notice("playback_status: ${s.message}", tone = Tokens.danger)
-
-                    is McpResult.Ok -> {
-                        val st = s.value
-                        if (st ==
-                            null
-                        ) {
-                            Text("No status reported.", color = Tokens.textMuted)
-                        } else {
-                            Transport(st, state.busy, ::control)
-                        }
-                    }
-                }
-            }
-        }
+        state.selected?.let { r -> RendererPanel(r, state, ::control) }
         Notice(
             "Playback position and history are the device's own report, live. heyarr keeps no play history this client can read.",
             icon = Icons.Rounded.Cast,
             tone = Tokens.slate,
         )
+    }
+}
+
+/** The selected renderer: what it says it is doing, and the transport to drive it. */
+@Composable
+private fun RendererPanel(r: Renderer, state: NowPlayingState, control: (String) -> Unit) {
+    Panel(r.name) {
+        if (r.subtitle.isNotBlank()) {
+            Text(
+                r.subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
+            )
+        }
+        when (val s = state.status) {
+            null -> Skeleton(Modifier.fillMaxWidth().height(60.dp))
+
+            is McpResult.Refused -> Notice("playback_status: ${s.message}", tone = Tokens.danger)
+
+            is McpResult.Ok -> {
+                val st = s.value
+                if (st ==
+                    null
+                ) {
+                    Text("No status reported.", color = Tokens.textMuted)
+                } else {
+                    Transport(st, state.busy, control)
+                }
+            }
+        }
+    }
+}
+
+/** Send a transport action to the selected renderer, then read its status back. */
+private fun controlRenderer(session: AppSession, state: NowPlayingState, action: String, scope: CoroutineScope) {
+    val r = state.selected ?: return
+    val a = session.api ?: return
+    scope.launch {
+        state.busy = true
+        session.io {
+            a.control(r.name, action)
+        }.onSuccess { res -> if (res is McpResult.Refused) session.refused(res) }
+        session.io { a.playbackStatus(r.name) }.onSuccess { state.status = it }
+        state.busy = false
     }
 }
 
