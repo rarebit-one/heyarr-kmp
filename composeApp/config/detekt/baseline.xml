@@ -5,8 +5,8 @@
     <ID>ComplexCondition:App.kt$!playback.onPlayerScreen || playback.popout || want != null || showConnection || showSignIn</ID>
     <ID>ComplexCondition:App.kt$e.id != java.awt.event.KeyEvent.KEY_PRESSED || e.isControlDown || e.isMetaDown || e.isAltDown</ID>
     <ID>ComplexCondition:App.kt$playback.active &amp;&amp; current !is Route.Player &amp;&amp; !fullscreen &amp;&amp; !audioDock</ID>
-    <ID>ComplexCondition:DetailScreen.kt$asset == null &amp;&amp; type != MediaType.SERIES &amp;&amp; type != MediaType.FEED &amp;&amp; type != MediaType.PODCAST</ID>
-    <ID>ComplexCondition:DetailScreen.kt$status == LibraryStatus.NOT_TRACKED &amp;&amp; canWant &amp;&amp; (asset != null || type == MediaType.SERIES)</ID>
+    <ID>ComplexCondition:DetailHero.kt$asset == null &amp;&amp; type != MediaType.SERIES &amp;&amp; type != MediaType.FEED &amp;&amp; type != MediaType.PODCAST</ID>
+    <ID>ComplexCondition:DetailHero.kt$status == LibraryStatus.NOT_TRACKED &amp;&amp; canWant &amp;&amp; (asset != null || type == MediaType.SERIES)</ID>
     <ID>ComplexCondition:SearchShortcut.kt$!enabled || event.id != KeyEvent.KEY_PRESSED || event.keyCode != KeyEvent.VK_F || !event.isControlDown || event.isMetaDown || event.isAltDown || event.isShiftDown</ID>
     <ID>CyclomaticComplexMethod:App.kt$@Composable fun App( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
     <ID>CyclomaticComplexMethod:App.kt$@Composable private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
@@ -14,14 +14,8 @@
     <ID>CyclomaticComplexMethod:Cards.kt$@Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The client's mode; a guest ([ClientMode.GUEST]) never sees the Want affordance. */ mode: ClientMode = ClientMode.ENROLLED, width: Dp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, )</ID>
     <ID>CyclomaticComplexMethod:ConnectionSheet.kt$@Composable fun ConnectionSheet(session: AppSession, state: ConnectionState, onClose: () -&gt; Unit, onSettings: () -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DaemonConfig.kt$DaemonConfig.Companion$fun resolve(args: Array&lt;String&gt;, env: (String) -&gt; String? = System::getenv): DaemonConfig</ID>
-    <ID>CyclomaticComplexMethod:DetailCurate.kt$@Composable internal fun CurateTab( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, reload: () -&gt; Unit, )</ID>
-    <ID>CyclomaticComplexMethod:DetailCurate.kt$@Composable private fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable fun DetailScreen( session: AppSession, route: Route.Detail, state: DetailState, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
-    <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun DetailHero( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
-    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun ArchiveBlock(session: AppSession, state: DetailState)</ID>
     <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun SeasonsBlock( session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, )</ID>
-    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable private fun EpisodeRow( session: AppSession, detail: WorkDetail, ep: Episode, state: DetailState, ext: ExternalEpisode? = null, )</ID>
-    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable private fun WantSeasonsPanel(session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;)</ID>
     <ID>CyclomaticComplexMethod:DownloadsScreen.kt$@Composable fun DownloadsScreen( session: AppSession, state: DownloadsState, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>CyclomaticComplexMethod:EmbeddedPlayer.kt$EmbeddedPlayer$fun start( embedded: Boolean, url: String, token: String, title: String, knownDurationSec: Double? = null, streamBaseUrl: String? = null, ): String?</ID>
     <ID>CyclomaticComplexMethod:EmbeddedPlayer.kt$PlayerEvents$private fun onProperty(s: PlayerState, name: String, obj: String, offset: Double): PlayerState</ID>
@@ -53,22 +47,55 @@
     <ID>FunctionNaming:Cards.kt$@Composable fun MediaCardSkeleton(aspect: CardAspect = CardAspect.POSTER, width: Dp = Tokens.posterWidth)</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun MediaRow( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, selected: Boolean = false, trailing: (@Composable () -&gt; Unit)? = null, )</ID>
     <ID>FunctionNaming:ConnectionSheet.kt$@Composable fun ConnectionSheet(session: AppSession, state: ConnectionState, onClose: () -&gt; Unit, onSettings: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable internal fun AllFilesSection(assets: List&lt;Track&gt;)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable internal fun CandidatesSection( session: AppSession, wants: List&lt;DesiredItem&gt;, state: DetailState, scope: CoroutineScope, reload: () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable internal fun HealthSection(session: AppSession, detail: WorkDetail, state: DetailState, scope: CoroutineScope)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable internal fun IdentifiersSection(detail: WorkDetail, type: MediaType, state: DetailState)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable internal fun VariantsSection(state: DetailState)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable private fun CandidateCell(cand: Candidate, c: Int, acquireEnabled: Boolean, onAcquire: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable private fun ReplicaTable(replicas: McpResult&lt;List&lt;Replica&gt;&gt;?, hash: String?)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable private fun SearchIndexersButton(session: AppSession, wants: List&lt;DesiredItem&gt;, scope: CoroutineScope)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable private fun VerifyBytesButton(session: AppSession, hash: String, scope: CoroutineScope)</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable internal fun HeldFilesSection(wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable internal fun WantsSection( session: AppSession, wants: List&lt;DesiredItem&gt;, state: DetailState, scope: CoroutineScope, reload: () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable private fun HeldFileCell(t: Track, v: AssetVerdict?, c: Int)</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable private fun HeldVerdictCell(v: AssetVerdict?)</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable private fun MonitorChip(session: AppSession, w: DesiredItem, scope: CoroutineScope)</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable private fun WantCell(session: AppSession, w: DesiredItem, sat: Satisfaction?, c: Int, scope: CoroutineScope)</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable private fun WantContentCell(w: DesiredItem, sat: Satisfaction?)</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable private fun WantStateCell(w: DesiredItem)</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable fun Field( label: String, value: String, modifier: Modifier = Modifier, placeholder: String? = null, secret: Boolean = false, onChange: (String) -&gt; Unit, )</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable internal fun CurateTab( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, reload: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable private fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
+    <ID>FunctionNaming:DetailCurate.kt$@Composable private fun ExplainResult(result: McpResult&lt;Explanation?&gt;?)</ID>
+    <ID>FunctionNaming:DetailCurate.kt$@Composable private fun ProfileChips(names: List&lt;String&gt;, selected: String, onPick: (String) -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;)</ID>
+    <ID>FunctionNaming:DetailEpisodes.kt$@Composable internal fun EpisodeRow( session: AppSession, detail: WorkDetail, ep: Episode, state: DetailState, ext: ExternalEpisode? = null, )</ID>
+    <ID>FunctionNaming:DetailEpisodes.kt$@Composable internal fun MissingEpisodeRow( session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, state: DetailState, ext: ExternalEpisode? = null, )</ID>
+    <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun EpisodeActions(label: String, playEnabled: Boolean, onCast: () -&gt; Unit, onPlay: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun EpisodeFileFacts(ep: Episode)</ID>
+    <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun EpisodeInfo(ep: Episode, ext: ExternalEpisode?, continueLabel: String?, modifier: Modifier)</ID>
+    <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun EpisodeThumb(art: ImageBitmap?, playOverlay: Boolean, progress: Float?)</ID>
+    <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun LookForEpisodeButton(session: AppSession, season: Season, wants: List&lt;DesiredItem&gt;, scope: CoroutineScope)</ID>
+    <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun MissingEpisodeThumb(art: ImageBitmap?)</ID>
+    <ID>FunctionNaming:DetailHero.kt$@Composable internal fun DetailHero( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
+    <ID>FunctionNaming:DetailHero.kt$@Composable private fun CastPicker(session: AppSession, state: DetailState)</ID>
+    <ID>FunctionNaming:DetailHero.kt$@Composable private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, wants: List&lt;DesiredItem&gt;, onWant: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailHero.kt$@Composable private fun HeroSecondaryActions(actions: HeroActions, first: Episode?, onWant: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailHero.kt$@Composable private fun NothingHeldAction(actions: HeroActions, wants: List&lt;DesiredItem&gt;, onWant: () -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable fun DetailScreen( session: AppSession, route: Route.Detail, state: DetailState, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun CastPicker(session: AppSession, state: DetailState)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun DetailHero( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
+    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun DetailTopBar(from: String, onBack: () -&gt; Unit, state: DetailState, onRemove: (() -&gt; Unit)?)</ID>
+    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun LoadDetailExtras( session: AppSession, state: DetailState, workId: String, detail: WorkDetail?, type: MediaType, )</ID>
+    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun RemoveWorkDialog( session: AppSession, route: Route.Detail, open: Boolean, onOpenChange: (Boolean) -&gt; Unit, onBack: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun ArchiveBlock(session: AppSession, state: DetailState)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun FileBlock(session: AppSession, detail: WorkDetail, state: DetailState)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun SeasonsBlock( session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, )</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun SynopsisBlock(detail: WorkDetail, type: MediaType, seasons: List&lt;Season&gt;, state: DetailState)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun TracksBlock(session: AppSession, detail: WorkDetail, state: DetailState)</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun EpisodeRow( session: AppSession, detail: WorkDetail, ep: Episode, state: DetailState, ext: ExternalEpisode? = null, )</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun MissingEpisodeRow( session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, state: DetailState, ext: ExternalEpisode? = null, )</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun WantSeasonsPanel(session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun ArchiveItemRow(item: FollowedItem, onOpen: (() -&gt; Unit)?)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun SeasonChips(all: List&lt;Season&gt;, selected: Season, ext: List&lt;ExternalEpisode&gt;, onSelect: (Int?) -&gt; Unit)</ID>
+    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun TrackRow(i: Int, t: Track, onPlay: () -&gt; Unit)</ID>
     <ID>FunctionNaming:DiscoverScreen.kt$@Composable fun DiscoverScreen(session: AppSession, state: DiscoverState, onWantTitle: WantByTitle, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:DiscoverScreen.kt$@Composable fun DiscoveryResults( session: AppSession, query: String, result: McpResult&lt;List&lt;DiscoveryHit&gt;&gt;?, busy: Boolean, onWantTitle: WantByTitle, )</ID>
     <ID>FunctionNaming:DownloadsScreen.kt$@Composable fun DownloadsScreen( session: AppSession, state: DownloadsState, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
@@ -134,22 +161,15 @@
     <ID>FunctionNaming:SideNav.kt$@Composable private fun RailItem(item: NavItem, active: Boolean, accent: Color, accentEnd: Color, onClick: () -&gt; Unit)</ID>
     <ID>FunctionNaming:VideoSurface.kt$@Composable fun PlaybackHost(session: AppSession)</ID>
     <ID>FunctionNaming:VideoSurface.kt$@Composable fun VideoSurface(player: one.rarebit.heyarr.desktop.playback.EmbeddedPlayer, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:WantSeasonsPanel.kt$@Composable internal fun WantSeasonsPanel( session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, )</ID>
+    <ID>FunctionNaming:WantSeasonsPanel.kt$@Composable private fun WantSeasonButtons( session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, profile: String, )</ID>
+    <ID>FunctionNaming:WantSeasonsPanel.kt$@Composable private fun WantSeriesButton(session: AppSession, detail: WorkDetail, following: Boolean, profile: String)</ID>
     <ID>LongMethod:App.kt$@Composable fun App( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
     <ID>LongMethod:App.kt$@Composable private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
     <ID>LongMethod:AudioDock.kt$@Composable fun AudioDock(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>LongMethod:Cards.kt$@Composable fun Hero( title: String, type: MediaType, modifier: Modifier = Modifier, kicker: String? = null, meta: List&lt;String?&gt; = emptyList(), description: String? = null, artwork: ImageBitmap? = null, status: LibraryStatus? = null, primary: (@Composable () -&gt; Unit)? = null, secondary: (@Composable () -&gt; Unit)? = null, height: Dp = 380.dp, )</ID>
     <ID>LongMethod:Cards.kt$@Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The client's mode; a guest ([ClientMode.GUEST]) never sees the Want affordance. */ mode: ClientMode = ClientMode.ENROLLED, width: Dp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, )</ID>
     <ID>LongMethod:ConnectionSheet.kt$@Composable fun ConnectionSheet(session: AppSession, state: ConnectionState, onClose: () -&gt; Unit, onSettings: () -&gt; Unit)</ID>
-    <ID>LongMethod:DetailCurate.kt$@Composable internal fun CurateTab( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, reload: () -&gt; Unit, )</ID>
-    <ID>LongMethod:DetailCurate.kt$@Composable private fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
-    <ID>LongMethod:DetailScreen.kt$@Composable fun DetailScreen( session: AppSession, route: Route.Detail, state: DetailState, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
-    <ID>LongMethod:DetailScreen.kt$@Composable private fun DetailHero( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
-    <ID>LongMethod:DetailWatch.kt$@Composable internal fun ArchiveBlock(session: AppSession, state: DetailState)</ID>
-    <ID>LongMethod:DetailWatch.kt$@Composable internal fun SeasonsBlock( session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, )</ID>
-    <ID>LongMethod:DetailWatch.kt$@Composable internal fun TracksBlock(session: AppSession, detail: WorkDetail, state: DetailState)</ID>
-    <ID>LongMethod:DetailWatch.kt$@Composable private fun EpisodeRow( session: AppSession, detail: WorkDetail, ep: Episode, state: DetailState, ext: ExternalEpisode? = null, )</ID>
-    <ID>LongMethod:DetailWatch.kt$@Composable private fun MissingEpisodeRow( session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, state: DetailState, ext: ExternalEpisode? = null, )</ID>
-    <ID>LongMethod:DetailWatch.kt$@Composable private fun WantSeasonsPanel(session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;)</ID>
     <ID>LongMethod:DownloadsScreen.kt$@Composable fun DownloadsScreen( session: AppSession, state: DownloadsState, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>LongMethod:EmbeddedPlayer.kt$EmbeddedPlayer$fun start( embedded: Boolean, url: String, token: String, title: String, knownDurationSec: Double? = null, streamBaseUrl: String? = null, ): String?</ID>
     <ID>LongMethod:EnrolPanel.kt$@Composable fun EnrolPanel(session: AppSession)</ID>
@@ -180,10 +200,10 @@
     <ID>LongParameterList:Cover.kt$( session: AppSession, type: MediaType, title: String, nodeArtPath: String?, year: Int? = null, creator: String? = null, feedRef: String? = null, )</ID>
     <ID>LongParameterList:DetailCurate.kt$( label: String, value: String, modifier: Modifier = Modifier, placeholder: String? = null, secret: Boolean = false, onChange: (String) -&gt; Unit, )</ID>
     <ID>LongParameterList:DetailCurate.kt$( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, reload: () -&gt; Unit, )</ID>
-    <ID>LongParameterList:DetailScreen.kt$( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
+    <ID>LongParameterList:DetailEpisodes.kt$( session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, state: DetailState, ext: ExternalEpisode? = null, )</ID>
+    <ID>LongParameterList:DetailHero.kt$( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
     <ID>LongParameterList:DetailScreen.kt$( session: AppSession, route: Route.Detail, state: DetailState, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>LongParameterList:DetailScreen.kt$( session: AppSession, state: DetailState, blobHash: String, label: String, scope: kotlinx.coroutines.CoroutineScope, assetId: String? = null, type: MediaType = MediaType.MOVIE, workTitle: String? = null, )</ID>
-    <ID>LongParameterList:DetailWatch.kt$( session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, state: DetailState, ext: ExternalEpisode? = null, )</ID>
     <ID>LongParameterList:DevicePairingSteps.kt$DevicePairingSteps$( private val keyring: DesktopDeviceKeyring, private val nodeTransport: HttpTransport, private val baseUrl: () -&gt; String, private val deviceName: () -&gt; String, private val credential: () -&gt; Credential?, private val clockMillis: () -&gt; Long = System::currentTimeMillis, private val relayTransport: VoidbindHttpTransport = VoidbindJdkHttpTransport(), )</ID>
     <ID>LongParameterList:EmbeddedPlayer.kt$EmbeddedPlayer$( embedded: Boolean, url: String, token: String, title: String, knownDurationSec: Double? = null, streamBaseUrl: String? = null, )</ID>
     <ID>LongParameterList:Fixtures.kt$Fixtures$(id: String, type: String, title: String, year: Int?, art: Boolean = false, attrs: String = "{}")</ID>
@@ -244,6 +264,19 @@
     <ID>MagicNumber:ConnectionSheet.kt$3600</ID>
     <ID>MagicNumber:ConnectionSheet.kt$5</ID>
     <ID>MagicNumber:ConnectionSheet.kt$60</ID>
+    <ID>MagicNumber:CurateSections.kt$20</ID>
+    <ID>MagicNumber:CurateSections.kt$3</ID>
+    <ID>MagicNumber:CurateSections.kt$3f</ID>
+    <ID>MagicNumber:CurateSections.kt$4</ID>
+    <ID>MagicNumber:CurateWants.kt$1.2f</ID>
+    <ID>MagicNumber:CurateWants.kt$1.4f</ID>
+    <ID>MagicNumber:CurateWants.kt$1.6f</ID>
+    <ID>MagicNumber:CurateWants.kt$100</ID>
+    <ID>MagicNumber:CurateWants.kt$3</ID>
+    <ID>MagicNumber:CurateWants.kt$3f</ID>
+    <ID>MagicNumber:CurateWants.kt$4</ID>
+    <ID>MagicNumber:CurateWants.kt$5</ID>
+    <ID>MagicNumber:CurateWants.kt$6</ID>
     <ID>MagicNumber:DesktopDeviceKeyring.kt$DesktopDeviceKeyring$1000</ID>
     <ID>MagicNumber:DesktopSecretStore.kt$DesktopSecretStore$0xFF</ID>
     <ID>MagicNumber:DesktopSecretStore.kt$DesktopSecretStore$16</ID>
@@ -251,23 +284,14 @@
     <ID>MagicNumber:DesktopSecretStore.kt$DesktopSecretStore$3</ID>
     <ID>MagicNumber:DesktopSecretStore.kt$DesktopSecretStore$4</ID>
     <ID>MagicNumber:DesktopSecretStore.kt$DesktopSecretStore$8</ID>
-    <ID>MagicNumber:DetailCurate.kt$1.2f</ID>
-    <ID>MagicNumber:DetailCurate.kt$1.4f</ID>
-    <ID>MagicNumber:DetailCurate.kt$1.6f</ID>
-    <ID>MagicNumber:DetailCurate.kt$100</ID>
-    <ID>MagicNumber:DetailCurate.kt$20</ID>
-    <ID>MagicNumber:DetailCurate.kt$3</ID>
-    <ID>MagicNumber:DetailCurate.kt$3f</ID>
-    <ID>MagicNumber:DetailCurate.kt$4</ID>
-    <ID>MagicNumber:DetailCurate.kt$5</ID>
-    <ID>MagicNumber:DetailCurate.kt$6</ID>
+    <ID>MagicNumber:DetailEpisodes.kt$0.45f</ID>
+    <ID>MagicNumber:DetailEpisodes.kt$10</ID>
+    <ID>MagicNumber:DetailEpisodes.kt$16f</ID>
+    <ID>MagicNumber:DetailEpisodes.kt$9f</ID>
     <ID>MagicNumber:DetailScreen.kt$0.22f</ID>
-    <ID>MagicNumber:DetailWatch.kt$0.45f</ID>
     <ID>MagicNumber:DetailWatch.kt$10</ID>
-    <ID>MagicNumber:DetailWatch.kt$16f</ID>
     <ID>MagicNumber:DetailWatch.kt$4</ID>
     <ID>MagicNumber:DetailWatch.kt$5</ID>
-    <ID>MagicNumber:DetailWatch.kt$9f</ID>
     <ID>MagicNumber:DevicePairingSteps.kt$DevicePairingSteps$1000</ID>
     <ID>MagicNumber:DownloadsScreen.kt$1.4f</ID>
     <ID>MagicNumber:DownloadsScreen.kt$10_000</ID>
@@ -443,26 +467,21 @@
     <ID>MaxLineLength:ConnectionSheet.kt$"${peer.name}${if (peer.isSelf) " (this node)" else ""} · ${peer.site ?: ""} · ${peer.mode ?: ""}"</ID>
     <ID>MaxLineLength:ConnectionSheet.kt$if (s.canWrite) "yes — want, follow, acquire will succeed" else "no — this token is read-only; writes will be refused"</ID>
     <ID>MaxLineLength:ConnectionSheet.kt$if (session.config.bearerToken.isBlank()) "none (guest)" else "bearer, ${session.config.bearerToken.trim().length} chars, in ~/.config/heyarr-desktop/config.json (0600)"</ID>
+    <ID>MaxLineLength:CurateSections.kt$Section</ID>
+    <ID>MaxLineLength:CurateSections.kt$subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — hidden from listings, folded here"</ID>
+    <ID>MaxLineLength:CurateWants.kt$Section</ID>
+    <ID>MaxLineLength:CurateWants.kt$subtitle = "${held.size} playable file${if (held.size == 1) "" else "s"} · ${verdicts.size} judged against a profile"</ID>
     <ID>MaxLineLength:DetailCurate.kt$"Describe a release and heyarr explains, rule by rule, whether the profile would accept it. Leave a field blank when you do not know — a blank reads as undetermined, a guess reads as a claim."</ID>
     <ID>MaxLineLength:DetailCurate.kt$"heyarr's tool surface has no caption or artwork search yet: sidecars arrive with a release or a scan. Asking the indexers again (Releases) is the only fetch this node can queue."</ID>
     <ID>MaxLineLength:DetailCurate.kt$/** "Would this be accepted?" — describe a release, get every rule back. Absent fields stay absent so they read as undetermined. */</ID>
-    <ID>MaxLineLength:DetailCurate.kt$Section</ID>
-    <ID>MaxLineLength:DetailCurate.kt$emptyText = "No replica report — on a single-node fabric there is nowhere for bytes to converge to."</ID>
-    <ID>MaxLineLength:DetailCurate.kt$subtitle = "${held.size} playable file${if (held.size == 1) "" else "s"} · ${verdicts.size} judged against a profile"</ID>
-    <ID>MaxLineLength:DetailCurate.kt$subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — hidden from listings, folded here"</ID>
-    <ID>MaxLineLength:DetailScreen.kt$"An indexer can take thirty seconds to answer; open Curate → Releases in a moment."</ID>
-    <ID>MaxLineLength:DetailScreen.kt$"No renderers found. A device that is switched off will not be listed — that is not the same as it not existing."</ID>
-    <ID>MaxLineLength:DetailScreen.kt$"Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Releases shows what the indexers found."}"</ID>
+    <ID>MaxLineLength:DetailEpisodes.kt$if (wants.isEmpty()) "Want this series and heyarr will look for it." else "Wanted — heyarr searches on its schedule; ask now to jump the queue."</ID>
+    <ID>MaxLineLength:DetailHero.kt$"No renderers found. A device that is switched off will not be listed — that is not the same as it not existing."</ID>
+    <ID>MaxLineLength:DetailHero.kt$"Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Releases shows what the indexers found."}"</ID>
     <ID>MaxLineLength:DetailScreen.kt$"Stops following this title and removes its catalogue entry and download requests. Files are not deleted immediately; unused managed data may be reclaimed later."</ID>
     <ID>MaxLineLength:DetailScreen.kt$one.rarebit.heyarr.ui.components</ID>
-    <ID>MaxLineLength:DetailWatch.kt$"Measured against $profile; heyarr will look for what this season is missing."</ID>
     <ID>MaxLineLength:DetailWatch.kt$"No episode files are held for this series yet.${if (wants.isNotEmpty()) " heyarr is looking — Curate → Releases shows what it found." else ""}"</ID>
     <ID>MaxLineLength:DetailWatch.kt$"No synopsis — the node has no metadata provider and no public source knew this title. Titles, seasons and episodes below come from the files themselves."</ID>
-    <ID>MaxLineLength:DetailWatch.kt$"Seasons the library hasn't seen yet arrive when you want the whole series below — wanting a series follows it."</ID>
     <ID>MaxLineLength:DetailWatch.kt$"Synopsis${if (ext.imageUrl != null &amp;&amp; detail.artworkPath == null) " and cover" else ""} via ${ext.source} — not from your library. The node has no metadata provider (TVDB, ADR-0058)."</ID>
-    <ID>MaxLineLength:DetailWatch.kt$"Wanting the whole series follows it: heyarr resolves its metadata id automatically (no TVDB URL needed) and backfills every aired episode plus each new one. To follow a source that has no work here, use Settings → Followed sources."</ID>
-    <ID>MaxLineLength:DetailWatch.kt$.</ID>
-    <ID>MaxLineLength:DetailWatch.kt$if (wants.isEmpty()) "Want this series and heyarr will look for it." else "Wanted — heyarr searches on its schedule; ask now to jump the queue."</ID>
     <ID>MaxLineLength:DiscoverScreen.kt$"This node reports no metadata provider — ${state.providers?.size ?: 0} provider(s), none able to discover. Discovery will answer with a refusal; Search still finds everything catalogued, and Missing lets you Want a title by name."</ID>
     <ID>MaxLineLength:DiscoverScreen.kt$detail = "Discovery needs a metadata provider configured on the node (ADR-0058). Wanting by title still works."</ID>
     <ID>MaxLineLength:DiscoverScreen.kt$detail = "The node could not be reached for this call. The connection state at the foot of the sidebar has the details."</ID>
@@ -531,6 +550,8 @@
     <ID>MaxLineLength:VaultSyncDaemon.kt$VaultSyncDaemon.Resolved$/** What custody resolution produces: a ready engine, its folder watch, this device, and whether the watch is real. */</ID>
     <ID>MaxLineLength:VaultSyncEngine.kt$VaultSyncEngine$blobs.putBlob(baseUrl, manifestHash, manifestBlob, credential)</ID>
     <ID>MaxLineLength:VaultSyncEngine.kt$VaultSyncEngine$blobs.putBlobFile(baseUrl, manifest.content, tmp, credential)</ID>
+    <ID>MaxLineLength:WantSeasonsPanel.kt$"Seasons the library hasn't seen yet arrive when you want the whole series below — wanting a series follows it."</ID>
+    <ID>MaxLineLength:WantSeasonsPanel.kt$"Wanting the whole series follows it: heyarr resolves its metadata id automatically (no TVDB URL needed) and backfills every aired episode plus each new one. To follow a source that has no work here, use Settings → Followed sources."</ID>
     <ID>MayBeConst:Fixtures.kt$Fixtures$val explain = """{"quality_profile":"living-room","selected":"r1","ranked":[{"id":"r1","title":"Sintel 2010 1080p BluRay x264","accepted":true,"score":0,"terminal":false,"reasons":[ {"rule":"resolution.gte","section":"accept","result":"pass","detail":"resolution 1080, which is at least 1080"}, {"rule":"source.nin","section":"accept","result":"pass","detail":"source bluray, which is outside [cam, telesync]"}, {"rule":"video_codec.eq","section":"prefer","result":"miss","detail":"video_codec x264, which is not equal to hevc"}, {"rule":"hdr.eq","section":"prefer","result":"undetermined","detail":"the provider could not determine hdr"}, {"rule":"resolution.gte","section":"terminal","result":"miss","detail":"resolution 1080, which is not at least 2160"}]}, {"id":"r2","title":"Sintel 2010 CAM","accepted":false,"score":0,"terminal":false,"reasons":[ {"rule":"resolution.gte","section":"accept","result":"fail","detail":"resolution 480, which is not at least 1080"}, {"rule":"source.nin","section":"accept","result":"fail","detail":"source cam, which is not outside [cam, telesync]"}], "rejected_by":[{"rule":"resolution.gte","section":"accept","result":"fail","detail":"resolution 480, which is not at least 1080"},{"rule":"source.nin","section":"accept","result":"fail","detail":"source cam, which is not outside [cam, telesync]"}]}]}"""</ID>
     <ID>MayBeConst:Fixtures.kt$Fixtures$val externalIds = """{"external_ids":[{"source":"tvdb","value":"341164"},{"source":"imdb","value":"tt4236770"}]}"""</ID>
     <ID>MayBeConst:Fixtures.kt$Fixtures$val followed = """{"followed_sources":[ {"id":"fs-1","work_id":"w-cloudflare","title":"Cloudflare Blog","type":"rss_feed","feed_ref":"https://blog.cloudflare.com/rss","quality_profile_id":"qp-everyday","monitor":true,"backfill":"from_now","items_known":12,"items_archived":12,"health":"ok"}, {"id":"fs-2","work_id":"w-atp","title":"Accidental Tech Podcast","type":"podcast","feed_ref":"https://atp.fm/rss","quality_profile_id":"qp-everyday","monitor":true,"backfill":"from_now","items_known":640,"items_archived":3,"health":"ok"}, {"id":"fs-3","work_id":"w-severance","title":"Severance","type":"tv_series","feed_ref":"tvdb:371980","quality_profile_id":"qp-living","monitor":true,"backfill":"full","items_known":19,"items_archived":19,"health":"ok"} ]}"""</ID>
@@ -598,11 +619,11 @@
     <ID>TooManyFunctions:VaultSpaceClient.kt$VaultSpaceClient : VaultSpaceVaultKeys</ID>
     <ID>UnusedParameter:DetailCurate.kt$session: AppSession</ID>
     <ID>UnusedParameter:DetailCurate.kt$wants: List&lt;DesiredItem&gt;</ID>
+    <ID>UnusedParameter:DetailEpisodes.kt$state: DetailState</ID>
     <ID>UnusedParameter:DetailScreen.kt$scope: kotlinx.coroutines.CoroutineScope</ID>
     <ID>UnusedParameter:DetailScreen.kt$session: AppSession</ID>
     <ID>UnusedParameter:DetailWatch.kt$seasons: List&lt;Season&gt;</ID>
     <ID>UnusedParameter:DetailWatch.kt$session: AppSession</ID>
-    <ID>UnusedParameter:DetailWatch.kt$state: DetailState</ID>
     <ID>UnusedParameter:DetailWatch.kt$type: MediaType</ID>
     <ID>UnusedParameter:HomeScreen.kt$session: AppSession</ID>
     <ID>UnusedParameter:PlayerScreen.kt$onOpen: (Route) -&gt; Unit</ID>
