@@ -216,10 +216,7 @@ class VaultSyncDaemon(
  * not carry (it has no per-pass duration). Wrapping is transparent: it delegates and re-throws (so a
  * failing pass never records a bogus success), and the controller keeps owning error state.
  */
-private class RecordingSync(
-    private val delegate: VaultSync,
-    private val clock: () -> Long,
-) : VaultSync {
+private class RecordingSync(private val delegate: VaultSync, private val clock: () -> Long) : VaultSync {
     @Volatile var lastStats: VaultSyncEngine.Stats? = null
 
     @Volatile var lastMs: Long = 0

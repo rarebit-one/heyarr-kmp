@@ -31,10 +31,7 @@ import one.rarebit.voidbind.crypto.MiniJson
  * NOT `POST /api/v1/devices`: that route registers a *playback capability profile*
  * keyed by a client-chosen string, explicitly not an identity.
  */
-class EnrolClient(
-    private val http: HttpTransport,
-    private val baseUrl: String,
-) {
+class EnrolClient(private val http: HttpTransport, private val baseUrl: String) {
     sealed interface Outcome {
         /**
          * The node accepted the admission (self-enrol, or the admin route succeeded).
@@ -64,13 +61,18 @@ class EnrolClient(
         credential: Credential?,
         ops: List<String> = emptyList(),
     ): Outcome {
-        var self = runCatching { http.post(selfEnrolUrl(baseUrl), selfBody(certToken, proof, name, ops), "application/json") }
+        var self = runCatching {
+            http.post(selfEnrolUrl(baseUrl), selfBody(certToken, proof, name, ops), "application/json")
+        }
             .getOrElse { return Outcome.Failed("self-enrol: ${it.message}") }
         if (self.status == 400 && ops.isNotEmpty()) {
             // A node that does not know `ops` yet refuses the field outright; the
             // admission itself may still be a plain genesis add it can judge alone.
-            self = runCatching { http.post(selfEnrolUrl(baseUrl), selfBody(certToken, proof, name, emptyList()), "application/json") }
-                .getOrElse { return Outcome.Failed("self-enrol: ${it.message}") }
+            self =
+                runCatching {
+                    http.post(selfEnrolUrl(baseUrl), selfBody(certToken, proof, name, emptyList()), "application/json")
+                }
+                    .getOrElse { return Outcome.Failed("self-enrol: ${it.message}") }
         }
         when (self.status) {
             // The enrolment response carries the identity's recovery encryption PUBLIC key

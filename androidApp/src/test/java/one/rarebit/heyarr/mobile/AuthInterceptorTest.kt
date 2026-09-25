@@ -28,7 +28,13 @@ class AuthInterceptorTest {
         assertFalse(AuthInterceptor.shouldStamp("https://node.example:8888/api/v1/works", base, hasAuth = false))
         assertFalse(AuthInterceptor.shouldStamp("https://node.example/api/v1/works", base, hasAuth = false))
         // Default ports are normalised: an explicit :443 IS https://host.
-        assertTrue(AuthInterceptor.shouldStamp("https://node.example:443/api/v1/works", "https://node.example", hasAuth = false))
+        assertTrue(
+            AuthInterceptor.shouldStamp(
+                "https://node.example:443/api/v1/works",
+                "https://node.example",
+                hasAuth = false,
+            ),
+        )
     }
 
     @Test fun schemeMustMatch() {

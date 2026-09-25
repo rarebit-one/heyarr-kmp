@@ -60,7 +60,10 @@ class AppGraph(app: Application, scope: CoroutineScope) {
         .build()
 
     /** A bare client for the public metadata sources: no interceptor, so the node's credential never leaves for another host. */
-    private val bareHttp: OkHttpClient = OkHttpClient.Builder().callTimeout(20, TimeUnit.SECONDS).followRedirects(true).build()
+    private val bareHttp: OkHttpClient = OkHttpClient.Builder().callTimeout(
+        20,
+        TimeUnit.SECONDS,
+    ).followRedirects(true).build()
 
     /** The raw transport over the shared client; the ViewModel wraps it for Device auth. */
     val rawTransport: HttpTransport = OkHttpTransport(okHttp)
@@ -79,7 +82,9 @@ class AppGraph(app: Application, scope: CoroutineScope) {
 
     /** Cover art and synopses from keyless public sources, cached under the app's cache dir (Settings → Appearance turns it off). */
     val external: ExternalMetadata by lazy {
-        ExternalMetadata(File(app.cacheDir, "meta"), enabled = { settings.externalMetadata }, fetch = PhoneExternalMetadata.okHttpFetch(bareHttp))
+        ExternalMetadata(File(app.cacheDir, "meta"), enabled = {
+            settings.externalMetadata
+        }, fetch = PhoneExternalMetadata.okHttpFetch(bareHttp))
     }
 
     /** Recent search queries — kept on this phone only, and labelled so. */

@@ -19,7 +19,9 @@ object SessionInfoJson {
         return SessionInfo(
             kind = JsonScan.stringField(o, "kind") ?: "unknown",
             principalId = JsonScan.stringField(o, "principal_id"),
-            scopes = JsonScan.arrayOf(o, listOf("scopes"))?.let { one.rarebit.heyarr.core.net.JsonArrays.parseStrings(it) } ?: emptyList(),
+            scopes =
+            JsonScan.arrayOf(o, listOf("scopes"))?.let { one.rarebit.heyarr.core.net.JsonArrays.parseStrings(it) }
+                ?: emptyList(),
             canWrite = JsonScan.boolField(o, "can_write") ?: false,
             managementAuthorized = JsonScan.boolField(o, "management_authorized") ?: false,
             deviceKey = JsonScan.stringField(o, "device_key"),
@@ -28,34 +30,55 @@ object SessionInfoJson {
 }
 
 /** `GET /api/v1/providers` — each configured indexer / downloader / metadata provider and whether it answered. */
-data class ProviderInfo(val name: String, val capabilities: List<String>, val healthy: Boolean, val detail: String?, val version: String?, val checkedAt: String?)
+data class ProviderInfo(
+    val name: String,
+    val capabilities: List<String>,
+    val healthy: Boolean,
+    val detail: String?,
+    val version: String?,
+    val checkedAt: String?,
+)
 
 object ProviderJson {
-    fun list(body: String): List<ProviderInfo> = JsonScan.objectsOf(body, listOf("providers", "items")).mapNotNull { p ->
-        ProviderInfo(
-            name = JsonScan.stringField(p, "name") ?: return@mapNotNull null,
-            capabilities = JsonScan.arrayOf(p, listOf("capabilities"))?.let { one.rarebit.heyarr.core.net.JsonArrays.parseStrings(it) } ?: emptyList(),
-            healthy = JsonScan.boolField(p, "healthy") ?: false,
-            detail = JsonScan.stringField(p, "detail"),
-            version = JsonScan.stringField(p, "version"),
-            checkedAt = JsonScan.stringField(p, "checked_at"),
-        )
-    }
+    fun list(body: String): List<ProviderInfo> =
+        JsonScan.objectsOf(body, listOf("providers", "items")).mapNotNull { p ->
+            ProviderInfo(
+                name = JsonScan.stringField(p, "name") ?: return@mapNotNull null,
+                capabilities =
+                JsonScan.arrayOf(p, listOf("capabilities"))?.let {
+                    one.rarebit.heyarr.core.net.JsonArrays.parseStrings(it)
+                }
+                    ?: emptyList(),
+                healthy = JsonScan.boolField(p, "healthy") ?: false,
+                detail = JsonScan.stringField(p, "detail"),
+                version = JsonScan.stringField(p, "version"),
+                checkedAt = JsonScan.stringField(p, "checked_at"),
+            )
+        }
 }
 
 /** `GET /api/v1/capabilities` — what the node's workers have proved they can do. */
 data class Capabilities(val available: List<String>, val holders: List<CapabilityHolder>)
-data class CapabilityHolder(val peerName: String, val workerId: String, val capabilities: List<String>, val expiresAt: String?)
+data class CapabilityHolder(
+    val peerName: String,
+    val workerId: String,
+    val capabilities: List<String>,
+    val expiresAt: String?,
+)
 
 object CapabilitiesJson {
     fun parse(body: String): Capabilities {
         val root = JsonScan.rootObject(body) ?: return Capabilities(emptyList(), emptyList())
-        val available = JsonScan.arrayOf(root, listOf("available"))?.let { one.rarebit.heyarr.core.net.JsonArrays.parseStrings(it) } ?: emptyList()
+        val available =
+            JsonScan.arrayOf(root, listOf("available"))?.let { one.rarebit.heyarr.core.net.JsonArrays.parseStrings(it) }
+                ?: emptyList()
         val holders = JsonScan.objectsOf(root, listOf("holders")).map { h ->
             CapabilityHolder(
                 peerName = JsonScan.stringField(h, "peer_name") ?: "?",
                 workerId = JsonScan.stringField(h, "worker_id") ?: "?",
-                capabilities = JsonScan.objectsOf(h, listOf("capabilities")).mapNotNull { JsonScan.stringField(it, "name") },
+                capabilities = JsonScan.objectsOf(h, listOf("capabilities")).mapNotNull {
+                    JsonScan.stringField(it, "name")
+                },
                 expiresAt = JsonScan.stringField(h, "expires_at"),
             )
         }
@@ -64,7 +87,13 @@ object CapabilitiesJson {
 }
 
 /** `GET /api/v1/libraries` — the scanned roots. */
-data class LibraryInfo(val id: String, val name: String, val contentType: String?, val enabled: Boolean, val roots: List<String>)
+data class LibraryInfo(
+    val id: String,
+    val name: String,
+    val contentType: String?,
+    val enabled: Boolean,
+    val roots: List<String>,
+)
 
 object LibraryInfoJson {
     fun list(body: String): List<LibraryInfo> = JsonScan.objectsOf(body, listOf("items", "libraries")).mapNotNull { l ->
@@ -79,7 +108,14 @@ object LibraryInfoJson {
 }
 
 /** `GET /api/v1/jobs` — the queue's recent rows. */
-data class JobInfo(val id: String, val type: String, val state: String, val attempts: Int, val lastError: String?, val updatedAt: String?)
+data class JobInfo(
+    val id: String,
+    val type: String,
+    val state: String,
+    val attempts: Int,
+    val lastError: String?,
+    val updatedAt: String?,
+)
 
 object JobJson {
     fun list(body: String): List<JobInfo> = JsonScan.objectsOf(body, listOf("items", "jobs")).mapNotNull { j ->

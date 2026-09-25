@@ -17,12 +17,15 @@ internal class SubstringTransport(private val routes: List<Pair<String, HttpResp
     private fun answer(method: String, url: String, body: String?): HttpResponse {
         calls.add("$method $url")
         val path = url.substringAfter("/api/v1")
-        return routes.firstOrNull { (k, _) -> "$method $path".contains(k) }?.second ?: HttpResponse(404, """{"detail":"no such route in the fake"}""")
+        return routes.firstOrNull { (k, _) -> "$method $path".contains(k) }?.second
+            ?: HttpResponse(404, """{"detail":"no such route in the fake"}""")
     }
     override fun get(url: String, headers: Map<String, String>) = answer("GET", url, null)
-    override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = answer("POST", url, body)
+    override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+        answer("POST", url, body)
     override fun delete(url: String, headers: Map<String, String>) = answer("DELETE", url, null)
-    override fun patch(url: String, body: String?, contentType: String?, headers: Map<String, String>) = answer("PATCH", url, body)
+    override fun patch(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+        answer("PATCH", url, body)
 }
 
 /** An AudioPlayer whose state a test drives by hand. */
@@ -64,5 +67,10 @@ internal class FakeAudioPlayer : AudioPlayer {
 internal fun worksPage(vararg items: String, next: String? = null): String =
     """{"items":[${items.joinToString(",")}]${next?.let { ""","next_cursor":"$it"""" } ?: ""}}"""
 
-internal fun workJson(id: String, title: String, ct: String, created: String = "2026-08-01T00:00:00Z", extra: String = ""): String =
-    """{"id":"$id","title":"$title","content_type":"$ct","created_at":"$created"$extra}"""
+internal fun workJson(
+    id: String,
+    title: String,
+    ct: String,
+    created: String = "2026-08-01T00:00:00Z",
+    extra: String = "",
+): String = """{"id":"$id","title":"$title","content_type":"$ct","created_at":"$created"$extra}"""

@@ -152,8 +152,9 @@ internal class SpaceSession(
 
     // --- folds --------------------------------------------------------------------
 
-    private fun foldPlaylist(spaceId: String, key: ByteArray): Folded<Playlist> =
-        load(spaceId, key, { Playlist() }, { Playlist.fromSnapshot(it) }) { s, pt -> s.apply(PlaylistChange.decode(pt)) }
+    private fun foldPlaylist(spaceId: String, key: ByteArray): Folded<Playlist> = load(spaceId, key, {
+        Playlist()
+    }, { Playlist.fromSnapshot(it) }) { s, pt -> s.apply(PlaylistChange.decode(pt)) }
 
     private fun foldStarred(spaceId: String, key: ByteArray): Folded<StarSet> =
         load(spaceId, key, { StarSet() }, { StarSet.fromSnapshot(it) }) { s, pt -> s.apply(StarChange.decode(pt)) }
@@ -161,6 +162,7 @@ internal class SpaceSession(
     private fun foldHistory(spaceId: String, key: ByteArray): Folded<PlayLog> =
         load(spaceId, key, { PlayLog() }, { PlayLog.fromSnapshot(it) }) { s, pt -> s.apply(PlayChange.decode(pt)) }
 
-    private fun foldReading(spaceId: String, key: ByteArray): Folded<ReadingPositions> =
-        load(spaceId, key, { ReadingPositions() }, { ReadingPositions.fromSnapshot(it) }) { s, pt -> s.apply(PositionChange.decode(pt)) }
+    private fun foldReading(spaceId: String, key: ByteArray): Folded<ReadingPositions> = load(spaceId, key, {
+        ReadingPositions()
+    }, { ReadingPositions.fromSnapshot(it) }) { s, pt -> s.apply(PositionChange.decode(pt)) }
 }

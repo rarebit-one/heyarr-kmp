@@ -21,22 +21,38 @@ class ConsumptionClientTest {
 
     private val base = "https://h.example"
     private val cred = Credential.Session("tok")
-    private val caps = ClientCapabilities(containers = listOf("mp4"), video = listOf("h264"), audio = listOf("aac"), maxHeight = 1080)
+    private val caps =
+        ClientCapabilities(containers = listOf("mp4"), video = listOf("h264"), audio = listOf("aac"), maxHeight = 1080)
 
     @Test fun bodiesAreTheServersShapes() {
         assertEquals(
             """{"device_key":"ed25519:ab","name":"heyarr-mobile on Pong","platform":"android","profile":{"containers":["mp4"],"video_codecs":["h264"],"audio_codecs":["aac"],"max_width":0,"max_height":1080,"max_bitrate_bps":0,"supports_hdr":false}}""",
             ConsumptionClient.registerBody("ed25519:ab", "heyarr-mobile on Pong", caps),
         )
-        assertEquals("""{"device_key":"k","name":"n","platform":"android"}""", ConsumptionClient.registerBody("k", "n", null))
-        assertEquals("""{"asset_id":"a1","device_id":"d1","verb":"watch"}""", ConsumptionClient.sessionBody("a1", "d1", "watch"))
-        assertEquals("""{"transition":"progress","progress":{"locator":"1284.5","unit":"seconds"}}""", ConsumptionClient.transitionBody("progress", Position.seconds(1284.5)))
+        assertEquals(
+            """{"device_key":"k","name":"n","platform":"android"}""",
+            ConsumptionClient.registerBody("k", "n", null),
+        )
+        assertEquals(
+            """{"asset_id":"a1","device_id":"d1","verb":"watch"}""",
+            ConsumptionClient.sessionBody("a1", "d1", "watch"),
+        )
+        assertEquals(
+            """{"transition":"progress","progress":{"locator":"1284.5","unit":"seconds"}}""",
+            ConsumptionClient.transitionBody("progress", Position.seconds(1284.5)),
+        )
         assertEquals("""{"transition":"start"}""", ConsumptionClient.transitionBody("start", null))
-        assertEquals("""{"transition":"progress","progress":{"locator":"12","unit":"page"}}""", ConsumptionClient.transitionBody("progress", Position.page(12)))
+        assertEquals(
+            """{"transition":"progress","progress":{"locator":"12","unit":"page"}}""",
+            ConsumptionClient.transitionBody("progress", Position.page(12)),
+        )
         assertEquals("120", ConsumptionClient.locator(120.0))
         assertEquals("0", ConsumptionClient.locator(-3.0))
         assertEquals("1.25", ConsumptionClient.locator(1.25))
-        assertEquals("$base/api/v1/consumption/sessions/s%3A1/transitions", ConsumptionClient.transitionUrl(base, "s:1"))
+        assertEquals(
+            "$base/api/v1/consumption/sessions/s%3A1/transitions",
+            ConsumptionClient.transitionUrl(base, "s:1"),
+        )
     }
 
     @Test fun registerSessionAndTransitionReadTheIds() {
@@ -55,10 +71,19 @@ class ConsumptionClientTest {
     }
 
     @Test fun refusalsCarryTheStatus() {
-        val t = RoutedTransport(mapOf("POST /consumption/sessions/s1/transitions" to HttpResponse(409, """{"detail":"illegal session transition"}""")))
+        val t = RoutedTransport(
+            mapOf(
+                "POST /consumption/sessions/s1/transitions" to
+                    HttpResponse(409, """{"detail":"illegal session transition"}"""),
+            ),
+        )
         val out = ConsumptionClient(t, { base }, { cred }).transition("s1", "resume", Position.seconds(1.0))
         assertTrue(out is ConsumptionClient.Outcome.Refused && out.status == 409)
-        assertTrue(ConsumptionClient(t, { base }, { null }).transition("s1", "resume", Position.seconds(1.0)) is ConsumptionClient.Outcome.Refused)
+        assertTrue(
+            ConsumptionClient(t, {
+                base
+            }, { null }).transition("s1", "resume", Position.seconds(1.0)) is ConsumptionClient.Outcome.Refused,
+        )
     }
 
     @Test fun throttleSendsOnIntervalAndMovement() {
@@ -80,13 +105,16 @@ class ConsumptionReporterTest {
     private val base = "https://h.example"
     private var now = 0.0
 
-    private fun reporter(t: RoutedTransport, canWrite: Boolean = true, store: InMemoryDeviceIdStore = InMemoryDeviceIdStore("phone-x")) =
-        ConsumptionReporter(
-            client = ConsumptionClient(t, { base }, { Credential.Session("tok") }),
-            store = store, scope = CoroutineScope(dispatcher), baseUrl = { base },
-            canWrite = { canWrite }, enrolledDeviceKey = { "ed25519:dev" }, deviceName = { "phone" },
-            capabilities = { null }, io = dispatcher, clock = { now },
-        )
+    private fun reporter(
+        t: RoutedTransport,
+        canWrite: Boolean = true,
+        store: InMemoryDeviceIdStore = InMemoryDeviceIdStore("phone-x"),
+    ) = ConsumptionReporter(
+        client = ConsumptionClient(t, { base }, { Credential.Session("tok") }),
+        store = store, scope = CoroutineScope(dispatcher), baseUrl = { base },
+        canWrite = { canWrite }, enrolledDeviceKey = { "ed25519:dev" }, deviceName = { "phone" },
+        capabilities = { null }, io = dispatcher, clock = { now },
+    )
 
     private val routes = mapOf(
         "POST /devices" to HttpResponse(201, """{"id":"d1"}"""),
@@ -109,7 +137,14 @@ class ConsumptionReporterTest {
         // A second begin stops the first and does NOT re-register.
         r.begin("a2", "watch")
         val again = t.calls.drop(3).map { it.second.substringAfter("/api/v1") }
-        assertEquals(listOf("/consumption/sessions/s1/transitions", "/consumption/sessions", "/consumption/sessions/s1/transitions"), again)
+        assertEquals(
+            listOf(
+                "/consumption/sessions/s1/transitions",
+                "/consumption/sessions",
+                "/consumption/sessions/s1/transitions",
+            ),
+            again,
+        )
         assertTrue(t.calls[3].third!!.contains("\"stop\""))
     }
 
@@ -149,7 +184,10 @@ class ConsumptionReporterTest {
     }
 
     @Test fun aConflictDropsTheSession() {
-        val t = RoutedTransport(routes + ("POST /consumption/sessions/s1/transitions" to HttpResponse(409, """{"detail":"illegal"}""")))
+        val t =
+            RoutedTransport(
+                routes + ("POST /consumption/sessions/s1/transitions" to HttpResponse(409, """{"detail":"illegal"}""")),
+            )
         val r = reporter(t)
         r.begin("a1", "watch") // start itself 409s → no session
         assertNull(r.sessionId)

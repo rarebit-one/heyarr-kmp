@@ -9,10 +9,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** A scripted transport: POST /login returns [createBody]; GET /login/{id} plays [pollBodies] in order. */
-private class FakeTransport(
-    private val createBody: String,
-    private val pollBodies: List<String>,
-) : HttpTransport {
+private class FakeTransport(private val createBody: String, private val pollBodies: List<String>) : HttpTransport {
     var pollCount = 0
         private set
     override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {

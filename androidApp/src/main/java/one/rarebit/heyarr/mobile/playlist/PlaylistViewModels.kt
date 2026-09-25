@@ -48,9 +48,12 @@ internal class PlaylistsViewModel(
         val ps = personalState ?: return
         _state.value = _state.value.copy(loading = true, error = null)
         viewModelScope.launch {
-            val result = withContext(io) { runCatching { Triple(ps.playlists(), ps.starredSpaceId(), ps.historySpaceId()) } }
+            val result =
+                withContext(io) { runCatching { Triple(ps.playlists(), ps.starredSpaceId(), ps.historySpaceId()) } }
             _state.value = result.fold(
-                { (lists, starred, history) -> UiState(playlists = lists, starredSpaceId = starred, historySpaceId = history) },
+                { (lists, starred, history) ->
+                    UiState(playlists = lists, starredSpaceId = starred, historySpaceId = history)
+                },
                 { UiState(error = it.message ?: "couldn't load playlists") },
             )
         }

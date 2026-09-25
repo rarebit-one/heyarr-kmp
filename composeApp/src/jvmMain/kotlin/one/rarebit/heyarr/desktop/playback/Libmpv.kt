@@ -56,10 +56,25 @@ internal interface MpvLib : Library {
         val loaded: Result<MpvLib> by lazy {
             // libmpv refuses to start under a non-C numeric locale, and the JVM sets the process
             // locale from the environment at startup. Java's own formatting is unaffected.
-            runCatching { Native.load(if (Platform.isWindows()) "msvcrt" else "c", CLib::class.java).setlocale(if (Platform.isLinux()) 1 else 4, "C") }
+            runCatching {
+                Native.load(
+                    if (Platform.isWindows()) "msvcrt" else "c",
+                    CLib::class.java,
+                ).setlocale(if (Platform.isLinux()) 1 else 4, "C")
+            }
             for (dir in listOf("/opt/homebrew/lib", "/usr/local/lib")) NativeLibrary.addSearchPath("mpv", dir)
-            val lib = listOf("mpv", "libmpv-2", "mpv-2").firstNotNullOfOrNull { name -> runCatching { Native.load(name, MpvLib::class.java) }.getOrNull() }
-            if (lib != null) Result.success(lib) else Result.failure(UnsatisfiedLinkError("libmpv is not installed (the mpv library, not only the mpv command)"))
+            val lib = listOf("mpv", "libmpv-2", "mpv-2").firstNotNullOfOrNull { name ->
+                runCatching { Native.load(name, MpvLib::class.java) }.getOrNull()
+            }
+            if (lib !=
+                null
+            ) {
+                Result.success(lib)
+            } else {
+                Result.failure(
+                    UnsatisfiedLinkError("libmpv is not installed (the mpv library, not only the mpv command)"),
+                )
+            }
         }
     }
 }
@@ -172,7 +187,13 @@ internal class MpvRenderer(private val lib: MpvLib, private val handle: Pointer)
 
     private fun property(name: String): Int {
         propArg.setLong(0, 0)
-        return if (lib.mpv_get_property(handle, name, MpvLib.FORMAT_INT64, propArg) < 0) 0 else propArg.getLong(0).toInt()
+        return if (lib.mpv_get_property(handle, name, MpvLib.FORMAT_INT64, propArg) <
+            0
+        ) {
+            0
+        } else {
+            propArg.getLong(0).toInt()
+        }
     }
 
     private fun param(i: Int, type: Int, data: Pointer?) {

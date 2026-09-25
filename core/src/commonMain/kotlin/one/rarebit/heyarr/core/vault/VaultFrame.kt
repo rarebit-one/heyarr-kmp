@@ -93,7 +93,13 @@ object VaultFrame {
         }
         if (pt.size < HEADER_LEN || pt[0] != VERSION.toByte()) throw FrameException("frame $index: bad header")
         val wantId = hexToBytes(m.fileId)
-        if (!pt.copyOfRange(1, 1 + FILE_ID_LEN).contentEquals(wantId)) throw FrameException("frame $index: wrong file id")
+        if (!pt.copyOfRange(
+                1,
+                1 + FILE_ID_LEN,
+            ).contentEquals(wantId)
+        ) {
+            throw FrameException("frame $index: wrong file id")
+        }
         if (beU32(pt, 1 + FILE_ID_LEN) != index) throw FrameException("frame $index: wrong index")
         return pt.copyOfRange(HEADER_LEN, pt.size)
     }
@@ -134,7 +140,8 @@ object VaultFrame {
             fileId = JsonScan.stringField(obj, "file_id") ?: throw FrameException("manifest: no file_id"),
             frameSize = JsonScan.intField(obj, "frame_size") ?: throw FrameException("manifest: no frame_size"),
             frameCount = JsonScan.intField(obj, "frame_count") ?: throw FrameException("manifest: no frame_count"),
-            plaintextSize = JsonScan.longField(obj, "plaintext_size") ?: throw FrameException("manifest: no plaintext_size"),
+            plaintextSize =
+            JsonScan.longField(obj, "plaintext_size") ?: throw FrameException("manifest: no plaintext_size"),
             content = JsonScan.stringField(obj, "content") ?: throw FrameException("manifest: no content"),
         )
     }

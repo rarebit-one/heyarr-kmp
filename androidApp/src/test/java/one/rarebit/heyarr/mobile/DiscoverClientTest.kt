@@ -45,9 +45,27 @@ class DiscoverClientTest {
     }
 
     @Test fun anOlderNodeOrNoProviderIsUnavailableNotAnError() {
-        assertTrue(DiscoverClient(PostTransport(HttpResponse(404, "")), base, cred).discover("x") is DiscoverClient.Outcome.Unavailable)
-        assertTrue(DiscoverClient(PostTransport(HttpResponse(503, """{"detail":"no metadata provider"}""")), base, cred).discover("x") is DiscoverClient.Outcome.Unavailable)
-        assertTrue(DiscoverClient(PostTransport(HttpResponse(500, "")), base, cred).discover("x") is DiscoverClient.Outcome.Failed)
+        assertTrue(
+            DiscoverClient(
+                PostTransport(HttpResponse(404, "")),
+                base,
+                cred,
+            ).discover("x") is DiscoverClient.Outcome.Unavailable,
+        )
+        assertTrue(
+            DiscoverClient(
+                PostTransport(HttpResponse(503, """{"detail":"no metadata provider"}""")),
+                base,
+                cred,
+            ).discover("x") is DiscoverClient.Outcome.Unavailable,
+        )
+        assertTrue(
+            DiscoverClient(
+                PostTransport(HttpResponse(500, "")),
+                base,
+                cred,
+            ).discover("x") is DiscoverClient.Outcome.Failed,
+        )
     }
 
     @Test fun blankQueryNeverHitsTheNetwork() {

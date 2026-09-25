@@ -27,7 +27,8 @@ object Decisions {
     }
 
     /** The persistent bar shows while either player has something and the screen is not already the player. */
-    fun showNowPlayingBar(fullScreen: Boolean, videoActive: Boolean, audioItem: AudioItem?): Boolean = !fullScreen && (videoActive || audioItem != null)
+    fun showNowPlayingBar(fullScreen: Boolean, videoActive: Boolean, audioItem: AudioItem?): Boolean =
+        !fullScreen && (videoActive || audioItem != null)
 
     /** The nav tile a route lights: a detail lights the section it was opened from. */
     fun section(route: Route?): NavSection? = when (route) {

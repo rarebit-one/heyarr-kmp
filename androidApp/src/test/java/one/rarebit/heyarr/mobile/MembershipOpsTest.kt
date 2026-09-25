@@ -37,10 +37,37 @@ class MembershipOpsTest {
     private fun enc(fill: Int) = KeyRef.x25519(ByteArray(32) { fill.toByte() }).render()
 
     /** genesis adds A; A adds B (citing genesis's add as its head); genesis adds C independently. */
-    private val addA = MembershipOp.sign(genesis.signer, genesis.pub, usr, MembershipOp.Kind.ADD, a.id, enc(0x12), emptyList(), now)
+    private val addA = MembershipOp.sign(
+        genesis.signer,
+        genesis.pub,
+        usr,
+        MembershipOp.Kind.ADD,
+        a.id,
+        enc(0x12),
+        emptyList(),
+        now,
+    )
     private val headsAfterA = Membership.evaluate(usr, listOf(addA), now + 1).heads
-    private val addB = MembershipOp.sign(a.signer, a.pub, usr, MembershipOp.Kind.ADD, b.id, enc(0x13), headsAfterA, now + 10)
-    private val addC = MembershipOp.sign(genesis.signer, genesis.pub, usr, MembershipOp.Kind.ADD, c.id, enc(0x14), emptyList(), now + 20)
+    private val addB = MembershipOp.sign(
+        a.signer,
+        a.pub,
+        usr,
+        MembershipOp.Kind.ADD,
+        b.id,
+        enc(0x13),
+        headsAfterA,
+        now + 10,
+    )
+    private val addC = MembershipOp.sign(
+        genesis.signer,
+        genesis.pub,
+        usr,
+        MembershipOp.Kind.ADD,
+        c.id,
+        enc(0x14),
+        emptyList(),
+        now + 20,
+    )
 
     @Test fun theOpsAreRealAndEvaluate() {
         val view = Membership.evaluate(usr, listOf(addA, addB, addC), now + 30)
@@ -58,7 +85,10 @@ class MembershipOpsTest {
     }
 
     @Test fun everythingIsPresentedWhileItFits() {
-        assertEquals(Membership.merge(listOf(addA, addB, addC)), MembershipOps.presentable(listOf(addC, addA, addB), addB))
+        assertEquals(
+            Membership.merge(listOf(addA, addB, addC)),
+            MembershipOps.presentable(listOf(addC, addA, addB), addB),
+        )
         assertEquals(Membership.merge(listOf(addA, addB, addC)), MembershipOps.presentable(listOf(addC, addA), addB)) // own op always rides
         assertEquals(emptyList<String>(), MembershipOps.presentable(emptyList(), null))
     }
@@ -79,9 +109,15 @@ class MembershipOpsTest {
 
     @Test fun headerValueIsCommaJoinedAndEmptyWhenNothing() {
         assertEquals("", MembershipOps.headerValue(emptyList(), null))
-        assertEquals(Membership.merge(listOf(addA, addB)).joinToString(","), MembershipOps.headerValue(listOf(addB), addA))
+        assertEquals(
+            Membership.merge(listOf(addA, addB)).joinToString(","),
+            MembershipOps.headerValue(listOf(addB), addA),
+        )
         assertEquals(DeviceCredential.MAX_PRESENTED_OPS, MembershipOps.MAX)
         // The library's own header formatter agrees while the replica fits.
-        assertEquals(DeviceCredential.membershipHeaderValue(listOf(addA, addB, addC)), MembershipOps.headerValue(listOf(addA, addB, addC), addB))
+        assertEquals(
+            DeviceCredential.membershipHeaderValue(listOf(addA, addB, addC)),
+            MembershipOps.headerValue(listOf(addA, addB, addC), addB),
+        )
     }
 }

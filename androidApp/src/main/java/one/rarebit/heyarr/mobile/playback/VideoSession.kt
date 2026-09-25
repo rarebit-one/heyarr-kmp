@@ -57,7 +57,13 @@ class VideoSession(
     private val liveAuthorization: () -> String? = { null },
 ) {
     /** One selectable subtitle track: the Media3 group + index behind a human label. */
-    data class TextTrack(val id: String, val label: String, val language: String?, val group: Tracks.Group, val trackIndex: Int)
+    data class TextTrack(
+        val id: String,
+        val label: String,
+        val language: String?,
+        val group: Tracks.Group,
+        val trackIndex: Int,
+    )
 
     data class State(
         val paused: Boolean = true,
@@ -73,7 +79,13 @@ class VideoSession(
         val noFrame: Boolean = false,
         val renderedFrame: Boolean = false,
     ) {
-        val fraction: Float get() = if (durationMs > 0) (positionMs.toDouble() / durationMs).coerceIn(0.0, 1.0).toFloat() else 0f
+        val fraction: Float get() = if (durationMs >
+            0
+        ) {
+            (positionMs.toDouble() / durationMs).coerceIn(0.0, 1.0).toFloat()
+        } else {
+            0f
+        }
 
         /**
          * How far ahead the stream has cached, as a fraction of the runtime — the
@@ -81,7 +93,13 @@ class VideoSession(
          * `PlayerState.bufferedFraction`, which reads mpv's `demuxer-cache-time`).
          * Relative to the same [durationMs] basis as [fraction], so the two line up.
          */
-        val bufferedFraction: Float get() = if (durationMs > 0) (bufferedMs.toDouble() / durationMs).coerceIn(0.0, 1.0).toFloat() else 0f
+        val bufferedFraction: Float get() = if (durationMs >
+            0
+        ) {
+            (bufferedMs.toDouble() / durationMs).coerceIn(0.0, 1.0).toFloat()
+        } else {
+            0f
+        }
     }
 
     var current: NowPlaying? by mutableStateOf(null)
@@ -121,7 +139,8 @@ class VideoSession(
 
     /** Begin (or replace) playback of [np]. The same asset on the same URL just resumes. */
     fun load(np: NowPlaying) {
-        val same = current?.assetId != null && current?.assetId == np.assetId && target?.contentUrl == np.target.contentUrl
+        val same =
+            current?.assetId != null && current?.assetId == np.assetId && target?.contentUrl == np.target.contentUrl
         current = np
         if (same && player != null) {
             player?.play()
@@ -180,7 +199,15 @@ class VideoSession(
                                     s.mimeType?.let { setMimeType(it) }
                                     s.language?.let { setLanguage(it) }
                                     s.label?.let { setLabel(it) }
-                                    setSelectionFlags(if (i == 0) androidx.media3.common.C.SELECTION_FLAG_DEFAULT else 0)
+                                    setSelectionFlags(
+                                        if (i ==
+                                            0
+                                        ) {
+                                            androidx.media3.common.C.SELECTION_FLAG_DEFAULT
+                                        } else {
+                                            0
+                                        },
+                                    )
                                 }
                                 .build()
                         },
@@ -196,7 +223,11 @@ class VideoSession(
         if (t.isVideo) {
             scope.launch {
                 delay(PlaybackDiagnostics.NO_FRAME_GRACE_MS)
-                if (player === p && p.playbackState == Player.STATE_READY && !state.renderedFrame) state = state.copy(noFrame = true)
+                if (player === p && p.playbackState == Player.STATE_READY &&
+                    !state.renderedFrame
+                ) {
+                    state = state.copy(noFrame = true)
+                }
             }
         }
     }
@@ -235,7 +266,13 @@ class VideoSession(
             val t = target ?: return
             val groups = tracks.groups.map { g ->
                 val f = if (g.length > 0) g.getTrackFormat(0) else null
-                PlaybackDiagnostics.TrackGroup(type = g.type, supported = g.isSupported, sampleMime = f?.sampleMimeType, channels = f?.channelCount ?: 0)
+                PlaybackDiagnostics.TrackGroup(
+                    type = g.type,
+                    supported = g.isSupported,
+                    sampleMime = f?.sampleMimeType,
+                    channels =
+                    f?.channelCount ?: 0,
+                )
             }
             val issue = PlaybackDiagnostics.assess(groups, t)
             if (issue != null && state.issue == null) {
@@ -252,11 +289,23 @@ class VideoSession(
                     n++
                 }
             }
-            state = state.copy(textTracks = collected, selectedTrackId = collected.firstOrNull { it.group.isTrackSelected(it.trackIndex) }?.id)
+            state =
+                state.copy(
+                    textTracks = collected,
+                    selectedTrackId = collected.firstOrNull {
+                        it.group.isTrackSelected(it.trackIndex)
+                    }?.id,
+                )
         }
 
         override fun onPlayerError(error: PlaybackException) {
-            target?.let { state = state.copy(error = PlaybackDiagnostics.describeError(error.errorCodeName, error.message, it), paused = true) }
+            target?.let {
+                state =
+                    state.copy(
+                        error = PlaybackDiagnostics.describeError(error.errorCodeName, error.message, it),
+                        paused = true,
+                    )
+            }
         }
 
         override fun onRenderedFirstFrame() {
@@ -265,19 +314,35 @@ class VideoSession(
 
         override fun onPlaybackStateChanged(playbackState: Int) {
             val p = player ?: return
-            state = state.copy(buffering = playbackState == Player.STATE_BUFFERING, durationMs = durationMs(p), ended = playbackState == Player.STATE_ENDED)
+            state =
+                state.copy(
+                    buffering = playbackState == Player.STATE_BUFFERING,
+                    durationMs = durationMs(p),
+                    ended =
+                    playbackState == Player.STATE_ENDED,
+                )
             if (playbackState == Player.STATE_READY && !resumed) {
                 resumed = true
                 p.seekTo((startSeconds * 1000).toLong())
             }
-            if (playbackState == Player.STATE_ENDED) onProgress(PlaybackProgress(sourceSeconds(), true, PlaybackProgress.Event.ENDED))
+            if (playbackState ==
+                Player.STATE_ENDED
+            ) {
+                onProgress(PlaybackProgress(sourceSeconds(), true, PlaybackProgress.Event.ENDED))
+            }
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             state = state.copy(paused = !isPlaying)
             val p = player ?: return
             if (p.playbackState == Player.STATE_ENDED) return
-            onProgress(PlaybackProgress(sourceSeconds(), false, if (isPlaying) PlaybackProgress.Event.RESUMED else PlaybackProgress.Event.PAUSED))
+            onProgress(
+                PlaybackProgress(
+                    sourceSeconds(),
+                    false,
+                    if (isPlaying) PlaybackProgress.Event.RESUMED else PlaybackProgress.Event.PAUSED,
+                ),
+            )
         }
     }
 
@@ -287,7 +352,8 @@ class VideoSession(
             var lastReport = 0L
             while (isActive) {
                 player?.let { p ->
-                    state = state.copy(positionMs = positionMs(p), durationMs = durationMs(p), bufferedMs = bufferedMs(p))
+                    state =
+                        state.copy(positionMs = positionMs(p), durationMs = durationMs(p), bufferedMs = bufferedMs(p))
                     val now = System.currentTimeMillis()
                     if (p.isPlaying && now - lastReport >= PROGRESS_TICK_MS) {
                         lastReport = now
@@ -362,8 +428,14 @@ class VideoSession(
     fun selectText(track: TextTrack?) {
         val selector = trackSelector ?: return
         val params = selector.buildUponParameters()
-        if (track == null) params.clearOverridesOfType(C.TRACK_TYPE_TEXT).setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
-        else params.setTrackTypeDisabled(C.TRACK_TYPE_TEXT, false).setOverrideForType(TrackSelectionOverride(track.group.mediaTrackGroup, track.trackIndex))
+        if (track == null) {
+            params.clearOverridesOfType(C.TRACK_TYPE_TEXT).setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
+        } else {
+            params.setTrackTypeDisabled(
+                C.TRACK_TYPE_TEXT,
+                false,
+            ).setOverrideForType(TrackSelectionOverride(track.group.mediaTrackGroup, track.trackIndex))
+        }
         selector.setParameters(params.build())
         state = state.copy(selectedTrackId = track?.id)
     }

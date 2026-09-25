@@ -68,7 +68,13 @@ object MediaThemes {
     )
     private val BOOK = MediaTheme(
         MediaType.BOOK, Color(0xFFE0A458), Color(0xFFE8B672), Color(0xFFF0C88C), CardAspect.POSTER,
-        ctaLabel = "Read", ctaSecondaryLabel = null, metadataKeys = listOf("author", "pages", "series"), spineShadow = true,
+        ctaLabel = "Read", ctaSecondaryLabel = null,
+        metadataKeys = listOf(
+            "author",
+            "pages",
+            "series",
+        ),
+        spineShadow = true,
     )
     private val AUDIOBOOK = MediaTheme(
         MediaType.AUDIOBOOK,
@@ -82,7 +88,13 @@ object MediaThemes {
     )
     private val PODCAST = MediaTheme(
         MediaType.PODCAST, Color(0xFFC13BAD), Color(0xFFD052BD), Color(0xFFDE6ACD), CardAspect.SQUARE,
-        ctaLabel = "Play episode", ctaSecondaryLabel = null, metadataKeys = listOf("show", "episode", "date", "duration"),
+        ctaLabel = "Play episode", ctaSecondaryLabel = null,
+        metadataKeys = listOf(
+            "show",
+            "episode",
+            "date",
+            "duration",
+        ),
         ctaStart = Color(0xFFD052BD),
     )
     private val MUSIC = MediaTheme(

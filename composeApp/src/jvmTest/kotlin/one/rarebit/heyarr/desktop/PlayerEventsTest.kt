@@ -27,7 +27,10 @@ class PlayerEventsTest {
     }
 
     @Test fun demuxerCacheTimeDrivesTheBufferedBand() {
-        var s = PlayerEvents.apply(PlayerState(), """{"event":"property-change","id":2,"name":"duration","data":2000.0}""")
+        var s = PlayerEvents.apply(
+            PlayerState(),
+            """{"event":"property-change","id":2,"name":"duration","data":2000.0}""",
+        )
         assertEquals(0f, s.bufferedFraction) // nothing cached yet
         s = PlayerEvents.apply(s, """{"event":"property-change","id":7,"name":"demuxer-cache-time","data":500.0}""")
         assertEquals(500.0, s.bufferedTo)
@@ -61,7 +64,10 @@ class PlayerEventsTest {
     }
 
     @Test fun aStallAfterStartIsNotWarmUpButShowsLoading() {
-        var s = PlayerEvents.apply(PlayerState(), """{"event":"property-change","id":9,"name":"core-idle","data":false}""")
+        var s = PlayerEvents.apply(
+            PlayerState(),
+            """{"event":"property-change","id":9,"name":"core-idle","data":false}""",
+        )
         s = PlayerEvents.apply(s, """{"event":"property-change","id":3,"name":"pause","data":false}""")
         assertFalse(s.stalled)
         assertFalse(s.warmingUp) // playing
@@ -80,14 +86,20 @@ class PlayerEventsTest {
         assertEquals(1, s.audio.size)
         val off = PlayerEvents.apply(s, """{"event":"property-change","id":9,"name":"sid","data":false}""")
         assertNull(off.subtitleId)
-        assertEquals(2, PlayerEvents.apply(s, """{"event":"property-change","id":9,"name":"sid","data":2}""").subtitleId)
+        assertEquals(
+            2,
+            PlayerEvents.apply(s, """{"event":"property-change","id":9,"name":"sid","data":2}""").subtitleId,
+        )
     }
 
     @Test fun endOfFileAndErrorsAreDistinct() {
         val eof = PlayerEvents.apply(PlayerState(loaded = true), """{"event":"end-file","reason":"eof"}""")
         assertTrue(eof.eof)
         assertNull(eof.error)
-        val err = PlayerEvents.apply(PlayerState(loaded = true), """{"event":"end-file","reason":"error","file_error":"loading failed"}""")
+        val err = PlayerEvents.apply(
+            PlayerState(loaded = true),
+            """{"event":"end-file","reason":"error","file_error":"loading failed"}""",
+        )
         assertEquals("loading failed", err.error)
         assertFalse(err.loaded)
         assertEquals(PlayerState(), PlayerEvents.apply(PlayerState(), "not json"))
@@ -104,8 +116,15 @@ class LanguageNameTest {
     }
 
     @Test fun wikipediaYearGuard() {
-        assertTrue(one.rarebit.heyarr.core.state.ExternalParsers.yearAgrees("Yellowstone is a 2018 drama series.", 2018))
-        assertFalse(one.rarebit.heyarr.core.state.ExternalParsers.yearAgrees("Yellowstone is a 1936 American Western film.", 2018))
+        assertTrue(
+            one.rarebit.heyarr.core.state.ExternalParsers.yearAgrees("Yellowstone is a 2018 drama series.", 2018),
+        )
+        assertFalse(
+            one.rarebit.heyarr.core.state.ExternalParsers.yearAgrees(
+                "Yellowstone is a 1936 American Western film.",
+                2018,
+            ),
+        )
         assertTrue(one.rarebit.heyarr.core.state.ExternalParsers.yearAgrees("No year here.", 2018))
         assertTrue(one.rarebit.heyarr.core.state.ExternalParsers.yearAgrees("Released in 1936.", null))
     }

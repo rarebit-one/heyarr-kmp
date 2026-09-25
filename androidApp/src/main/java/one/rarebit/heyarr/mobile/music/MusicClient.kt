@@ -8,7 +8,12 @@ import one.rarebit.heyarr.mobile.library.Work
 import java.net.URLEncoder
 
 /** One artist: a grouping over music works keyed by name (heyarr-core ADR-0075), never an entity. */
-data class Artist(val name: String, val workCount: Int, val artworkPath: String? = null, val artworkWorkId: String? = null)
+data class Artist(
+    val name: String,
+    val workCount: Int,
+    val artworkPath: String? = null,
+    val artworkWorkId: String? = null,
+)
 
 /**
  * Artists over `GET /api/v1/artists` (ADR-0075), with the album read delegated to the
@@ -31,7 +36,10 @@ class MusicClient(
             if (resp.status == 404 && pages == 0) return MusicJson.groupByArtist(allMusicWorks())
             require(resp.status == 200) { "music: GET /artists failed: HTTP ${resp.status}" }
             all.addAll(MusicJson.parseArtists(resp.body))
-            cursor = JsonScan.rootObject(resp.body)?.let { JsonScan.stringField(it, "next_cursor") }?.takeIf { it.isNotBlank() }
+            cursor =
+                JsonScan.rootObject(resp.body)?.let {
+                    JsonScan.stringField(it, "next_cursor")
+                }?.takeIf { it.isNotBlank() }
             pages++
         } while (cursor != null && pages < MAX_PAGES)
         return all

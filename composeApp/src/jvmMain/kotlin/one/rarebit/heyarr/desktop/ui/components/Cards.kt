@@ -85,13 +85,42 @@ import one.rarebit.heyarr.ui.theme.Tokens
  * see [one.rarebit.heyarr.desktop.state.ArtworkLoader.rememberArtwork] at the call site.
  */
 @Composable
-fun Artwork(bitmap: ImageBitmap?, type: MediaType, modifier: Modifier = Modifier, contentDescription: String? = null, glyphSize: Dp = 28.dp) {
+fun Artwork(
+    bitmap: ImageBitmap?,
+    type: MediaType,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+    glyphSize: Dp = 28.dp,
+) {
     val theme = MediaThemes.of(type)
     val reduce = LocalAppearance.current.reduceMotion
     val alpha by animateFloatAsState(if (bitmap != null) 1f else 0f, tween(if (reduce) 0 else 350))
-    Box(modifier.background(Brush.linearGradient(listOf(theme.accent.copy(alpha = 0.35f), Tokens.surface2, Tokens.surface1))), contentAlignment = Alignment.Center) {
-        if (bitmap == null) Icon(type.icon(), contentDescription = null, tint = theme.accent.copy(alpha = 0.55f), modifier = Modifier.size(glyphSize))
-        if (bitmap != null) Image(bitmap, contentDescription = contentDescription, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize().alpha(alpha))
+    Box(
+        modifier.background(
+            Brush.linearGradient(listOf(theme.accent.copy(alpha = 0.35f), Tokens.surface2, Tokens.surface1)),
+        ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (bitmap ==
+            null
+        ) {
+            Icon(
+                type.icon(),
+                contentDescription = null,
+                tint = theme.accent.copy(alpha = 0.55f),
+                modifier = Modifier.size(glyphSize),
+            )
+        }
+        if (bitmap !=
+            null
+        ) {
+            Image(
+                bitmap,
+                contentDescription = contentDescription,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize().alpha(alpha),
+            )
+        }
     }
 }
 
@@ -147,23 +176,23 @@ fun MediaCard(
     ) {
         Box(Modifier.fillMaxWidth().aspectRatio((aspectOverride ?: theme.aspect).ratio)) {
             Artwork(artwork, type, Modifier.fillMaxSize(), contentDescription = null)
-            if (progress != null) Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(4.dp).background(Tokens.bgBase.copy(alpha = 0.55f))) {
-                Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).height(4.dp).background(Brush.horizontalGradient(listOf(theme.accent, theme.accentGradientEnd))))
+            if (progress != null) CardProgressBar(progress, Modifier.align(Alignment.BottomStart))
+            if (theme.spineShadow) {
+                Box(
+                    Modifier.width(
+                        10.dp,
+                    ).fillMaxSize().background(
+                        Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent)),
+                    ),
+                )
             }
-            if (theme.spineShadow) Box(Modifier.width(10.dp).fillMaxSize().background(Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent))))
             if (showBadge) MediaBadge(type, Modifier.align(Alignment.TopStart).padding(8.dp))
             if (status != null) StatusPill(status, Modifier.align(Alignment.TopEnd).padding(8.dp), compact = !hovered)
             if (onWant != null && wantVisible(mode, status) && hovered) {
-                Box(Modifier.align(Alignment.BottomEnd).padding(8.dp)) {
-                    PrimaryButton(if (status == LibraryStatus.NOT_TRACKED || status == null) "Want" else "Wanted", onWant, icon = if (status == LibraryStatus.NOT_TRACKED || status == null) Icons.Rounded.Add else Icons.Rounded.Check, compact = true, enabled = status == LibraryStatus.NOT_TRACKED || status == null)
-                }
+                CardWantButton(status, onWant, Modifier.align(Alignment.BottomEnd))
             }
         }
-        Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            MetaLine(meta)
-        }
+        CardCaption(title, subtitle, meta)
     }
 }
 
@@ -209,19 +238,41 @@ fun MediaRow(
             .background(bg, shape)
             .border(Tokens.hairline, if (selected) theme.accent else Color.Transparent, shape)
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen)
-            .semantics { this.contentDescription = "${type.label}: $title${status?.let { ", ${it.label}" } ?: ""}${if (selected) ", selected" else ""}" }
+            .semantics {
+                this.contentDescription =
+                    "${type.label}: $title${status?.let { ", ${it.label}" } ?: ""}${if (selected) ", selected" else ""}"
+            }
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         val thumbW = 52.dp * theme.aspect.ratio
-        Box(Modifier.width(thumbW).height(52.dp).clip(RoundedCornerShape(Tokens.radiusCard))) { Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 18.dp) }
+        Box(Modifier.width(thumbW).height(52.dp).clip(RoundedCornerShape(Tokens.radiusCard))) {
+            Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 18.dp)
+        }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Tokens.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
                 if (type != MediaType.UNKNOWN) MediaBadge(type)
             }
-            if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle !=
+                null
+            ) {
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Tokens.textMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             MetaLine(meta)
         }
         if (status != null) StatusPill(status)
@@ -251,12 +302,27 @@ fun <T> Rail(
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         SectionHeader(title, subtitle = subtitle, trailing = trailing)
         when (state) {
-            RailState.Loading -> Row(horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap)) { repeat(6) { MediaCardSkeleton(skeletonAspect, skeletonWidth) } }
+            RailState.Loading -> Row(horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap)) {
+                repeat(6) { MediaCardSkeleton(skeletonAspect, skeletonWidth) }
+            }
 
-            is RailState.Failed -> Notice(state.message, tone = Tokens.danger, detail = onRetry?.let { "Click Retry in the banner or reload the page." })
-            is RailState.Loaded -> if (state.items.isEmpty()) Text(emptyText, style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted)
-            else LazyRow(horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap), contentPadding = androidx.compose.foundation.layout.PaddingValues(end = 24.dp)) {
-                items(state.items, key = key) { card(it) }
+            is RailState.Failed -> Notice(
+                state.message,
+                tone = Tokens.danger,
+                detail = onRetry?.let {
+                    "Click Retry in the banner or reload the page."
+                },
+            )
+
+            is RailState.Loaded -> if (state.items.isEmpty()) {
+                Text(emptyText, style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted)
+            } else {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(end = 24.dp),
+                ) {
+                    items(state.items, key = key) { card(it) }
+                }
             }
         }
     }
@@ -283,21 +349,37 @@ fun Hero(
 ) = MediaScope(type) {
     val theme = LocalMediaTheme.current
     val shape = RoundedCornerShape(Tokens.radiusCard)
-    Box(modifier.fillMaxWidth().height(height).clip(shape).background(Tokens.surface1).border(Tokens.hairline, Tokens.border, shape)) {
+    Box(
+        modifier.fillMaxWidth().height(
+            height,
+        ).clip(shape).background(Tokens.surface1).border(Tokens.hairline, Tokens.border, shape),
+    ) {
         Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 72.dp)
-        // Layered scrim: bottom-up darkening, plus a left-to-right one so the text column reads on any art.
-        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Tokens.bgBase.copy(alpha = 0.55f), Tokens.bgBase.copy(alpha = 0.96f)))))
-        Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Tokens.bgBase.copy(alpha = 0.85f), Tokens.bgBase.copy(alpha = 0.35f), Color.Transparent))))
-        Box(Modifier.fillMaxWidth().height(3.dp).align(Alignment.BottomStart).background(Brush.horizontalGradient(listOf(theme.accent, theme.accentGradientEnd, Color.Transparent))))
-        Column(Modifier.align(Alignment.BottomStart).padding(28.dp).fillMaxWidth(0.62f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MediaBadge(type)
-                if (kicker != null) Text(kicker.uppercase(), style = MaterialTheme.typography.labelSmall, color = theme.accentGradientEnd)
-                if (status != null) StatusPill(status)
-            }
-            Text(title, style = MaterialTheme.typography.displayMedium, color = Tokens.textPrimary, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        HeroScrims()
+        Column(
+            Modifier.align(Alignment.BottomStart).padding(28.dp).fillMaxWidth(0.62f),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            HeroKicker(type, kicker, status)
+            Text(
+                title,
+                style = MaterialTheme.typography.displayMedium,
+                color = Tokens.textPrimary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
             MetaLine(meta, color = Tokens.textPrimary.copy(alpha = 0.85f))
-            if (description != null) Text(description, style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            if (description !=
+                null
+            ) {
+                Text(
+                    description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Tokens.textMuted,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Spacer(Modifier.height(2.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (primary != null) primary()
@@ -311,7 +393,10 @@ fun Hero(
 fun HeroSkeleton(height: Dp = 380.dp) {
     Box(Modifier.fillMaxWidth().height(height).clip(RoundedCornerShape(Tokens.radiusCard))) {
         Skeleton(Modifier.fillMaxSize(), RoundedCornerShape(0.dp))
-        Column(Modifier.align(Alignment.BottomStart).padding(28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Column(
+            Modifier.align(Alignment.BottomStart).padding(28.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Skeleton(Modifier.width(80.dp).height(14.dp))
             Skeleton(Modifier.width(360.dp).height(30.dp))
             Skeleton(Modifier.width(220.dp).height(12.dp))

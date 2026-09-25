@@ -67,12 +67,28 @@ class MissingState {
  * Wanting a single season lives on the series' detail (`POST /desired` scope=edition).
  */
 @Composable
-fun MissingScreen(session: AppSession, state: MissingState, onOpen: (Route) -> Unit, onWantTitle: () -> Unit, modifier: Modifier = Modifier) {
+fun MissingScreen(
+    session: AppSession,
+    state: MissingState,
+    onOpen: (Route) -> Unit,
+    onWantTitle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val scope = rememberCoroutineScope()
     fun load() {
         state.error = null
-        scope.launch { session.io { session.api.missing() }.fold(onSuccess = { state.missing = it }, onFailure = { state.error = it.message }) }
-        scope.launch { session.io { session.api.upgradeCandidates() }.fold(onSuccess = { state.upgrades = it }, onFailure = { state.error = it.message }) }
+        scope.launch {
+            session.io { session.api.missing() }.fold(onSuccess = { state.missing = it }, onFailure = {
+                state.error =
+                    it.message
+            })
+        }
+        scope.launch {
+            session.io { session.api.upgradeCandidates() }.fold(onSuccess = { state.upgrades = it }, onFailure = {
+                state.error =
+                    it.message
+            })
+        }
     }
     LaunchedEffect(Unit) { if (state.missing == null) load() }
 
@@ -96,13 +112,25 @@ fun MissingScreen(session: AppSession, state: MissingState, onOpen: (Route) -> U
                 }
             }
             state.busy = false
-            session.toast(if (refused == 0) Toast.Kind.SUCCESS else Toast.Kind.INFO, "$label: $ok done${if (refused > 0) ", $refused refused" else ""}")
+            session.toast(
+                if (refused ==
+                    0
+                ) {
+                    Toast.Kind.SUCCESS
+                } else {
+                    Toast.Kind.INFO
+                },
+                "$label: $ok done${if (refused > 0) ", $refused refused" else ""}",
+            )
             session.refreshIndex()
             load()
         }
     }
 
-    Column(modifier.fillMaxSize().padding(horizontal = Tokens.screenPadding).padding(top = Tokens.s4), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        modifier.fillMaxSize().padding(horizontal = Tokens.screenPadding).padding(top = Tokens.s4),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         SectionHeader("Missing & wanted", subtitle = "What should exist, and what could be better", trailing = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 IconButtonRound(Icons.Rounded.Refresh, "Refresh", ::load, size = 36.dp)
@@ -113,43 +141,131 @@ fun MissingScreen(session: AppSession, state: MissingState, onOpen: (Route) -> U
             FilterChip("Missing", state.tab == 0, { state.tab = 0 }, count = state.missing?.size)
             FilterChip("Could be better", state.tab == 1, { state.tab = 1 }, count = state.upgrades?.size)
         }
-        if (list != null && list.isNotEmpty()) {
-            Panel("Bulk actions", trailing = {
-                GhostButton(if (sel.size == list.size) "Select none" else "Select all", { state.selected = if (sel.size == list.size) emptySet() else list.map { it.desiredItemId }.toSet() })
-            }) {
-                Text("${sel.size} selected", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
-                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    SecondaryButton("Search now", { bulk("Search queued") { id -> session.api.searchReleases(id) } }, icon = Icons.Rounded.Search, compact = true, enabled = sel.isNotEmpty() && !state.busy)
-                    SecondaryButton("Monitor on", { bulk("Monitoring on") { id -> session.api.monitor(id, true) } }, compact = true, enabled = sel.isNotEmpty() && !state.busy)
-                    SecondaryButton("Monitor off", { bulk("Monitoring off") { id -> session.api.monitor(id, false) } }, compact = true, enabled = sel.isNotEmpty() && !state.busy)
-                }
-            }
-        }
+        if (list != null && list.isNotEmpty()) BulkActions(session, state, list, sel, ::bulk)
         when {
             state.error != null && list == null -> ErrorState("Couldn't load wants", state.error, ::load)
 
             list == null -> MediaRowSkeleton(6)
 
-            list.isEmpty() -> EmptyState(if (state.tab == 0) "Nothing is missing" else "Nothing to upgrade", detail = if (state.tab == 0) "Every want is satisfied. Want something new by title, or from Search." else "No satisfied, monitored want has room to improve under its profile.")
+            list.isEmpty() -> EmptyState(
+                if (state.tab ==
+                    0
+                ) {
+                    "Nothing is missing"
+                } else {
+                    "Nothing to upgrade"
+                },
+                detail = if (state.tab ==
+                    0
+                ) {
+                    "Every want is satisfied. Want something new by title, or from Search."
+                } else {
+                    "No satisfied, monitored want has room to improve under its profile."
+                },
+            )
 
-            else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp), contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.fillMaxSize()) {
+            else -> LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(bottom = 32.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
                 items(list, key = { it.desiredItemId }) { w ->
-                    val checked = w.desiredItemId in sel
-                    MediaRow(
-                        w.title, MediaType.UNKNOWN, onOpen = { w.workId?.let { onOpen(detailRoute(it, MediaType.UNKNOWN, w.title, from = "Missing")) } },
-                        subtitle = listOfNotNull(w.qualityProfile?.let { "profile $it" }, w.reason).joinToString("  ·  "),
-                        meta = listOf(w.state.lowercase().replace('_', ' '), if (w.monitor) "monitored" else "not monitored"),
-                        status = LibraryStatus.ofState(w.state),
-                        selected = checked,
-                        trailing = {
-                            IconButtonRound(if (checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank, if (checked) "Deselect ${w.title}" else "Select ${w.title}", {
-                                state.selected = if (checked) state.selected - w.desiredItemId else state.selected + w.desiredItemId
-                            }, size = 36.dp)
-                        },
-                    )
+                    MissingRow(w, w.desiredItemId in sel, state, onOpen)
                 }
                 item { Spacer(Modifier.height(16.dp)) }
             }
         }
     }
+}
+
+/** Select all / none, and the bulk actions over the selection: search now, monitor on / off. */
+@Composable
+private fun BulkActions(
+    session: AppSession,
+    state: MissingState,
+    list: List<Want>,
+    sel: Set<String>,
+    bulk: (label: String, action: (String) -> McpResult<*>) -> Unit,
+) {
+    Panel("Bulk actions", trailing = {
+        GhostButton(
+            if (sel.size ==
+                list.size
+            ) {
+                "Select none"
+            } else {
+                "Select all"
+            },
+            {
+                state.selected =
+                    if (sel.size == list.size) emptySet() else list.map { it.desiredItemId }.toSet()
+            },
+        )
+    }) {
+        Text("${sel.size} selected", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
+        Row(
+            Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SecondaryButton(
+                "Search now",
+                {
+                    bulk("Search queued") { id -> session.api.searchReleases(id) }
+                },
+                icon = Icons.Rounded.Search,
+                compact = true,
+                enabled =
+                sel.isNotEmpty() && !state.busy,
+            )
+            SecondaryButton(
+                "Monitor on",
+                {
+                    bulk("Monitoring on") { id -> session.api.monitor(id, true) }
+                },
+                compact = true,
+                enabled =
+                sel.isNotEmpty() && !state.busy,
+            )
+            SecondaryButton(
+                "Monitor off",
+                {
+                    bulk("Monitoring off") { id -> session.api.monitor(id, false) }
+                },
+                compact = true,
+                enabled =
+                sel.isNotEmpty() && !state.busy,
+            )
+        }
+    }
+}
+
+/** One want: its profile, reason, state and monitor flag, with a checkbox for the bulk actions. */
+@Composable
+private fun MissingRow(w: Want, checked: Boolean, state: MissingState, onOpen: (Route) -> Unit) {
+    MediaRow(
+        w.title,
+        MediaType.UNKNOWN,
+        onOpen = {
+            w.workId?.let { onOpen(detailRoute(it, MediaType.UNKNOWN, w.title, from = "Missing")) }
+        },
+        subtitle = listOfNotNull(
+            w.qualityProfile?.let {
+                "profile $it"
+            },
+            w.reason,
+        ).joinToString("  ·  "),
+        meta = listOf(
+            w.state.lowercase().replace('_', ' '),
+            if (w.monitor) "monitored" else "not monitored",
+        ),
+        status = LibraryStatus.ofState(w.state),
+        selected = checked,
+        trailing = {
+            IconButtonRound(if (checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank, if (checked) "Deselect ${w.title}" else "Select ${w.title}", {
+                state.selected =
+                    if (checked) state.selected - w.desiredItemId else state.selected + w.desiredItemId
+            }, size = 36.dp)
+        },
+    )
 }

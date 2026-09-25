@@ -23,7 +23,12 @@ class PlaybackPlanTest {
 
     private fun transport(status: Int, body: String, seen: (String?) -> Unit = {}) = object : HttpTransport {
         override fun get(url: String, headers: Map<String, String>) = HttpResponse(405, "")
-        override fun post(url: String, body2: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
+        override fun post(
+            url: String,
+            body2: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse {
             seen(body2)
             return HttpResponse(status, body)
         }
@@ -32,7 +37,11 @@ class PlaybackPlanTest {
     @Test
     fun aStreamPlanIsPlayedAsAnAbsoluteStreamUrl() {
         var sentBody: String? = null
-        val t = transport(200, """{"mode":"stream","url":"/api/v1/playback/stream/tok123","mime":"video/mp4"}""") { sentBody = it }
+        val t =
+            transport(200, """{"mode":"stream","url":"/api/v1/playback/stream/tok123","mime":"video/mp4"}""") {
+                sentBody =
+                    it
+            }
 
         val url = api(t).playbackTarget("asset-1", "blake3:abc").url
 
@@ -47,7 +56,11 @@ class PlaybackPlanTest {
     fun aStreamPlanCarriesTheSourceDurationForTheScrubber() {
         // The source's true runtime (whole seconds) rides the plan so the client can
         // pin the scrubber total; the transcode stream cannot report its own length.
-        val t = transport(200, """{"mode":"stream","url":"/api/v1/playback/stream/tok","source":{"duration_seconds":2703.4}}""")
+        val t =
+            transport(
+                200,
+                """{"mode":"stream","url":"/api/v1/playback/stream/tok","source":{"duration_seconds":2703.4}}""",
+            )
         val target = api(t).playbackTarget("asset-1", "blake3:abc")
         assertEquals("$base/api/v1/playback/stream/tok", target.url)
         assertEquals(2703.0, target.durationSeconds)
@@ -91,7 +104,10 @@ class PlaybackPlanTest {
     @Test
     fun anAbsolutePlanUrlIsUsedVerbatim() {
         val t = transport(200, """{"mode":"stream","url":"https://peer.example/api/v1/playback/stream/tok"}""")
-        assertEquals("https://peer.example/api/v1/playback/stream/tok", api(t).playbackTarget("asset-1", "blake3:abc").url)
+        assertEquals(
+            "https://peer.example/api/v1/playback/stream/tok",
+            api(t).playbackTarget("asset-1", "blake3:abc").url,
+        )
     }
 
     @Test

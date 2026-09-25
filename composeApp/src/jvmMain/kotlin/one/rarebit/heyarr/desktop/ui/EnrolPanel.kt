@@ -92,8 +92,13 @@ fun EnrolPanel(session: AppSession) {
 
         when (val s = state) {
             is PairingState.Idle -> {
-                Field("Pairing invite (voidbind:pair?…)", invite, placeholder = "voidbind:pair?v=3&relay=…") { invite = it }
-                PrimaryButton("Join pairing", { coordinator.start(invite.trim()) }, compact = true, enabled = invite.isNotBlank())
+                Field("Pairing invite (voidbind:pair?…)", invite, placeholder = "voidbind:pair?v=3&relay=…") {
+                    invite =
+                        it
+                }
+                PrimaryButton("Join pairing", {
+                    coordinator.start(invite.trim())
+                }, compact = true, enabled = invite.isNotBlank())
             }
 
             is PairingState.Joining -> {
@@ -105,10 +110,17 @@ fun EnrolPanel(session: AppSession) {
                 Text("Security code", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
                 Text(s.sas, style = MaterialTheme.typography.headlineMedium, color = Tokens.textPrimary)
                 if (s.awaitingAdmission) {
-                    Notice("Codes matched — confirm on Cruciform to finish. Waiting for its approval…", tone = Tokens.slate)
+                    Notice(
+                        "Codes matched — confirm on Cruciform to finish. Waiting for its approval…",
+                        tone = Tokens.slate,
+                    )
                     GhostButton("Cancel", { coordinator.cancel() })
                 } else {
-                    Text("Confirm this is the SAME code Cruciform shows before continuing.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+                    Text(
+                        "Confirm this is the SAME code Cruciform shows before continuing.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Tokens.textMuted,
+                    )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         PrimaryButton("Codes match", { coordinator.confirmMatch() }, compact = true)
                         SecondaryButton("They differ", { coordinator.rejectMatch() }, compact = true, danger = true)
@@ -129,7 +141,11 @@ fun EnrolPanel(session: AppSession) {
                     tone = if (s.registered) Tokens.success else Tokens.warning,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (!s.registered && s.retriable) SecondaryButton("Register again", { coordinator.retryRegister() }, compact = true)
+                    if (!s.registered &&
+                        s.retriable
+                    ) {
+                        SecondaryButton("Register again", { coordinator.retryRegister() }, compact = true)
+                    }
                     GhostButton("Done", {
                         coordinator.dismiss()
                         info = keyring.info()

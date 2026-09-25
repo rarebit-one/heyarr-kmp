@@ -146,7 +146,10 @@ class ConsumptionReporter(
                 val deviceId = ensureDevice() ?: return
                 val out = runCatching { client.createSession(cmd.assetId, deviceId, cmd.verb) }.getOrNull()
                 val id = (out as? ConsumptionClient.Outcome.Ok)?.id ?: return
-                if (runCatching { client.transition(id, "start", null) }.getOrNull() is ConsumptionClient.Outcome.Ok) sessionId = id
+                if (runCatching { client.transition(id, "start", null) }.getOrNull() is ConsumptionClient.Outcome.Ok) {
+                    sessionId =
+                        id
+                }
             }
 
             is Cmd.Move -> {

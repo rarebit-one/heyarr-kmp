@@ -87,26 +87,7 @@ fun LoginScreen(
                 }
             }
 
-            is LoginUiState.AwaitingScan -> {
-                CircularProgressIndicator()
-                if (onApproveOnThisPhone != null) {
-                    Button(
-                        onClick = { onApproveOnThisPhone(state.qrTuple) },
-                        modifier = Modifier.padding(top = 16.dp),
-                    ) { Text("Approve on this phone") }
-                }
-                Text(
-                    if (onApproveOnThisPhone != null) "…or scan this with your authenticator:" else "Scan this with your authenticator:",
-                    modifier = Modifier.padding(top = 16.dp),
-                )
-                QrImage(state.qrTuple, modifier = Modifier.padding(top = 16.dp))
-                Text(
-                    state.qrTuple,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
-            }
+            is LoginUiState.AwaitingScan -> AwaitingScan(state.qrTuple, onApproveOnThisPhone)
 
             is LoginUiState.Approved -> {
                 Text("Signed in${state.user?.let { " as $it" } ?: ""}.")
@@ -116,6 +97,35 @@ fun LoginScreen(
 }
 
 private val QR_SIZE = 240.dp
+
+/** The QR session is open: approve on this phone when Cruciform is here, else scan [qrTuple]. */
+@Composable
+private fun AwaitingScan(qrTuple: String, onApproveOnThisPhone: ((qrTuple: String) -> Unit)?) {
+    CircularProgressIndicator()
+    if (onApproveOnThisPhone != null) {
+        Button(
+            onClick = { onApproveOnThisPhone(qrTuple) },
+            modifier = Modifier.padding(top = 16.dp),
+        ) { Text("Approve on this phone") }
+    }
+    Text(
+        if (onApproveOnThisPhone !=
+            null
+        ) {
+            "…or scan this with your authenticator:"
+        } else {
+            "Scan this with your authenticator:"
+        },
+        modifier = Modifier.padding(top = 16.dp),
+    )
+    QrImage(qrTuple, modifier = Modifier.padding(top = 16.dp))
+    Text(
+        qrTuple,
+        style = MaterialTheme.typography.bodySmall,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.padding(top = 12.dp),
+    )
+}
 
 /** The login tuple as a QR bitmap, sized in dp and rendered pixel-sharp. */
 @Composable

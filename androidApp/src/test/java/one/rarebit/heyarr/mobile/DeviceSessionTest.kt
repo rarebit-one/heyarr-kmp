@@ -56,7 +56,8 @@ class DeviceSessionTest {
             seen += headers
             return HttpResponse(queue.removeFirst(), "")
         }
-        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = get(url, headers)
+        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+            get(url, headers)
     }
 
     @Test fun transportRestampsStaleDeviceHeaderAndRetriesOnceOn401() {

@@ -35,6 +35,9 @@ class RoutesTest {
 
     @Test fun playlistRoutesRoundTrip() {
         val p = Route.Playlist("space-1", "Road trip")
-        assertEquals(p, Json.decodeFromString(Route.Playlist.serializer(), Json.encodeToString(Route.Playlist.serializer(), p)))
+        assertEquals(
+            p,
+            Json.decodeFromString(Route.Playlist.serializer(), Json.encodeToString(Route.Playlist.serializer(), p)),
+        )
     }
 }

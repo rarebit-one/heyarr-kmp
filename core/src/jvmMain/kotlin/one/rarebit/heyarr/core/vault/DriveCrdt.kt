@@ -62,13 +62,7 @@ data class DriveChange(
 }
 
 /** One live file's current state for a caller. */
-data class DriveEntry(
-    val path: String,
-    val blob: String,
-    val size: Long,
-    val mtime: Long,
-    val conflicted: Boolean,
-)
+data class DriveEntry(val path: String, val blob: String, val size: Long, val mtime: Long, val conflicted: Boolean)
 
 /**
  * Retention knobs (ADR-0095). [maxVersionsPerPath]: prior versions a live path keeps,

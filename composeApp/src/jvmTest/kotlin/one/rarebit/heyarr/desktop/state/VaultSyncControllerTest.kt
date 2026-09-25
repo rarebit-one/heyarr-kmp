@@ -68,7 +68,10 @@ class VaultSyncControllerTest {
         val scope = scope()
         try {
             val sync = FakeSync { VaultSyncEngine.Stats(3, 1, 0, 0) }
-            val c = VaultSyncController(scope, engine = { sync }, changes = { FakeChanges() }, periodMs = 600_000, settleMs = 0)
+            val c =
+                VaultSyncController(scope, engine = {
+                    sync
+                }, changes = { FakeChanges() }, periodMs = 600_000, settleMs = 0)
             c.start()
             awaitUntil { sync.calls.get() == 1 && c.status is SyncStatus.Idle }
             assertEquals(VaultSyncEngine.Stats(3, 1, 0, 0), c.lastStats)
@@ -85,7 +88,8 @@ class VaultSyncControllerTest {
         try {
             val sync = FakeSync { noStats }
             val changes = FakeChanges()
-            val c = VaultSyncController(scope, engine = { sync }, changes = { changes }, periodMs = 600_000, settleMs = 0)
+            val c =
+                VaultSyncController(scope, engine = { sync }, changes = { changes }, periodMs = 600_000, settleMs = 0)
             c.start()
             awaitUntil { sync.calls.get() == 1 }
             changes.signal()
@@ -102,7 +106,8 @@ class VaultSyncControllerTest {
             val boom = AtomicBoolean(true)
             val sync = FakeSync { if (boom.get()) throw RuntimeException("boom") else noStats }
             val changes = FakeChanges()
-            val c = VaultSyncController(scope, engine = { sync }, changes = { changes }, periodMs = 600_000, settleMs = 0)
+            val c =
+                VaultSyncController(scope, engine = { sync }, changes = { changes }, periodMs = 600_000, settleMs = 0)
             c.start()
             awaitUntil { c.status is SyncStatus.Error }
             assertEquals("boom", (c.status as SyncStatus.Error).message)
@@ -120,7 +125,10 @@ class VaultSyncControllerTest {
     fun aNullEngineReportsWaitingAndDoesNotCrash() {
         val scope = scope()
         try {
-            val c = VaultSyncController(scope, engine = { null }, changes = { FakeChanges() }, periodMs = 600_000, settleMs = 0)
+            val c =
+                VaultSyncController(scope, engine = {
+                    null
+                }, changes = { FakeChanges() }, periodMs = 600_000, settleMs = 0)
             c.start()
             awaitUntil { c.status is SyncStatus.Waiting }
         } finally {
@@ -134,7 +142,8 @@ class VaultSyncControllerTest {
         try {
             val sync = FakeSync { noStats }
             val changes = FakeChanges()
-            val c = VaultSyncController(scope, engine = { sync }, changes = { changes }, periodMs = 600_000, settleMs = 0)
+            val c =
+                VaultSyncController(scope, engine = { sync }, changes = { changes }, periodMs = 600_000, settleMs = 0)
             c.start()
             awaitUntil { sync.calls.get() == 1 }
             c.stop()

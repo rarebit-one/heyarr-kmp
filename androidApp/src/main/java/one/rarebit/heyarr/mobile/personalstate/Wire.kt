@@ -42,7 +42,12 @@ internal data class EncryptedChange(
         /** Mint a change at the given causal [parents] (the space's current heads). */
         fun mint(spaceId: String, parents: List<String>, ciphertext: ByteArray): EncryptedChange {
             val canonical = PersonalStateId.canonical(parents)
-            return EncryptedChange(spaceId, PersonalStateId.changeId(spaceId, canonical, ciphertext), canonical, ciphertext)
+            return EncryptedChange(
+                spaceId,
+                PersonalStateId.changeId(spaceId, canonical, ciphertext),
+                canonical,
+                ciphertext,
+            )
         }
 
         fun parse(obj: String): EncryptedChange = EncryptedChange(

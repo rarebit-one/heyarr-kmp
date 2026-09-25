@@ -71,9 +71,7 @@ class InMemorySettingsStore(private var config: DesktopConfig = DesktopConfig())
  * as the network readers); writes a small, hand-escaped JSON object. Missing/corrupt
  * file → defaults, never a crash.
  */
-class FileSettingsStore(
-    private val file: File = defaultConfigFile(),
-) : SettingsStore {
+class FileSettingsStore(private val file: File = defaultConfigFile()) : SettingsStore {
 
     override fun load(): DesktopConfig {
         val text = runCatching { if (file.exists()) file.readText() else null }.getOrNull()

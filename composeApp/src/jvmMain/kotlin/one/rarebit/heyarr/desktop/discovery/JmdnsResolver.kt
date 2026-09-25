@@ -17,9 +17,7 @@ import javax.jmdns.ServiceInfo
  * responder, a malformed record) is swallowed and reported as "no hit", so discovery
  * degrades to the DNS name rather than throwing. Blocking — call off the UI thread.
  */
-class JmdnsResolver(
-    private val timeoutMs: Long = DEFAULT_TIMEOUT_MS,
-) : MdnsResolver {
+class JmdnsResolver(private val timeoutMs: Long = DEFAULT_TIMEOUT_MS) : MdnsResolver {
 
     override fun resolve(): MdnsHit? = runCatching {
         JmDNS.create(InetAddress.getLocalHost()).use { jmdns ->

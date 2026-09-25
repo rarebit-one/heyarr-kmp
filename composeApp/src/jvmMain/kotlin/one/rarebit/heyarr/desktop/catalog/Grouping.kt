@@ -13,11 +13,7 @@ import one.rarebit.heyarr.core.net.JsonScan
  * name + count as text and does not yet fetch cover images, so [artworkPath] is carried
  * for a later image pass but not otherwise used.
  */
-data class Grouping(
-    val name: String,
-    val workCount: Int = 0,
-    val artworkPath: String? = null,
-)
+data class Grouping(val name: String, val workCount: Int = 0, val artworkPath: String? = null)
 
 /**
  * Dependency-free reader for the grouped browse bodies (`artists` / `authors`). Same

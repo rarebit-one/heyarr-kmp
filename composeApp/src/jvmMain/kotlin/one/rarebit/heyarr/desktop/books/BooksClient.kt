@@ -18,11 +18,7 @@ import java.net.URLEncoder
  * [one.rarebit.heyarr.desktop.library.WorkDetailClient] (`GET /works/{id}` inlines
  * `primary_asset`), then downloaded + opened — see the Books section UI.
  */
-class BooksClient(
-    private val http: HttpTransport,
-    private val baseUrl: String,
-    private val credential: Credential,
-) {
+class BooksClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
     /** Every book author, name-ordered as the server pages them. */
     fun listAuthors(): List<Grouping> = pageAll(
         url = { cursor -> authorsUrl(baseUrl, cursor) },

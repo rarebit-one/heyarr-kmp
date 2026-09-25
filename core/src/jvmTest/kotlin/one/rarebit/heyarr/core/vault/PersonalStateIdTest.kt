@@ -100,6 +100,9 @@ class PersonalStateIdTest {
         val space = "s1"
         val cipher = byteArrayOf(9, 9, 9)
         // Different domain separators → different ids over identical (space, refs, ciphertext).
-        assertTrue(PersonalStateId.changeId(space, emptyList(), cipher) != PersonalStateId.snapshotId(space, emptyList(), cipher))
+        assertTrue(
+            PersonalStateId.changeId(space, emptyList(), cipher) !=
+                PersonalStateId.snapshotId(space, emptyList(), cipher),
+        )
     }
 }

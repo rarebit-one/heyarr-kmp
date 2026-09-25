@@ -16,5 +16,9 @@ object LandscapeArtwork {
         val ratio = width.toDouble() / height
         if (ratio !in 1.5..2.0) return@mapNotNull null
         Triple(url, abs(ratio - 16.0 / 9.0), width.toLong() * height)
-    }.sortedWith(compareBy<Triple<String, Double, Long>> { it.second }.thenByDescending { it.third }).firstOrNull()?.first
+    }.sortedWith(
+        compareBy<Triple<String, Double, Long>> {
+            it.second
+        }.thenByDescending { it.third },
+    ).firstOrNull()?.first
 }

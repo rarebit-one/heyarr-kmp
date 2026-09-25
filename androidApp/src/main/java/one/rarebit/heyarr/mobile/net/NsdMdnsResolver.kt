@@ -24,10 +24,7 @@ import java.util.concurrent.atomic.AtomicReference
  * the main thread (the ViewModel runs it on `Dispatchers.IO`). The TXT parsing itself is
  * a pure function ([NsdMdns.hitFrom]) so it is unit-tested with no NSD service.
  */
-class NsdMdnsResolver(
-    context: Context,
-    private val timeoutMs: Long = DEFAULT_TIMEOUT_MS,
-) : MdnsResolver {
+class NsdMdnsResolver(context: Context, private val timeoutMs: Long = DEFAULT_TIMEOUT_MS) : MdnsResolver {
 
     private val appContext = context.applicationContext
 

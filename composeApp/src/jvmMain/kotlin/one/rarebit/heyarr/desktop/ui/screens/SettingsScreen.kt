@@ -27,18 +27,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.feeds.FollowedSource
-import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.core.mcp.PeerStatus
+import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.state.SyncStatus
-import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.desktop.state.VaultPhase
-import one.rarebit.heyarr.ui.theme.MediaScope
-import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.ui.theme.MediaThemes
-import one.rarebit.heyarr.ui.theme.Tokens
+import one.rarebit.heyarr.desktop.state.VaultService
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.KeyValue
@@ -49,6 +47,9 @@ import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.Skeleton
+import one.rarebit.heyarr.ui.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.ui.theme.Tokens
 
 class SettingsState {
     var followed by mutableStateOf<List<FollowedSource>?>(null)
@@ -61,7 +62,12 @@ class SettingsState {
  * `unfollow`), peers (`get_peer_status`, `sync_peer`) and appearance.
  */
 @Composable
-fun SettingsScreen(session: AppSession, state: SettingsState, onSourcesChanged: () -> Unit, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    session: AppSession,
+    state: SettingsState,
+    onSourcesChanged: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val scope = rememberCoroutineScope()
     fun load() {
         val a = session.api ?: return
@@ -72,21 +78,32 @@ fun SettingsScreen(session: AppSession, state: SettingsState, onSourcesChanged: 
     }
     LaunchedEffect(session.config) { load() }
 
-    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = 32.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    LazyColumn(
+        modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
         item { SectionHeader("Settings") }
         item { ConnectionPanel(session) }
         item { one.rarebit.heyarr.desktop.ui.EnrolPanel(session) }
         item { VaultPanel(session) }
-        if (session.isGuest) item {
-            Panel("Followed sources & peers") {
-                Notice(
-                    "Sign in to follow sources and manage peers.",
-                    detail = "Following, wants and peer sync are enrolled-only. Add a bearer token above to sign in.",
-                    tone = Tokens.slate,
-                )
+        if (session.isGuest) {
+            item {
+                Panel("Followed sources & peers") {
+                    Notice(
+                        "Sign in to follow sources and manage peers.",
+                        detail = "Following, wants and peer sync are enrolled-only. Add a bearer token above to sign in.",
+                        tone = Tokens.slate,
+                    )
+                }
             }
         } else {
-            item { FollowedPanel(session, state, { load(); onSourcesChanged() }) }
+            item {
+                FollowedPanel(session, state, {
+                    load()
+                    onSourcesChanged()
+                })
+            }
             item { PeersPanel(session, state) }
         }
         item { AppearancePanel(session) }
@@ -116,17 +133,43 @@ private fun ConnectionPanel(session: AppSession) {
             }, icon = Icons.Rounded.Sync, compact = true, enabled = !discovering)
             GhostButton("Reset URL", { baseUrl = DesktopConfig.DEFAULT_BASE_URL })
         }
-        Field("Bearer token (heyarr_<id>_<secret>) — optional; blank browses as a guest", token, secret = true) { token = it }
+        Field("Bearer token (heyarr_<id>_<secret>) — optional; blank browses as a guest", token, secret = true) {
+            token =
+                it
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            PrimaryButton("Save", { session.save(DesktopConfig(baseUrl.trim(), token.trim())) }, icon = Icons.Rounded.Save, compact = true)
+            PrimaryButton("Save", {
+                session.save(DesktopConfig(baseUrl.trim(), token.trim()))
+            }, icon = Icons.Rounded.Save, compact = true)
             SecondaryButton("Test connection", {
                 testing = true
-                scope.launch { session.probe(); testing = false; session.toast(if (session.connection == Connection.ONLINE) Toast.Kind.SUCCESS else Toast.Kind.ERROR, "Connection: ${session.connection.name.lowercase()}") }
+                scope.launch {
+                    session.probe()
+                    testing = false
+                    session.toast(
+                        if (session.connection ==
+                            Connection.ONLINE
+                        ) {
+                            Toast.Kind.SUCCESS
+                        } else {
+                            Toast.Kind.ERROR
+                        },
+                        "Connection: ${session.connection.name.lowercase()}",
+                    )
+                }
             }, compact = true, enabled = !testing && baseUrl.isNotBlank())
         }
         KeyValue("status", session.connection.name.lowercase().replace('_', ' '))
-        KeyValue("signed in as", if (session.isGuest) "guest — browse & play only" else "enrolled — token presented", valueColor = if (session.isGuest) Tokens.textMuted else Tokens.success)
-        Text("On a trusted network you browse and play as a guest with no token. Add a bearer token to sign in and save wants, follows and your place. Saved to ~/.config/heyarr-desktop/config.json (0600); the token is a secret. Prefer device sign-in? Use “Sign in to save” below to pair this desktop with Voidbind — the primary, offline credential.", style = MaterialTheme.typography.bodySmall, color = Tokens.textDisabled)
+        KeyValue(
+            "signed in as",
+            if (session.isGuest) "guest — browse & play only" else "enrolled — token presented",
+            valueColor = if (session.isGuest) Tokens.textMuted else Tokens.success,
+        )
+        Text(
+            "On a trusted network you browse and play as a guest with no token. Add a bearer token to sign in and save wants, follows and your place. Saved to ~/.config/heyarr-desktop/config.json (0600); the token is a secret. Prefer device sign-in? Use “Sign in to save” below to pair this desktop with Voidbind — the primary, offline credential.",
+            style = MaterialTheme.typography.bodySmall,
+            color = Tokens.textDisabled,
+        )
     }
 }
 
@@ -159,30 +202,14 @@ private fun VaultPanel(session: AppSession) {
                 chooseDirectory(folder)?.let { folder = it }
             }, compact = true)
             if (!running) {
-                PrimaryButton("Start sync", { vault.enable(folder.trim()) }, icon = Icons.Rounded.Sync, compact = true, enabled = folder.isNotBlank())
+                PrimaryButton("Start sync", {
+                    vault.enable(folder.trim())
+                }, icon = Icons.Rounded.Sync, compact = true, enabled = folder.isNotBlank())
             } else {
                 PrimaryButton("Stop sync", { vault.disable() }, compact = true)
             }
         }
-        KeyValue(
-            "status",
-            when (val p = phase) {
-                VaultPhase.Off -> "off"
-                is VaultPhase.Preparing -> "getting ready — ${p.reason}"
-                VaultPhase.Running -> when (val s = vault.controller.status) {
-                    SyncStatus.Off -> "stopped"
-                    SyncStatus.Waiting -> "waiting for setup"
-                    SyncStatus.Idle -> "up to date"
-                    SyncStatus.Syncing -> "syncing…"
-                    is SyncStatus.Error -> "error: ${s.message}"
-                }
-            },
-            valueColor = when {
-                phase is VaultPhase.Running && vault.controller.status is SyncStatus.Error -> Tokens.textPrimary
-                phase is VaultPhase.Running && vault.controller.status == SyncStatus.Idle -> Tokens.success
-                else -> Tokens.textMuted
-            },
-        )
+        VaultStatus(vault)
         vault.controller.lastStats?.let { s ->
             KeyValue("last sync", "↑${s.uploaded}  ↓${s.downloaded}  ⌫${s.deletedRemote}/${s.deletedLocal}")
         }
@@ -196,71 +223,51 @@ private fun VaultPanel(session: AppSession) {
     }
 }
 
+/** The sync's phase, and once it runs the engine's own status: off, waiting, up to date, syncing, error. */
+@Composable
+private fun VaultStatus(vault: VaultService) {
+    val phase = vault.phase
+    KeyValue(
+        "status",
+        when (val p = phase) {
+            VaultPhase.Off -> "off"
+
+            is VaultPhase.Preparing -> "getting ready — ${p.reason}"
+
+            VaultPhase.Running -> when (val s = vault.controller.status) {
+                SyncStatus.Off -> "stopped"
+                SyncStatus.Waiting -> "waiting for setup"
+                SyncStatus.Idle -> "up to date"
+                SyncStatus.Syncing -> "syncing…"
+                is SyncStatus.Error -> "error: ${s.message}"
+            }
+        },
+        valueColor = when {
+            phase is VaultPhase.Running && vault.controller.status is SyncStatus.Error -> Tokens.textPrimary
+            phase is VaultPhase.Running && vault.controller.status == SyncStatus.Idle -> Tokens.success
+            else -> Tokens.textMuted
+        },
+    )
+}
+
 /** A native directory picker (Swing, EDT — runs on the button click, never during render). */
 private fun chooseDirectory(current: String): String? {
     val chooser = javax.swing.JFileChooser().apply {
         fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
         dialogTitle = "Choose a folder to sync"
-        current.takeIf { it.isNotBlank() }?.let { java.io.File(it).takeIf(java.io.File::isDirectory)?.let { d -> currentDirectory = d } }
+        current.takeIf { it.isNotBlank() }?.let {
+            java.io.File(it).takeIf(java.io.File::isDirectory)?.let { d ->
+                currentDirectory =
+                    d
+            }
+        }
     }
-    return if (chooser.showOpenDialog(null) == javax.swing.JFileChooser.APPROVE_OPTION) chooser.selectedFile?.absolutePath else null
-}
-
-@Composable
-private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    var url by remember { mutableStateOf("") }
-    var tvdb by remember { mutableStateOf("") }
-    var title by remember { mutableStateOf("") }
-    var profile by remember(session.profiles) { mutableStateOf(session.profiles.firstOrNull()?.name ?: "") }
-    var backfill by remember { mutableStateOf("from_now") }
-    Panel("Followed sources", trailing = { GhostButton("Refresh", reload) }) {
-        when (val list = state.followed) {
-            null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
-            else -> if (list.isEmpty()) Text("Nothing followed yet.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-            else for (s in list) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                MediaBadge(MediaType.from(s.type))
-                Column(Modifier.weight(1f)) {
-                    Text(s.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary)
-                    Text(listOfNotNull(s.feedRef, "${s.itemsArchived}/${s.itemsKnown} archived", s.health?.let { "health $it" }).joinToString("  ·  "), style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, maxLines = 1)
-                }
-                SecondaryButton("Unfollow", {
-                    val a = session.api ?: return@SecondaryButton
-                    scope.launch {
-                        session.io { a.unfollow(s.id) }.onSuccess { r -> when (r) { is McpResult.Ok -> { session.toast(Toast.Kind.SUCCESS, "Unfollowed ${s.title}", "Archived items are kept."); reload() }; is McpResult.Refused -> session.refused(r) } }
-                    }
-                }, compact = true, danger = true)
-            }
-        }
-        Text("Follow something new", style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, modifier = Modifier.padding(top = 8.dp))
-        Text("A TVDB id or URL is a series; any other http(s) feed URL is a podcast (or an article feed).", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Field("Feed / TVDB URL", url, Modifier.weight(2f), placeholder = "https://…/rss") { url = it }
-            Field("TVDB id", tvdb, Modifier.weight(1f)) { tvdb = it.filter { c -> c.isDigit() } }
-        }
-        Field("Title (only for content the library has never seen)", title) { title = it }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Profile", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-            for (p in session.profiles) FilterChip(p.name, profile == p.name, { profile = p.name })
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Backfill", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-            FilterChip("from now", backfill == "from_now", { backfill = "from_now" })
-            FilterChip("full back-catalogue", backfill == "full", { backfill = "full" })
-        }
-        PrimaryButton("Follow", {
-            val a = session.api ?: return@PrimaryButton
-            scope.launch {
-                state.busy = true
-                session.io { a.follow(url, tvdb, title, profile, backfill) }.onSuccess { r ->
-                    when (r) {
-                        is McpResult.Ok -> { session.toast(Toast.Kind.SUCCESS, "Following", r.value?.title ?: url.ifBlank { tvdb }); url = ""; tvdb = ""; title = ""; reload() }
-                        is McpResult.Refused -> session.refused(r)
-                    }
-                }
-                state.busy = false
-            }
-        }, icon = Icons.Rounded.Add, compact = true, enabled = !state.busy && (url.isNotBlank() || tvdb.isNotBlank()) && profile.isNotBlank())
+    return if (chooser.showOpenDialog(null) ==
+        javax.swing.JFileChooser.APPROVE_OPTION
+    ) {
+        chooser.selectedFile?.absolutePath
+    } else {
+        null
     }
 }
 
@@ -270,16 +277,50 @@ private fun PeersPanel(session: AppSession, state: SettingsState) {
     Panel("Peers") {
         when (val p = state.peers) {
             null -> Skeleton(Modifier.fillMaxWidth().height(30.dp))
+
             else -> {
-                for (peer in p.peers) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Column(Modifier.weight(1f)) {
-                        Text(peer.name + if (peer.isSelf) "  (this node)" else "", style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary)
-                        Text(listOfNotNull(peer.site, peer.mode?.let { "mode $it" }).joinToString("  ·  "), style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+                for (peer in p.peers) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                peer.name + if (peer.isSelf) "  (this node)" else "",
+                                style = MaterialTheme.typography.titleSmall,
+                                color = Tokens.textPrimary,
+                            )
+                            Text(
+                                listOfNotNull(
+                                    peer.site,
+                                    peer.mode?.let {
+                                        "mode $it"
+                                    },
+                                ).joinToString("  ·  "),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Tokens.textMuted,
+                            )
+                        }
+                        if (!peer.isSelf) {
+                            SecondaryButton("Sync now", {
+                                val a = session.api ?: return@SecondaryButton
+                                scope.launch {
+                                    session.io { a.syncPeer(peer.peerId) }.onSuccess { r ->
+                                        when (r) {
+                                            is McpResult.Ok -> session.toast(
+                                                Toast.Kind.INFO,
+                                                "Reconciliation queued",
+                                                "Transfers move afterwards; this reply only says the cycle was accepted.",
+                                            )
+
+                                            is McpResult.Refused -> session.refused(r)
+                                        }
+                                    }
+                                }
+                            }, icon = Icons.Rounded.Sync, compact = true)
+                        }
                     }
-                    if (!peer.isSelf) SecondaryButton("Sync now", {
-                        val a = session.api ?: return@SecondaryButton
-                        scope.launch { session.io { a.syncPeer(peer.peerId) }.onSuccess { r -> when (r) { is McpResult.Ok -> session.toast(Toast.Kind.INFO, "Reconciliation queued", "Transfers move afterwards; this reply only says the cycle was accepted."); is McpResult.Refused -> session.refused(r) } } }
-                    }, icon = Icons.Rounded.Sync, compact = true)
                 }
                 p.note?.let { Notice(it, tone = Tokens.slate) }
             }
@@ -292,22 +333,67 @@ private fun AppearancePanel(session: AppSession) {
     val ap = session.appearance
     Panel("Appearance") {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip("Media-adaptive accents", ap.adaptiveAccents, { session.appearance = ap.copy(adaptiveAccents = !ap.adaptiveAccents) })
-            FilterChip("Reduce motion", ap.reduceMotion, { session.appearance = ap.copy(reduceMotion = !ap.reduceMotion) })
-            FilterChip("Public cover art & synopses", session.config.externalMetadata, { session.save(session.config.copy(externalMetadata = !session.config.externalMetadata)) })
+            FilterChip("Media-adaptive accents", ap.adaptiveAccents, {
+                session.appearance =
+                    ap.copy(adaptiveAccents = !ap.adaptiveAccents)
+            })
+            FilterChip("Reduce motion", ap.reduceMotion, {
+                session.appearance = ap.copy(reduceMotion = !ap.reduceMotion)
+            })
+            FilterChip("Public cover art & synopses", session.config.externalMetadata, {
+                session.save(session.config.copy(externalMetadata = !session.config.externalMetadata))
+            })
         }
-        Text("Where the node holds no artwork, covers and synopses come from keyless public sources — TVmaze (series, with episode lists), Wikipedia (films), Open Library (books), Apple Podcasts, Cover Art Archive (music) and a feed's own image or site icon. Titles are sent to those services; each answer is cached for a week under ~/.cache/heyarr-desktop/meta. Everything external is labelled as such.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-        Text("The accent follows the media in focus: emerald for film, violet for series, amber for books, teal for audiobooks, magenta for podcasts, rose for music. Surfaces and text never change.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (t in listOf(MediaType.MOVIE, MediaType.SERIES, MediaType.BOOK, MediaType.AUDIOBOOK, MediaType.PODCAST, MediaType.MUSIC)) MediaScope(t) { PrimaryButton(MediaThemes.of(t).ctaLabel, {}, compact = true) }
-        }
-        Text("UI scale", style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, modifier = Modifier.padding(top = 8.dp))
+        Text(
+            "Where the node holds no artwork, covers and synopses come from keyless public sources — TVmaze (series, with episode lists), Wikipedia (films), Open Library (books), Apple Podcasts, Cover Art Archive (music) and a feed's own image or site icon. Titles are sent to those services; each answer is cached for a week under ~/.cache/heyarr-desktop/meta. Everything external is labelled as such.",
+            style = MaterialTheme.typography.bodySmall,
+            color = Tokens.textMuted,
+        )
+        Text(
+            "The accent follows the media in focus: emerald for film, violet for series, amber for books, teal for audiobooks, magenta for podcasts, rose for music. Surfaces and text never change.",
+            style = MaterialTheme.typography.bodySmall,
+            color = Tokens.textMuted,
+        )
+        AccentPreview()
+        Text(
+            "UI scale",
+            style = MaterialTheme.typography.titleSmall,
+            color = Tokens.textPrimary,
+            modifier = Modifier.padding(top = 8.dp),
+        )
         val current = session.config.effectiveUiScale()
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
             FilterChip("Auto", session.config.uiScale == null, { session.save(session.config.copy(uiScale = null)) })
-            for (sc in DesktopConfig.UI_SCALES) FilterChip("${sc}×", session.config.uiScale == sc, { session.save(session.config.copy(uiScale = sc)) })
-            Text("now ${current}×", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+            for (sc in DesktopConfig.UI_SCALES) {
+                FilterChip("$sc×", session.config.uiScale == sc, {
+                    session.save(session.config.copy(uiScale = sc))
+                })
+            }
+            Text("now $current×", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
         }
-        Text("A JVM under XWayland on a HiDPI Wayland desktop reports 1× and ignores the JVM scale flags, so pick the scale here (or set HEYARR_UI_SCALE / GDK_SCALE).", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+        Text(
+            "A JVM under XWayland on a HiDPI Wayland desktop reports 1× and ignores the JVM scale flags, so pick the scale here (or set HEYARR_UI_SCALE / GDK_SCALE).",
+            style = MaterialTheme.typography.bodySmall,
+            color = Tokens.textMuted,
+        )
+    }
+}
+
+/** One call-to-action per media type, each under its own accent — a live key for the paragraph above. */
+@Composable
+private fun AccentPreview() {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (t in listOf(
+            MediaType.MOVIE,
+            MediaType.SERIES,
+            MediaType.BOOK,
+            MediaType.AUDIOBOOK,
+            MediaType.PODCAST,
+            MediaType.MUSIC,
+        )) {
+            MediaScope(t) {
+                PrimaryButton(MediaThemes.of(t).ctaLabel, {}, compact = true)
+            }
+        }
     }
 }

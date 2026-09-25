@@ -35,7 +35,8 @@ class TaggedItemIdentityTest {
     private class Fake(private val byUrl: Map<String, String>) : HttpTransport {
         override fun get(url: String, headers: Map<String, String>) =
             byUrl[url]?.let { HttpResponse(200, it) } ?: HttpResponse(404, "")
-        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(404, "")
+        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+            HttpResponse(404, "")
     }
 
     private val base = "https://n"
@@ -53,7 +54,8 @@ class TaggedItemIdentityTest {
     @Test fun resolvesAnAssetToItsWorkViaEdition() {
         val fake = Fake(
             mapOf(
-                "$base/api/v1/assets/A1" to """{"id":"A1","edition_id":"E1","filename":"01 - Song.flac","blob_hash":"h","mime":"audio/flac"}""",
+                "$base/api/v1/assets/A1" to
+                    """{"id":"A1","edition_id":"E1","filename":"01 - Song.flac","blob_hash":"h","mime":"audio/flac"}""",
                 "$base/api/v1/editions/E1" to """{"id":"E1","work_id":"W1","label":"Deluxe"}""",
                 "$base/api/v1/works/W1" to """{"id":"W1","title":"Album"}""",
             ),

@@ -31,8 +31,11 @@ internal class ItemResolver(private val library: LibraryClient) {
         val ref = ItemRef.decode(itemId)
         return when (ref.kind) {
             ItemKind.WORK -> library.getWork(ref.id)?.let { ResolvedItem(itemId, it, null) }
+
             ItemKind.ASSET -> resolveAsset(itemId, ref.id)
-            ItemKind.ITEM -> resolveAsset(itemId, ref.id) ?: library.getWork(ref.id)?.let { ResolvedItem(itemId, it, null) }
+
+            ItemKind.ITEM -> resolveAsset(itemId, ref.id)
+                ?: library.getWork(ref.id)?.let { ResolvedItem(itemId, it, null) }
         }
     }
 

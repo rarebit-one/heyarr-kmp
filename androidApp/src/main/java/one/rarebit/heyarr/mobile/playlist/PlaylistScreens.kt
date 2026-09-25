@@ -63,37 +63,46 @@ internal fun PlaylistsScreen(
 ) {
     var creating by remember { mutableStateOf(false) }
     MediaScope(MediaType.MUSIC) {
-        LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = Tokens.screenPadding, vertical = Tokens.s3), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(
+            modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = Tokens.screenPadding, vertical = Tokens.s3),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             item {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     GhostButton("Library", onBack, icon = Icons.Rounded.ArrowBack)
                     Spacer(Modifier.weight(1f))
-                    if (!state.notEnrolled) PrimaryButton("New playlist", { creating = true }, icon = Icons.Rounded.Add, compact = true)
+                    if (!state.notEnrolled) {
+                        PrimaryButton("New playlist", {
+                            creating = true
+                        }, icon = Icons.Rounded.Add, compact = true)
+                    }
                 }
             }
-            item { SectionHeader("Playlists", subtitle = "Encrypted personal state, decrypted on this phone — the node never reads it") }
+            item {
+                SectionHeader(
+                    "Playlists",
+                    subtitle = "Encrypted personal state, decrypted on this phone — the node never reads it",
+                )
+            }
             when {
-                state.notEnrolled -> item { Notice("Enrol this device to keep playlists — they are encrypted and only readable here.") }
+                state.notEnrolled -> item {
+                    Notice("Enrol this device to keep playlists — they are encrypted and only readable here.")
+                }
 
                 state.loading -> item { MediaRowSkeleton(3) }
 
                 state.error != null -> item { Notice(state.error, tone = Tokens.danger) }
 
-                state.playlists.isEmpty() -> item { EmptyState("No playlists yet", detail = "Make one here, or add from any card's long-press menu.", icon = Icons.Rounded.PlaylistPlay) }
-
-                else -> items(state.playlists, key = { it.spaceId }) { pl ->
-                    Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).background(Tokens.surface1).clickable { onOpen(pl.spaceId, pl.name) }.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        MediaBadge(MediaType.MUSIC)
-                        Column(Modifier.weight(1f)) {
-                            Text(pl.name, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text("${pl.itemIds.size} item${if (pl.itemIds.size == 1) "" else "s"}", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-                        }
-                    }
+                state.playlists.isEmpty() -> item {
+                    EmptyState(
+                        "No playlists yet",
+                        detail = "Make one here, or add from any card's long-press menu.",
+                        icon = Icons.Rounded.PlaylistPlay,
+                    )
                 }
+
+                else -> items(state.playlists, key = { it.spaceId }) { pl -> PlaylistRow(pl, onOpen) }
             }
             item { GatewaySyncFooter(state.starredSpaceId, state.historySpaceId) }
         }
@@ -119,40 +128,51 @@ internal fun PlaylistScreen(
 ) {
     var renaming by remember { mutableStateOf(false) }
     MediaScope(MediaType.MUSIC) {
-        LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = Tokens.screenPadding, vertical = Tokens.s3), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        LazyColumn(
+            modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = Tokens.screenPadding, vertical = Tokens.s3),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             item {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     GhostButton("Playlists", onBack, icon = Icons.Rounded.ArrowBack)
                     Spacer(Modifier.weight(1f))
                     SecondaryButton("Rename", { renaming = true }, icon = Icons.Rounded.Edit, compact = true)
-                    if (state.works.isNotEmpty()) PrimaryButton("Play all", { onPlayAll(state.works) }, icon = Icons.Rounded.PlayArrow, compact = true)
+                    if (state.works.isNotEmpty()) {
+                        PrimaryButton("Play all", {
+                            onPlayAll(state.works)
+                        }, icon = Icons.Rounded.PlayArrow, compact = true)
+                    }
                 }
             }
-            item { SectionHeader(state.name.ifEmpty { "Playlist" }, subtitle = "${state.items.size} item${if (state.items.size == 1) "" else "s"}") }
+            item {
+                SectionHeader(
+                    state.name.ifEmpty {
+                        "Playlist"
+                    },
+                    subtitle = "${state.items.size} item${if (state.items.size == 1) "" else "s"}",
+                )
+            }
             when {
                 state.loading -> item { MediaRowSkeleton(3) }
 
                 state.error != null -> item { Notice(state.error, tone = Tokens.danger) }
 
-                state.items.isEmpty() -> item { EmptyState("This playlist is empty", detail = "Add from any card's long-press menu, or a track's ⋯ menu.", icon = Icons.Rounded.PlaylistPlay) }
+                state.items.isEmpty() -> item {
+                    EmptyState(
+                        "This playlist is empty",
+                        detail = "Add from any card's long-press menu, or a track's ⋯ menu.",
+                        icon = Icons.Rounded.PlaylistPlay,
+                    )
+                }
 
                 // Keyed by the stored entry id (not the work id) so per-track entries stay distinct,
                 // and Remove observes exactly that entry — a track removes the track, not the album.
-                else -> items(state.items, key = { it.itemId }) { row ->
-                    val work = row.work
-                    Row(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusInput)).background(Tokens.surface1).clickable { onOpenWork(work) }.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        MediaBadge(MediaType.from(work.kind))
-                        Column(Modifier.weight(1f)) {
-                            Text(work.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            listOfNotNull(work.artist ?: work.author, work.year?.toString()).joinToString("  ·  ").takeIf { it.isNotEmpty() }?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }
-                        }
-                        IconButtonRound(Icons.Rounded.Close, "Remove ${work.title} from the playlist", { onRemove(row.itemId) }, size = 36.dp)
-                    }
-                }
+                else -> items(state.items, key = { it.itemId }) { row -> PlaylistItemRow(row, onOpenWork, onRemove) }
             }
         }
     }
@@ -161,6 +181,71 @@ internal fun PlaylistScreen(
             renaming = false
             it?.let(onRename)
         }, onDismiss = { renaming = false })
+    }
+}
+
+/** One playlist in the list: its name and how many items it holds; a tap opens it. */
+@Composable
+private fun PlaylistRow(pl: PersonalStateCoordinator.PlaylistView, onOpen: (spaceId: String, name: String) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(
+            RoundedCornerShape(Tokens.radiusInput),
+        ).background(Tokens.surface1).clickable {
+            onOpen(pl.spaceId, pl.name)
+        }.padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        MediaBadge(MediaType.MUSIC)
+        Column(Modifier.weight(1f)) {
+            Text(
+                pl.name,
+                style = MaterialTheme.typography.titleSmall,
+                color = Tokens.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                "${pl.itemIds.size} item${if (pl.itemIds.size == 1) "" else "s"}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
+            )
+        }
+    }
+}
+
+/** One entry of a playlist: the work, its creator and year, and Remove for exactly that entry. */
+@Composable
+private fun PlaylistItemRow(row: PlaylistViewModel.Item, onOpenWork: (Work) -> Unit, onRemove: (String) -> Unit) {
+    val work = row.work
+    Row(
+        Modifier.fillMaxWidth().clip(
+            RoundedCornerShape(Tokens.radiusInput),
+        ).background(Tokens.surface1).clickable {
+            onOpenWork(work)
+        }.padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        MediaBadge(MediaType.from(work.kind))
+        Column(Modifier.weight(1f)) {
+            Text(
+                work.title,
+                style = MaterialTheme.typography.titleSmall,
+                color = Tokens.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            listOfNotNull(
+                work.artist ?: work.author,
+                work.year?.toString(),
+            ).joinToString("  ·  ").takeIf {
+                it.isNotEmpty()
+            }?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }
+        }
+        IconButtonRound(Icons.Rounded.Close, "Remove ${work.title} from the playlist", {
+            onRemove(row.itemId)
+        }, size = 36.dp)
     }
 }
 
@@ -183,7 +268,9 @@ internal fun AddToPlaylistDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Tokens.surface2,
-        confirmButton = { TextButton(onClick = { naming = true }) { Text("New playlist", color = Tokens.textPrimary) } },
+        confirmButton = {
+            TextButton(onClick = { naming = true }) { Text("New playlist", color = Tokens.textPrimary) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = Tokens.textMuted) } },
         title = { Text("Add to playlist", color = Tokens.textPrimary) },
         text = {
@@ -192,7 +279,14 @@ internal fun AddToPlaylistDialog(
             } else {
                 LazyColumn {
                     items(playlists, key = { it.spaceId }) { pl ->
-                        Text(pl.name, style = MaterialTheme.typography.bodyLarge, color = Tokens.textPrimary, modifier = Modifier.fillMaxWidth().clickable { onPick(pl.spaceId) }.padding(vertical = 12.dp))
+                        Text(
+                            pl.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Tokens.textPrimary,
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                onPick(pl.spaceId)
+                            }.padding(vertical = 12.dp),
+                        )
                     }
                 }
             }
@@ -201,7 +295,13 @@ internal fun AddToPlaylistDialog(
 }
 
 @Composable
-private fun NameDialog(title: String, confirm: String, initial: String = "", onConfirm: (String?) -> Unit, onDismiss: () -> Unit) {
+private fun NameDialog(
+    title: String,
+    confirm: String,
+    initial: String = "",
+    onConfirm: (String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
     var text by remember { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -223,8 +323,26 @@ private fun NameDialog(title: String, confirm: String, initial: String = "", onC
 private fun GatewaySyncFooter(starredSpaceId: String?, historySpaceId: String?) {
     if (starredSpaceId == null && historySpaceId == null) return
     Panel("Serve on the Mac gateway") {
-        Text("Playlists sync once the Mac is an enrolled member. For starred and history, run `heyarr device gateway` with:", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-        starredSpaceId?.let { Text("--starred-space=$it", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, color = Tokens.textPrimary) }
-        historySpaceId?.let { Text("--history-space=$it", style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace, color = Tokens.textPrimary) }
+        Text(
+            "Playlists sync once the Mac is an enrolled member. For starred and history, run `heyarr device gateway` with:",
+            style = MaterialTheme.typography.bodySmall,
+            color = Tokens.textMuted,
+        )
+        starredSpaceId?.let {
+            Text(
+                "--starred-space=$it",
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                color = Tokens.textPrimary,
+            )
+        }
+        historySpaceId?.let {
+            Text(
+                "--history-space=$it",
+                style = MaterialTheme.typography.bodySmall,
+                fontFamily = FontFamily.Monospace,
+                color = Tokens.textPrimary,
+            )
+        }
     }
 }

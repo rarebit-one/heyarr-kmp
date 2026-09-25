@@ -44,7 +44,12 @@ class ProbeRecoveryTest {
             if (resets == 0) throw IOException("connection reset")
             return HttpResponse(200, """{"works":[]}""")
         }
-        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse = HttpResponse(405, "")
+        override fun post(
+            url: String,
+            body: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse = HttpResponse(405, "")
         override fun reset() {
             resets++
         }
@@ -53,10 +58,18 @@ class ProbeRecoveryTest {
     private fun session(transport: HttpTransport): AppSession = AppSession(
         settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://h.example", bearerToken = "heyarr_1_test")),
         transport = transport,
-        player = object : Player { override fun play(baseUrl: String, blobHash: String, token: String): PlayResult = PlayResult.Failed("no player") },
+        player = object : Player {
+            override fun play(baseUrl: String, blobHash: String, token: String): PlayResult =
+                PlayResult.Failed("no player")
+        },
         openExternally = OpenExternally(
-            object : BlobDownloader { override fun download(baseUrl: String, blobHash: String, token: String, ext: String): DownloadResult = DownloadResult.Failed("no downloads") },
-            object : ExternalOpener { override fun open(file: File): OpenResult = OpenResult.Opened },
+            object : BlobDownloader {
+                override fun download(baseUrl: String, blobHash: String, token: String, ext: String): DownloadResult =
+                    DownloadResult.Failed("no downloads")
+            },
+            object : ExternalOpener {
+                override fun open(file: File): OpenResult = OpenResult.Opened
+            },
         ),
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
     )
@@ -79,8 +92,14 @@ class ProbeRecoveryTest {
     fun aNodeThatIsReallyGoneIsOfflineAfterTheRetry() = runBlocking {
         val transport = object : HttpTransport {
             var resets = 0
-            override fun get(url: String, headers: Map<String, String>): HttpResponse = throw IOException("no route to host")
-            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse = HttpResponse(405, "")
+            override fun get(url: String, headers: Map<String, String>): HttpResponse =
+                throw IOException("no route to host")
+            override fun post(
+                url: String,
+                body: String?,
+                contentType: String?,
+                headers: Map<String, String>,
+            ): HttpResponse = HttpResponse(405, "")
             override fun reset() {
                 resets++
             }
@@ -101,7 +120,12 @@ class ProbeRecoveryTest {
                 Thread.sleep(10_000)
                 return HttpResponse(200, "")
             }
-            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse = HttpResponse(405, "")
+            override fun post(
+                url: String,
+                body: String?,
+                contentType: String?,
+                headers: Map<String, String>,
+            ): HttpResponse = HttpResponse(405, "")
         }
         val s = session(transport)
 
@@ -118,7 +142,12 @@ class ProbeRecoveryTest {
     fun aRefusedTokenIsRecordedAsTheReason() = runBlocking {
         val transport = object : HttpTransport {
             override fun get(url: String, headers: Map<String, String>): HttpResponse = HttpResponse(401, "")
-            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse = HttpResponse(405, "")
+            override fun post(
+                url: String,
+                body: String?,
+                contentType: String?,
+                headers: Map<String, String>,
+            ): HttpResponse = HttpResponse(405, "")
         }
         val s = session(transport)
 

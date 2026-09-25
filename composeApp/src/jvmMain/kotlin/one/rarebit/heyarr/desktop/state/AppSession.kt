@@ -157,10 +157,11 @@ class AppSession(
     val playback = PlaybackSession()
 
     val artwork: ArtworkLoader = artworkLoader ?: ArtworkLoader({ config.baseUrl }, { config.bearerToken.trim() })
-    val external: ExternalMetadata = externalMetadata ?: DesktopExternalMetadata.create(enabled = { config.externalMetadata }, movieLookup = { key ->
-        val hits = api?.discover(key.title)?.getOrNull().orEmpty()
-        one.rarebit.heyarr.desktop.state.MovieArtwork.select(key, hits)
-    })
+    val external: ExternalMetadata =
+        externalMetadata ?: DesktopExternalMetadata.create(enabled = { config.externalMetadata }, movieLookup = { key ->
+            val hits = api?.discover(key.title)?.getOrNull().orEmpty()
+            one.rarebit.heyarr.desktop.state.MovieArtwork.select(key, hits)
+        })
     val recent = RecentSearches(RecentSearches.defaultFile())
 
     /**
@@ -194,7 +195,9 @@ class AppSession(
         )
     }
 
-    var connection: Connection by mutableStateOf(if (config.baseUrl.isBlank()) Connection.UNCONFIGURED else Connection.UNKNOWN)
+    var connection: Connection by mutableStateOf(
+        if (config.baseUrl.isBlank()) Connection.UNCONFIGURED else Connection.UNKNOWN,
+    )
         private set
     var lastLatencyMs: Long? by mutableStateOf(null)
         private set
@@ -390,7 +393,14 @@ class AppSession(
     }
 
     /** Optimistic want: the row flips to Wanted at once and rolls back with the refusal on failure. */
-    fun want(workId: String, title: String, profile: String, monitor: Boolean = true, reason: String? = null, onDone: (McpResult<*>?) -> Unit = {}) {
+    fun want(
+        workId: String,
+        title: String,
+        profile: String,
+        monitor: Boolean = true,
+        reason: String? = null,
+        onDone: (McpResult<*>?) -> Unit = {},
+    ) {
         // Wanting is an enrolled surface; the UI routes a guest to "Sign in to save" first,
         // but guard here too so a stray call never fires an unauthenticated write at the node.
         if (isGuest) {
@@ -470,7 +480,13 @@ class AppSession(
         )
     }
 
-    fun toast(kind: Toast.Kind, title: String, detail: String? = null, tool: String? = null, action: ToastAction? = null) {
+    fun toast(
+        kind: Toast.Kind,
+        title: String,
+        detail: String? = null,
+        tool: String? = null,
+        action: ToastAction? = null,
+    ) {
         val t = Toast(++toastSeq, kind, title, detail, tool, action)
         toasts.add(t)
         scope.launch {

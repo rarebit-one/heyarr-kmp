@@ -15,7 +15,14 @@ import java.nio.channels.SocketChannel
 import java.nio.charset.StandardCharsets
 
 /** One subtitle or audio track as mpv lists it. */
-data class MpvTrack(val id: Int, val type: String, val title: String?, val lang: String?, val selected: Boolean, val external: Boolean) {
+data class MpvTrack(
+    val id: Int,
+    val type: String,
+    val title: String?,
+    val lang: String?,
+    val selected: Boolean,
+    val external: Boolean,
+) {
     val label: String get() = listOfNotNull(lang?.uppercase(), title).joinToString(" · ").ifBlank { "#$id" }
 }
 
@@ -173,7 +180,14 @@ class EmbeddedPlayer(
      * app's transport still drives it over the same socket. Returns null on success,
      * else a UI-safe reason.
      */
-    fun start(embedded: Boolean, url: String, token: String, title: String, knownDurationSec: Double? = null, streamBaseUrl: String? = null): String? {
+    fun start(
+        embedded: Boolean,
+        url: String,
+        token: String,
+        title: String,
+        knownDurationSec: Double? = null,
+        streamBaseUrl: String? = null,
+    ): String? {
         close()
         closed = false
         knownDuration = knownDurationSec?.takeIf { it > 0 }
@@ -195,7 +209,16 @@ class EmbeddedPlayer(
         val effectiveUrl = streamBaseUrl?.let { StreamSeek.urlAt(it, streamStart) } ?: url
         val start = if (streamBaseUrl != null) null else resume
         exited = false
-        val err = if (embedded) startInProcess(sock, token, title, start) else startProcess(sock, effectiveUrl, token, title, start)
+        val err = if (embedded) {
+            startInProcess(
+                sock,
+                token,
+                title,
+                start,
+            )
+        } else {
+            startProcess(sock, effectiveUrl, token, title, start)
+        }
         if (err != null) {
             close()
             return err
@@ -209,7 +232,9 @@ class EmbeddedPlayer(
                 return "mpv exited before it opened its control socket."
             }
             ch = try {
-                SocketChannel.open(StandardProtocolFamily.UNIX).also { it.connect(UnixDomainSocketAddress.of(sock.toPath())) }
+                SocketChannel.open(StandardProtocolFamily.UNIX).also {
+                    it.connect(UnixDomainSocketAddress.of(sock.toPath()))
+                }
             } catch (e: IOException) {
                 Thread.sleep(80)
                 null
@@ -234,13 +259,15 @@ class EmbeddedPlayer(
         val lib = MpvLib.loaded.getOrElse { return it.message ?: "libmpv is not installed" }
         val h = lib.mpv_create() ?: return "libmpv could not create a player"
         val options = listOf(
-            "vo" to "libmpv", "input-ipc-server" to sock.absolutePath, "idle" to "yes", "keep-open" to "yes", "terminal" to "no",
+            "vo" to "libmpv", "input-ipc-server" to sock.absolutePath, "idle" to "yes", "keep-open" to "yes",
+            "terminal" to "no",
             // Hardware decode into system memory — the frame-readback renderer needs the frames
             // back in RAM (plain `auto` hands back GPU-only frames it cannot read), and 4K HEVC is
             // far too slow to software-decode here. [EMBEDDED_HWDEC] is `vulkan-copy` on aarch64
             // Linux (Apple Silicon / Asahi), where the VA-API path crashes libmpv, and `auto-copy`
             // elsewhere; mpv falls back to software if the method is unavailable, so it is always safe.
-            "msg-level" to "all=error", "osc" to "no", "osd-level" to "0", "input-default-bindings" to "no", "hwdec" to EMBEDDED_HWDEC,
+            "msg-level" to "all=error", "osc" to "no", "osd-level" to "0", "input-default-bindings" to "no",
+            "hwdec" to EMBEDDED_HWDEC,
             // HDR sources (4K especially) tone-mapped toward the SDR, 8-bit surface this
             // software renderer presents. Without it mpv hands back BT.2020/PQ pixels the UI
             // shows as if they were sRGB — the washed-out, low-contrast look on 4K HDR. The
@@ -270,7 +297,9 @@ class EmbeddedPlayer(
         val argv = buildList {
             add(command)
             add("--input-ipc-server=${sock.absolutePath}")
-            addAll(listOf("--idle=yes", "--force-window=yes", "--keep-open=yes", "--no-terminal", "--msg-level=all=error"))
+            addAll(
+                listOf("--idle=yes", "--force-window=yes", "--keep-open=yes", "--no-terminal", "--msg-level=all=error"),
+            )
             // Same decoder story as the embedded path: on aarch64 Linux force Vulkan so the
             // pop-out is not a black screen from the crashing VA-API/v4l2 route. The GPU vo can
             // take Vulkan frames directly (no copy). Elsewhere leave mpv's own default.
@@ -278,7 +307,17 @@ class EmbeddedPlayer(
             // osc=yes: the pop-out is its OWN window, so give it mpv's on-screen controller —
             // a seek bar and buttons on mouse-over. (The embedded path has no window and is
             // driven by the app's transport; this only affects the pop-out.)
-            addAll(listOf("--osc=yes", "--osd-level=1", "--osd-bar=yes", "--input-default-bindings=yes", "--input-vo-keyboard=yes", "--geometry=60%", "--input-conf=${inputConf().absolutePath}"))
+            addAll(
+                listOf(
+                    "--osc=yes",
+                    "--osd-level=1",
+                    "--osd-bar=yes",
+                    "--input-default-bindings=yes",
+                    "--input-vo-keyboard=yes",
+                    "--geometry=60%",
+                    "--input-conf=${inputConf().absolutePath}",
+                ),
+            )
             start?.let { add("--start=$it") }
             add("--http-header-fields=Authorization: Bearer $token")
             add("--title=$title")
@@ -302,7 +341,8 @@ class EmbeddedPlayer(
         appliedSubs.clear() // a new file drops the old file's external subtitles
         wantedSubs = emptyList()
         resubOnLoad = false // and they belonged to the old item
-        state = state.copy(loaded = false, position = 0.0, duration = knownDuration ?: 0.0, eof = false, error = null, hasStarted = false, coreIdle = true, title = title, subtitles = emptyList(), audio = emptyList())
+        state =
+            state.copy(loaded = false, position = 0.0, duration = knownDuration ?: 0.0, eof = false, error = null, hasStarted = false, coreIdle = true, title = title, subtitles = emptyList(), audio = emptyList())
         send("set_property", "force-media-title", title)
         send("loadfile", streamBaseUrl ?: url)
         send("set_property", "pause", false)
@@ -543,7 +583,11 @@ class EmbeddedPlayer(
         internal fun sweepStaleSockets(dir: File) {
             dir.listFiles { f -> f.name.startsWith("heyarr-mpv-") && f.name.endsWith(".sock") }?.forEach { f ->
                 val pid = f.name.removePrefix("heyarr-mpv-").substringBefore('-').toLongOrNull() ?: return@forEach
-                if (pid != ProcessHandle.current().pid() && !ProcessHandle.of(pid).map { it.isAlive }.orElse(false)) f.delete()
+                if (pid != ProcessHandle.current().pid() &&
+                    !ProcessHandle.of(pid).map { it.isAlive }.orElse(false)
+                ) {
+                    f.delete()
+                }
             }
         }
 
@@ -551,7 +595,8 @@ class EmbeddedPlayer(
         private const val CACHE_SEEK_MARGIN = 1.0
 
         /** Properties observed in order; the index+1 is the observer id. */
-        val OBSERVED = listOf("time-pos", "duration", "pause", "volume", "mute", "paused-for-cache", "demuxer-cache-time", "eof-reached", "core-idle", "track-list", "sid", "aid", "media-title")
+        val OBSERVED =
+            listOf("time-pos", "duration", "pause", "volume", "mute", "paused-for-cache", "demuxer-cache-time", "eof-reached", "core-idle", "track-list", "sid", "aid", "media-title")
     }
 }
 
@@ -610,7 +655,14 @@ object PlayerEvents {
         "eof-reached" -> JsonScan.boolField(obj, "data")?.let { s.copy(eof = it) } ?: s
 
         // core-idle false means a frame is being shown: the first one ends warm-up for good.
-        "core-idle" -> JsonScan.boolField(obj, "data")?.let { idle -> s.copy(coreIdle = idle, hasStarted = s.hasStarted || !idle) } ?: s
+        "core-idle" -> JsonScan.boolField(obj, "data")?.let { idle ->
+            s.copy(
+                coreIdle = idle,
+                hasStarted =
+                s.hasStarted || !idle,
+            )
+        }
+            ?: s
 
         "sid" -> s.copy(subtitleId = JsonScan.longField(obj, "data")?.toInt())
 
@@ -619,7 +671,10 @@ object PlayerEvents {
         "media-title" -> JsonScan.stringField(obj, "data")?.let { s.copy(title = it) } ?: s
 
         "track-list" -> {
-            val tracks = JsonScan.objectsOf(JsonScan.arrayOf(obj, listOf("data")) ?: "[]", emptyList()).mapNotNull { t ->
+            val tracks = JsonScan.objectsOf(
+                JsonScan.arrayOf(obj, listOf("data")) ?: "[]",
+                emptyList(),
+            ).mapNotNull { t ->
                 val id = JsonScan.longField(t, "id")?.toInt() ?: return@mapNotNull null
                 MpvTrack(
                     id = id,

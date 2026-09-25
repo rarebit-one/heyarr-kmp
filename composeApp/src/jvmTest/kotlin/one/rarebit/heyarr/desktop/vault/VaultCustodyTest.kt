@@ -36,7 +36,11 @@ class VaultCustodyTest {
     private fun keyring(sub: String = "d"): DesktopDeviceKeyring {
         val dir = File(tmp, sub)
         val keyFile = File(dir, "device.key")
-        return DesktopDeviceKeyring(File(dir, "device"), keyFile, secrets = DesktopSecretStore(File(dir, "sealed"), keyFile))
+        return DesktopDeviceKeyring(
+            File(dir, "device"),
+            keyFile,
+            secrets = DesktopSecretStore(File(dir, "sealed"), keyFile),
+        )
     }
 
     /** Records created spaces + serves their wrapped keys; can simulate the enrol-before-wrap 403. */

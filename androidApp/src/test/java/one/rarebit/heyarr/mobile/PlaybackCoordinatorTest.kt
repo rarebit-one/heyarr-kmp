@@ -29,9 +29,13 @@ class PlaybackCoordinatorTest {
     private val scope = CoroutineScope(dispatcher)
     private val base = "https://h.example"
     private val hash = "blake3:" + "a".repeat(64)
-    private val caps = ClientCapabilities(containers = listOf("mp4"), video = listOf("h264"), audio = listOf("aac"), maxHeight = 1080)
+    private val caps =
+        ClientCapabilities(containers = listOf("mp4"), video = listOf("h264"), audio = listOf("aac"), maxHeight = 1080)
 
-    private fun coordinator(routes: Map<String, HttpResponse>, cred: Credential? = Credential.Session("tok")): Pair<PlaybackCoordinator, RoutedTransport> {
+    private fun coordinator(
+        routes: Map<String, HttpResponse>,
+        cred: Credential? = Credential.Session("tok"),
+    ): Pair<PlaybackCoordinator, RoutedTransport> {
         val t = RoutedTransport(routes)
         return PlaybackCoordinator(t, { base }, { cred }, scope, dispatcher) to t
     }
@@ -66,7 +70,11 @@ class PlaybackCoordinatorTest {
     @Test fun aRowWithAPrimaryAssetPlansAgainstCapabilities() {
         val (c, t) = coordinator(
             mapOf(
-                "POST /playback/plan" to HttpResponse(200, """{"mode":"stream","url":"/api/v1/playback/stream/tok","mime":"video/mp4","reason":"audio"}"""),
+                "POST /playback/plan" to
+                    HttpResponse(
+                        200,
+                        """{"mode":"stream","url":"/api/v1/playback/stream/tok","mime":"video/mp4","reason":"audio"}""",
+                    ),
             ),
         )
         c.capabilities = caps
@@ -81,7 +89,10 @@ class PlaybackCoordinatorTest {
     @Test fun anOlderNodeFallsBackToTheBlob() {
         val (c, _) = coordinator(mapOf("POST /playback/plan" to HttpResponse(400, "{}")))
         c.capabilities = caps
-        c.playAsset(Work(id = "w1", title = "Dune", kind = "movie"), WorkAsset(id = "a1", editionId = "e1", blobHash = hash, filename = "dune.mkv"))
+        c.playAsset(
+            Work(id = "w1", title = "Dune", kind = "movie"),
+            WorkAsset(id = "a1", editionId = "e1", blobHash = hash, filename = "dune.mkv"),
+        )
         val np = c.nowPlaying.value!!
         assertEquals("$base/api/v1/blobs/$hash/content", np.target.contentUrl)
         assertEquals(PlaybackTarget.Origin.DIRECT_UNPLANNED, np.target.origin)
@@ -90,7 +101,10 @@ class PlaybackCoordinatorTest {
 
     @Test fun aLinkedAssetHasNothingToStream() {
         val (c, _) = coordinator(emptyMap())
-        c.playAsset(Work(id = "w1", title = "Dune"), WorkAsset(id = "a1", editionId = "e1", blobHash = null, filename = "dune.epub"))
+        c.playAsset(
+            Work(id = "w1", title = "Dune"),
+            WorkAsset(id = "a1", editionId = "e1", blobHash = null, filename = "dune.epub"),
+        )
         assertNull(c.nowPlaying.value)
         assertTrue(c.notice.value!!.contains("dune.epub"))
     }
@@ -102,7 +116,10 @@ class PlaybackCoordinatorTest {
             ),
         )
         c.capabilities = caps
-        c.playAsset(Work(id = "w1", title = "Dune"), WorkAsset(id = "a1", editionId = "e1", blobHash = hash, mime = "video/mp4"))
+        c.playAsset(
+            Work(id = "w1", title = "Dune"),
+            WorkAsset(id = "a1", editionId = "e1", blobHash = hash, mime = "video/mp4"),
+        )
         assertEquals(PlaybackTarget.Origin.DIRECT_PLANNED, c.nowPlaying.value!!.target.origin)
         val before = t.calls.size
 

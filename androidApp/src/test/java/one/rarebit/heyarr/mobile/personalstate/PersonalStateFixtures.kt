@@ -115,7 +115,8 @@ internal class IdentityCrypto : SpaceCrypto {
         require(tag.contentEquals(pubOf(recipientSeed))) { "wrong recipient" }
         return wrapped.copyOfRange(recipientSeed.size, wrapped.size)
     }
-    override fun encryptChange(spaceKey: ByteArray, plaintext: ByteArray): ByteArray = spaceKey.copyOfRange(0, 4) + plaintext
+    override fun encryptChange(spaceKey: ByteArray, plaintext: ByteArray): ByteArray =
+        spaceKey.copyOfRange(0, 4) + plaintext
     override fun decryptChange(spaceKey: ByteArray, blob: ByteArray): ByteArray {
         require(blob.copyOfRange(0, 4).contentEquals(spaceKey.copyOfRange(0, 4))) { "wrong key" }
         return blob.copyOfRange(4, blob.size)

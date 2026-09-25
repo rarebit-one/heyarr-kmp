@@ -12,10 +12,7 @@ package one.rarebit.heyarr.mobile.personalstate
  * them on a background dispatcher. Nothing here decrypts — that is [SpaceSession] on
  * the device; the node only ever sees ciphertext (Invariant 6).
  */
-internal class PersonalStateCoordinator(
-    private val session: SpaceSession,
-    private val registry: SpaceRegistry,
-) {
+internal class PersonalStateCoordinator(private val session: SpaceSession, private val registry: SpaceRegistry) {
     data class PlaylistView(val spaceId: String, val name: String, val itemIds: List<String>)
 
     // --- playlists ----------------------------------------------------------------
@@ -46,7 +43,9 @@ internal class PersonalStateCoordinator(
         session.addToPlaylist(spaceId, itemId)?.let { PlaylistView(spaceId, registry.displayName(spaceId), it.ids()) }
 
     fun removeFromPlaylist(spaceId: String, itemId: String): PlaylistView? =
-        session.removeFromPlaylist(spaceId, itemId)?.let { PlaylistView(spaceId, registry.displayName(spaceId), it.ids()) }
+        session.removeFromPlaylist(spaceId, itemId)?.let {
+            PlaylistView(spaceId, registry.displayName(spaceId), it.ids())
+        }
 
     // --- starred ------------------------------------------------------------------
 

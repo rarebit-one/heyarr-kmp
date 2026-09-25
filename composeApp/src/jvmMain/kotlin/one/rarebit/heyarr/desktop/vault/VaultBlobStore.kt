@@ -79,7 +79,12 @@ class JdkVaultBlobStore(
         }
     }
 
-    override fun putBlobFile(baseUrl: String, hash: String, file: java.nio.file.Path, credential: Credential): PutResult {
+    override fun putBlobFile(
+        baseUrl: String,
+        hash: String,
+        file: java.nio.file.Path,
+        credential: Credential,
+    ): PutResult {
         // Stream the ciphertext straight off disk — the bytes never sit in memory. Deliberately
         // NO request timeout: a multi-GB blob over a slow link would blow the 120s cap; the
         // connect timeout still bounds establishing the connection.
@@ -135,8 +140,7 @@ class JdkVaultBlobStore(
         // RAW path, so `chi.URLParam` would hand `hashing.Parse` a colon-less `blake3%3A…` and it
         // would 400 the upload as a malformed id. The Go CLI sends the literal id (`hash.String()`);
         // we match it byte-for-byte.
-        fun uploadUrl(baseUrl: String, hash: String): String =
-            baseUrl.trimEnd('/') + "/api/v1/vault/blobs/" + hash
+        fun uploadUrl(baseUrl: String, hash: String): String = baseUrl.trimEnd('/') + "/api/v1/vault/blobs/" + hash
 
         fun contentUrl(baseUrl: String, hash: String): String =
             baseUrl.trimEnd('/') + "/api/v1/blobs/" + hash + "/content"

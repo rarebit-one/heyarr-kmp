@@ -92,7 +92,7 @@ androidApp/src/main/java/one/rarebit/heyarr/mobile/
                 Reasons set are `:ui`'s `components/`, shared with the desktop
   ui/screens/   HomeScreen (spotlight hero, Continue, Starred/Recently played when decrypted here, per-type rails, wanted/upgrade
                 rails, Following; Discover = the same with the discover_content notice) · SearchScreen (universal search over
-                state/SearchController, per-type sections streaming in, local recent searches) · DetailScreen (the shell, hero and cast picker; the tabs in DetailWatch.kt / DetailCurate.kt — Watch tab: art,
+                state/SearchController, per-type sections streaming in, local recent searches) · DetailScreen (the shell and cast picker; the hero in DetailHero.kt; the tabs in DetailWatch(+Parts).kt / DetailCurate.kt + CurateWants/CurateSections.kt — Watch tab: art,
                 synopsis, seasons/episodes with -thumb sidecars, tracks, book files, feed archive; Curate tab: wants & status,
                 held files with verdicts, indexer candidates + Acquire, score a release, health/replicas, captions & artwork,
                 "also catalogued as", identifiers, all files — as tables) · LibraryScreen (+ DownloadsScreen: wants in flight

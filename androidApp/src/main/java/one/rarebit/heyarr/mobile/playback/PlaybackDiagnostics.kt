@@ -59,7 +59,9 @@ object PlaybackDiagnostics {
     fun noFrameMessage(target: PlaybackTarget): String {
         val container = target.mimeType?.let { containerName(it) }
         val what = if (container != null) "This $container file" else "This file"
-        return "$what isn't producing any picture on this phone (the container may not be supported) — ${remedy(target)}"
+        return "$what isn't producing any picture on this phone (the container may not be supported) — ${remedy(
+            target,
+        )}"
     }
 
     /**
@@ -74,7 +76,9 @@ object PlaybackDiagnostics {
 
             errorCodeName.startsWith("ERROR_CODE_DECODING") -> "The decoder failed part-way through this file."
 
-            errorCodeName.startsWith("ERROR_CODE_PARSING") -> "This file's container couldn't be read (${containerName(target.mimeType ?: "")})."
+            errorCodeName.startsWith(
+                "ERROR_CODE_PARSING",
+            ) -> "This file's container couldn't be read (${containerName(target.mimeType ?: "")})."
 
             errorCodeName.startsWith("ERROR_CODE_IO_BAD_HTTP_STATUS") -> "The node refused the stream (HTTP error)."
 

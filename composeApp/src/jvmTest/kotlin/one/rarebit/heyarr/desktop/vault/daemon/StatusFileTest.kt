@@ -96,7 +96,10 @@ class StatusFileTest {
     @Test
     fun missingLastPassStillEmitsZeroedObject() {
         val json = sample(lastPass = null).toJson()
-        assertTrue(json.contains("\"last_pass\":{\"pushed\":0,\"pulled\":0,\"conflicts\":0,\"deleted\":0,\"ms\":0}"), json)
+        assertTrue(
+            json.contains("\"last_pass\":{\"pushed\":0,\"pulled\":0,\"conflicts\":0,\"deleted\":0,\"ms\":0}"),
+            json,
+        )
     }
 
     @Test

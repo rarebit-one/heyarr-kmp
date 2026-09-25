@@ -101,7 +101,10 @@ class SpaceCryptoTest {
     @Test
     fun wrongKeyCannotDecrypt() {
         val body = Vectors.load("spacecrypto.json")
-        val c = JsonScan.objectsOf(body, listOf("contents")).first { JsonScan.stringField(it, "name") == "playlist-change" }
+        val c = JsonScan.objectsOf(body, listOf("contents")).first {
+            JsonScan.stringField(it, "name") ==
+                "playlist-change"
+        }
         val ct = b64(JsonScan.stringField(c, "content_b64")!!)
         val otherKey = ByteArray(32) { (0x11 + it).toByte() }
         assertThrows(Exception::class.java) { crypto.decryptChange(otherKey, ct) }
@@ -130,7 +133,10 @@ class SpaceCryptoTest {
             // encrypt in-process, so decrypting our own freshly-sealed blob throws. The
             // Go-golden-vector decrypt KATs above are unaffected (Go did that encryption);
             // the full on-device round trip is a device-test item.
-            org.junit.Assume.assumeNoException("JVM provider rejects decrypt after in-process encrypt; verify on-device", e)
+            org.junit.Assume.assumeNoException(
+                "JVM provider rejects decrypt after in-process encrypt; verify on-device",
+                e,
+            )
             return
         }
         assertArrayEquals(spaceKey, unwrapped)
@@ -148,7 +154,10 @@ class SpaceCryptoTest {
         } catch (e: java.security.InvalidKeyException) {
             // Same JVM provider limitation as sealThenUnwrapRoundTrips (decrypt-after-
             // in-process-encrypt); a device-test item. Decrypt of Go content is KAT'd above.
-            org.junit.Assume.assumeNoException("JVM provider rejects decrypt after in-process encrypt; verify on-device", e)
+            org.junit.Assume.assumeNoException(
+                "JVM provider rejects decrypt after in-process encrypt; verify on-device",
+                e,
+            )
             return
         }
         assertArrayEquals(plaintext, decrypted)

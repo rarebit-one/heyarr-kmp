@@ -23,7 +23,12 @@ class McpClientTest {
         var sent: String? = null
         var headers: Map<String, String> = emptyMap()
         override fun get(url: String, headers: Map<String, String>) = HttpResponse(405, "")
-        override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>): HttpResponse {
+        override fun post(
+            url: String,
+            body: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse {
             this.url = url
             this.sent = body
             this.headers = headers
@@ -33,7 +38,8 @@ class McpClientTest {
 
     @Test
     fun postsAToolsCallEnvelopeWithBearerToTheMcpRoute() {
-        val http = Capture(body = """{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"{\"count\":0}"}]}}""")
+        val http =
+            Capture(body = """{"jsonrpc":"2.0","id":1,"result":{"content":[{"type":"text","text":"{\"count\":0}"}]}}""")
         val client = McpClient(http, "https://node.example:7777/", Credential.Bearer("heyarr_x_y"))
         val out = client.call("search_content", linkedMapOf("query" to "sintel", "limit" to 5, "content_type" to null))
         assertEquals("https://node.example:7777/api/v1/mcp", http.url)
@@ -53,7 +59,11 @@ class McpClientTest {
     @Test
     fun aRefusalCarriesTheServersOwnWordingAndTheTool() {
         val body = """{"jsonrpc":"2.0","id":3,"error":{"code":-32602,"message":"no candidate with that id for this want — run search_releases and look again","data":{"tool":"acquire_release"}}}"""
-        val out = McpClient(Capture(body = body), "https://n", Credential.Bearer("t")).parse("acquire_release", 200, body)
+        val out = McpClient(
+            Capture(body = body),
+            "https://n",
+            Credential.Bearer("t"),
+        ).parse("acquire_release", 200, body)
         val refused = assertIs<McpOutcome.Refused>(out)
         assertEquals(-32602, refused.error.code)
         assertEquals("acquire_release", refused.error.tool)
@@ -63,7 +73,11 @@ class McpClientTest {
     @Test
     fun isErrorContentIsARefusalToo() {
         val body = """{"jsonrpc":"2.0","id":1,"result":{"isError":true,"content":[{"type":"text","text":"rejected by rule source.nin"}]}}"""
-        val out = McpClient(Capture(body = body), "https://n", Credential.Bearer("t")).parse("acquire_release", 200, body)
+        val out = McpClient(
+            Capture(body = body),
+            "https://n",
+            Credential.Bearer("t"),
+        ).parse("acquire_release", 200, body)
         assertEquals("rejected by rule source.nin", assertIs<McpOutcome.Refused>(out).error.message)
     }
 
@@ -77,7 +91,14 @@ class McpClientTest {
 
     @Test
     fun jsonWriteDropsNullsEscapesAndNests() {
-        val s = JsonWrite.obj(linkedMapOf("a" to "q\"uo\nte", "b" to null, "c" to listOf(1, true, mapOf("d" to 2.5)), "e" to 9_000_000_000L))
+        val s = JsonWrite.obj(
+            linkedMapOf(
+                "a" to "q\"uo\nte",
+                "b" to null,
+                "c" to listOf(1, true, mapOf("d" to 2.5)),
+                "e" to 9_000_000_000L,
+            ),
+        )
         assertEquals("""{"a":"q\"uo\nte","c":[1,true,{"d":2.5}],"e":9000000000}""", s)
         assertNull(JsonScan.valueStart(s, "b"))
     }

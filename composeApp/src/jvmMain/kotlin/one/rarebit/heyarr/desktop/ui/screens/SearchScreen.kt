@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,6 +43,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -109,16 +111,23 @@ fun SearchScreen(
 
     fun open(row: SearchRow) {
         session.recent.push(search.query).also { recent = it }
-        when (row) {
-            is SearchRow.WorkRow -> onOpen(Route.Detail(row.hit.workId, MediaType.from(row.hit.contentType), row.hit.title, from = "Search"))
-            is SearchRow.EpisodeRow -> row.hit.workId?.let { onOpen(Route.Detail(it, MediaType.SERIES, row.hit.workTitle ?: row.hit.title, from = "Search")) }
-            is SearchRow.SourceRow -> row.source.workId?.let { onOpen(Route.Detail(it, MediaType.from(row.source.type), row.source.title, from = "Search")) }
+        routeFor(row)?.let(onOpen)
+    }
+
+    LaunchedEffect(search.selected) {
+        if (search.selected >=
+            0
+        ) {
+            listState.animateScrollToItem(
+                search.selected.coerceAtMost(maxOf(0, listState.layoutInfo.totalItemsCount - 1)),
+            )
         }
     }
 
-    LaunchedEffect(search.selected) { if (search.selected >= 0) listState.animateScrollToItem(search.selected.coerceAtMost(maxOf(0, listState.layoutInfo.totalItemsCount - 1))) }
-
-    Column(modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         SearchBox(
             value = search.query,
             onValueChange = search::updateQuery,
@@ -135,53 +144,35 @@ fun SearchScreen(
             ProviderSearchPane(session, search.query, onWantTitle)
             return@Column
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (f in SearchFilter.entries) {
-                val count = if (f == SearchFilter.ALL) null else sections.firstOrNull { f.admits(it.type) }?.rows?.size?.takeIf { it > 0 }
-                MediaScope(f.type ?: MediaType.MOVIE) {
-                    FilterChip(f.label, search.filter == f, {
-                        search.filter = f
-                        search.selected = -1
-                    }, count = count)
-                }
-            }
-        }
+        SearchFilterChips(search, sections)
         when {
             search.isIdle -> IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = {
                 session.recent.clear()
                 recent = emptyList()
             })
 
-            SearchGrouping.empty(sections) -> EmptyState("Nothing in the library matches “${search.query}”", detail = "Discover can find titles to add from the metadata catalogue.", action = { SecondaryButton("Discover titles", { discovering = true }, icon = Icons.Rounded.TravelExplore) })
+            SearchGrouping.empty(
+                sections,
+            ) -> EmptyState("Nothing in the library matches “${search.query}”", detail = "Discover can find titles to add from the metadata catalogue.", action = {
+                SecondaryButton("Discover titles", {
+                    discovering =
+                        true
+                }, icon = Icons.Rounded.TravelExplore)
+            })
 
-            else -> LazyColumn(state = listState, verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxSize()) {
-                var index = 0
-                for (section in sections) {
-                    if (section.segment is Segment.Loaded && section.rows.isEmpty()) continue
-                    item(key = "h:" + section.type) { MediaScope(section.type) { SectionHeader(section.title, icon = section.type.icon(), modifier = Modifier.padding(top = 12.dp, bottom = 6.dp), subtitle = (section.segment as? Segment.Loaded)?.let { if (it.truncated) "Showing the first ${it.rows.size} — narrow the query for more." else null }) } }
-                    when (val seg = section.segment) {
-                        Segment.Pending -> item(key = "p:" + section.type) { MediaRowSkeleton(2) }
-
-                        is Segment.Failed -> item(key = "f:" + section.type) { Notice("Couldn't search ${section.title.lowercase()}: ${seg.message}", tone = Tokens.danger) }
-
-                        is Segment.Loaded -> {
-                            val start = index
-                            items(seg.rows, key = { it.key }) { row ->
-                                val i = start + seg.rows.indexOf(row)
-                                ResultRow(session, row, selected = i == search.selected, onOpen = { open(row) }, onWant = onWant)
-                            }
-                            index += seg.rows.size
-                        }
-                    }
-                }
-                item { Spacer(Modifier.height(24.dp)) }
-            }
+            else -> SearchResults(session, search, listState, ::open, onWant)
         }
     }
 }
 
 @Composable
-private fun ResultRow(session: AppSession, row: SearchRow, selected: Boolean, onOpen: () -> Unit, onWant: (String, String, MediaType) -> Unit) {
+private fun ResultRow(
+    session: AppSession,
+    row: SearchRow,
+    selected: Boolean,
+    onOpen: () -> Unit,
+    onWant: (String, String, MediaType) -> Unit,
+) {
     when (row) {
         is SearchRow.WorkRow -> {
             val hit = row.hit
@@ -189,13 +180,25 @@ private fun ResultRow(session: AppSession, row: SearchRow, selected: Boolean, on
             val status = session.index.statusOf(hit.workId)
             MediaRow(
                 title = hit.title, type = row.type, onOpen = onOpen, subtitle = hit.creator,
-                meta = listOf(hit.year?.toString(), hit.attributes["runtime"], hit.attributes["album"], hit.attributes["series"]),
+                meta = listOf(
+                    hit.year?.toString(),
+                    hit.attributes["runtime"],
+                    hit.attributes["album"],
+                    hit.attributes["series"],
+                ),
                 artwork = cover.bitmap, status = status, selected = selected,
                 trailing = {
                     // Want writes desired state (enrolled-only Surface.WANT): hide it for a
                     // guest — GuestGate is the single source of truth — and fall back to Open.
-                    if (status == LibraryStatus.NOT_TRACKED && GuestGate.allows(session.mode, Surface.WANT)) PrimaryButton("Want", { onWant(hit.workId, hit.title, row.type) }, icon = Icons.Rounded.Add, compact = true, contentDescription = "Want ${hit.title}")
-                    else SecondaryButton("Open", onOpen, compact = true)
+                    if (status == LibraryStatus.NOT_TRACKED &&
+                        GuestGate.allows(session.mode, Surface.WANT)
+                    ) {
+                        PrimaryButton("Want", {
+                            onWant(hit.workId, hit.title, row.type)
+                        }, icon = Icons.Rounded.Add, compact = true, contentDescription = "Want ${hit.title}")
+                    } else {
+                        SecondaryButton("Open", onOpen, compact = true)
+                    }
                 },
             )
         }
@@ -217,7 +220,11 @@ private fun ResultRow(session: AppSession, row: SearchRow, selected: Boolean, on
                 type = row.type,
                 onOpen = onOpen,
                 subtitle = row.source.feedRef,
-                meta = listOf(row.source.type, "${row.source.itemsArchived}/${row.source.itemsKnown} archived", row.source.health),
+                meta = listOf(
+                    row.source.type,
+                    "${row.source.itemsArchived}/${row.source.itemsKnown} archived",
+                    row.source.health,
+                ),
                 artwork = cover.bitmap,
                 status = LibraryStatus.IN_LIBRARY,
                 selected = selected,
@@ -227,7 +234,14 @@ private fun ResultRow(session: AppSession, row: SearchRow, selected: Boolean, on
 }
 
 @Composable
-private fun SearchBox(value: String, onValueChange: (String) -> Unit, onSubmit: () -> Unit, onMove: (Int) -> Unit, onClear: () -> Unit, focusRequester: FocusRequester) {
+private fun SearchBox(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSubmit: () -> Unit,
+    onMove: (Int) -> Unit,
+    onClear: () -> Unit,
+    focusRequester: FocusRequester,
+) {
     val accent = LocalMediaTheme.current.accent
     val shape = RoundedCornerShape(Tokens.radiusInput)
     val interaction = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
@@ -240,9 +254,20 @@ private fun SearchBox(value: String, onValueChange: (String) -> Unit, onSubmit: 
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Icon(Icons.Rounded.Search, contentDescription = null, tint = if (focused) accent else Tokens.textMuted, modifier = Modifier.size(20.dp))
+        Icon(
+            Icons.Rounded.Search,
+            contentDescription = null,
+            tint = if (focused) accent else Tokens.textMuted,
+            modifier = Modifier.size(20.dp),
+        )
         Box(Modifier.weight(1f)) {
-            if (value.isEmpty()) Text("Search movies, series, music, books, podcasts…", style = MaterialTheme.typography.bodyLarge, color = Tokens.textDisabled)
+            if (value.isEmpty()) {
+                Text(
+                    "Search movies, series, music, books, podcasts…",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Tokens.textDisabled,
+                )
+            }
             BasicTextField(
                 value = value, onValueChange = onValueChange, singleLine = true,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = Tokens.textPrimary),
@@ -250,32 +275,7 @@ private fun SearchBox(value: String, onValueChange: (String) -> Unit, onSubmit: 
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
                 modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
-                    .onPreviewKeyEvent { e ->
-                        if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                        when (e.key) {
-                            Key.DirectionDown -> {
-                                onMove(1)
-                                true
-                            }
-
-                            Key.DirectionUp -> {
-                                onMove(-1)
-                                true
-                            }
-
-                            Key.Enter -> {
-                                onSubmit()
-                                true
-                            }
-
-                            Key.Escape -> {
-                                onClear()
-                                true
-                            }
-
-                            else -> false
-                        }
-                    }
+                    .onPreviewKeyEvent { e -> searchKeys(e, onMove, onSubmit, onClear) }
                     .semantics { this.contentDescription = "Universal search" },
                 interactionSource = interaction,
             )
@@ -292,20 +292,161 @@ private fun SearchBox(value: String, onValueChange: (String) -> Unit, onSubmit: 
     }
 }
 
+/** Where a search row leads: its work's detail page, or nowhere for an episode or source with no work. */
+private fun routeFor(row: SearchRow): Route.Detail? = when (row) {
+    is SearchRow.WorkRow ->
+        Route.Detail(row.hit.workId, MediaType.from(row.hit.contentType), row.hit.title, from = "Search")
+
+    is SearchRow.EpisodeRow -> row.hit.workId?.let {
+        Route.Detail(
+            it,
+            MediaType.SERIES,
+            row.hit.workTitle ?: row.hit.title,
+            from = "Search",
+        )
+    }
+
+    is SearchRow.SourceRow -> row.source.workId?.let {
+        Route.Detail(it, MediaType.from(row.source.type), row.source.title, from = "Search")
+    }
+}
+
+/** One chip per media filter, each counting its section's rows and wearing that media's accent. */
+@Composable
+private fun SearchFilterChips(search: SearchController, sections: List<SearchSection>) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (f in SearchFilter.entries) {
+            val count = if (f ==
+                SearchFilter.ALL
+            ) {
+                null
+            } else {
+                sections.firstOrNull { f.admits(it.type) }?.rows?.size?.takeIf { it > 0 }
+            }
+            MediaScope(f.type ?: MediaType.MOVIE) {
+                FilterChip(f.label, search.filter == f, {
+                    search.filter = f
+                    search.selected = -1
+                }, count = count)
+            }
+        }
+    }
+}
+
+/** The results, a header per media section, streamed in as each segment lands; ↑/↓ selection is by flattened index. */
+@Composable
+private fun SearchResults(
+    session: AppSession,
+    search: SearchController,
+    listState: LazyListState,
+    onOpenRow: (SearchRow) -> Unit,
+    onWant: (String, String, MediaType) -> Unit,
+) {
+    val sections = search.sections
+    LazyColumn(
+        state = listState,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        var index = 0
+        for (section in sections) {
+            if (section.segment is Segment.Loaded && section.rows.isEmpty()) continue
+            item(key = "h:" + section.type) {
+                MediaScope(section.type) {
+                    SectionHeader(
+                        section.title,
+                        icon = section.type.icon(),
+                        modifier = Modifier.padding(top = 12.dp, bottom = 6.dp),
+                        subtitle = (section.segment as? Segment.Loaded)?.let {
+                            if (it.truncated) "Showing the first ${it.rows.size} — narrow the query for more." else null
+                        },
+                    )
+                }
+            }
+            when (val seg = section.segment) {
+                Segment.Pending -> item(key = "p:" + section.type) { MediaRowSkeleton(2) }
+
+                is Segment.Failed -> item(key = "f:" + section.type) {
+                    Notice("Couldn't search ${section.title.lowercase()}: ${seg.message}", tone = Tokens.danger)
+                }
+
+                is Segment.Loaded -> {
+                    val start = index
+                    items(seg.rows, key = { it.key }) { row ->
+                        val i = start + seg.rows.indexOf(row)
+                        ResultRow(session, row, selected = i == search.selected, onOpen = {
+                            onOpenRow(row)
+                        }, onWant = onWant)
+                    }
+                    index += seg.rows.size
+                }
+            }
+        }
+        item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+/** The box's own keys: ↑/↓ move the selection, Enter opens it (or searches), Esc clears. */
+private fun searchKeys(e: KeyEvent, onMove: (Int) -> Unit, onSubmit: () -> Unit, onClear: () -> Unit): Boolean {
+    if (e.type != KeyEventType.KeyDown) return false
+    return when (e.key) {
+        Key.DirectionDown -> {
+            onMove(1)
+            true
+        }
+
+        Key.DirectionUp -> {
+            onMove(-1)
+            true
+        }
+
+        Key.Enter -> {
+            onSubmit()
+            true
+        }
+
+        Key.Escape -> {
+            onClear()
+            true
+        }
+
+        else -> false
+    }
+}
+
 @Composable
 private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (recent.isEmpty()) {
-            EmptyState("Search everything at once", detail = "Movies, series, music and books come from the library; podcasts and feeds from what you follow. Results appear per type as each answer lands.")
+            EmptyState(
+                "Search everything at once",
+                detail = "Movies, series, music and books come from the library; podcasts and feeds from what you follow. Results appear per type as each answer lands.",
+            )
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Rounded.History, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(16.dp))
+                Icon(
+                    Icons.Rounded.History,
+                    contentDescription = null,
+                    tint = Tokens.textMuted,
+                    modifier = Modifier.size(16.dp),
+                )
                 Spacer(Modifier.size(8.dp))
-                Text("Recent searches", style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, modifier = Modifier.weight(1f))
+                Text(
+                    "Recent searches",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = Tokens.textPrimary,
+                    modifier = Modifier.weight(1f),
+                )
                 GhostButton("Clear", onClear)
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { for (q in recent) FilterChip(q, false, { onPick(q) }) }
-            Text("Kept on this machine only — heyarr's personal history is encrypted controller-side and not reachable from here.", style = MaterialTheme.typography.bodySmall, color = Tokens.textDisabled)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for (q in recent) FilterChip(q, false, { onPick(q) })
+            }
+            Text(
+                "Kept on this machine only — heyarr's personal history is encrypted controller-side and not reachable from here.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textDisabled,
+            )
         }
     }
 }
@@ -323,7 +464,13 @@ private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: 
         busy = false
     }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { SectionHeader("Discover", icon = Icons.Rounded.TravelExplore, subtitle = "Find titles to add — series, movies, books and music the node's metadata providers know about but the library doesn't hold yet.") }
+        item {
+            SectionHeader(
+                "Discover",
+                icon = Icons.Rounded.TravelExplore,
+                subtitle = "Find titles to add — series, movies, books and music the node's metadata providers know about but the library doesn't hold yet.",
+            )
+        }
         item {
             if (query.isBlank()) {
                 Text("Enter a title above to explore the metadata catalogue.", color = Tokens.textMuted)

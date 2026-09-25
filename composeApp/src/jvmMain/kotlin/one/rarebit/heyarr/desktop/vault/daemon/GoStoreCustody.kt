@@ -14,10 +14,7 @@ import one.rarebit.voidbind.crypto.VoidbindEncryption
  * copy in the space's key list and unwrap it with the enc seed. A space with no wrapped copy for
  * this device throws (this device isn't a recipient) rather than forking state.
  */
-class GoStoreCustody(
-    private val store: GoDeviceStore,
-    private val keys: VaultKeys,
-) {
+class GoStoreCustody(private val store: GoDeviceStore, private val keys: VaultKeys) {
     /** Open [spaceId]: match this device's recipient in the wrapped-key list and unwrap with the enc seed. */
     fun open(spaceId: String): OpenedVault {
         val mine = store.encKeyRef()

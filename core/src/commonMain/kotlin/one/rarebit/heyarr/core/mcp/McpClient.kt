@@ -24,11 +24,7 @@ import one.rarebit.heyarr.core.net.JsonScan
  * [McpTransportException], which the UI reads as "can't reach heyarr" rather than as an
  * answer. Blocking, like every transport call here; run it on `Dispatchers.IO`.
  */
-class McpClient(
-    private val http: HttpTransport,
-    private val baseUrl: String,
-    private val credential: Credential,
-) {
+class McpClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
     private var nextId = 1L
 
     /** Call [tool] with [arguments] (nulls dropped — see [JsonWrite]). */
@@ -62,7 +58,11 @@ class McpClient(
     /** Pure: turn a raw HTTP status + body into an outcome. Split out so it is unit-tested without a socket. */
     fun parse(tool: String, status: Int, body: String): McpOutcome {
         if (status == 401 || status == 403) {
-            throw McpTransportException("heyarr refused the credential (HTTP $status) — check the token in Settings", null, status)
+            throw McpTransportException(
+                "heyarr refused the credential (HTTP $status) — check the token in Settings",
+                null,
+                status,
+            )
         }
         if (status != 200) {
             throw McpTransportException("heyarr answered HTTP $status to $tool", null, status)
@@ -120,4 +120,5 @@ data class McpError(val code: Int, val message: String, val tool: String)
 class McpRefusedException(val error: McpError) : RuntimeException(error.message)
 
 /** Could not get an answer at all (network, auth, protocol). The UI shows the offline banner on this. */
-class McpTransportException(message: String, cause: Throwable?, val status: Int? = null) : RuntimeException(message, cause)
+class McpTransportException(message: String, cause: Throwable?, val status: Int? = null) :
+    RuntimeException(message, cause)

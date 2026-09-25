@@ -9,7 +9,10 @@ import org.junit.Test
 class SubtitlesTest {
 
     @Test fun prefersAnExplicitLabel() {
-        assertEquals("Director's commentary", Subtitles.label(language = "en", label = "Director's commentary", index = 0))
+        assertEquals(
+            "Director's commentary",
+            Subtitles.label(language = "en", label = "Director's commentary", index = 0),
+        )
     }
 
     @Test fun fallsBackToTheLanguageName() {

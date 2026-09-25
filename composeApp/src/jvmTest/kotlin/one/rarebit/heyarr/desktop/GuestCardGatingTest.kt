@@ -16,7 +16,13 @@ import kotlin.test.assertTrue
 class GuestCardGatingTest {
 
     @Test fun guestNeverSeesWant() {
-        for (status in listOf(null, LibraryStatus.NOT_TRACKED, LibraryStatus.WANTED, LibraryStatus.MISSING, LibraryStatus.IN_LIBRARY)) {
+        for (status in listOf(
+            null,
+            LibraryStatus.NOT_TRACKED,
+            LibraryStatus.WANTED,
+            LibraryStatus.MISSING,
+            LibraryStatus.IN_LIBRARY,
+        )) {
             assertFalse(wantVisible(ClientMode.GUEST, status), "guest should not see Want for status=$status")
         }
     }

@@ -66,6 +66,7 @@ import one.rarebit.heyarr.desktop.state.ArtworkLoader
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.state.SearchController
 import one.rarebit.heyarr.desktop.ui.components.AudioDock
+import one.rarebit.heyarr.desktop.ui.components.ModalScrim
 import one.rarebit.heyarr.desktop.ui.components.NowPlayingBar
 import one.rarebit.heyarr.desktop.ui.components.PlaybackHost
 import one.rarebit.heyarr.desktop.ui.components.SideNav
@@ -103,7 +104,12 @@ import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 
 /** A pending Want: either an existing work by id, or a title the library has never seen. */
-data class WantRequest(val workId: String?, val title: String, val year: Int? = null, val type: MediaType = MediaType.MOVIE)
+data class WantRequest(
+    val workId: String?,
+    val title: String,
+    val year: Int? = null,
+    val type: MediaType = MediaType.MOVIE,
+)
 
 /**
  * The shell: left nav, offline banner, the routed screen, the toast stack and the Want
@@ -141,7 +147,19 @@ fun App(
     enableDeviceEnrol: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
-    val session = remember { AppSession(settings, transport, player, OpenExternally(downloader, opener), scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol).also { if (initialAudioQueue.isNotEmpty()) it.playback.queueAudio(initialAudioQueue) } }
+    val session =
+        remember {
+            AppSession(
+                settings, transport, player,
+                OpenExternally(
+                    downloader,
+                    opener,
+                ),
+                scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol,
+            ).also {
+                if (initialAudioQueue.isNotEmpty()) it.playback.queueAudio(initialAudioQueue)
+            }
+        }
     val nav = remember { Nav(initialRoute) }
     val search = remember { SearchController(scope, { session.api }, session::noteTransportFailure) }
     val home = remember { HomeState() }
@@ -227,9 +245,24 @@ fun App(
     DisposableEffect(Unit) {
         val kfm = java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager()
         val dispatcher = java.awt.KeyEventDispatcher { e ->
-            if (dispatchSearchShortcut(e, want == null && !showConnection && !showSignIn, ::openSearch)) return@KeyEventDispatcher true
-            if (e.id != java.awt.event.KeyEvent.KEY_PRESSED || e.isControlDown || e.isMetaDown || e.isAltDown) return@KeyEventDispatcher false
-            if (!playback.onPlayerScreen || playback.popout || want != null || showConnection || showSignIn) return@KeyEventDispatcher false
+            if (dispatchSearchShortcut(
+                    e,
+                    want == null && !showConnection && !showSignIn,
+                    ::openSearch,
+                )
+            ) {
+                return@KeyEventDispatcher true
+            }
+            if (e.id != java.awt.event.KeyEvent.KEY_PRESSED || e.isControlDown || e.isMetaDown ||
+                e.isAltDown
+            ) {
+                return@KeyEventDispatcher false
+            }
+            if (!playback.onPlayerScreen || playback.popout || want != null || showConnection ||
+                showSignIn
+            ) {
+                return@KeyEventDispatcher false
+            }
             val key = PlayerKeys.fromAwt(e.keyCode) ?: return@KeyEventDispatcher false
             playback.wakeControls()
             val handled = PlayerKeys.handle(
@@ -249,7 +282,15 @@ fun App(
         onDispose { kfm.removeKeyEventDispatcher(dispatcher) }
     }
     // Navigating to a Player route hands the item to the session; the surface host does the rest.
-    LaunchedEffect(current) { (current as? Route.Player)?.let { r -> if (playback.current?.assetId != r.assetId) playback.play(r) } }
+    LaunchedEffect(current) {
+        (current as? Route.Player)?.let { r ->
+            if (playback.current?.assetId !=
+                r.assetId
+            ) {
+                playback.play(r)
+            }
+        }
+    }
     val focusType = when (current) {
         is Route.Detail -> details[current.workId]?.detail?.work?.kind?.let { MediaType.from(it) } ?: current.typeHint
         is Route.Player -> current.typeHint
@@ -258,7 +299,10 @@ fun App(
     val shellTheme = if (session.appearance.adaptiveAccents) MediaThemes.of(focusType) else MediaThemes.default
 
     val uiScale = session.config.effectiveUiScale()
-    CompositionLocalProvider(LocalAppearance provides session.appearance, LocalDensity provides Density(uiScale, fontScale = 1f)) {
+    CompositionLocalProvider(
+        LocalAppearance provides session.appearance,
+        LocalDensity provides Density(uiScale, fontScale = 1f),
+    ) {
         HeyarrTheme(shellTheme) {
             Box(
                 Modifier.fillMaxSize().background(Tokens.bgBase).onPreviewKeyEvent { e ->
@@ -274,17 +318,67 @@ fun App(
                         }
                     }
                     when {
-                        e.isCtrlPressed && !e.isMetaPressed && !e.isAltPressed && !e.isShiftPressed && e.key == Key.F && want == null && !showConnection && !showSignIn -> { openSearch(); true }
-                        mod && e.key == Key.Comma -> { nav.go(Route.Settings); true }
-                        mod && e.key == Key.One -> { consuming = true; nav.go(Route.Consume(Experience.WATCH)); true }
-                        mod && e.key == Key.Two -> { consuming = true; nav.go(Route.Consume(Experience.LISTEN)); true }
-                        mod && e.key == Key.Three -> { consuming = true; nav.go(Route.Consume(Experience.READ)); true }
-                        mod && e.key == Key.Four -> { nav.go(Route.Missing); true }
-                        mod && e.key == Key.Five -> { nav.go(Route.NowPlaying); true }
-                        e.key == Key.Escape && showConnection -> { showConnection = false; true }
-                        e.key == Key.Escape && showSignIn -> { showSignIn = false; true }
-                        e.key == Key.Escape && want != null -> { want = null; true }
-                        e.key == Key.Escape && (current is Route.Detail || current is Route.Reader) -> { nav.back(); true }
+                        e.isCtrlPressed && !e.isMetaPressed && !e.isAltPressed && !e.isShiftPressed && e.key == Key.F &&
+                            want == null &&
+                            !showConnection &&
+                            !showSignIn -> {
+                            openSearch()
+                            true
+                        }
+
+                        mod && e.key == Key.Comma -> {
+                            nav.go(Route.Settings)
+                            true
+                        }
+
+                        mod && e.key == Key.One -> {
+                            consuming = true
+                            nav.go(Route.Consume(Experience.WATCH))
+                            true
+                        }
+
+                        mod && e.key == Key.Two -> {
+                            consuming = true
+                            nav.go(Route.Consume(Experience.LISTEN))
+                            true
+                        }
+
+                        mod && e.key == Key.Three -> {
+                            consuming = true
+                            nav.go(Route.Consume(Experience.READ))
+                            true
+                        }
+
+                        mod && e.key == Key.Four -> {
+                            nav.go(Route.Missing)
+                            true
+                        }
+
+                        mod && e.key == Key.Five -> {
+                            nav.go(Route.NowPlaying)
+                            true
+                        }
+
+                        e.key == Key.Escape && showConnection -> {
+                            showConnection = false
+                            true
+                        }
+
+                        e.key == Key.Escape && showSignIn -> {
+                            showSignIn = false
+                            true
+                        }
+
+                        e.key == Key.Escape && want != null -> {
+                            want = null
+                            true
+                        }
+
+                        e.key == Key.Escape && (current is Route.Detail || current is Route.Reader) -> {
+                            nav.back()
+                            true
+                        }
+
                         else -> false
                     }
                 },
@@ -300,7 +394,9 @@ fun App(
                                 connection = session.connection,
                                 compact = compact,
                                 connectionDetail = run {
-                                    val host = session.config.baseUrl.removePrefix("https://").removePrefix("http://").substringBefore('/').substringBefore(':')
+                                    val host = session.config.baseUrl.removePrefix(
+                                        "https://",
+                                    ).removePrefix("http://").substringBefore('/').substringBefore(':')
                                     session.lastLatencyMs?.let { "$it ms · $host" } ?: host.ifBlank { null }
                                 },
                                 onConnection = { showConnection = true },
@@ -308,15 +404,37 @@ fun App(
                             )
                         }
                         Column(Modifier.weight(1f).fillMaxHeight()) {
-                            if (!fullscreen) Row(Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                                FilterChip("Consume", consuming, { consuming = true; nav.go(Route.Consume(Experience.WATCH)) })
-                                FilterChip("Manage", !consuming, { consuming = false; nav.go(Route.Search) })
-                                GhostButton("Search everything · Ctrl+F", ::openSearch, icon = androidx.compose.material.icons.Icons.Rounded.Search)
+                            if (!fullscreen) {
+                                Row(
+                                    Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 10.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    FilterChip("Consume", consuming, {
+                                        consuming = true
+                                        nav.go(Route.Consume(Experience.WATCH))
+                                    })
+                                    FilterChip("Manage", !consuming, {
+                                        consuming = false
+                                        nav.go(Route.Search)
+                                    })
+                                    GhostButton(
+                                        "Search everything · Ctrl+F",
+                                        ::openSearch,
+                                        icon = androidx.compose.material.icons.Icons.Rounded.Search,
+                                    )
+                                }
                             }
                             if (!fullscreen) {
                                 when (session.connection) {
-                                    Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.config.baseUrl, onRetry = { scope.launch { session.probe() } }, onSettings = { nav.go(Route.Settings) })
-                                    Connection.UNAUTHORIZED -> OfflineBanner("heyarr refused the token", "Check the bearer token in Settings.", onRetry = { scope.launch { session.probe() } }, onSettings = { nav.go(Route.Settings) })
+                                    Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.config.baseUrl, onRetry = {
+                                        scope.launch { session.probe() }
+                                    }, onSettings = { nav.go(Route.Settings) })
+
+                                    Connection.UNAUTHORIZED -> OfflineBanner("heyarr refused the token", "Check the bearer token in Settings.", onRetry = {
+                                        scope.launch { session.probe() }
+                                    }, onSettings = { nav.go(Route.Settings) })
+
                                     else -> {}
                                 }
                             }
@@ -324,28 +442,108 @@ fun App(
                             // enrolled-only surface, so in guest mode it opens the "Sign in to save"
                             // prompt instead of the Want sheet. This gates want uniformly across
                             // every screen from one place.
-                            val onWant: (String, String, MediaType) -> Unit = { id, title, type -> if (session.isGuest) showSignIn = true else want = WantRequest(id, title, type = type) }
-                            val onWantTitle: WantByTitle = { title, year, type -> if (session.isGuest) showSignIn = true else want = WantRequest(null, title, year, type) }
-                            Box(Modifier.weight(1f)) { when (val r = current) {
-                                is Route.Consume -> LibraryScreen(session, shelves.getValue(r.experience), ::go, onWant, experience = r.experience)
-                                Route.Home -> HomeScreen(session, home, ::go, onWant)
-                                Route.Discover -> SearchScreen(session, search, ::go, onWant, onWantTitle, searchFocus, initialDiscover = true)
-                                Route.Search -> SearchScreen(session, search, ::go, onWant, onWantTitle, searchFocus)
-                                Route.Library -> LibraryScreen(session, library, ::go, onWant)
-                                Route.Missing -> MissingScreen(session, missing, ::go, onWantTitle = { if (session.isGuest) showSignIn = true else want = WantRequest(null, "") })
-                                Route.NowPlaying -> NowPlayingScreen(session, nowPlaying)
-                                Route.Settings -> SettingsScreen(session, settingsState, onSourcesChanged = { search.invalidateSources() })
-                                is Route.Detail -> DetailScreen(session, r, details.getOrPut(r.workId) { DetailState(r.workId) }, onBack = nav::back, onOpen = ::go, onWant = onWant)
-                                is Route.Player -> PlayerScreen(session, r, playerScreen, fullscreen = fullscreen, onFullscreen = ::setFullscreen, onBack = { if (fullscreen) setFullscreen(false); nav.back() }, onOpen = ::go)
-                                is Route.Reader -> ReaderScreen(session, r, onBack = nav::back)
-                            } }
-                            if (playback.active && current !is Route.Player && !fullscreen && !audioDock) NowPlayingBar(session, onOpen = { playback.current?.let { nav.go(it) } })
+                            val onWant: (
+                                String,
+                                String,
+                                MediaType,
+                            ) -> Unit = { id, title, type ->
+                                if (session.isGuest) {
+                                    showSignIn =
+                                        true
+                                } else {
+                                    want = WantRequest(id, title, type = type)
+                                }
+                            }
+                            val onWantTitle: WantByTitle = { title, year, type ->
+                                if (session.isGuest) {
+                                    showSignIn = true
+                                } else {
+                                    want =
+                                        WantRequest(null, title, year, type)
+                                }
+                            }
+                            Box(Modifier.weight(1f)) {
+                                when (val r = current) {
+                                    is Route.Consume -> LibraryScreen(
+                                        session,
+                                        shelves.getValue(r.experience),
+                                        ::go,
+                                        onWant,
+                                        experience = r.experience,
+                                    )
+
+                                    Route.Home -> HomeScreen(session, home, ::go, onWant)
+
+                                    Route.Discover -> SearchScreen(
+                                        session,
+                                        search,
+                                        ::go,
+                                        onWant,
+                                        onWantTitle,
+                                        searchFocus,
+                                        initialDiscover = true,
+                                    )
+
+                                    Route.Search -> SearchScreen(
+                                        session,
+                                        search,
+                                        ::go,
+                                        onWant,
+                                        onWantTitle,
+                                        searchFocus,
+                                    )
+
+                                    Route.Library -> LibraryScreen(session, library, ::go, onWant)
+
+                                    Route.Missing -> MissingScreen(session, missing, ::go, onWantTitle = {
+                                        if (session.isGuest) {
+                                            showSignIn =
+                                                true
+                                        } else {
+                                            want = WantRequest(null, "")
+                                        }
+                                    })
+
+                                    Route.NowPlaying -> NowPlayingScreen(session, nowPlaying)
+
+                                    Route.Settings -> SettingsScreen(session, settingsState, onSourcesChanged = {
+                                        search.invalidateSources()
+                                    })
+
+                                    is Route.Detail -> DetailScreen(
+                                        session,
+                                        r,
+                                        details.getOrPut(r.workId) {
+                                            DetailState(r.workId)
+                                        },
+                                        onBack = nav::back,
+                                        onOpen = ::go,
+                                        onWant = onWant,
+                                    )
+
+                                    is Route.Player -> PlayerScreen(session, r, playerScreen, fullscreen = fullscreen, onFullscreen = ::setFullscreen, onBack = {
+                                        if (fullscreen) setFullscreen(false)
+                                        nav.back()
+                                    }, onOpen = ::go)
+
+                                    is Route.Reader -> ReaderScreen(session, r, onBack = nav::back)
+                                }
+                            }
+                            if (playback.active && current !is Route.Player && !fullscreen &&
+                                !audioDock
+                            ) {
+                                NowPlayingBar(session, onOpen = { playback.current?.let { nav.go(it) } })
+                            }
                         }
                         if (audioDock) AudioDock(session, onOpen = { playback.current?.let { nav.go(it) } })
                     }
                 }
                 PlaybackHost(session)
-                Column(Modifier.align(Alignment.BottomEnd).padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.End) {
+                Column(
+                    Modifier.align(Alignment.BottomEnd).padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.End,
+                ) {
                     for (t in session.toasts.takeLast(4)) ToastCard(t, onDismiss = { session.dismiss(t) })
                 }
                 want?.let { req -> WantSheet(session, req, onClose = { want = null }) }
@@ -355,7 +553,11 @@ fun App(
                         nav.go(Route.Settings)
                     })
                 }
-                if (showConnection) ConnectionSheet(session, connectionState, onClose = { showConnection = false }, onSettings = { nav.go(Route.Settings) })
+                if (showConnection) {
+                    ConnectionSheet(session, connectionState, onClose = {
+                        showConnection = false
+                    }, onSettings = { nav.go(Route.Settings) })
+                }
             }
         }
     }
@@ -371,126 +573,32 @@ fun App(
 @Composable
 private fun SignInSheet(session: AppSession, onClose: () -> Unit, onOpenSettings: () -> Unit) {
     var token by remember { mutableStateOf("") }
-    Box(Modifier.fillMaxSize().background(Tokens.bgBase.copy(alpha = 0.7f)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClose), contentAlignment = Alignment.Center) {
-        Box(Modifier.width(520.dp).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})) {
-            Panel("Sign in to save", trailing = { GhostButton("Close", onClose) }) {
-                Text("You're browsing as a guest — watch and listen freely, no account needed. Sign in to save your place, keep playlists, and want or follow things.", style = MaterialTheme.typography.bodyMedium, color = Tokens.textPrimary)
-                Text("Paste a bearer token (heyarr_<id>_<secret>) to sign in on this machine.", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
-                Field("Bearer token", token, secret = true) { token = it }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PrimaryButton("Sign in", {
-                        session.save(session.config.copy(bearerToken = token.trim()))
-                        onClose()
-                    }, icon = Icons.Rounded.Add, enabled = token.isNotBlank())
-                    GhostButton("Open Settings", onOpenSettings)
-                    GhostButton("Keep browsing", onClose)
-                }
-                Text("Device sign-in (Voidbind device/QR) is the next upgrade and is not wired on desktop yet — a pasted token is the way in for now.", style = MaterialTheme.typography.bodySmall, color = Tokens.textDisabled)
+    ModalScrim(onClose, Modifier.width(520.dp)) {
+        Panel("Sign in to save", trailing = { GhostButton("Close", onClose) }) {
+            Text(
+                "You're browsing as a guest — watch and listen freely, no account needed. Sign in to save your place, keep playlists, and want or follow things.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Tokens.textPrimary,
+            )
+            Text(
+                "Paste a bearer token (heyarr_<id>_<secret>) to sign in on this machine.",
+                style = MaterialTheme.typography.labelMedium,
+                color = Tokens.textMuted,
+            )
+            Field("Bearer token", token, secret = true) { token = it }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PrimaryButton("Sign in", {
+                    session.save(session.config.copy(bearerToken = token.trim()))
+                    onClose()
+                }, icon = Icons.Rounded.Add, enabled = token.isNotBlank())
+                GhostButton("Open Settings", onOpenSettings)
+                GhostButton("Keep browsing", onClose)
             }
-        }
-    }
-}
-
-/**
- * The profiles worth OFFERING for [type]: every profile whose content_types either
- * names [type] or is empty (heyarr-core: unrestricted — every profile that predates
- * the field, and any an operator deliberately leaves general). This replaced a
- * client-side name-guess ("ebook" must mean books) with the node's own answer, so a
- * node with different profile names still filters correctly and a book want is never
- * offered a video-only profile like "living-room" whose accept gate it can never pass.
- */
-private fun profilesFor(type: MediaType, profiles: List<QualityProfile>): List<QualityProfile> {
-    val api = type.apiName
-    return profiles.filter { it.contentTypes.isEmpty() || (api != null && api in it.contentTypes) }
-}
-
-/**
- * The quality profile the Want sheet pre-selects for [type], from what [profilesFor]
- * offers. "everyday" is preferred when it's in that set (the common video case);
- * otherwise the first offered profile, so the picker is never blank on a node with an
- * unconventional profile set.
- */
-private fun defaultProfileFor(type: MediaType, profiles: List<QualityProfile>): String {
-    val candidates = profilesFor(type, profiles)
-    return candidates.firstOrNull { it.name == "everyday" }?.name
-        ?: candidates.firstOrNull()?.name ?: ""
-}
-
-/**
- * The Want sheet: pick a quality profile (required — "this should exist" with no
- * standard cannot be evaluated), optionally a note, and go. Work-by-id when opened from
- * a card; title + type when opened from Missing for something the library has never seen.
- */
-@Composable
-private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    var title by remember { mutableStateOf(req.title) }
-    var year by remember { mutableStateOf(req.year?.toString() ?: "") }
-    var type by remember { mutableStateOf(req.type) }
-    // "everyday" is a VIDEO profile (resolution/codec gates) — the right default for a
-    // movie or series, but silently wrong for a book or an album (heyarr-core ADR-0082:
-    // "inventing an accept-anything profile... would claim a judgement the system cannot
-    // make", so book/music have no default of their own server-side; this is the one place
-    // client-side that must not paper over that with a video profile's default). Keyed on
-    // `type`, not just session.profiles, so picking a different chip in the by-title flow
-    // re-picks the right default rather than leaving a stale video profile selected.
-    var profile by remember(session.profiles, type) { mutableStateOf(defaultProfileFor(type, session.profiles)) }
-    var monitor by remember { mutableStateOf(true) }
-    var reason by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    val byTitle = req.workId == null
-    Box(Modifier.fillMaxSize().background(Tokens.bgBase.copy(alpha = 0.7f)).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClose), contentAlignment = Alignment.Center) {
-        Box(Modifier.width(520.dp).clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {})) {
-            Panel(if (byTitle) "Want by title" else "Want “${req.title}”", trailing = { GhostButton("Close", onClose) }) {
-                if (byTitle) {
-                    Field("Title", title) { title = it }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Field("Year (optional)", year, Modifier.width(140.dp)) { year = it.filter { c -> c.isDigit() }.take(4) }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (t in MediaType.SEARCHABLE) FilterChip(t.label, type == t, { type = t }) }
-                    Text("Created from the title with the same normalisation a scan uses, so wanting it now and scanning it later converge on one work.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-                }
-                val offered = profilesFor(type, session.profiles)
-                when {
-                    // Nothing to choose: either the node has no profiles yet, or exactly
-                    // one is offered for this type (ADR-0082's book/music case — there is
-                    // no real quality axis to pick a standard against, so asking is
-                    // friction with no decision behind it). The picker only earns its
-                    // place when there is an actual choice.
-                    session.profiles.isEmpty() -> Text("No profiles loaded yet.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-
-                    offered.isEmpty() -> Text("No quality profile is configured for ${type.label.lowercase()} yet — add one with `heyarr quality-profile create` and tag it --content-types ${type.apiName}.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-
-                    offered.size == 1 -> Text("Measured against ${offered[0].name}" + (offered[0].description?.let { " — $it" } ?: "") + ".", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-
-                    else -> {
-                        Text("Quality profile — the standard this want is measured against", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (p in offered) FilterChip(p.name, profile == p.name, { profile = p.name }) }
-                        offered.firstOrNull { it.name == profile }?.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    FilterChip("Keep looking for something better", monitor, { monitor = !monitor })
-                }
-                Field("Reason (a note for whoever reads this in six months)", reason) { reason = it }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PrimaryButton("Want", {
-                        val a = session.api ?: return@PrimaryButton
-                        if (!byTitle) { session.want(req.workId!!, req.title, profile, monitor, reason.ifBlank { null }) { onClose() }; return@PrimaryButton }
-                        busy = true
-                        scope.launch {
-                            session.io { a.wantTitle(title.trim(), type, profile, year.toIntOrNull(), monitor, reason.ifBlank { null }) }.onSuccess { r ->
-                                when (r) {
-                                    is McpResult.Ok -> { session.toast(Toast.Kind.SUCCESS, "Wanted “${title.trim()}”", "Measured against the $profile profile."); session.refreshIndex(); onClose() }
-                                    is McpResult.Refused -> session.refused(r)
-                                }
-                            }
-                            busy = false
-                        }
-                    }, icon = Icons.Rounded.Add, enabled = !busy && profile.isNotBlank() && (!byTitle || title.isNotBlank()))
-                    GhostButton("Cancel", onClose)
-                }
-            }
+            Text(
+                "Device sign-in (Voidbind device/QR) is the next upgrade and is not wired on desktop yet — a pasted token is the way in for now.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textDisabled,
+            )
         }
     }
 }

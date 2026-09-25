@@ -35,7 +35,13 @@ sealed interface Route {
      * [title] paint the screen before the fetch lands; [from] labels the back button;
      * [curate] opens on the Curate tab.
      */
-    @Serializable data class Detail(val workId: String, val type: String = "UNKNOWN", val title: String? = null, val from: String = "Library", val curate: Boolean = false) : Route {
+    @Serializable data class Detail(
+        val workId: String,
+        val type: String = "UNKNOWN",
+        val title: String? = null,
+        val from: String = "Library",
+        val curate: Boolean = false,
+    ) : Route {
         val typeHint: MediaType get() = runCatching { MediaType.valueOf(type) }.getOrDefault(MediaType.UNKNOWN)
     }
 
@@ -64,5 +70,10 @@ sealed interface Route {
 }
 
 /** A detail route for [workId], carrying the kind and title the caller already knows. */
-fun detailRoute(workId: String, type: MediaType, title: String?, from: String = "Library", curate: Boolean = false): Route.Detail =
-    Route.Detail(workId, type.name, title, from, curate)
+fun detailRoute(
+    workId: String,
+    type: MediaType,
+    title: String?,
+    from: String = "Library",
+    curate: Boolean = false,
+): Route.Detail = Route.Detail(workId, type.name, title, from, curate)

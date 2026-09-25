@@ -15,9 +15,7 @@ import one.rarebit.heyarr.desktop.login.DeviceEnroller
  * reuses one short proof across its reuse window, so this signs only every couple of
  * minutes, not per call.
  */
-class DesktopDeviceEnroller(
-    private val keyring: DesktopDeviceKeyring,
-) : DeviceEnroller {
+class DesktopDeviceEnroller(private val keyring: DesktopDeviceKeyring) : DeviceEnroller {
 
     override fun enrolled(): Credential.Device? {
         val credential = keyring.deviceCredential() ?: return null

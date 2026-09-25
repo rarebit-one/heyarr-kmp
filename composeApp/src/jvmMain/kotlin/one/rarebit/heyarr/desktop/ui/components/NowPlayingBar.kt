@@ -73,28 +73,103 @@ fun NowPlayingBar(session: AppSession, onOpen: () -> Unit, modifier: Modifier = 
                 },
                 modifier = Modifier.fillMaxWidth().height(14.dp).semantics { contentDescription = "Position" },
                 enabled = ps.duration > 0,
-                colors = SliderDefaults.colors(thumbColor = theme.accentGradientEnd, activeTrackColor = theme.accent, inactiveTrackColor = Tokens.surface3),
+                colors = SliderDefaults.colors(
+                    thumbColor = theme.accentGradientEnd,
+                    activeTrackColor = theme.accent,
+                    inactiveTrackColor = Tokens.surface3,
+                ),
             )
-            Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
                 // The live picture, small.
                 if (playback.type.isListening()) {
-                    val detail by produceState<one.rarebit.heyarr.desktop.library.WorkDetail?>(null, item.workId, session.generation) {
+                    val detail by produceState<one.rarebit.heyarr.desktop.library.WorkDetail?>(
+                        null,
+                        item.workId,
+                        session.generation,
+                    ) {
                         value = session.io { session.api?.work(item.workId) }.getOrNull()
                     }
-                    val cover by rememberCover(session, playback.type, item.title, detail?.artworkPath, detail?.work?.year, detail?.work?.artist)
-                    Artwork(cover.bitmap, playback.type, Modifier.width(50.dp).height(50.dp), contentDescription = "Cover for ${item.title}")
-                } else VideoSurface(playback.player, Modifier.width(88.dp).height(50.dp).clip(RoundedCornerShape(Tokens.radiusCard)))
-                Column(
-                    Modifier.weight(1f).clip(RoundedCornerShape(Tokens.radiusCard)).clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen).semantics { contentDescription = "Open the player for ${item.title}" }.padding(4.dp),
-                ) {
-                    Text(item.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(listOfNotNull(item.subtitle, if (ps.duration > 0) "${clockShort(ps.position)} / ${clockShort(ps.duration)}" else null, if (ps.buffering) "buffering…" else null).joinToString("  ·  "), style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    val cover by rememberCover(
+                        session,
+                        playback.type,
+                        item.title,
+                        detail?.artworkPath,
+                        detail?.work?.year,
+                        detail?.work?.artist,
+                    )
+                    Artwork(
+                        cover.bitmap,
+                        playback.type,
+                        Modifier.width(50.dp).height(50.dp),
+                        contentDescription = "Cover for ${item.title}",
+                    )
+                } else {
+                    VideoSurface(
+                        playback.player,
+                        Modifier.width(88.dp).height(50.dp).clip(RoundedCornerShape(Tokens.radiusCard)),
+                    )
                 }
-                IconButtonRound(Icons.Rounded.Replay10, "Back 10 seconds", { playback.player.seekBy(-10.0) }, size = 32.dp)
-                IconButtonRound(if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause, if (ps.paused) "Play" else "Pause", { playback.player.togglePause() }, size = 40.dp, filled = true)
-                IconButtonRound(Icons.Rounded.Forward10, "Forward 10 seconds", { playback.player.seekBy(10.0) }, size = 32.dp)
+                Column(
+                    Modifier.weight(
+                        1f,
+                    ).clip(
+                        RoundedCornerShape(Tokens.radiusCard),
+                    ).clickable(
+                        interactionSource = interaction,
+                        indication = null,
+                        role = Role.Button,
+                        onClick = onOpen,
+                    ).semantics {
+                        contentDescription =
+                            "Open the player for ${item.title}"
+                    }.padding(4.dp),
+                ) {
+                    Text(
+                        item.title,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = Tokens.textPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        listOfNotNull(
+                            item.subtitle,
+                            if (ps.duration >
+                                0
+                            ) {
+                                "${clockShort(ps.position)} / ${clockShort(ps.duration)}"
+                            } else {
+                                null
+                            },
+                            if (ps.buffering) "buffering…" else null,
+                        ).joinToString("  ·  "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Tokens.textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                IconButtonRound(Icons.Rounded.Replay10, "Back 10 seconds", {
+                    playback.player.seekBy(-10.0)
+                }, size = 32.dp)
+                IconButtonRound(if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause, if (ps.paused) "Play" else "Pause", {
+                    playback.player.togglePause()
+                }, size = 40.dp, filled = true)
+                IconButtonRound(Icons.Rounded.Forward10, "Forward 10 seconds", {
+                    playback.player.seekBy(10.0)
+                }, size = 32.dp)
                 val next = playback.next()
-                if (next != null) IconButtonRound(Icons.Rounded.SkipNext, "Next: ${next.subtitle}", { playback.play(next) }, size = 32.dp)
+                if (next !=
+                    null
+                ) {
+                    IconButtonRound(Icons.Rounded.SkipNext, "Next: ${next.subtitle}", {
+                        playback.play(next)
+                    }, size = 32.dp)
+                }
                 IconButtonRound(Icons.Rounded.OpenInFull, "Open player", onOpen, size = 32.dp)
                 IconButtonRound(Icons.Rounded.Close, "Stop playback", { playback.stop() }, size = 32.dp)
             }

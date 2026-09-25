@@ -51,7 +51,10 @@ object Subtitles {
         return THREE_TO_TWO[code] ?: code
     }
 
-    private val RE_LANG = Regex("""\.(en|eng|es|spa|fr|fre|fra|de|ger|deu|it|ita|pt|por|ja|jpn|zh|chi|nl|dut|sv|swe)(?:\.(?:forced|sdh))?$""")
+    private val RE_LANG =
+        Regex(
+            """\.(en|eng|es|spa|fr|fre|fra|de|ger|deu|it|ita|pt|por|ja|jpn|zh|chi|nl|dut|sv|swe)(?:\.(?:forced|sdh))?$""",
+        )
     private val THREE_TO_TWO = mapOf(
         "eng" to "en", "spa" to "es", "fre" to "fr", "fra" to "fr", "ger" to "de", "deu" to "de",
         "ita" to "it", "por" to "pt", "jpn" to "ja", "chi" to "zh", "dut" to "nl", "swe" to "sv",

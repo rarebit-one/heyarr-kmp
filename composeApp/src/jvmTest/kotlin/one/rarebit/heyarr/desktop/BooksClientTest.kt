@@ -42,9 +42,14 @@ class BooksClientTest {
                 seenAuth += headers["Authorization"].orEmpty()
                 return HttpResponse(200, body)
             }
-            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(405, "")
+            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+                HttpResponse(405, "")
         }
-        val books = BooksClient(transport, "https://h.example", Credential.Bearer("heyarr_1_s")).listBooks("Ursula K. Le Guin")
+        val books = BooksClient(
+            transport,
+            "https://h.example",
+            Credential.Bearer("heyarr_1_s"),
+        ).listBooks("Ursula K. Le Guin")
         // Node returned a mismatched author too; the client drops it defensively.
         assertEquals(listOf("The Dispossessed"), books.map { it.title })
         assertTrue(seenAuth.all { it == "Bearer heyarr_1_s" })

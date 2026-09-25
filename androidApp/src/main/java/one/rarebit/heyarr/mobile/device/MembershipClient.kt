@@ -15,10 +15,7 @@ import one.rarebit.voidbind.crypto.MiniJson
  * A node without the route (404/405 — pre-ADR-0068) yields `null`: nothing learned,
  * the caller keeps what it has.
  */
-class MembershipClient(
-    private val http: HttpTransport,
-    private val baseUrl: String,
-) {
+class MembershipClient(private val http: HttpTransport, private val baseUrl: String) {
     /** The ops the node holds for [usr]; null when the node has no membership route. */
     fun fetch(usr: String): List<String>? {
         val resp = http.get(url(baseUrl, usr))

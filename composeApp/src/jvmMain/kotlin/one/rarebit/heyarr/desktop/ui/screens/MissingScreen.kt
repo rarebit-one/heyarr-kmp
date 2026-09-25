@@ -67,13 +67,29 @@ class MissingState {
  * (`monitor_content`). Plus "Want by title" for content the library has never seen.
  */
 @Composable
-fun MissingScreen(session: AppSession, state: MissingState, onOpen: (Route) -> Unit, onWantTitle: () -> Unit, modifier: Modifier = Modifier) {
+fun MissingScreen(
+    session: AppSession,
+    state: MissingState,
+    onOpen: (Route) -> Unit,
+    onWantTitle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val scope = rememberCoroutineScope()
     fun load() {
         val a = session.api ?: return
         state.error = null
-        scope.launch { session.io { a.missing() }.fold(onSuccess = { state.missing = it }, onFailure = { state.error = it.message }) }
-        scope.launch { session.io { a.upgradeCandidates() }.fold(onSuccess = { state.upgrades = it }, onFailure = { state.error = it.message }) }
+        scope.launch {
+            session.io { a.missing() }.fold(onSuccess = { state.missing = it }, onFailure = {
+                state.error =
+                    it.message
+            })
+        }
+        scope.launch {
+            session.io { a.upgradeCandidates() }.fold(onSuccess = { state.upgrades = it }, onFailure = {
+                state.error =
+                    it.message
+            })
+        }
     }
     // Loaded once per node: a new URL or token (session.generation) throws the cached answer away.
     LaunchedEffect(session.generation) {
@@ -104,7 +120,16 @@ fun MissingScreen(session: AppSession, state: MissingState, onOpen: (Route) -> U
                 }
             }
             state.busy = false
-            session.toast(if (refused == 0) Toast.Kind.SUCCESS else Toast.Kind.INFO, "$label: $ok done${if (refused > 0) ", $refused refused" else ""}")
+            session.toast(
+                if (refused ==
+                    0
+                ) {
+                    Toast.Kind.SUCCESS
+                } else {
+                    Toast.Kind.INFO
+                },
+                "$label: $ok done${if (refused > 0) ", $refused refused" else ""}",
+            )
             session.refreshIndex()
             load()
         }
@@ -112,7 +137,10 @@ fun MissingScreen(session: AppSession, state: MissingState, onOpen: (Route) -> U
         val unused = a
     }
 
-    Column(modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         SectionHeader("Missing & wanted", subtitle = "What should exist, and what could be better", trailing = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh)
@@ -125,13 +153,58 @@ fun MissingScreen(session: AppSession, state: MissingState, onOpen: (Route) -> U
         }
         if (list != null && list.isNotEmpty()) {
             Panel("Bulk actions", trailing = {
-                GhostButton(if (sel.size == list.size) "Select none" else "Select all", { state.selected = if (sel.size == list.size) emptySet() else list.map { it.desiredItemId }.toSet() })
+                GhostButton(
+                    if (sel.size ==
+                        list.size
+                    ) {
+                        "Select none"
+                    } else {
+                        "Select all"
+                    },
+                    {
+                        state.selected =
+                            if (sel.size == list.size) emptySet() else list.map { it.desiredItemId }.toSet()
+                    },
+                )
             }) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text("${sel.size} selected", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted, modifier = Modifier.padding(end = 8.dp))
-                    SecondaryButton("Search indexers now", { session.api?.let { a -> bulk("Search queued") { id -> a.searchReleases(id) } } }, icon = Icons.Rounded.Search, compact = true, enabled = sel.isNotEmpty() && !state.busy)
-                    SecondaryButton("Monitor on", { session.api?.let { a -> bulk("Monitoring on") { id -> a.monitor(id, true) } } }, compact = true, enabled = sel.isNotEmpty() && !state.busy)
-                    SecondaryButton("Monitor off", { session.api?.let { a -> bulk("Monitoring off") { id -> a.monitor(id, false) } } }, compact = true, enabled = sel.isNotEmpty() && !state.busy)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "${sel.size} selected",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Tokens.textMuted,
+                        modifier = Modifier.padding(end = 8.dp),
+                    )
+                    SecondaryButton(
+                        "Search indexers now",
+                        {
+                            session.api?.let { a -> bulk("Search queued") { id -> a.searchReleases(id) } }
+                        },
+                        icon = Icons.Rounded.Search,
+                        compact = true,
+                        enabled =
+                        sel.isNotEmpty() && !state.busy,
+                    )
+                    SecondaryButton(
+                        "Monitor on",
+                        {
+                            session.api?.let { a -> bulk("Monitoring on") { id -> a.monitor(id, true) } }
+                        },
+                        compact = true,
+                        enabled =
+                        sel.isNotEmpty() && !state.busy,
+                    )
+                    SecondaryButton(
+                        "Monitor off",
+                        {
+                            session.api?.let { a -> bulk("Monitoring off") { id -> a.monitor(id, false) } }
+                        },
+                        compact = true,
+                        enabled =
+                        sel.isNotEmpty() && !state.busy,
+                    )
                 }
             }
         }
@@ -140,20 +213,52 @@ fun MissingScreen(session: AppSession, state: MissingState, onOpen: (Route) -> U
 
             list == null -> MediaRowSkeleton(6)
 
-            list.isEmpty() -> EmptyState(if (state.tab == 0) "Nothing is missing" else "Nothing to upgrade", detail = if (state.tab == 0) "Every want is satisfied. Want something new by title, or from Search." else "No satisfied, monitored want has room to improve under its profile.")
+            list.isEmpty() -> EmptyState(
+                if (state.tab ==
+                    0
+                ) {
+                    "Nothing is missing"
+                } else {
+                    "Nothing to upgrade"
+                },
+                detail = if (state.tab ==
+                    0
+                ) {
+                    "Every want is satisfied. Want something new by title, or from Search."
+                } else {
+                    "No satisfied, monitored want has room to improve under its profile."
+                },
+            )
 
-            else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(4.dp), contentPadding = PaddingValues(bottom = 32.dp), modifier = Modifier.fillMaxSize()) {
+            else -> LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(bottom = 32.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
                 items(list, key = { it.desiredItemId }) { w ->
                     val checked = w.desiredItemId in sel
                     MediaRow(
-                        w.title, MediaType.UNKNOWN, onOpen = { w.workId?.let { onOpen(Route.Detail(it, MediaType.UNKNOWN, w.title, from = "Missing")) } },
-                        subtitle = listOfNotNull(w.qualityProfile?.let { "profile $it" }, w.reason).joinToString("  ·  "),
-                        meta = listOf(w.state.lowercase().replace('_', ' '), if (w.monitor) "monitored" else "not monitored"),
+                        w.title,
+                        MediaType.UNKNOWN,
+                        onOpen = {
+                            w.workId?.let { onOpen(Route.Detail(it, MediaType.UNKNOWN, w.title, from = "Missing")) }
+                        },
+                        subtitle = listOfNotNull(
+                            w.qualityProfile?.let {
+                                "profile $it"
+                            },
+                            w.reason,
+                        ).joinToString("  ·  "),
+                        meta = listOf(
+                            w.state.lowercase().replace('_', ' '),
+                            if (w.monitor) "monitored" else "not monitored",
+                        ),
                         status = LibraryStatus.ofState(w.state),
                         selected = checked,
                         trailing = {
                             IconButtonRound(if (checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank, if (checked) "Deselect ${w.title}" else "Select ${w.title}", {
-                                state.selected = if (checked) state.selected - w.desiredItemId else state.selected + w.desiredItemId
+                                state.selected =
+                                    if (checked) state.selected - w.desiredItemId else state.selected + w.desiredItemId
                             }, size = 32.dp)
                         },
                     )

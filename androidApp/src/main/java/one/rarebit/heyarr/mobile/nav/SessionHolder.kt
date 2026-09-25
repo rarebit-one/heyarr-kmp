@@ -24,12 +24,8 @@ import one.rarebit.heyarr.mobile.ui.screens.TelemetryState
  * sign-in, an enrolment or a Settings change — the mobile home for the desktop's
  * plain-Compose `AppSession` + per-screen state objects.
  */
-class SessionHolder(
-    env: ApiEnv,
-    settings: SettingsStore,
-    external: ExternalMetadata,
-    recent: RecentSearches,
-) : ViewModel() {
+class SessionHolder(env: ApiEnv, settings: SettingsStore, external: ExternalMetadata, recent: RecentSearches) :
+    ViewModel() {
     val session: AppSession = AppSession(
         api = HeyarrApi(env.transport, env.baseUrl, env.credential),
         defaultProfile = env.qualityProfile,
