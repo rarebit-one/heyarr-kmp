@@ -83,13 +83,13 @@
         <error line="6" column="1" source="standard:no-wildcard-imports" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/App.kt">
-        <error line="429" column="121" source="standard:max-line-length" />
-        <error line="433" column="120" source="standard:max-line-length" />
-        <error line="523" column="120" source="standard:max-line-length" />
+        <error line="430" column="121" source="standard:max-line-length" />
+        <error line="434" column="120" source="standard:max-line-length" />
+        <error line="524" column="120" source="standard:max-line-length" />
     </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/ConnectionSheet.kt">
-        <error line="153" column="121" source="standard:max-line-length" />
-        <error line="174" column="121" source="standard:max-line-length" />
+    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/ConnectionPanels.kt">
+        <error line="89" column="121" source="standard:max-line-length" />
+        <error line="141" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/components/AudioDock.kt">
         <error line="5" column="1" source="standard:no-wildcard-imports" />
@@ -122,7 +122,7 @@
         <error line="60" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/LibraryScreen.kt">
-        <error line="290" column="121" source="standard:max-line-length" />
+        <error line="146" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/MissingScreen.kt">
         <error line="259" column="121" source="standard:max-line-length" />
