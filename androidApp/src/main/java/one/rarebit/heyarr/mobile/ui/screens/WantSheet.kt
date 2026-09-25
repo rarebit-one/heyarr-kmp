@@ -24,7 +24,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import one.rarebit.heyarr.core.heyarr.QualityProfile
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.McpResult
@@ -80,48 +82,9 @@ fun WantSheet(session: AppSession, req: WantRequest, onClose: () -> Unit) {
                     year =
                         it.filter { c -> c.isDigit() }.take(4)
                 }
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    for (t in MediaType.SEARCHABLE) {
-                        FilterChip(
-                            t.label,
-                            type == t,
-                            { type = t },
-                        )
-                    }
-                }
-                Text(
-                    "Created from the title with the same normalisation a scan uses, so wanting it now and scanning it later converge on one work.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Tokens.textMuted,
-                )
+                TitleTypeChoice(type) { type = it }
             }
-            Text(
-                "Quality profile — the standard this want is measured against",
-                style = MaterialTheme.typography.labelMedium,
-                color = Tokens.textMuted,
-            )
-            if (session.profiles.isEmpty()) {
-                Text(
-                    "No profiles loaded yet — the default profile name is used.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Tokens.textMuted,
-                )
-            }
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                for (p in session.profiles) {
-                    FilterChip(
-                        p.name,
-                        profile == p.name,
-                        { profile = p.name },
-                    )
-                }
-            }
-            session.profiles.firstOrNull {
-                it.name == profile
-            }?.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }
+            ProfileChoice(session.profiles, profile) { profile = it }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 FilterChip("Keep looking for something better", monitor, {
                     monitor =
@@ -135,39 +98,111 @@ fun WantSheet(session: AppSession, req: WantRequest, onClose: () -> Unit) {
                         session.want(req.workId!!, req.title, profile) { onClose() }
                         return@PrimaryButton
                     }
-                    busy = true
-                    scope.launch {
-                        session.io {
-                            session.api.wantTitle(
-                                title.trim(),
-                                type,
-                                profile,
-                                year.toIntOrNull(),
-                                monitor,
-                                reason.ifBlank {
-                                    null
-                                },
-                            )
-                        }.onSuccess { r ->
-                            when (r) {
-                                is McpResult.Ok -> {
-                                    session.toast(
-                                        Toast.Kind.SUCCESS,
-                                        "Wanted “${title.trim()}”",
-                                        "Measured against the $profile profile.",
-                                    )
-                                    session.refreshIndex()
-                                    onClose()
-                                }
-
-                                is McpResult.Refused -> session.refused(r)
-                            }
-                        }
-                        busy = false
-                    }
+                    val want =
+                        TitleWant(title.trim(), type, profile, year.toIntOrNull(), monitor, reason.ifBlank { null })
+                    sendTitleWant(session, scope, want, { busy = it }, onClose)
                 }, icon = Icons.Rounded.Add, enabled = !busy && profile.isNotBlank() && (!byTitle || title.isNotBlank()))
                 GhostButton("Cancel", onClose)
             }
         }
+    }
+}
+
+/** The quality profile a want is measured against, with its description. */
+@Composable
+private fun ProfileChoice(profiles: List<QualityProfile>, profile: String, onProfile: (String) -> Unit) {
+    Text(
+        "Quality profile — the standard this want is measured against",
+        style = MaterialTheme.typography.labelMedium,
+        color = Tokens.textMuted,
+    )
+    if (profiles.isEmpty()) {
+        Text(
+            "No profiles loaded yet — the default profile name is used.",
+            style = MaterialTheme.typography.bodySmall,
+            color = Tokens.textMuted,
+        )
+    }
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        for (p in profiles) {
+            FilterChip(
+                p.name,
+                profile == p.name,
+                { onProfile(p.name) },
+            )
+        }
+    }
+    profiles.firstOrNull {
+        it.name == profile
+    }?.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }
+}
+
+/** The media type a by-title want creates, and how the work it creates will meet a later scan. */
+@Composable
+private fun TitleTypeChoice(type: MediaType, onType: (MediaType) -> Unit) {
+    Row(
+        Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        for (t in MediaType.SEARCHABLE) {
+            FilterChip(
+                t.label,
+                type == t,
+                { onType(t) },
+            )
+        }
+    }
+    Text(
+        "Created from the title with the same normalisation a scan uses, so wanting it now and scanning it later converge on one work.",
+        style = MaterialTheme.typography.bodySmall,
+        color = Tokens.textMuted,
+    )
+}
+
+/** A want by title, as the sheet's fields read when Want was pressed. */
+private data class TitleWant(
+    val title: String,
+    val type: MediaType,
+    val profile: String,
+    val year: Int?,
+    val monitor: Boolean,
+    val reason: String?,
+)
+
+/** Send [want] (`want_title`); success toasts, refreshes the index and closes the sheet. */
+private fun sendTitleWant(
+    session: AppSession,
+    scope: CoroutineScope,
+    want: TitleWant,
+    onBusy: (Boolean) -> Unit,
+    onClose: () -> Unit,
+) {
+    onBusy(true)
+    scope.launch {
+        session.io {
+            session.api.wantTitle(
+                want.title,
+                want.type,
+                want.profile,
+                want.year,
+                want.monitor,
+                want.reason,
+            )
+        }.onSuccess { r ->
+            when (r) {
+                is McpResult.Ok -> {
+                    session.toast(
+                        Toast.Kind.SUCCESS,
+                        "Wanted “${want.title}”",
+                        "Measured against the ${want.profile} profile.",
+                    )
+                    session.refreshIndex()
+                    onClose()
+                }
+
+                is McpResult.Refused -> session.refused(r)
+            }
+        }
+        onBusy(false)
     }
 }

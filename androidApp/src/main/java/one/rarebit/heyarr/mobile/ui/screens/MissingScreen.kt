@@ -141,59 +141,7 @@ fun MissingScreen(
             FilterChip("Missing", state.tab == 0, { state.tab = 0 }, count = state.missing?.size)
             FilterChip("Could be better", state.tab == 1, { state.tab = 1 }, count = state.upgrades?.size)
         }
-        if (list != null && list.isNotEmpty()) {
-            Panel("Bulk actions", trailing = {
-                GhostButton(
-                    if (sel.size ==
-                        list.size
-                    ) {
-                        "Select none"
-                    } else {
-                        "Select all"
-                    },
-                    {
-                        state.selected =
-                            if (sel.size == list.size) emptySet() else list.map { it.desiredItemId }.toSet()
-                    },
-                )
-            }) {
-                Text("${sel.size} selected", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SecondaryButton(
-                        "Search now",
-                        {
-                            bulk("Search queued") { id -> session.api.searchReleases(id) }
-                        },
-                        icon = Icons.Rounded.Search,
-                        compact = true,
-                        enabled =
-                        sel.isNotEmpty() && !state.busy,
-                    )
-                    SecondaryButton(
-                        "Monitor on",
-                        {
-                            bulk("Monitoring on") { id -> session.api.monitor(id, true) }
-                        },
-                        compact = true,
-                        enabled =
-                        sel.isNotEmpty() && !state.busy,
-                    )
-                    SecondaryButton(
-                        "Monitor off",
-                        {
-                            bulk("Monitoring off") { id -> session.api.monitor(id, false) }
-                        },
-                        compact = true,
-                        enabled =
-                        sel.isNotEmpty() && !state.busy,
-                    )
-                }
-            }
-        }
+        if (list != null && list.isNotEmpty()) BulkActions(session, state, list, sel, ::bulk)
         when {
             state.error != null && list == null -> ErrorState("Couldn't load wants", state.error, ::load)
 
@@ -222,35 +170,102 @@ fun MissingScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(list, key = { it.desiredItemId }) { w ->
-                    val checked = w.desiredItemId in sel
-                    MediaRow(
-                        w.title,
-                        MediaType.UNKNOWN,
-                        onOpen = {
-                            w.workId?.let { onOpen(detailRoute(it, MediaType.UNKNOWN, w.title, from = "Missing")) }
-                        },
-                        subtitle = listOfNotNull(
-                            w.qualityProfile?.let {
-                                "profile $it"
-                            },
-                            w.reason,
-                        ).joinToString("  ·  "),
-                        meta = listOf(
-                            w.state.lowercase().replace('_', ' '),
-                            if (w.monitor) "monitored" else "not monitored",
-                        ),
-                        status = LibraryStatus.ofState(w.state),
-                        selected = checked,
-                        trailing = {
-                            IconButtonRound(if (checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank, if (checked) "Deselect ${w.title}" else "Select ${w.title}", {
-                                state.selected =
-                                    if (checked) state.selected - w.desiredItemId else state.selected + w.desiredItemId
-                            }, size = 36.dp)
-                        },
-                    )
+                    MissingRow(w, w.desiredItemId in sel, state, onOpen)
                 }
                 item { Spacer(Modifier.height(16.dp)) }
             }
         }
     }
+}
+
+/** Select all / none, and the bulk actions over the selection: search now, monitor on / off. */
+@Composable
+private fun BulkActions(
+    session: AppSession,
+    state: MissingState,
+    list: List<Want>,
+    sel: Set<String>,
+    bulk: (label: String, action: (String) -> McpResult<*>) -> Unit,
+) {
+    Panel("Bulk actions", trailing = {
+        GhostButton(
+            if (sel.size ==
+                list.size
+            ) {
+                "Select none"
+            } else {
+                "Select all"
+            },
+            {
+                state.selected =
+                    if (sel.size == list.size) emptySet() else list.map { it.desiredItemId }.toSet()
+            },
+        )
+    }) {
+        Text("${sel.size} selected", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
+        Row(
+            Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SecondaryButton(
+                "Search now",
+                {
+                    bulk("Search queued") { id -> session.api.searchReleases(id) }
+                },
+                icon = Icons.Rounded.Search,
+                compact = true,
+                enabled =
+                sel.isNotEmpty() && !state.busy,
+            )
+            SecondaryButton(
+                "Monitor on",
+                {
+                    bulk("Monitoring on") { id -> session.api.monitor(id, true) }
+                },
+                compact = true,
+                enabled =
+                sel.isNotEmpty() && !state.busy,
+            )
+            SecondaryButton(
+                "Monitor off",
+                {
+                    bulk("Monitoring off") { id -> session.api.monitor(id, false) }
+                },
+                compact = true,
+                enabled =
+                sel.isNotEmpty() && !state.busy,
+            )
+        }
+    }
+}
+
+/** One want: its profile, reason, state and monitor flag, with a checkbox for the bulk actions. */
+@Composable
+private fun MissingRow(w: Want, checked: Boolean, state: MissingState, onOpen: (Route) -> Unit) {
+    MediaRow(
+        w.title,
+        MediaType.UNKNOWN,
+        onOpen = {
+            w.workId?.let { onOpen(detailRoute(it, MediaType.UNKNOWN, w.title, from = "Missing")) }
+        },
+        subtitle = listOfNotNull(
+            w.qualityProfile?.let {
+                "profile $it"
+            },
+            w.reason,
+        ).joinToString("  ·  "),
+        meta = listOf(
+            w.state.lowercase().replace('_', ' '),
+            if (w.monitor) "monitored" else "not monitored",
+        ),
+        status = LibraryStatus.ofState(w.state),
+        selected = checked,
+        trailing = {
+            IconButtonRound(if (checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank, if (checked) "Deselect ${w.title}" else "Select ${w.title}", {
+                state.selected =
+                    if (checked) state.selected - w.desiredItemId else state.selected + w.desiredItemId
+            }, size = 36.dp)
+        },
+    )
 }

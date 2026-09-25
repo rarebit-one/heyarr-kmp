@@ -26,6 +26,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.SearchHit
@@ -33,6 +34,7 @@ import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.catalog.ContinueEntry
+import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
@@ -137,48 +139,7 @@ fun HomeScreen(
                 state.byType = state.byType + (t to r)
             }
         }
-        // The want index (Missing / Could-be-better), followed sources and the continue rail
-        // are enrolled-only surfaces (GuestGate): a guest would only earn a 403, so skip them
-        // and leave the rails empty (they hide themselves) rather than showing an error.
-        if (session.isGuest) {
-            state.missing = RailState.Loaded(emptyList())
-            state.upgrades = RailState.Loaded(emptyList())
-            state.followed = RailState.Loaded(emptyList())
-            state.continueRail = RailState.Loaded(emptyList())
-        } else {
-            scope.launch {
-                state.missing =
-                    session.io {
-                        a.missing(40)
-                    }.fold(onSuccess = {
-                        RailState.Loaded(it)
-                    }, onFailure = { RailState.Failed(it.message ?: "failed") })
-            }
-            scope.launch {
-                state.upgrades =
-                    session.io {
-                        a.upgradeCandidates(40)
-                    }.fold(onSuccess = {
-                        RailState.Loaded(it)
-                    }, onFailure = { RailState.Failed(it.message ?: "failed") })
-            }
-            scope.launch {
-                state.followed =
-                    session.io {
-                        a.followed()
-                    }.fold(onSuccess = {
-                        RailState.Loaded(it)
-                    }, onFailure = { RailState.Failed(it.message ?: "failed") })
-            }
-            scope.launch {
-                state.continueRail =
-                    session.io {
-                        a.continueRail()
-                    }.fold(onSuccess = {
-                        RailState.Loaded(it)
-                    }, onFailure = { RailState.Failed(it.message ?: "failed") })
-            }
-        }
+        loadOwnerRails(session, a, state, scope)
     }
 
     LaunchedEffect(Unit) { if (!state.loadedOnce) load() }
@@ -385,6 +346,53 @@ fun HomeScreen(
             }
         }
         item { Spacer(Modifier.height(16.dp)) }
+    }
+}
+
+/**
+ * The want index (Missing / Could-be-better), followed sources and the continue rail
+ * are enrolled-only surfaces (GuestGate): a guest would only earn a 403, so skip them
+ * and leave the rails empty (they hide themselves) rather than showing an error.
+ */
+private fun loadOwnerRails(session: AppSession, a: HeyarrApi, state: HomeState, scope: CoroutineScope) {
+    if (session.isGuest) {
+        state.missing = RailState.Loaded(emptyList())
+        state.upgrades = RailState.Loaded(emptyList())
+        state.followed = RailState.Loaded(emptyList())
+        state.continueRail = RailState.Loaded(emptyList())
+    } else {
+        scope.launch {
+            state.missing =
+                session.io {
+                    a.missing(40)
+                }.fold(onSuccess = {
+                    RailState.Loaded(it)
+                }, onFailure = { RailState.Failed(it.message ?: "failed") })
+        }
+        scope.launch {
+            state.upgrades =
+                session.io {
+                    a.upgradeCandidates(40)
+                }.fold(onSuccess = {
+                    RailState.Loaded(it)
+                }, onFailure = { RailState.Failed(it.message ?: "failed") })
+        }
+        scope.launch {
+            state.followed =
+                session.io {
+                    a.followed()
+                }.fold(onSuccess = {
+                    RailState.Loaded(it)
+                }, onFailure = { RailState.Failed(it.message ?: "failed") })
+        }
+        scope.launch {
+            state.continueRail =
+                session.io {
+                    a.continueRail()
+                }.fold(onSuccess = {
+                    RailState.Loaded(it)
+                }, onFailure = { RailState.Failed(it.message ?: "failed") })
+        }
     }
 }
 

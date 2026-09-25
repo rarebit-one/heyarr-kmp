@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -43,6 +44,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.playback.AudioItem
 import one.rarebit.heyarr.mobile.playback.AudioState
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Artwork
@@ -70,85 +72,18 @@ fun AudioQueueScreen(
     val item = state.item ?: return
     BackHandler(onBack = onBack)
     MediaScope(MediaType.MUSIC) {
-        val theme = LocalMediaTheme.current
         Column(modifier.fillMaxSize().background(Tokens.bgBase).safeDrawingPadding().padding(horizontal = 16.dp)) {
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 GhostButton("Back", onBack, icon = Icons.Rounded.ArrowBack)
                 Spacer(Modifier.weight(1f))
                 IconButtonRound(Icons.Rounded.Stop, "Stop", onStop, size = 40.dp)
             }
-            Box(
-                Modifier.fillMaxWidth(
-                    0.7f,
-                ).aspectRatio(1f).align(Alignment.CenterHorizontally).clip(RoundedCornerShape(Tokens.radiusCard)),
-            ) {
-                Artwork(
-                    item.artworkUrl,
-                    MediaType.MUSIC,
-                    Modifier.fillMaxSize(),
-                    contentDescription = item.album,
-                    glyphSize = 64.dp,
-                )
-            }
-            Text(
-                item.title,
-                style = MaterialTheme.typography.headlineMedium,
-                color = Tokens.textPrimary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 16.dp),
-            )
-            Text(
-                listOfNotNull(item.artist, item.album).joinToString("  ·  "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = Tokens.textMuted,
-            )
+            NowPlayingHeader(item)
             state.error?.let {
                 Notice("Playback error: $it", tone = Tokens.danger, modifier = Modifier.padding(top = 8.dp))
             }
-            var dragging by remember { mutableStateOf<Float?>(null) }
-            Slider(
-                value = dragging ?: state.fraction,
-                onValueChange = { dragging = it },
-                onValueChangeFinished = {
-                    dragging?.let { if (state.durationMs > 0) onSeek((it * state.durationMs).toLong()) }
-                    dragging = null
-                },
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp).semantics { contentDescription = "Position" },
-                enabled = state.durationMs > 0,
-                colors = SliderDefaults.colors(
-                    thumbColor = theme.accentGradientEnd,
-                    activeTrackColor = theme.accent,
-                    inactiveTrackColor = Tokens.surface3,
-                ),
-            )
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(
-                    clockShort(state.positionMs),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Tokens.textMuted,
-                )
-                Text(
-                    clockShort(state.durationMs),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Tokens.textMuted,
-                )
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-            ) {
-                IconButtonRound(Icons.Rounded.SkipPrevious, "Previous", onPrevious, size = 44.dp)
-                IconButtonRound(
-                    if (state.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                    if (state.playing) "Pause" else "Play",
-                    onTogglePlay,
-                    size = 64.dp,
-                    filled = true,
-                )
-                IconButtonRound(Icons.Rounded.SkipNext, "Next", onNext, size = 44.dp, enabled = state.hasNext)
-            }
+            QueueSeek(state, onSeek)
+            QueueTransport(state, onPrevious, onTogglePlay, onNext)
             SectionHeader("Queue", subtitle = "${state.queue.size} tracks")
             LazyColumn(
                 Modifier.fillMaxSize(),
@@ -156,34 +91,125 @@ fun AudioQueueScreen(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 itemsIndexed(state.queue, key = { i, it -> "$i:${it.assetId}" }) { i, track ->
-                    val current = i == state.index
-                    Row(
-                        Modifier.fillMaxWidth().clip(
-                            RoundedCornerShape(Tokens.radiusInput),
-                        ).background(if (current) theme.tint(0.16f) else Tokens.surface1).clickable {
-                            onSkipTo(i)
-                        }.padding(horizontal = 12.dp, vertical = 10.dp)
-                            .semantics { contentDescription = "${track.title}${if (current) ", playing" else ""}" },
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            if (current) "▶" else "%02d".format(i + 1),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (current) theme.accentGradientEnd else Tokens.textMuted,
-                            modifier = Modifier.width(28.dp),
-                        )
-                        Text(
-                            track.title,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = Tokens.textPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                    QueueRow(i, track, i == state.index, onSkipTo)
                 }
                 item { Spacer(Modifier.height(24.dp)) }
             }
         }
+    }
+}
+
+/** The playing track's art, title, and artist · album. */
+@Composable
+private fun ColumnScope.NowPlayingHeader(item: AudioItem) {
+    Box(
+        Modifier.fillMaxWidth(
+            0.7f,
+        ).aspectRatio(1f).align(Alignment.CenterHorizontally).clip(RoundedCornerShape(Tokens.radiusCard)),
+    ) {
+        Artwork(
+            item.artworkUrl,
+            MediaType.MUSIC,
+            Modifier.fillMaxSize(),
+            contentDescription = item.album,
+            glyphSize = 64.dp,
+        )
+    }
+    Text(
+        item.title,
+        style = MaterialTheme.typography.headlineMedium,
+        color = Tokens.textPrimary,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(top = 16.dp),
+    )
+    Text(
+        listOfNotNull(item.artist, item.album).joinToString("  ·  "),
+        style = MaterialTheme.typography.bodyMedium,
+        color = Tokens.textMuted,
+    )
+}
+
+/** The seek slider (a drag seeks on release) over position and duration. */
+@Composable
+private fun QueueSeek(state: AudioState, onSeek: (Long) -> Unit) {
+    val theme = LocalMediaTheme.current
+    var dragging by remember { mutableStateOf<Float?>(null) }
+    Slider(
+        value = dragging ?: state.fraction,
+        onValueChange = { dragging = it },
+        onValueChangeFinished = {
+            dragging?.let { if (state.durationMs > 0) onSeek((it * state.durationMs).toLong()) }
+            dragging = null
+        },
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp).semantics { contentDescription = "Position" },
+        enabled = state.durationMs > 0,
+        colors = SliderDefaults.colors(
+            thumbColor = theme.accentGradientEnd,
+            activeTrackColor = theme.accent,
+            inactiveTrackColor = Tokens.surface3,
+        ),
+    )
+    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+        Text(
+            clockShort(state.positionMs),
+            style = MaterialTheme.typography.labelSmall,
+            color = Tokens.textMuted,
+        )
+        Text(
+            clockShort(state.durationMs),
+            style = MaterialTheme.typography.labelSmall,
+            color = Tokens.textMuted,
+        )
+    }
+}
+
+/** Previous, play/pause, next. */
+@Composable
+private fun QueueTransport(state: AudioState, onPrevious: () -> Unit, onTogglePlay: () -> Unit, onNext: () -> Unit) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+    ) {
+        IconButtonRound(Icons.Rounded.SkipPrevious, "Previous", onPrevious, size = 44.dp)
+        IconButtonRound(
+            if (state.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+            if (state.playing) "Pause" else "Play",
+            onTogglePlay,
+            size = 64.dp,
+            filled = true,
+        )
+        IconButtonRound(Icons.Rounded.SkipNext, "Next", onNext, size = 44.dp, enabled = state.hasNext)
+    }
+}
+
+/** One queue entry; tapping it skips there. */
+@Composable
+private fun QueueRow(i: Int, track: AudioItem, current: Boolean, onSkipTo: (Int) -> Unit) {
+    val theme = LocalMediaTheme.current
+    Row(
+        Modifier.fillMaxWidth().clip(
+            RoundedCornerShape(Tokens.radiusInput),
+        ).background(if (current) theme.tint(0.16f) else Tokens.surface1).clickable {
+            onSkipTo(i)
+        }.padding(horizontal = 12.dp, vertical = 10.dp)
+            .semantics { contentDescription = "${track.title}${if (current) ", playing" else ""}" },
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            if (current) "▶" else "%02d".format(i + 1),
+            style = MaterialTheme.typography.labelMedium,
+            color = if (current) theme.accentGradientEnd else Tokens.textMuted,
+            modifier = Modifier.width(28.dp),
+        )
+        Text(
+            track.title,
+            style = MaterialTheme.typography.titleSmall,
+            color = Tokens.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

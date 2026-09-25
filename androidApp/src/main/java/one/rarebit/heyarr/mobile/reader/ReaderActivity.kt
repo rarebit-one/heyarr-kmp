@@ -32,6 +32,7 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.AbsoluteUrl
 import org.readium.r2.shared.util.asset.AssetRetriever
 import org.readium.r2.shared.util.getOrElse
+import org.readium.r2.shared.util.http.DefaultHttpClient
 import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.DefaultPublicationParser
 
@@ -76,27 +77,7 @@ class ReaderActivity : FragmentActivity() {
 
         lifecycleScope.launch {
             val http = ReaderHttp.client(baseUrl = { app.graph.baseUrl() }, header = { app.graph.authHeader.current() })
-            val retriever = AssetRetriever(contentResolver, http)
-            val opener = PublicationOpener(
-                publicationParser = DefaultPublicationParser(
-                    this@ReaderActivity,
-                    httpClient = http,
-                    assetRetriever = retriever,
-                    pdfFactory = PdfiumDocumentFactory(this@ReaderActivity),
-                ),
-            )
-            val absolute = AbsoluteUrl(url) ?: run {
-                status.text = "Not a URL: $url"
-                return@launch
-            }
-            val asset = retriever.retrieve(absolute).getOrElse {
-                status.text = "Could not fetch the file: $it"
-                return@launch
-            }
-            val pub = opener.open(asset, allowUserInteraction = false).getOrElse {
-                status.text = "Could not open the file: $it"
-                return@launch
-            }
+            val pub = openPublication(http, url, status) ?: return@launch
             publication = pub
             container.removeView(status)
 
@@ -120,6 +101,33 @@ class ReaderActivity : FragmentActivity() {
             reporter.begin(assetId, "read")
             ReaderPosition.pageOf(initial?.toJSON()?.toString() ?: "")?.let { reporter.resumeAt(Position.page(it)) }
             setTitle(title)
+        }
+    }
+
+    /** Fetch and parse the file at [url]; on failure say why in [status] and return null. */
+    private suspend fun openPublication(http: DefaultHttpClient, url: String, status: TextView): Publication? {
+        val retriever = AssetRetriever(contentResolver, http)
+        val opener = PublicationOpener(
+            publicationParser = DefaultPublicationParser(
+                this@ReaderActivity,
+                httpClient = http,
+                assetRetriever = retriever,
+                pdfFactory = PdfiumDocumentFactory(this@ReaderActivity),
+            ),
+        )
+        val absolute = AbsoluteUrl(url) ?: run {
+            status.text = "Not a URL: $url"
+            return null
+        }
+        val asset = retriever.retrieve(absolute).getOrElse {
+            status.text = "Could not fetch the file: $it"
+            null
+        }
+        return asset?.let { fetched ->
+            opener.open(fetched, allowUserInteraction = false).getOrElse {
+                status.text = "Could not open the file: $it"
+                null
+            }
         }
     }
 
