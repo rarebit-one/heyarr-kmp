@@ -9,9 +9,7 @@
     <ID>ComplexCondition:DetailHero.kt$status == LibraryStatus.NOT_TRACKED &amp;&amp; canWant &amp;&amp; (asset != null || type == MediaType.SERIES)</ID>
     <ID>ComplexCondition:SearchShortcut.kt$!enabled || event.id != KeyEvent.KEY_PRESSED || event.keyCode != KeyEvent.VK_F || !event.isControlDown || event.isMetaDown || event.isAltDown || event.isShiftDown</ID>
     <ID>CyclomaticComplexMethod:App.kt$@Composable fun App( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
-    <ID>CyclomaticComplexMethod:App.kt$@Composable private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:AudioDock.kt$@Composable fun AudioDock(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
-    <ID>CyclomaticComplexMethod:ConnectionSheet.kt$@Composable fun ConnectionSheet(session: AppSession, state: ConnectionState, onClose: () -&gt; Unit, onSettings: () -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DaemonConfig.kt$DaemonConfig.Companion$fun resolve(args: Array&lt;String&gt;, env: (String) -&gt; String? = System::getenv): DaemonConfig</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable fun DetailScreen( session: AppSession, route: Route.Detail, state: DetailState, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun SeasonsBlock( session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, )</ID>
@@ -31,7 +29,6 @@
     <ID>ForbiddenComment:VaultSyncEngine.kt$VaultSyncEngine$// TODO: causal parents = the applied frontier</ID>
     <ID>FunctionNaming:App.kt$@Composable fun App( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
     <ID>FunctionNaming:App.kt$@Composable private fun SignInSheet(session: AppSession, onClose: () -&gt; Unit, onOpenSettings: () -&gt; Unit)</ID>
-    <ID>FunctionNaming:App.kt$@Composable private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
     <ID>FunctionNaming:AudioDock.kt$@Composable fun AudioDock(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:CardPieces.kt$@Composable internal fun BoxScope.HeroScrims()</ID>
     <ID>FunctionNaming:CardPieces.kt$@Composable internal fun CardCaption(title: String, subtitle: String?, meta: List&lt;String?&gt;)</ID>
@@ -45,6 +42,16 @@
     <ID>FunctionNaming:Cards.kt$@Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The client's mode; a guest ([ClientMode.GUEST]) never sees the Want affordance. */ mode: ClientMode = ClientMode.ENROLLED, width: Dp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, )</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun MediaCardSkeleton(aspect: CardAspect = CardAspect.POSTER, width: Dp = Tokens.posterWidth)</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun MediaRow( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, selected: Boolean = false, trailing: (@Composable () -&gt; Unit)? = null, )</ID>
+    <ID>FunctionNaming:ConnectionPanels.kt$@Composable internal fun ConnectionPanel( session: AppSession, state: ConnectionState, onRefresh: () -&gt; Unit, onClose: () -&gt; Unit, onSettings: () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:ConnectionPanels.kt$@Composable internal fun CredentialPanel(info: SessionInfo?)</ID>
+    <ID>FunctionNaming:ConnectionPanels.kt$@Composable internal fun JobsPanel(jobs: List&lt;JobInfo&gt;?)</ID>
+    <ID>FunctionNaming:ConnectionPanels.kt$@Composable internal fun NodePanel(state: ConnectionState)</ID>
+    <ID>FunctionNaming:ConnectionPanels.kt$@Composable internal fun ProvidersPanel(providers: List&lt;ProviderInfo&gt;?)</ID>
+    <ID>FunctionNaming:ConnectionPanels.kt$@Composable private fun CapabilityLines(capabilities: Capabilities?)</ID>
+    <ID>FunctionNaming:ConnectionPanels.kt$@Composable private fun ConnectionStatusLine(session: AppSession)</ID>
+    <ID>FunctionNaming:ConnectionPanels.kt$@Composable private fun JobRow(job: JobInfo)</ID>
+    <ID>FunctionNaming:ConnectionPanels.kt$@Composable private fun PeerAndLibraryLines(peers: PeerStatus?, libraries: List&lt;LibraryInfo&gt;?)</ID>
+    <ID>FunctionNaming:ConnectionPanels.kt$@Composable private fun ProviderRow(x: ProviderInfo)</ID>
     <ID>FunctionNaming:ConnectionSheet.kt$@Composable fun ConnectionSheet(session: AppSession, state: ConnectionState, onClose: () -&gt; Unit, onSettings: () -&gt; Unit)</ID>
     <ID>FunctionNaming:CurateSections.kt$@Composable internal fun AllFilesSection(assets: List&lt;Track&gt;)</ID>
     <ID>FunctionNaming:CurateSections.kt$@Composable internal fun CandidatesSection( session: AppSession, wants: List&lt;DesiredItem&gt;, state: DetailState, scope: CoroutineScope, reload: () -&gt; Unit, )</ID>
@@ -129,7 +136,15 @@
     <ID>FunctionNaming:Libmpv.kt$MpvLib$fun mpv_render_context_update(ctx: Pointer): Long</ID>
     <ID>FunctionNaming:Libmpv.kt$MpvLib$fun mpv_set_option_string(h: Pointer, name: String, data: String): Int</ID>
     <ID>FunctionNaming:Libmpv.kt$MpvLib$fun mpv_terminate_destroy(h: Pointer)</ID>
+    <ID>FunctionNaming:LibraryFilters.kt$@Composable internal fun ExtraKindChips(state: LibraryState, counts: Map&lt;MediaType, Int&gt;, total: Int)</ID>
+    <ID>FunctionNaming:LibraryFilters.kt$@Composable internal fun KindFilterChips( state: LibraryState, all: List&lt;Work&gt;, counts: Map&lt;MediaType, Int&gt;, experience: Experience?, )</ID>
+    <ID>FunctionNaming:LibraryFilters.kt$@Composable internal fun LibraryActions(state: LibraryState, onRefresh: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:LibraryFilters.kt$@Composable internal fun LibraryTabs(state: LibraryState)</ID>
+    <ID>FunctionNaming:LibraryFilters.kt$@Composable internal fun StatusFilterChips(state: LibraryState)</ID>
     <ID>FunctionNaming:LibraryScreen.kt$@Composable fun LibraryScreen( session: AppSession, state: LibraryState, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, experience: Experience? = null, )</ID>
+    <ID>FunctionNaming:LibraryScreen.kt$@Composable private fun LibraryGrid( session: AppSession, works: List&lt;Work&gt;, cell: Dp, onOpenWork: (Work) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
+    <ID>FunctionNaming:LibraryScreen.kt$@Composable private fun LibraryList(session: AppSession, works: List&lt;Work&gt;, onOpenWork: (Work) -&gt; Unit)</ID>
+    <ID>FunctionNaming:LibraryScreen.kt$@Composable private fun LibrarySkeleton(cell: Dp, aspectOf: MediaType)</ID>
     <ID>FunctionNaming:MacKeychainBackend.kt$CoreFoundation$fun CFDataCreate(alloc: Pointer?, bytes: ByteArray, length: NativeLong): Pointer?</ID>
     <ID>FunctionNaming:MacKeychainBackend.kt$CoreFoundation$fun CFDataGetBytePtr(theData: Pointer): Pointer?</ID>
     <ID>FunctionNaming:MacKeychainBackend.kt$CoreFoundation$fun CFDataGetLength(theData: Pointer): NativeLong</ID>
@@ -142,6 +157,7 @@
     <ID>FunctionNaming:MacKeychainBackend.kt$Security$fun SecItemDelete(query: Pointer): Int</ID>
     <ID>FunctionNaming:MacKeychainBackend.kt$Security$fun SecItemUpdate(query: Pointer, attributesToUpdate: Pointer): Int</ID>
     <ID>FunctionNaming:MissingScreen.kt$@Composable fun MissingScreen( session: AppSession, state: MissingState, onOpen: (Route) -&gt; Unit, onWantTitle: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
+    <ID>FunctionNaming:ModalScrim.kt$@Composable fun ModalScrim(onDismiss: () -&gt; Unit, panelModifier: Modifier, content: @Composable () -&gt; Unit)</ID>
     <ID>FunctionNaming:NowPlayingBar.kt$@Composable fun NowPlayingBar(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:NowPlayingScreen.kt$@Composable fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:NowPlayingScreen.kt$@Composable private fun RendererPanel(r: Renderer, state: NowPlayingState, control: (String) -&gt; Unit)</ID>
@@ -182,14 +198,16 @@
     <ID>FunctionNaming:WantSeasonsPanel.kt$@Composable internal fun WantSeasonsPanel( session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, )</ID>
     <ID>FunctionNaming:WantSeasonsPanel.kt$@Composable private fun WantSeasonButtons( session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, profile: String, )</ID>
     <ID>FunctionNaming:WantSeasonsPanel.kt$@Composable private fun WantSeriesButton(session: AppSession, detail: WorkDetail, following: Boolean, profile: String)</ID>
+    <ID>FunctionNaming:WantSheet.kt$@Composable internal fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:WantSheet.kt$@Composable private fun MediaTypeChoice(type: MediaType, onType: (MediaType) -&gt; Unit)</ID>
+    <ID>FunctionNaming:WantSheet.kt$@Composable private fun ProfileChoice( type: MediaType, profiles: List&lt;QualityProfile&gt;, profile: String, onProfile: (String) -&gt; Unit, )</ID>
+    <ID>FunctionNaming:WantSheet.kt$@Composable private fun TitleAndYear(title: String, onTitle: (String) -&gt; Unit, year: String, onYear: (String) -&gt; Unit)</ID>
+    <ID>FunctionNaming:WantSheet.kt$@Composable private fun WantOptions(monitor: Boolean, onToggleMonitor: () -&gt; Unit, reason: String, onReason: (String) -&gt; Unit)</ID>
     <ID>LongMethod:App.kt$@Composable fun App( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
-    <ID>LongMethod:App.kt$@Composable private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
     <ID>LongMethod:AudioDock.kt$@Composable fun AudioDock(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
-    <ID>LongMethod:ConnectionSheet.kt$@Composable fun ConnectionSheet(session: AppSession, state: ConnectionState, onClose: () -&gt; Unit, onSettings: () -&gt; Unit)</ID>
     <ID>LongMethod:DownloadsScreen.kt$@Composable fun DownloadsScreen( session: AppSession, state: DownloadsState, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>LongMethod:EmbeddedPlayer.kt$EmbeddedPlayer$fun start( embedded: Boolean, url: String, token: String, title: String, knownDurationSec: Double? = null, streamBaseUrl: String? = null, ): String?</ID>
     <ID>LongMethod:EnrolPanel.kt$@Composable fun EnrolPanel(session: AppSession)</ID>
-    <ID>LongMethod:LibraryScreen.kt$@Composable fun LibraryScreen( session: AppSession, state: LibraryState, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, experience: Experience? = null, )</ID>
     <ID>LongMethod:MissingScreen.kt$@Composable fun MissingScreen( session: AppSession, state: MissingState, onOpen: (Route) -&gt; Unit, onWantTitle: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>LongMethod:NowPlayingBar.kt$@Composable fun NowPlayingBar(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>LongMethod:PlayerScreen.kt$@OptIn(ExperimentalComposeUiApi::class) @Composable fun PlayerScreen( session: AppSession, route: Route.Player, state: PlayerScreenState, fullscreen: Boolean, onFullscreen: (Boolean) -&gt; Unit, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
@@ -262,10 +280,10 @@
     <ID>MagicNumber:Cards.kt$0.8f</ID>
     <ID>MagicNumber:Cards.kt$350</ID>
     <ID>MagicNumber:Cards.kt$6</ID>
+    <ID>MagicNumber:ConnectionPanels.kt$16</ID>
+    <ID>MagicNumber:ConnectionPanels.kt$19</ID>
     <ID>MagicNumber:ConnectionSheet.kt$0.92f</ID>
     <ID>MagicNumber:ConnectionSheet.kt$1000</ID>
-    <ID>MagicNumber:ConnectionSheet.kt$16</ID>
-    <ID>MagicNumber:ConnectionSheet.kt$19</ID>
     <ID>MagicNumber:ConnectionSheet.kt$3600</ID>
     <ID>MagicNumber:ConnectionSheet.kt$5</ID>
     <ID>MagicNumber:ConnectionSheet.kt$60</ID>
@@ -449,6 +467,7 @@
     <ID>MagicNumber:VaultSyncDaemon.kt$VaultSyncDaemon$1_000</ID>
     <ID>MagicNumber:VaultSyncEngine.kt$VaultSyncEngine$16</ID>
     <ID>MagicNumber:VoidbindCliCredential.kt$VoidbindCliCredential.Companion$10</ID>
+    <ID>MagicNumber:WantSheet.kt$4</ID>
     <ID>MagicNumber:WorkDetail.kt$PrimaryAsset.Companion$100</ID>
     <ID>MagicNumber:WorkDetail.kt$PrimaryAsset.Companion$1024</ID>
     <ID>MagicNumber:WorkDetailClient.kt$WorkDetailClient$200</ID>
@@ -461,17 +480,14 @@
     <ID>MatchingDeclarationName:NowPlayingScreen.kt$NowPlayingState</ID>
     <ID>MatchingDeclarationName:SettingsScreen.kt$SettingsState</ID>
     <ID>MatchingDeclarationName:SideNav.kt$NavItem</ID>
-    <ID>MaxLineLength:App.kt$"Created from the title with the same normalisation a scan uses, so wanting it now and scanning it later converge on one work."</ID>
     <ID>MaxLineLength:App.kt$"Device sign-in (Voidbind device/QR) is the next upgrade and is not wired on desktop yet — a pasted token is the way in for now."</ID>
-    <ID>MaxLineLength:App.kt$"No quality profile is configured for ${type.label.lowercase()} yet — add one with `heyarr quality-profile create` and tag it --content-types ${type.apiName}."</ID>
     <ID>MaxLineLength:App.kt$"You're browsing as a guest — watch and listen freely, no account needed. Sign in to save your place, keep playlists, and want or follow things."</ID>
     <ID>MaxLineLength:App.kt$Connection.OFFLINE</ID>
     <ID>MaxLineLength:App.kt$Connection.UNAUTHORIZED</ID>
     <ID>MaxLineLength:App.kt$is Route.Player</ID>
     <ID>MaxLineLength:AppSession.kt$Connection.Companion$/** What one liveness probe says: its HTTP status, or 0 when the transport failed. A refused credential is not "offline". */</ID>
-    <ID>MaxLineLength:ConnectionSheet.kt$"${peer.name}${if (peer.isSelf) " (this node)" else ""} · ${peer.site ?: ""} · ${peer.mode ?: ""}"</ID>
-    <ID>MaxLineLength:ConnectionSheet.kt$if (s.canWrite) "yes — want, follow, acquire will succeed" else "no — this token is read-only; writes will be refused"</ID>
-    <ID>MaxLineLength:ConnectionSheet.kt$if (session.config.bearerToken.isBlank()) "none (guest)" else "bearer, ${session.config.bearerToken.trim().length} chars, in ~/.config/heyarr-desktop/config.json (0600)"</ID>
+    <ID>MaxLineLength:ConnectionPanels.kt$if (s.canWrite) "yes — want, follow, acquire will succeed" else "no — this token is read-only; writes will be refused"</ID>
+    <ID>MaxLineLength:ConnectionPanels.kt$if (session.config.bearerToken.isBlank()) "none (guest)" else "bearer, ${session.config.bearerToken.trim().length} chars, in ~/.config/heyarr-desktop/config.json (0600)"</ID>
     <ID>MaxLineLength:CurateSections.kt$Section</ID>
     <ID>MaxLineLength:CurateSections.kt$subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — hidden from listings, folded here"</ID>
     <ID>MaxLineLength:CurateWants.kt$Section</ID>
@@ -555,6 +571,8 @@
     <ID>MaxLineLength:VaultSyncEngine.kt$VaultSyncEngine$blobs.putBlobFile(baseUrl, manifest.content, tmp, credential)</ID>
     <ID>MaxLineLength:WantSeasonsPanel.kt$"Seasons the library hasn't seen yet arrive when you want the whole series below — wanting a series follows it."</ID>
     <ID>MaxLineLength:WantSeasonsPanel.kt$"Wanting the whole series follows it: heyarr resolves its metadata id automatically (no TVDB URL needed) and backfills every aired episode plus each new one. To follow a source that has no work here, use Settings → Followed sources."</ID>
+    <ID>MaxLineLength:WantSheet.kt$"Created from the title with the same normalisation a scan uses, so wanting it now and scanning it later converge on one work."</ID>
+    <ID>MaxLineLength:WantSheet.kt$"No quality profile is configured for ${type.label.lowercase()} yet — add one with `heyarr quality-profile create` and tag it --content-types ${type.apiName}."</ID>
     <ID>MayBeConst:Fixtures.kt$Fixtures$val explain = """{"quality_profile":"living-room","selected":"r1","ranked":[{"id":"r1","title":"Sintel 2010 1080p BluRay x264","accepted":true,"score":0,"terminal":false,"reasons":[ {"rule":"resolution.gte","section":"accept","result":"pass","detail":"resolution 1080, which is at least 1080"}, {"rule":"source.nin","section":"accept","result":"pass","detail":"source bluray, which is outside [cam, telesync]"}, {"rule":"video_codec.eq","section":"prefer","result":"miss","detail":"video_codec x264, which is not equal to hevc"}, {"rule":"hdr.eq","section":"prefer","result":"undetermined","detail":"the provider could not determine hdr"}, {"rule":"resolution.gte","section":"terminal","result":"miss","detail":"resolution 1080, which is not at least 2160"}]}, {"id":"r2","title":"Sintel 2010 CAM","accepted":false,"score":0,"terminal":false,"reasons":[ {"rule":"resolution.gte","section":"accept","result":"fail","detail":"resolution 480, which is not at least 1080"}, {"rule":"source.nin","section":"accept","result":"fail","detail":"source cam, which is not outside [cam, telesync]"}], "rejected_by":[{"rule":"resolution.gte","section":"accept","result":"fail","detail":"resolution 480, which is not at least 1080"},{"rule":"source.nin","section":"accept","result":"fail","detail":"source cam, which is not outside [cam, telesync]"}]}]}"""</ID>
     <ID>MayBeConst:Fixtures.kt$Fixtures$val externalIds = """{"external_ids":[{"source":"tvdb","value":"341164"},{"source":"imdb","value":"tt4236770"}]}"""</ID>
     <ID>MayBeConst:Fixtures.kt$Fixtures$val followed = """{"followed_sources":[ {"id":"fs-1","work_id":"w-cloudflare","title":"Cloudflare Blog","type":"rss_feed","feed_ref":"https://blog.cloudflare.com/rss","quality_profile_id":"qp-everyday","monitor":true,"backfill":"from_now","items_known":12,"items_archived":12,"health":"ok"}, {"id":"fs-2","work_id":"w-atp","title":"Accidental Tech Podcast","type":"podcast","feed_ref":"https://atp.fm/rss","quality_profile_id":"qp-everyday","monitor":true,"backfill":"from_now","items_known":640,"items_archived":3,"health":"ok"}, {"id":"fs-3","work_id":"w-severance","title":"Severance","type":"tv_series","feed_ref":"tvdb:371980","quality_profile_id":"qp-living","monitor":true,"backfill":"full","items_known":19,"items_archived":19,"health":"ok"} ]}"""</ID>
