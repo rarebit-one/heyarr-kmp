@@ -3,7 +3,6 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>ComplexCondition:CruciformPairCallback.kt$CruciformPairCallback$ch in 'A'..'Z' || ch in 'a'..'z' || ch in '0'..'9' || ch == '-' || ch == '_' || ch == '.' || ch == '~'</ID>
-    <ID>ComplexCondition:DetailScreen.kt$hash == null &amp;&amp; type != MediaType.SERIES &amp;&amp; type != MediaType.FEED &amp;&amp; type != MediaType.PODCAST &amp;&amp; type != MediaType.MUSIC</ID>
     <ID>ComplexCondition:PairDeepLinkTest.kt$PairDeepLinkTest$ch in 'A'..'Z' || ch in 'a'..'z' || ch in '0'..'9' || ch == '-' || ch == '_' || ch == '.' || ch == '~'</ID>
     <ID>ComplexCondition:PlayHistory.kt$PlayLog$bestTag == null || rec.at &gt; bestAt || (rec.at == bestAt &amp;&amp; tag &gt; bestTag!!)</ID>
     <ID>ComplexCondition:ProblemDetail.kt$ProblemDetail$i &lt; body.length &amp;&amp; (body[i] == ' ' || body[i] == '\t' || body[i] == ':')</ID>
@@ -14,12 +13,8 @@
     <ID>CyclomaticComplexMethod:ClientCapabilities.kt$ClientCapabilities.Companion$fun codecName(mediaCodecMime: String): String?</ID>
     <ID>CyclomaticComplexMethod:ContinueClient.kt$ContinueClient.Companion$fun parse(body: String): List&lt;ContinueEntry&gt;</ID>
     <ID>CyclomaticComplexMethod:Decisions.kt$Decisions$fun section(route: Route?): NavSection?</ID>
-    <ID>CyclomaticComplexMethod:DetailCurate.kt$@Composable internal fun CurateTab( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit, )</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable fun DetailScreen( session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal(), )</ID>
-    <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable private fun DetailHero( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit, )</ID>
     <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun SeasonsBlock( session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?, )</ID>
-    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable private fun EpisodeRow( session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit, )</ID>
-    <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable private fun WantSeasonsPanel( session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState, )</ID>
     <ID>CyclomaticComplexMethod:DeviceEnrolment.kt$DeviceEnrolment$fun refreshMembership(): Boolean</ID>
     <ID>CyclomaticComplexMethod:DeviceEnrolment.kt$DeviceEnrolment$private suspend fun reflectPairing(ps: PairingState)</ID>
     <ID>CyclomaticComplexMethod:EnrolScreen.kt$@Composable fun EnrolScreen( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
@@ -52,13 +47,29 @@
     <ID>FunctionNaming:Cards.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: String? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The card width; null fills the parent (a grid cell). */ width: Dp? = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, actions: List&lt;CardAction&gt; = emptyList(), )</ID>
     <ID>FunctionNaming:CastScreen.kt$@Composable fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:CastScreen.kt$@Composable private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -&gt; Unit)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable internal fun AllFilesSection(assets: List&lt;WorkAsset&gt;)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable internal fun CandidatesSection( session: AppSession, wants: List&lt;DesiredItem&gt;, state: DetailState, scope: CoroutineScope, reload: () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable internal fun HealthSection(session: AppSession, hash: String?, state: DetailState, scope: CoroutineScope)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable internal fun IdentifiersSection(work: Work, type: MediaType, state: DetailState)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable internal fun VariantsSection(work: Work, variants: List&lt;Work&gt;, onOpen: (Route) -&gt; Unit)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable private fun CandidateCell(cand: Candidate, c: Int, enabled: Boolean, onAcquire: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable private fun ReplicaTable(replicas: List&lt;Replica&gt;)</ID>
+    <ID>FunctionNaming:CurateSections.kt$@Composable private fun SearchNowButton(session: AppSession, want: DesiredItem, scope: CoroutineScope)</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable internal fun HeldFilesSection(wants: List&lt;DesiredItem&gt;, state: DetailState)</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable internal fun WantsSection( session: AppSession, wants: List&lt;DesiredItem&gt;, state: DetailState, scope: CoroutineScope, reload: () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable private fun HeldFileCell(t: WorkAsset, v: AssetVerdict?, c: Int)</ID>
+    <ID>FunctionNaming:CurateWants.kt$@Composable private fun WantCell(session: AppSession, w: DesiredItem, sat: Satisfaction?, c: Int, scope: CoroutineScope)</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable internal fun CurateTab( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable private fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
+    <ID>FunctionNaming:DetailCurate.kt$@Composable private fun ExplainVerdict(result: McpResult&lt;Explanation?&gt;?)</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable private fun SidecarsPanel(state: DetailState, seasons: List&lt;Season&gt;)</ID>
+    <ID>FunctionNaming:DetailHero.kt$@Composable internal fun DetailHero( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit, )</ID>
+    <ID>FunctionNaming:DetailHero.kt$@Composable private fun HeroPrimary( h: HeroWork, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, onWant: (String, String) -&gt; Unit, scope: CoroutineScope, )</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable fun DetailScreen( session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal(), )</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable internal fun AssetPersonalActions(personal: DetailPersonal, assetId: String, title: String)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun CastPicker(session: AppSession, state: DetailState)</ID>
-    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun DetailHero( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit, )</ID>
+    <ID>FunctionNaming:DetailScreen.kt$@Composable internal fun CastPicker(session: AppSession, state: DetailState)</ID>
+    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun DetailSideLoads(session: AppSession, workId: String, state: DetailState, type: MediaType)</ID>
+    <ID>FunctionNaming:DetailScreen.kt$@Composable private fun DetailTopBar(from: String, state: DetailState, onBack: () -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun ArchiveBlock(state: DetailState, onOpen: (Route) -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun BookFilesBlock(work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal)</ID>
@@ -68,7 +79,14 @@
     <ID>FunctionNaming:DetailWatch.kt$@Composable internal fun TracksBlock( session: AppSession, work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal, )</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable private fun EpisodeRow( session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit, )</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable private fun MissingEpisodeRow( session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, ext: ExternalEpisode?, )</ID>
-    <ID>FunctionNaming:DetailWatch.kt$@Composable private fun WantSeasonsPanel( session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState, )</ID>
+    <ID>FunctionNaming:DetailWatchParts.kt$@Composable internal fun EpisodeText( ep: Episode, ext: ExternalEpisode?, isContinue: Boolean, progressLabel: String?, modifier: Modifier, )</ID>
+    <ID>FunctionNaming:DetailWatchParts.kt$@Composable internal fun EpisodeThumb(thumb: String?, fraction: Float?)</ID>
+    <ID>FunctionNaming:DetailWatchParts.kt$@Composable internal fun SeasonChips(all: List&lt;Season&gt;, selected: Season, ext: List&lt;ExternalEpisode&gt;, state: DetailState)</ID>
+    <ID>FunctionNaming:DetailWatchParts.kt$@Composable internal fun TrackRow(number: Int, t: WorkAsset, personal: DetailPersonal, onPlay: (() -&gt; Unit)?)</ID>
+    <ID>FunctionNaming:DetailWatchParts.kt$@Composable internal fun WantSeasonsPanel( session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState, )</ID>
+    <ID>FunctionNaming:DetailWatchParts.kt$@Composable private fun EpisodeFacts(ep: Episode, ext: ExternalEpisode?, isContinue: Boolean, progressLabel: String?)</ID>
+    <ID>FunctionNaming:DetailWatchParts.kt$@Composable private fun FollowSeriesRow(session: AppSession, work: Work, profile: String, tvdb: String?, following: Boolean)</ID>
+    <ID>FunctionNaming:DetailWatchParts.kt$@Composable private fun WantSeasonRow( session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, profile: String, )</ID>
     <ID>FunctionNaming:EnrolScreen.kt$@Composable fun EnrolScreen( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
     <ID>FunctionNaming:EnrolScreen.kt$@Composable private fun CountdownLine(prefix: String, deadlineMillis: Long, now: Long, suffix: String)</ID>
     <ID>FunctionNaming:EnrolScreen.kt$@Composable private fun DeviceKeyLine(info: DeviceKeyInfo, full: Boolean)</ID>
@@ -89,6 +107,10 @@
     <ID>FunctionNaming:LoginScreen.kt$@Composable fun LoginScreen( state: LoginUiState, onSignIn: () -&gt; Unit, /** * Same-phone hand-off: when the Cruciform authenticator app is installed here, fire the * login tuple at it as an `ACTION_VIEW` intent (no second-phone QR dance). Null * hides the button — the QR is always there as the fallback. */ onApproveOnThisPhone: ((qrTuple: String) -&gt; Unit)? = null, /** Skip the QR session entirely: enrol this phone as a device (needs no login). */ onEnrolDevice: (() -&gt; Unit)? = null, modifier: Modifier = Modifier, )</ID>
     <ID>FunctionNaming:LoginScreen.kt$@Composable private fun QrImage(tuple: String, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:MainActivity.kt$@Composable private fun PreLoginScreen( subtitle: String, onSettings: (() -&gt; Unit)?, /** * Whether the frame scrolls its content. False for content that scrolls itself * (EnrolScreen): a vertically scrolling column inside another one is measured with * an infinite height and Compose throws, which killed the app the moment Cruciform * handed over an invite. Such content gets the remaining height instead. */ scroll: Boolean = true, content: @Composable () -&gt; Unit, )</ID>
+    <ID>FunctionNaming:MediaCardParts.kt$@Composable internal fun BoxScope.HeroScrim()</ID>
+    <ID>FunctionNaming:MediaCardParts.kt$@Composable internal fun CardArtBox( modifier: Modifier, artwork: String?, type: MediaType, progress: Float?, overlay: @Composable BoxScope.() -&gt; Unit, )</ID>
+    <ID>FunctionNaming:MediaCardParts.kt$@Composable internal fun CardCaption(title: String, subtitle: String?, meta: List&lt;String?&gt;)</ID>
+    <ID>FunctionNaming:MediaCardParts.kt$@Composable internal fun CardMenu( expanded: Boolean, onDismiss: () -&gt; Unit, onOpen: () -&gt; Unit, onWant: (() -&gt; Unit)?, actions: List&lt;CardAction&gt;, )</ID>
     <ID>FunctionNaming:MissingScreen.kt$@Composable fun MissingScreen( session: AppSession, state: MissingState, onOpen: (Route) -&gt; Unit, onWantTitle: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>FunctionNaming:Nav.kt$@Composable fun HeyarrBottomBar(current: NavSection?, onGo: (NavSection) -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:Nav.kt$@Composable fun HeyarrNavRail( current: NavSection?, onGo: (NavSection) -&gt; Unit, connection: Connection, modifier: Modifier = Modifier, connectionDetail: String? = null, onConnection: () -&gt; Unit = {}, )</ID>
@@ -120,17 +142,7 @@
     <ID>FunctionNaming:TelemetryScreen.kt$@Composable fun TelemetryScreen( session: AppSession, state: TelemetryState, credentialSummary: String, onBack: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>FunctionNaming:WantSheet.kt$@OptIn(ExperimentalMaterial3Api::class) @Composable fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
     <ID>LongMethod:AudioQueueScreen.kt$@Composable fun AudioQueueScreen( state: AudioState, onBack: () -&gt; Unit, onTogglePlay: () -&gt; Unit, onNext: () -&gt; Unit, onPrevious: () -&gt; Unit, onSeek: (Long) -&gt; Unit, onSkipTo: (Int) -&gt; Unit, onStop: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
-    <ID>LongMethod:Cards.kt$@Composable fun Hero( title: String, type: MediaType, modifier: Modifier = Modifier, kicker: String? = null, meta: List&lt;String?&gt; = emptyList(), description: String? = null, artwork: String? = null, status: LibraryStatus? = null, primary: (@Composable () -&gt; Unit)? = null, secondary: (@Composable () -&gt; Unit)? = null, height: Dp = 320.dp, )</ID>
-    <ID>LongMethod:Cards.kt$@OptIn(ExperimentalFoundationApi::class) @Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: String? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The card width; null fills the parent (a grid cell). */ width: Dp? = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, actions: List&lt;CardAction&gt; = emptyList(), )</ID>
     <ID>LongMethod:CastScreen.kt$@Composable fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modifier)</ID>
-    <ID>LongMethod:DetailCurate.kt$@Composable internal fun CurateTab( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit, )</ID>
-    <ID>LongMethod:DetailCurate.kt$@Composable private fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
-    <ID>LongMethod:DetailScreen.kt$@Composable fun DetailScreen( session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal(), )</ID>
-    <ID>LongMethod:DetailScreen.kt$@Composable private fun DetailHero( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit, )</ID>
-    <ID>LongMethod:DetailWatch.kt$@Composable internal fun SeasonsBlock( session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?, )</ID>
-    <ID>LongMethod:DetailWatch.kt$@Composable internal fun TracksBlock( session: AppSession, work: Work, state: DetailState, play: DetailPlayback, personal: DetailPersonal, )</ID>
-    <ID>LongMethod:DetailWatch.kt$@Composable private fun EpisodeRow( session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit, )</ID>
-    <ID>LongMethod:DetailWatch.kt$@Composable private fun WantSeasonsPanel( session: AppSession, work: Work, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, state: DetailState, )</ID>
     <ID>LongMethod:EnrolScreen.kt$@Composable fun EnrolScreen( state: EnrolUiState, onCreateKey: () -&gt; Unit, onJoinInvite: (inviteQr: String) -&gt; Unit, onSasMatches: () -&gt; Unit, onSasMismatch: () -&gt; Unit, onRetry: () -&gt; Unit, onForget: () -&gt; Unit, modifier: Modifier = Modifier, /** An invite from Cruciform on this phone waiting for the device key (see [AppViewModel.receiveInviteLink]). */ parkedInvite: String? = null, onDiscardParked: () -&gt; Unit = {}, /** Give up on the relay wait in flight (Joining, or awaiting the admission). */ onCancelPairing: () -&gt; Unit = {}, /** `POST /enrol` again for a stored admission the node has not accepted yet. */ onRegister: () -&gt; Unit = {}, /** * Show the device's key material and the "Forget enrolment" control — the Device page * under Settings. The pre-sign-in host hides both: an enrolment in progress needs * neither, and a registered admission signs the phone in by itself (EnrolAdvance). */ manage: Boolean = false, )</ID>
     <ID>LongMethod:HeyarrNavHost.kt$@UnstableApi @Composable fun HeyarrNavHost( vm: AppViewModel, graph: AppGraph, focusDevice: Int, /** Raise the "Sign in to save" upgrade (QR/device) over the guest shell. */ onSignInToSave: () -&gt; Unit = {}, navController: NavHostController = rememberNavController(), )</ID>
     <ID>LongMethod:HomeScreen.kt$@Composable fun HomeScreen( session: AppSession, state: HomeState, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, onPlayContinue: (ContinueEntry) -&gt; Unit, modifier: Modifier = Modifier, discover: Boolean = false, personal: PersonalRows = PersonalRows(), /** Raise the "Sign in to save" upgrade — shown on the guest banner. */ onSignInToSave: () -&gt; Unit = {}, )</ID>
@@ -168,8 +180,8 @@
     <ID>LongParameterList:CatalogClient.kt$CatalogClient.Companion$( baseUrl: String, contentType: String?, sort: Sort, limit: Int, cursor: String?, artist: String? = null, author: String? = null, )</ID>
     <ID>LongParameterList:Cover.kt$( session: AppSession, type: MediaType, title: String, nodeArtPath: String?, year: Int? = null, creator: String? = null, feedRef: String? = null, )</ID>
     <ID>LongParameterList:DetailCurate.kt$( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit, )</ID>
+    <ID>LongParameterList:DetailHero.kt$( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit, )</ID>
     <ID>LongParameterList:DetailScreen.kt$( session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal(), )</ID>
-    <ID>LongParameterList:DetailScreen.kt$( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit, )</ID>
     <ID>LongParameterList:DetailWatch.kt$( session: AppSession, work: Work, ep: Episode, state: DetailState, ext: ExternalEpisode?, onPlay: (Episode) -&gt; Unit, )</ID>
     <ID>LongParameterList:DetailWatch.kt$( session: AppSession, work: Work, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, art: String?, )</ID>
     <ID>LongParameterList:DevicePairingSteps.kt$DevicePairingSteps$( private val keyring: () -&gt; DeviceKeyring?, private val relayTransport: VoidbindHttpTransport, private val nodeTransport: HttpTransport, private val baseUrl: () -&gt; String, private val deviceName: () -&gt; String, private val credential: () -&gt; Credential?, private val clock: () -&gt; Long = System::currentTimeMillis, )</ID>
@@ -234,11 +246,13 @@
     <ID>MagicNumber:CruciformPairCallback.kt$CruciformPairCallback$0xFF</ID>
     <ID>MagicNumber:CruciformPairCallback.kt$CruciformPairCallback$3</ID>
     <ID>MagicNumber:CruciformPairCallback.kt$CruciformPairCallback$4</ID>
-    <ID>MagicNumber:DetailCurate.kt$20</ID>
-    <ID>MagicNumber:DetailCurate.kt$3</ID>
-    <ID>MagicNumber:DetailCurate.kt$4</ID>
-    <ID>MagicNumber:DetailCurate.kt$5</ID>
-    <ID>MagicNumber:DetailCurate.kt$6</ID>
+    <ID>MagicNumber:CurateSections.kt$20</ID>
+    <ID>MagicNumber:CurateSections.kt$3</ID>
+    <ID>MagicNumber:CurateSections.kt$4</ID>
+    <ID>MagicNumber:CurateWants.kt$3</ID>
+    <ID>MagicNumber:CurateWants.kt$4</ID>
+    <ID>MagicNumber:CurateWants.kt$5</ID>
+    <ID>MagicNumber:CurateWants.kt$6</ID>
     <ID>MagicNumber:DetailScreen.kt$0.22f</ID>
     <ID>MagicNumber:DetailWatch.kt$10</ID>
     <ID>MagicNumber:DetailWatch.kt$16f</ID>
@@ -246,6 +260,9 @@
     <ID>MagicNumber:DetailWatch.kt$4</ID>
     <ID>MagicNumber:DetailWatch.kt$5</ID>
     <ID>MagicNumber:DetailWatch.kt$9f</ID>
+    <ID>MagicNumber:DetailWatchParts.kt$10</ID>
+    <ID>MagicNumber:DetailWatchParts.kt$16f</ID>
+    <ID>MagicNumber:DetailWatchParts.kt$9f</ID>
     <ID>MagicNumber:DevicePairingSteps.kt$DevicePairingSteps$1000</ID>
     <ID>MagicNumber:DiscoverClient.kt$DiscoverClient$200</ID>
     <ID>MagicNumber:DiscoverClient.kt$DiscoverClient$404</ID>
@@ -416,28 +433,21 @@
     <ID>MaxLineLength:ClientCapabilitiesTest.kt$ClientCapabilitiesTest$"""{"asset_id":"a\"b","client":{"containers":["mp4","mkv","webm"],"video":["h264"],"audio":["aac","opus"],"max_height":1080}}"""</ID>
     <ID>MaxLineLength:ConsumptionClientTest.kt$ConsumptionClientTest$"""{"device_key":"ed25519:ab","name":"heyarr-mobile on Pong","platform":"android","profile":{"containers":["mp4"],"video_codecs":["h264"],"audio_codecs":["aac"],"max_width":0,"max_height":1080,"max_bitrate_bps":0,"supports_hdr":false}}"""</ID>
     <ID>MaxLineLength:ContinueClientTest.kt$ContinueClientTest$"""{"items":[{"session":{"id":"s1"},"work":{"id":"w1"}},{"session":{"id":"s2"},"asset":{"asset_id":"a"}}]}"""</ID>
+    <ID>MaxLineLength:CurateSections.kt$subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — hidden from listings, folded here"</ID>
     <ID>MaxLineLength:DecisionsTest.kt$DecisionsTest$/** The shell's decisions are pure: what the player route shows, when the bar shows, which tile lights, how an album queues. */</ID>
     <ID>MaxLineLength:DetailCurate.kt$"Describe a release and heyarr explains, rule by rule, whether the profile would accept it. Leave a field blank when you do not know — a blank reads as undetermined, a guess reads as a claim."</ID>
     <ID>MaxLineLength:DetailCurate.kt$"heyarr's tool surface has no caption or artwork search yet: sidecars arrive with a release or a scan. Asking the indexers again (Indexer candidates) is the only fetch this node can queue."</ID>
     <ID>MaxLineLength:DetailCurate.kt$/** "Would this be accepted?" — describe a release, get every rule back. Absent fields stay absent so they read as undetermined. */</ID>
-    <ID>MaxLineLength:DetailCurate.kt$Section</ID>
-    <ID>MaxLineLength:DetailCurate.kt$emptyText = "No replica report — on a single-node fabric there is nowhere for bytes to converge to."</ID>
-    <ID>MaxLineLength:DetailCurate.kt$subtitle = "${held.size} playable file${if (held.size == 1) "" else "s"} · ${verdicts.size} judged against a profile"</ID>
-    <ID>MaxLineLength:DetailCurate.kt$subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — hidden from listings, folded here"</ID>
-    <ID>MaxLineLength:DetailScreen.kt$"An indexer can take thirty seconds to answer; open Curate → Indexer candidates in a moment."</ID>
+    <ID>MaxLineLength:DetailHero.kt$"Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Indexer candidates shows what the indexers found."}"</ID>
     <ID>MaxLineLength:DetailScreen.kt$"No renderers found. A device that is switched off will not be listed — that is not the same as it not existing."</ID>
-    <ID>MaxLineLength:DetailScreen.kt$"Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Indexer candidates shows what the indexers found."}"</ID>
-    <ID>MaxLineLength:DetailScreen.kt$play.playVideo(work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList())</ID>
-    <ID>MaxLineLength:DetailScreen.kt$work.primaryAssetId ?: hash!!</ID>
-    <ID>MaxLineLength:DetailWatch.kt$"Every episode, past and future, becomes a want. If this node can't identify the series yet, it stays a plain want until it can."</ID>
-    <ID>MaxLineLength:DetailWatch.kt$"Following the whole series lets the node find it by name. If it can't, add the TVDB URL in Settings → Followed sources."</ID>
-    <ID>MaxLineLength:DetailWatch.kt$"Measured against $profile; heyarr will look for what this season is missing."</ID>
     <ID>MaxLineLength:DetailWatch.kt$"No episode files are held for this series yet.${if (wants.isNotEmpty()) " heyarr is looking — Curate → Indexer candidates shows what it found." else ""}"</ID>
     <ID>MaxLineLength:DetailWatch.kt$"No synopsis — the node has no metadata provider and no public source knew this title. Titles, seasons and episodes below come from the files themselves."</ID>
     <ID>MaxLineLength:DetailWatch.kt$"Synopsis${if (coverIsExternal) " and cover" else ""} via ${ext.source} — not from your library. The node has no metadata provider (TVDB, ADR-0058)."</ID>
     <ID>MaxLineLength:DetailWatch.kt$.</ID>
     <ID>MaxLineLength:DetailWatch.kt$if (wants.isEmpty()) "Want this series and heyarr will look for it." else "Wanted — heyarr searches on its schedule; ask now to jump the queue."</ID>
     <ID>MaxLineLength:DetailWatch.kt$is CoreEpisode&lt;*&gt;</ID>
+    <ID>MaxLineLength:DetailWatchParts.kt$"Every episode, past and future, becomes a want. If this node can't identify the series yet, it stays a plain want until it can."</ID>
+    <ID>MaxLineLength:DetailWatchParts.kt$"Following the whole series lets the node find it by name. If it can't, add the TVDB URL in Settings → Followed sources."</ID>
     <ID>MaxLineLength:DiscoverClient.kt$DiscoverClient.Companion$/** `{ "results": [ { title, year, type, tvdb_id, overview } ] }`, tolerantly; a hit with no title is skipped. */</ID>
     <ID>MaxLineLength:EnrolScreen.kt$"op(s) known). Whether it can also manage follows depends on the grant an admin gives its key."</ID>
     <ID>MaxLineLength:EnrolScreen.kt$color = if (state.needsAdmin) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant</ID>

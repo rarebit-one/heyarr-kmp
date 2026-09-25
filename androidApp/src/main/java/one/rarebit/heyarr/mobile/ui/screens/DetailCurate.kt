@@ -30,13 +30,16 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.library.Variants
+import one.rarebit.heyarr.core.mcp.AssetVerdict
 import one.rarebit.heyarr.core.mcp.Explanation
 import one.rarebit.heyarr.core.mcp.ReleaseAttributes
 import one.rarebit.heyarr.core.mcp.ReleaseToExplain
+import one.rarebit.heyarr.core.mcp.Satisfaction
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
@@ -177,48 +180,65 @@ private fun ExplainPanel(session: AppSession, wants: List<DesiredItem>) {
         PrimaryButton("Explain", {
             busy = true
             scope.launch {
-                val rel =
-                    ReleaseToExplain(
-                        "candidate",
-                        title.ifBlank {
-                            "untitled release"
-                        },
-                        ReleaseAttributes(
-                            resolution = resolution.toIntOrNull(),
-                            source = source,
-                            videoCodec = codec,
-                            sizeBytes = size.toLongOrNull(),
-                        ),
-                    )
+                val rel = releaseToExplain(title, resolution, source, codec, size)
                 session.io { session.api.explain(profile, listOf(rel)) }.onSuccess { result = it }
                 busy = false
             }
         }, icon = Icons.Rounded.Verified, compact = true, enabled = !busy && profile.isNotBlank())
-        when (val r = result) {
-            null -> {}
+        ExplainVerdict(result)
+    }
+}
 
-            is McpResult.Refused -> Notice("explain_release: ${r.message}", tone = Tokens.danger)
+/**
+ * The form's fields as the release [ExplainPanel] asks about: a blank title gets a
+ * placeholder, blank numbers stay absent.
+ */
+private fun releaseToExplain(
+    title: String,
+    resolution: String,
+    source: String,
+    codec: String,
+    size: String,
+): ReleaseToExplain = ReleaseToExplain(
+    "candidate",
+    title.ifBlank {
+        "untitled release"
+    },
+    ReleaseAttributes(
+        resolution = resolution.toIntOrNull(),
+        source = source,
+        videoCodec = codec,
+        sizeBytes = size.toLongOrNull(),
+    ),
+)
 
-            is McpResult.Ok -> r.value?.ranked?.firstOrNull()?.let { ranked ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        if (ranked.accepted) "Would be accepted" else "Would be rejected",
-                        style = MaterialTheme.typography.titleSmall,
-                        color = verdictColor(if (ranked.accepted) "pass" else "fail"),
-                    )
-                    Text(
-                        "score ${ranked.score}${if (ranked.terminal) " · terminal" else ""}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Tokens.textMuted,
-                    )
-                }
-                RejectedBy(ranked.rejectedBy)
-                ReasonList(ranked.reasons)
-            } ?: Text("No verdict returned.", color = Tokens.textMuted, style = MaterialTheme.typography.bodySmall)
-        }
+/** What explain_release said about the release: the verdict, its score and every rule, or the refusal verbatim. */
+@Composable
+private fun ExplainVerdict(result: McpResult<Explanation?>?) {
+    when (val r = result) {
+        null -> {}
+
+        is McpResult.Refused -> Notice("explain_release: ${r.message}", tone = Tokens.danger)
+
+        is McpResult.Ok -> r.value?.ranked?.firstOrNull()?.let { ranked ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    if (ranked.accepted) "Would be accepted" else "Would be rejected",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = verdictColor(if (ranked.accepted) "pass" else "fail"),
+                )
+                Text(
+                    "score ${ranked.score}${if (ranked.terminal) " · terminal" else ""}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Tokens.textMuted,
+                )
+            }
+            RejectedBy(ranked.rejectedBy)
+            ReasonList(ranked.reasons)
+        } ?: Text("No verdict returned.", color = Tokens.textMuted, style = MaterialTheme.typography.bodySmall)
     }
 }
 
@@ -241,249 +261,17 @@ internal fun CurateTab(
     onOpen: (Route) -> Unit,
     reload: () -> Unit,
 ) {
+    // One scope for every section's actions, so an in-flight call lives as long as the tab.
     val scope = rememberCoroutineScope()
-    val assets = state.assets.orEmpty()
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         // 1. Status
-        Section("Wants & status", subtitle = if (wants.isEmpty()) "Not wanted — nothing measures this work" else "${wants.size} want${if (wants.size == 1) "" else "s"} on this work", trailing = {
-            GhostButton("Refresh", reload)
-        }) {
-            DataTable(
-                columns = listOf(
-                    TableColumn("Scope", width = 70.dp),
-                    TableColumn("Profile", width = 110.dp),
-                    TableColumn("State", width = 110.dp),
-                    TableColumn("Content", width = 110.dp),
-                    TableColumn("Placement", width = 140.dp),
-                    TableColumn("Upgrade", width = 220.dp),
-                    TableColumn("Monitor", width = 120.dp, alignEnd = true),
-                ),
-                rowCount = wants.size,
-                emptyText = "Not wanted. Want it (or a season) to see every rule heyarr would apply.",
-                minWidth = 900.dp,
-            ) { r, c ->
-                val w = wants[r]
-                val sat = (state.satisfaction[w.id] as? McpResult.Ok)?.value
-                when (c) {
-                    0 -> Cell(if (w.id.startsWith("pending:")) "sending…" else w.scope, muted = true)
-
-                    1 -> Cell(
-                        session.profiles.firstOrNull {
-                            it.id == w.qualityProfileId
-                        }?.name ?: w.qualityProfileId ?: "?",
-                        mono = true,
-                    )
-
-                    2 -> StatusPill(LibraryStatus.ofState(w.state))
-
-                    3 -> Text(
-                        sat?.contentSatisfaction?.replace('_', ' ') ?: (w.content ?: "…"),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = verdictColor(
-                            if ((
-                                    sat?.contentSatisfaction
-                                        ?: w.content
-                                    ) ==
-                                "satisfied"
-                            ) {
-                                "pass"
-                            } else {
-                                "fail"
-                            },
-                        ),
-                    )
-
-                    4 -> Cell(
-                        sat?.let {
-                            if (it.placementUnproven) "unproven (single node)" else it.placementSatisfaction
-                        }
-                            ?: (w.placement ?: "…"),
-                        muted = true,
-                    )
-
-                    5 -> Cell(
-                        sat?.let {
-                            (if (it.upgradeEligible) "eligible" else it.upgradeStatus.replace('_', ' ')) +
-                                (it.upgradeDetail.takeIf { d -> d.isNotBlank() }?.let { d -> " — $d" } ?: "")
-                        }
-                            ?: (w.detail ?: ""),
-                        muted = true,
-                        maxLines = 2,
-                    )
-
-                    6 -> FilterChip(if (w.monitor) "Monitoring" else "Off", w.monitor, {
-                        scope.launch {
-                            session.io {
-                                session.api.monitor(w.id, !w.monitor)
-                            }.onSuccess { res ->
-                                if (res is McpResult.Refused) session.refused(res) else session.refreshIndex()
-                            }
-                        }
-                    })
-                }
-            }
-            for (w in wants) {
-                (state.satisfaction[w.id] as? McpResult.Refused)?.let {
-                    Notice("get_content_satisfaction: ${it.message}", tone = Tokens.danger)
-                }
-            }
-        }
+        WantsSection(session, wants, state, scope, reload)
 
         // 2. Held files with verdicts
-        val verdicts = wants.flatMap { w ->
-            (state.satisfaction[w.id] as? McpResult.Ok)?.value?.assets.orEmpty()
-        }.associateBy { it.assetId }
-        val held = assets.filter { it.isPrimaryRole && it.blobHash != null }
-        Section(
-            "Held files",
-            subtitle = "${held.size} playable file${if (held.size == 1) "" else "s"} · ${verdicts.size} judged against a profile",
-        ) {
-            DataTable(
-                columns = listOf(
-                    TableColumn("File", width = 260.dp),
-                    TableColumn("Size", width = 80.dp, alignEnd = true),
-                    TableColumn("Verdict", width = 100.dp),
-                    TableColumn("Score", width = 60.dp, alignEnd = true),
-                    TableColumn("Rejected by", width = 220.dp),
-                ),
-                rowCount = held.size,
-                emptyText = "Nothing held for this work.",
-                minWidth = 780.dp,
-                detailLabel = { r -> held[r].filename ?: held[r].id },
-                detail = { r ->
-                    verdicts[held[r].id]?.let { ReasonList(it.reasons) }
-                        ?: Text(
-                            "No verdict — this file is not measured by any want.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Tokens.textMuted,
-                        )
-                },
-            ) { r, c ->
-                val t = held[r]
-                val v = verdicts[t.id]
-                when (c) {
-                    0 -> Cell(t.filename ?: t.id)
-
-                    1 -> Cell(t.sizeBytes?.let { WorkAsset.formatBytes(it) } ?: "", muted = true)
-
-                    2 -> Text(
-                        when {
-                            v == null -> "unmeasured"
-                            v.accepted -> "accepted"
-                            else -> "rejected"
-                        },
-                        style = MaterialTheme.typography.labelMedium,
-                        color = verdictColor(
-                            when {
-                                v == null -> ""
-                                v.accepted -> "pass"
-                                else -> "fail"
-                            },
-                        ),
-                    )
-
-                    3 -> Cell(v?.score?.toString() ?: "", muted = true, mono = true)
-
-                    4 -> Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        for (x in v?.rejectedBy.orEmpty().take(2)) RuleCode(x.rule, tone = Tokens.danger)
-                        if ((v?.rejectedBy?.size ?: 0) > 2) Cell("+${v!!.rejectedBy.size - 2}", muted = true)
-                    }
-                }
-            }
-        }
+        HeldFilesSection(wants, state)
 
         // 3. Indexer candidates
-        val cands = wants.flatMap { w -> state.candidates[w.id].orEmpty().map { w to it } }
-        Section("Indexer candidates", subtitle = if (wants.isEmpty()) "Want it first — candidates belong to a want" else "${cands.size} from the last search", trailing = {
-            if (wants.isNotEmpty()) {
-                SecondaryButton("Search now", {
-                    scope.launch {
-                        session.io { session.api.searchReleases(wants.first().id) }.onSuccess { r ->
-                            when (r) {
-                                is McpResult.Ok -> session.toast(
-                                    Toast.Kind.INFO,
-                                    "Search queued",
-                                    "Indexers answer within a minute; the Downloads tab under Library shows the job.",
-                                )
-
-                                is McpResult.Refused -> session.refused(r)
-                            }
-                        }
-                    }
-                }, icon = Icons.Rounded.Search, compact = true)
-            }
-        }) {
-            DataTable(
-                columns = listOf(
-                    TableColumn("Release", width = 260.dp),
-                    TableColumn("Provider", width = 100.dp),
-                    TableColumn("Score", width = 60.dp, alignEnd = true),
-                    TableColumn("Verdict", width = 90.dp),
-                    TableColumn("", width = 120.dp, alignEnd = true),
-                ),
-                rowCount = cands.size,
-                emptyText = if (wants.isEmpty()) {
-                    "No want, no candidates."
-                } else {
-                    "The last search found nothing${wants.firstOrNull()?.detail?.let {
-                        " — $it"
-                    } ?: ""}."
-                },
-                minWidth = 780.dp,
-                detailLabel = { r -> cands[r].second.title },
-                detail = { r ->
-                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        RejectedBy(cands[r].second.rejectedBy)
-                        ReasonList(cands[r].second.reasons)
-                    }
-                },
-            ) { r, c ->
-                val (w, cand) = cands[r]
-                when (c) {
-                    0 -> Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Cell(cand.title)
-                        if (cand.selected) {
-                            Text(
-                                "selected",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = LocalMediaTheme.current.accentGradientEnd,
-                            )
-                        }
-                    }
-
-                    1 -> Cell(cand.provider ?: "", muted = true, mono = true)
-
-                    2 -> Cell(cand.score.toString(), muted = true, mono = true)
-
-                    3 -> Text(
-                        if (cand.accepted) "accepted" else "rejected",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = verdictColor(if (cand.accepted) "pass" else "fail"),
-                    )
-
-                    4 -> PrimaryButton("Acquire", {
-                        scope.launch {
-                            state.busy = cand.candidateId
-                            session.io { session.api.acquire(w.id, cand.candidateId) }.onSuccess { res ->
-                                when (res) {
-                                    is McpResult.Ok -> {
-                                        session.toast(Toast.Kind.SUCCESS, "Acquiring", cand.title)
-                                        session.refreshIndex()
-                                        reload()
-                                    }
-
-                                    is McpResult.Refused -> session.refused(res)
-                                }
-                            }
-                            state.busy = null
-                        }
-                    }, icon = Icons.Rounded.Download, compact = true, enabled = state.busy == null)
-                }
-            }
-        }
+        CandidatesSection(session, wants, state, scope, reload)
 
         // 4. Score a release
         Section(
@@ -495,171 +283,20 @@ internal fun CurateTab(
         }
 
         // 5. Health
-        val hash = work.blobHash
-        Section(
-            "Health",
-            subtitle = hash?.let {
-                "primary blob ${it.take(20)}…"
-            } ?: "no held bytes to check",
-            trailing = {
-                if (hash != null) {
-                    SecondaryButton("Verify bytes", {
-                        scope.launch {
-                            session.io { session.api.verifyBlob(hash) }.onSuccess { r ->
-                                when (r) {
-                                    is McpResult.Ok -> session.toast(
-                                        Toast.Kind.INFO,
-                                        "Verification queued",
-                                        "Re-hashing runs as a job; see Library → Downloads.",
-                                    )
-
-                                    is McpResult.Refused -> session.refused(r)
-                                }
-                            }
-                        }
-                    }, icon = Icons.Rounded.Verified, compact = true)
-                }
-            },
-        ) {
-            when (val r = state.replicas) {
-                null -> if (hash !=
-                    null
-                ) {
-                    Skeleton(Modifier.fillMaxWidth().height(40.dp))
-                } else {
-                    Text("Nothing to check.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-                }
-
-                is McpResult.Refused -> Notice("get_replica_status: ${r.message}", tone = Tokens.danger)
-
-                is McpResult.Ok -> DataTable(
-                    columns = listOf(
-                        TableColumn("Peer", 1f),
-                        TableColumn("Copy", width = 110.dp),
-                        TableColumn("Verified", width = 80.dp),
-                    ),
-                    rowCount = r.value.size,
-                    emptyText = "No replica report — on a single-node fabric there is nowhere for bytes to converge to.",
-                ) {
-                        i,
-                        c,
-                    ->
-                    val rep = r.value[i]
-                    when (c) {
-                        0 -> Cell(rep.peer)
-
-                        1 -> Cell(rep.state, mono = true)
-
-                        2 -> Text(
-                            if (rep.verified) "yes" else "no",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = verdictColor(if (rep.verified) "pass" else "undetermined"),
-                        )
-                    }
-                }
-            }
-        }
+        HealthSection(session, work.blobHash, state, scope)
 
         // 6. Captions & artwork
         Section("Captions & artwork", initiallyOpen = false) { SidecarsPanel(state, seasons) }
 
         // 7. Also catalogued as
         if (state.variants.isNotEmpty()) {
-            Section(
-                "Also catalogued as",
-                subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — hidden from listings, folded here",
-            ) {
-                DataTable(
-                    columns = listOf(
-                        TableColumn("Work", 2f),
-                        TableColumn("Season", width = 70.dp),
-                        TableColumn("", width = 80.dp, alignEnd = true),
-                    ),
-                    rowCount = state.variants.size,
-                ) {
-                        i,
-                        c,
-                    ->
-                    val v = state.variants[i]
-                    when (c) {
-                        0 -> Cell(v.title)
-
-                        1 -> Cell(Variants.seasonOf(v)?.let { "S$it" } ?: "", mono = true, muted = true)
-
-                        2 -> GhostButton("Open", {
-                            onOpen(detailRoute(v.id, MediaType.from(v.kind), v.title, from = work.title, curate = true))
-                        })
-                    }
-                }
-            }
+            VariantsSection(work, state.variants, onOpen)
         }
 
         // 8. Identifiers
-        Section("Identifiers", initiallyOpen = false) {
-            val rows =
-                listOf("work id" to work.id, "work key" to (work.workKey ?: "—"), "type" to type.label) +
-                    work.externalIds.map { it.key to it.value } +
-                    state.externalIds.map { it.source to it.value }
-            DataTable(
-                columns = listOf(TableColumn("Key", width = 110.dp), TableColumn("Value", 1f)),
-                rowCount = rows.size,
-            ) {
-                    i,
-                    c,
-                ->
-                val (k, v) = rows[i]
-                when (c) {
-                    0 -> Cell(k, muted = true, mono = true)
-                    1 -> Cell(v, mono = true)
-                }
-            }
-        }
+        IdentifiersSection(work, type, state)
 
         // 9. Files
-        Section("All files", subtitle = "${assets.size} scanned", initiallyOpen = false) {
-            DataTable(
-                columns = listOf(
-                    TableColumn("File", width = 260.dp),
-                    TableColumn("Role", width = 80.dp),
-                    TableColumn("Type", width = 120.dp),
-                    TableColumn("Size", width = 80.dp, alignEnd = true),
-                    TableColumn("", width = 80.dp),
-                ),
-                rowCount = assets.size,
-                emptyText = "No files scanned.",
-                minWidth = 660.dp,
-            ) {
-                    i,
-                    c,
-                ->
-                val t = assets[i]
-                when (c) {
-                    0 -> Cell(
-                        t.filename ?: t.id,
-                        color = if (t.isPlayable ||
-                            t.role == "artwork"
-                        ) {
-                            Tokens.textPrimary
-                        } else {
-                            Tokens.textDisabled
-                        },
-                    )
-
-                    1 -> Cell(t.role ?: "primary", mono = true, muted = true)
-
-                    2 -> Cell(t.mime ?: "", mono = true, muted = true)
-
-                    3 -> Cell(t.sizeBytes?.let { WorkAsset.formatBytes(it) } ?: "", muted = true)
-
-                    4 -> if (t.missingSince !=
-                        null
-                    ) {
-                        Text("missing", style = MaterialTheme.typography.labelSmall, color = Tokens.danger)
-                    } else {
-                        Cell("")
-                    }
-                }
-            }
-        }
+        AllFilesSection(state.assets.orEmpty())
     }
 }
