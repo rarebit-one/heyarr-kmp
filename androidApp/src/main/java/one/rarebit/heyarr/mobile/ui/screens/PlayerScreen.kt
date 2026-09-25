@@ -137,224 +137,30 @@ fun PlayerScreen(
 
     MediaScope(type) {
         if (immersive) {
-            Box(
-                modifier.fillMaxSize().background(Color.Black).clickable(
-                    interactionSource = remember {
-                        MutableInteractionSource()
-                    },
-                    indication = null,
-                ) {
-                    state.controlsVisible =
-                        !state.controlsVisible
-                },
-            ) {
-                Surface(video, item.target, Modifier.fillMaxSize())
-                if (state.controlsVisible || ps.paused) {
-                    Row(
-                        Modifier.align(
-                            Alignment.TopStart,
-                        ).fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing).padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        IconButtonRound(Icons.Rounded.ArrowBack, if (fullscreen) "Exit fullscreen" else "Back", {
-                            if (fullscreen) {
-                                video.fullscreen =
-                                    false
-                            } else {
-                                onBack()
-                            }
-                        }, size = 40.dp)
-                        Text(
-                            item.title,
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleSmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TrackMenu(video)
-                    }
-                    Column(
-                        Modifier.align(
-                            Alignment.BottomCenter,
-                        ).fillMaxWidth().windowInsetsPadding(WindowInsets.safeDrawing).padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Transport(video, ps, item.target, onNext = {
-                            video.next()?.let(onNext)
-                        }, onStop = onStop, fullscreenToggle = {
-                            video.fullscreen =
-                                !fullscreen
-                        }, fullscreen = fullscreen)
-                    }
-                }
+            ImmersivePlayer(video, state, onBack, modifier) {
+                Transport(video, ps, item.target, onNext = {
+                    video.next()?.let(onNext)
+                }, onStop = onStop, fullscreenToggle = {
+                    video.fullscreen =
+                        !fullscreen
+                }, fullscreen = fullscreen)
             }
             return@MediaScope
         }
         Column(modifier.fillMaxSize().background(Tokens.bgBase).verticalScroll(rememberScrollState())) {
-            Row(
-                Modifier.fillMaxWidth().windowInsetsPadding(
-                    WindowInsets.safeDrawing,
-                ).padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                GhostButton("Back", onBack, icon = Icons.Rounded.ArrowBack)
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        item.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Tokens.textPrimary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                IconButtonRound(Icons.Rounded.Cast, "Play on a renderer", {
-                    state.castOpen = !state.castOpen
-                    if (state.renderers ==
-                        null
-                    ) {
-                        scope.launch { session.io { session.api.renderers() }.onSuccess { state.renderers = it } }
-                    }
-                }, size = 40.dp)
-                if (item.target.isVideo) {
-                    IconButtonRound(Icons.Rounded.Fullscreen, "Fullscreen", {
-                        video.fullscreen =
-                            true
-                    }, size = 40.dp, filled = true)
-                }
+            PlayerTopBar(item.title, item.target.isVideo, onBack, onCast = { toggleCastRow(session, state, scope) }) {
+                video.fullscreen =
+                    true
             }
             if (state.castOpen) {
                 Box(Modifier.padding(horizontal = 12.dp)) {
                     CastRow(session, state, item.assetId, video)
                 }
             }
-            Box(
-                Modifier.fillMaxWidth().padding(horizontal = 12.dp).let {
-                    if (item.target.isVideo) {
-                        it.aspectRatio(16f / 9f)
-                    } else {
-                        it.height(200.dp)
-                    }
-                }.clip(RoundedCornerShape(Tokens.radiusCard)).background(Color.Black),
-            ) {
-                if (item.target.isVideo) {
-                    Surface(video, item.target, Modifier.fillMaxSize())
-                } else {
-                    Artwork(item.artworkUrl, type, Modifier.fillMaxSize(), glyphSize = 64.dp)
-                }
-                if (ps.error !=
-                    null
-                ) {
-                    Box(
-                        Modifier.fillMaxSize().background(Tokens.bgBase.copy(alpha = 0.85f)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Notice(ps.error, tone = Tokens.danger, modifier = Modifier.padding(24.dp))
-                    }
-                }
-            }
-            Column(
-                Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Transport(video, ps, item.target, onNext = {
-                    video.next()?.let(onNext)
-                }, onStop = onStop, fullscreenToggle = {
-                    video.fullscreen =
-                        true
-                }, fullscreen = false)
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        "${clockShort(ps.positionMs)} / ${clockShort(ps.durationMs)}",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = Tokens.textPrimary,
-                    )
-                    if (ps.buffering) {
-                        Text(
-                            "buffering…",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Tokens.textMuted,
-                        )
-                    }
-                    if (ps.ended) {
-                        Text(
-                            "finished",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Tokens.textMuted,
-                        )
-                    }
-                    Spacer(Modifier.weight(1f))
-                    TrackMenu(video)
-                }
-                val banner =
-                    ps.issue
-                        ?: (
-                            if (ps.noFrame) {
-                                one.rarebit.heyarr.mobile.playback.PlaybackDiagnostics.noFrameMessage(
-                                    item.target,
-                                )
-                            } else {
-                                null
-                            }
-                            )
-                        ?: item.banner
-                        ?: streamNote(item.target)
-                if (banner !=
-                    null
-                ) {
-                    Notice(banner, tone = if (ps.issue != null || ps.noFrame) Tokens.warning else Tokens.slate)
-                }
-            }
+            PlayerPicture(video, item, type)
+            InlineControls(video, item, onNext, onStop)
             val next = video.next()
-            if (next != null) {
-                Column(
-                    Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    SectionHeader("Up next")
-                    val interaction = remember { MutableInteractionSource() }
-                    Row(
-                        Modifier.fillMaxWidth().clip(
-                            RoundedCornerShape(Tokens.radiusInput),
-                        ).background(
-                            Tokens.surface1,
-                        ).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusInput))
-                            .clickable(interactionSource = interaction, indication = null) {
-                                onNext(next)
-                            }.padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Box(Modifier.width(112.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard))) {
-                            Artwork(next.thumbnailPath, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 18.dp)
-                        }
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                next.subtitle ?: next.title,
-                                style = MaterialTheme.typography.titleSmall,
-                                color = Tokens.textPrimary,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            next.sizeBytes?.let {
-                                Text(
-                                    WorkAsset.formatBytes(it),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = Tokens.textMuted,
-                                )
-                            }
-                        }
-                        IconButtonRound(Icons.Rounded.SkipNext, "Play next", {
-                            onNext(next)
-                        }, size = 40.dp, filled = true)
-                    }
-                }
-            }
+            if (next != null) UpNext(next, onNext)
             Spacer(Modifier.height(24.dp))
         }
     }
@@ -362,23 +168,7 @@ fun PlayerScreen(
 
 @UnstableApi
 @Composable
-private fun Surface(video: VideoSession, target: PlaybackTarget, modifier: Modifier) {
-    AndroidView(
-        factory = { ctx ->
-            PlayerView(ctx).apply {
-                useController = false
-                player = video.player
-                setShutterBackgroundColor(android.graphics.Color.BLACK)
-            }
-        },
-        update = { view -> if (view.player !== video.player) view.player = video.player },
-        modifier = modifier.semantics { contentDescription = if (target.isVideo) "Video" else "Audio" },
-    )
-}
-
-@UnstableApi
-@Composable
-private fun Transport(
+internal fun Transport(
     video: VideoSession,
     ps: VideoSession.State,
     target: PlaybackTarget,
@@ -387,9 +177,65 @@ private fun Transport(
     fullscreenToggle: () -> Unit,
     fullscreen: Boolean,
 ) {
+    val seekable = ps.durationMs > 0 && (target.seekable || target.restartSeekable)
+    SeekRail(video, ps, seekable)
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        IconButtonRound(Icons.Rounded.Replay10, "Back 10 seconds", {
+            video.seekBy(-10.0)
+        }, size = 40.dp, enabled = seekable)
+        IconButtonRound(if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause, if (ps.paused) "Play" else "Pause", {
+            video.togglePause()
+        }, size = 52.dp, filled = true)
+        IconButtonRound(Icons.Rounded.Forward10, "Forward 10 seconds", {
+            video.seekBy(10.0)
+        }, size = 40.dp, enabled = seekable)
+        if (onNext != null &&
+            video.next() != null
+        ) {
+            IconButtonRound(Icons.Rounded.SkipNext, "Next: ${video.next()?.subtitle ?: ""}", onNext, size = 40.dp)
+        }
+        IconButtonRound(Icons.Rounded.Stop, "Stop and close the player", onStop, size = 40.dp)
+        Spacer(Modifier.weight(1f))
+        if (target.isVideo) {
+            IconButtonRound(
+                if (fullscreen) Icons.Rounded.FullscreenExit else Icons.Rounded.Fullscreen,
+                if (fullscreen) "Exit fullscreen" else "Fullscreen",
+                fullscreenToggle,
+                size = 40.dp,
+                filled = !fullscreen,
+            )
+        }
+    }
+}
+
+/** Captions as a menu: Off, then each track by language name (heyarr's `mov_text` tracks surface through Media3). */
+@UnstableApi
+@Composable
+internal fun TrackMenu(video: VideoSession) {
+    val ps = video.state
+    var open by remember { mutableStateOf(false) }
+    val current = ps.textTracks.firstOrNull { it.id == ps.selectedTrackId }
+    Box {
+        SecondaryButton(if (ps.textTracks.isEmpty()) "No captions" else current?.label ?: "Captions off", {
+            open = !open
+        }, icon = Icons.Rounded.ClosedCaption, compact = true, enabled = ps.textTracks.isNotEmpty())
+        CaptionMenu(video, open) { open = false }
+    }
+}
+
+/**
+ * The seek rail: the buffered band behind a Slider that owns the played portion and the
+ * thumb; a drag seeks on release.
+ */
+@UnstableApi
+@Composable
+private fun SeekRail(video: VideoSession, ps: VideoSession.State, seekable: Boolean) {
     val theme = LocalMediaTheme.current
     var dragging by remember { mutableStateOf<Float?>(null) }
-    val seekable = ps.durationMs > 0 && (target.seekable || target.restartSeekable)
     val buffered = ps.bufferedFraction
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         // Behind the Slider: the inactive rail, and over it a lighter band as far as
@@ -438,100 +284,59 @@ private fun Transport(
             enabled = seekable,
         )
     }
-    Row(
-        Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        IconButtonRound(Icons.Rounded.Replay10, "Back 10 seconds", {
-            video.seekBy(-10.0)
-        }, size = 40.dp, enabled = seekable)
-        IconButtonRound(if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause, if (ps.paused) "Play" else "Pause", {
-            video.togglePause()
-        }, size = 52.dp, filled = true)
-        IconButtonRound(Icons.Rounded.Forward10, "Forward 10 seconds", {
-            video.seekBy(10.0)
-        }, size = 40.dp, enabled = seekable)
-        if (onNext != null &&
-            video.next() != null
-        ) {
-            IconButtonRound(Icons.Rounded.SkipNext, "Next: ${video.next()?.subtitle ?: ""}", onNext, size = 40.dp)
-        }
-        IconButtonRound(Icons.Rounded.Stop, "Stop and close the player", onStop, size = 40.dp)
-        Spacer(Modifier.weight(1f))
-        if (target.isVideo) {
-            IconButtonRound(
-                if (fullscreen) Icons.Rounded.FullscreenExit else Icons.Rounded.Fullscreen,
-                if (fullscreen) "Exit fullscreen" else "Fullscreen",
-                fullscreenToggle,
-                size = 40.dp,
-                filled = !fullscreen,
-            )
-        }
-    }
 }
 
-/** Captions as a menu: Off, then each track by language name (heyarr's `mov_text` tracks surface through Media3). */
+/** The captions menu's items: Off, then each track by label with its language; picking one closes the menu. */
 @UnstableApi
 @Composable
-private fun TrackMenu(video: VideoSession) {
+private fun CaptionMenu(video: VideoSession, open: Boolean, onDismiss: () -> Unit) {
     val ps = video.state
-    var open by remember { mutableStateOf(false) }
-    val current = ps.textTracks.firstOrNull { it.id == ps.selectedTrackId }
-    Box {
-        SecondaryButton(if (ps.textTracks.isEmpty()) "No captions" else current?.label ?: "Captions off", {
-            open = !open
-        }, icon = Icons.Rounded.ClosedCaption, compact = true, enabled = ps.textTracks.isNotEmpty())
-        DropdownMenu(expanded = open, onDismissRequest = {
-            open = false
-        }, modifier = Modifier.background(Tokens.surface3)) {
+    DropdownMenu(expanded = open, onDismissRequest = onDismiss, modifier = Modifier.background(Tokens.surface3)) {
+        Text(
+            "Captions",
+            style = MaterialTheme.typography.labelSmall,
+            color = Tokens.textMuted,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+        DropdownMenuItem(text = {
             Text(
-                "Captions",
-                style = MaterialTheme.typography.labelSmall,
-                color = Tokens.textMuted,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                "Off",
+                color = if (ps.selectedTrackId ==
+                    null
+                ) {
+                    LocalMediaTheme.current.accentGradientEnd
+                } else {
+                    Tokens.textPrimary
+                },
             )
-            DropdownMenuItem(text = {
-                Text(
-                    "Off",
-                    color = if (ps.selectedTrackId ==
-                        null
-                    ) {
-                        LocalMediaTheme.current.accentGradientEnd
-                    } else {
-                        Tokens.textPrimary
-                    },
-                )
-            }, onClick = {
-                video.selectText(null)
-                open =
-                    false
-            })
-            for (t in ps.textTracks) {
-                DropdownMenuItem(
-                    text = {
-                        Column {
-                            Text(
-                                t.label,
-                                color = if (t.id ==
-                                    ps.selectedTrackId
-                                ) {
-                                    LocalMediaTheme.current.accentGradientEnd
-                                } else {
-                                    Tokens.textPrimary
-                                },
-                            )
-                            t.language?.let {
-                                Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-                            }
+        }, onClick = {
+            video.selectText(null)
+            onDismiss()
+        })
+        for (t in ps.textTracks) {
+            DropdownMenuItem(
+                text = {
+                    Column {
+                        Text(
+                            t.label,
+                            color = if (t.id ==
+                                ps.selectedTrackId
+                            ) {
+                                LocalMediaTheme.current.accentGradientEnd
+                            } else {
+                                Tokens.textPrimary
+                            },
+                        )
+                        t.language?.let {
+                            Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
                         }
-                    },
-                    onClick = {
-                        video.selectText(t)
-                        open = false
-                    },
-                )
-            }
+                    }
+                },
+                onClick = {
+                    video.selectText(t)
+                    onDismiss()
+                },
+            )
         }
     }
 }
@@ -585,7 +390,7 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, assetId: Stri
     }
 }
 
-private fun streamNote(target: PlaybackTarget): String? {
+internal fun streamNote(target: PlaybackTarget): String? {
     if (target.origin != PlaybackTarget.Origin.STREAM) return null
     val why = target.reason?.takeIf { it.isNotBlank() }?.let { " ($it)" } ?: ""
     val seek = if (target.restartSeekable) " Seeking restarts it from the new point." else " No seeking."

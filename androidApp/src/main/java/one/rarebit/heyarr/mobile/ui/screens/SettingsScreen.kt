@@ -29,7 +29,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import one.rarebit.heyarr.core.heyarr.QualityProfile
 import one.rarebit.heyarr.core.mcp.PeerStatus
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
@@ -103,29 +105,7 @@ fun SettingsScreen(
         item {
             Panel("heyarr connection") {
                 ConnectionFields(config, onSaveConnection, onResetConnection)
-                val (tone, label) = when (session.connection) {
-                    Connection.ONLINE -> Tokens.success to "connected"
-                    Connection.OFFLINE -> Tokens.danger to "offline"
-                    Connection.UNAUTHORIZED -> Tokens.warning to "credential refused"
-                    Connection.UNKNOWN -> Tokens.textDisabled to "connecting…"
-                }
-                KeyValue("status", label + (session.lastLatencyMs?.let { " · $it ms" } ?: ""), valueColor = tone)
-                KeyValue(
-                    "signed in",
-                    when {
-                        isGuest -> "browsing as guest — browse, play, subtitles"
-
-                        authority == null -> "session unverified"
-
-                        authority.isDevice ->
-                            "enrolled device · " +
-                                (if (authority.canWrite) "can write" else "read-only until an admin authorises its key")
-
-                        authority.canWrite -> "${authority.kind} · can write"
-
-                        else -> "${authority.kind} · read-only"
-                    },
-                )
+                ConnectionStatus(session, authority, isGuest)
                 Row(
                     Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -219,18 +199,6 @@ fun ConnectionFields(config: HeyarrConfig, onSave: (String, String) -> Unit, onR
 @Composable
 private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () -> Unit) {
     val scope = rememberCoroutineScope()
-    var url by remember { mutableStateOf("") }
-    var tvdb by remember { mutableStateOf("") }
-    var title by remember { mutableStateOf("") }
-    var profile by remember(session.profiles) {
-        mutableStateOf(
-            session.profiles.firstOrNull {
-                it.name == session.defaultProfile
-            }?.name ?: session.profiles.firstOrNull()?.name
-                ?: session.defaultProfile,
-        )
-    }
-    var backfill by remember { mutableStateOf("from_now") }
     Panel("Followed sources", trailing = { GhostButton("Refresh", reload) }) {
         when (val list = state.followed) {
             null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
@@ -239,46 +207,7 @@ private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () 
                 Text("Nothing followed yet.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
             } else {
                 for (s in list) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        MediaBadge(MediaType.from(s.type))
-                        Column(Modifier.weight(1f)) {
-                            Text(s.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary)
-                            Text(
-                                listOfNotNull(
-                                    s.feedRef,
-                                    "${s.itemsArchived ?: 0}/${s.itemsKnown ?: 0} archived",
-                                    s.health?.let {
-                                        "health $it"
-                                    },
-                                ).joinToString("  ·  "),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Tokens.textMuted,
-                                maxLines = 1,
-                            )
-                        }
-                        SecondaryButton("Unfollow", {
-                            scope.launch {
-                                session.io { session.api.unfollow(s.id) }.onSuccess { r ->
-                                    when (r) {
-                                        is McpResult.Ok -> {
-                                            session.toast(
-                                                Toast.Kind.SUCCESS,
-                                                "Unfollowed ${s.title}",
-                                                "Archived items are kept.",
-                                            )
-                                            reload()
-                                        }
-
-                                        is McpResult.Refused -> session.refused(r)
-                                    }
-                                }
-                            }
-                        }, compact = true, danger = true)
-                    }
+                    FollowedRow(session, s, scope, reload)
                 }
             }
         }
@@ -293,52 +222,155 @@ private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () 
             style = MaterialTheme.typography.bodySmall,
             color = Tokens.textMuted,
         )
-        Field("Feed / TVDB URL", url, placeholder = "https://…/rss", keyboard = KeyboardType.Uri) { url = it }
-        Field("TVDB id", tvdb, keyboard = KeyboardType.Number) { tvdb = it.filter { c -> c.isDigit() } }
-        Field("Title (only for content the library has never seen)", title) { title = it }
-        Row(
-            Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Profile", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-            for (p in session.profiles) FilterChip(p.name, profile == p.name, { profile = p.name })
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Backfill", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-            FilterChip("from now", backfill == "from_now", { backfill = "from_now" })
-            FilterChip("full back-catalogue", backfill == "full", { backfill = "full" })
-        }
-        PrimaryButton(
-            "Follow",
-            {
-                scope.launch {
-                    state.busy = true
-                    session.io { session.api.follow(url, tvdb, title, profile, backfill) }.onSuccess { r ->
-                        when (r) {
-                            is McpResult.Ok -> {
-                                session.toast(
-                                    Toast.Kind.SUCCESS,
-                                    "Following",
-                                    r.value?.title ?: url.ifBlank { tvdb },
-                                )
-                                url = ""
-                                tvdb = ""
-                                title = ""
-                                reload()
-                            }
+        FollowForm(session, state, scope, reload)
+    }
+}
 
-                            is McpResult.Refused -> session.refused(r)
+/** The connection's live status and what the credential is allowed to do. */
+@Composable
+private fun ConnectionStatus(session: AppSession, authority: SessionAuthority?, isGuest: Boolean) {
+    val (tone, label) = when (session.connection) {
+        Connection.ONLINE -> Tokens.success to "connected"
+        Connection.OFFLINE -> Tokens.danger to "offline"
+        Connection.UNAUTHORIZED -> Tokens.warning to "credential refused"
+        Connection.UNKNOWN -> Tokens.textDisabled to "connecting…"
+    }
+    KeyValue("status", label + (session.lastLatencyMs?.let { " · $it ms" } ?: ""), valueColor = tone)
+    KeyValue(
+        "signed in",
+        when {
+            isGuest -> "browsing as guest — browse, play, subtitles"
+
+            authority == null -> "session unverified"
+
+            authority.isDevice ->
+                "enrolled device · " +
+                    (if (authority.canWrite) "can write" else "read-only until an admin authorises its key")
+
+            authority.canWrite -> "${authority.kind} · can write"
+
+            else -> "${authority.kind} · read-only"
+        },
+    )
+}
+
+/** One followed source: its type, ref, archive progress and health, with Unfollow. */
+@Composable
+private fun FollowedRow(session: AppSession, s: FollowedSource, scope: CoroutineScope, reload: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        MediaBadge(MediaType.from(s.type))
+        Column(Modifier.weight(1f)) {
+            Text(s.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary)
+            Text(
+                listOfNotNull(
+                    s.feedRef,
+                    "${s.itemsArchived ?: 0}/${s.itemsKnown ?: 0} archived",
+                    s.health?.let {
+                        "health $it"
+                    },
+                ).joinToString("  ·  "),
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
+                maxLines = 1,
+            )
+        }
+        SecondaryButton("Unfollow", {
+            scope.launch {
+                session.io { session.api.unfollow(s.id) }.onSuccess { r ->
+                    when (r) {
+                        is McpResult.Ok -> {
+                            session.toast(
+                                Toast.Kind.SUCCESS,
+                                "Unfollowed ${s.title}",
+                                "Archived items are kept.",
+                            )
+                            reload()
                         }
+
+                        is McpResult.Refused -> session.refused(r)
                     }
-                    state.busy = false
                 }
-            },
-            icon = Icons.Rounded.Add,
-            compact = true,
-            enabled =
-            !state.busy && (url.isNotBlank() || tvdb.isNotBlank()) && profile.isNotBlank(),
+            }
+        }, compact = true, danger = true)
+    }
+}
+
+/** "Follow something new": a feed URL or TVDB id, an optional title, the profile and the backfill. */
+@Composable
+private fun FollowForm(session: AppSession, state: SettingsState, scope: CoroutineScope, reload: () -> Unit) {
+    var url by remember { mutableStateOf("") }
+    var tvdb by remember { mutableStateOf("") }
+    var title by remember { mutableStateOf("") }
+    var profile by remember(session.profiles) {
+        mutableStateOf(
+            session.profiles.firstOrNull {
+                it.name == session.defaultProfile
+            }?.name ?: session.profiles.firstOrNull()?.name
+                ?: session.defaultProfile,
         )
+    }
+    var backfill by remember { mutableStateOf("from_now") }
+    Field("Feed / TVDB URL", url, placeholder = "https://…/rss", keyboard = KeyboardType.Uri) { url = it }
+    Field("TVDB id", tvdb, keyboard = KeyboardType.Number) { tvdb = it.filter { c -> c.isDigit() } }
+    Field("Title (only for content the library has never seen)", title) { title = it }
+    FollowChoices(session.profiles, profile, { profile = it }, backfill) { backfill = it }
+    PrimaryButton(
+        "Follow",
+        {
+            scope.launch {
+                state.busy = true
+                session.io { session.api.follow(url, tvdb, title, profile, backfill) }.onSuccess { r ->
+                    when (r) {
+                        is McpResult.Ok -> {
+                            session.toast(
+                                Toast.Kind.SUCCESS,
+                                "Following",
+                                r.value?.title ?: url.ifBlank { tvdb },
+                            )
+                            url = ""
+                            tvdb = ""
+                            title = ""
+                            reload()
+                        }
+
+                        is McpResult.Refused -> session.refused(r)
+                    }
+                }
+                state.busy = false
+            }
+        },
+        icon = Icons.Rounded.Add,
+        compact = true,
+        enabled =
+        !state.busy && (url.isNotBlank() || tvdb.isNotBlank()) && profile.isNotBlank(),
+    )
+}
+
+/** The profile a new follow is measured against, and how far back it fetches. */
+@Composable
+private fun FollowChoices(
+    profiles: List<QualityProfile>,
+    profile: String,
+    onProfile: (String) -> Unit,
+    backfill: String,
+    onBackfill: (String) -> Unit,
+) {
+    Row(
+        Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("Profile", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+        for (p in profiles) FilterChip(p.name, profile == p.name, { onProfile(p.name) })
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text("Backfill", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+        FilterChip("from now", backfill == "from_now", { onBackfill("from_now") })
+        FilterChip("full back-catalogue", backfill == "full", { onBackfill("full") })
     }
 }
 

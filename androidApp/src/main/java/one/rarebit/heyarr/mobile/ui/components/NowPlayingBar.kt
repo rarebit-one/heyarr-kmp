@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.media3.common.util.UnstableApi
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.playback.AudioState
+import one.rarebit.heyarr.mobile.playback.NowPlaying
 import one.rarebit.heyarr.mobile.playback.VideoSession
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.ui.components.IconButtonRound
@@ -67,32 +68,7 @@ fun NowPlayingBar(
 ) {
     val item = video.current
     if (item != null) {
-        val ps = video.state
-        MediaScope(MediaType.from(item.kind ?: "movie")) {
-            Bar(
-                title = item.title,
-                subtitle = listOfNotNull(
-                    if (ps.durationMs >
-                        0
-                    ) {
-                        "${clockShort(ps.positionMs)} / ${clockShort(ps.durationMs)}"
-                    } else {
-                        null
-                    },
-                    if (ps.buffering) "buffering…" else null,
-                ).joinToString("  ·  "),
-                artwork = item.artworkUrl, type = MediaType.from(item.kind ?: "movie"), fraction = ps.fraction,
-                seekable =
-                ps.durationMs > 0,
-                paused = ps.paused, onOpen = onOpen, onSeekFraction = { video.seekFraction(it) },
-                onBack = {
-                    video.seekBy(-10.0)
-                }, onToggle = { video.togglePause() }, onForward = { video.seekBy(10.0) },
-                onNext = onVideoNext, nextLabel = video.next()?.subtitle, onStop = {
-                    video.stop()
-                }, modifier = modifier,
-            )
-        }
+        VideoBar(video, item, onOpen, onVideoNext, modifier)
         return
     }
     val track = audio.item ?: return
@@ -154,25 +130,8 @@ private fun Bar(
     onStop: () -> Unit,
     modifier: Modifier,
 ) {
-    val theme = LocalMediaTheme.current
-    val interaction = remember { MutableInteractionSource() }
     Column(modifier.fillMaxWidth().background(Tokens.surface1).border(Tokens.hairline, Tokens.border)) {
-        var dragging by remember { mutableStateOf<Float?>(null) }
-        Slider(
-            value = dragging ?: fraction,
-            onValueChange = { dragging = it },
-            onValueChangeFinished = {
-                dragging?.let(onSeekFraction)
-                dragging = null
-            },
-            modifier = Modifier.fillMaxWidth().height(18.dp).semantics { contentDescription = "Position" },
-            enabled = seekable,
-            colors = SliderDefaults.colors(
-                thumbColor = theme.accentGradientEnd,
-                activeTrackColor = theme.accent,
-                inactiveTrackColor = Tokens.surface3,
-            ),
-        )
+        BarSeek(fraction, seekable, onSeekFraction)
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -181,38 +140,7 @@ private fun Bar(
             Box(Modifier.size(44.dp).clip(RoundedCornerShape(Tokens.radiusCard))) {
                 Artwork(artwork, type, Modifier.size(44.dp), glyphSize = 18.dp)
             }
-            Column(
-                Modifier.weight(
-                    1f,
-                ).clip(
-                    RoundedCornerShape(Tokens.radiusCard),
-                ).clickable(
-                    interactionSource = interaction,
-                    indication = null,
-                    role = Role.Button,
-                    onClick = onOpen,
-                ).semantics {
-                    contentDescription =
-                        "Open the player for $title"
-                }.padding(4.dp),
-            ) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Tokens.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (subtitle.isNotBlank()) {
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Tokens.textMuted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
+            BarTitle(title, subtitle, onOpen, Modifier.weight(1f))
             IconButtonRound(Icons.Rounded.Replay10, "Back 10 seconds", onBack, size = 36.dp, enabled = seekable)
             IconButtonRound(
                 if (paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause,
@@ -228,6 +156,102 @@ private fun Bar(
                 IconButtonRound(Icons.Rounded.SkipNext, "Next: ${nextLabel ?: ""}", onNext, size = 36.dp)
             }
             IconButtonRound(Icons.Rounded.Close, "Stop playback", onStop, size = 36.dp)
+        }
+    }
+}
+
+/** The bar for the in-app video session: position and buffering as its subtitle. */
+@UnstableApi
+@Composable
+private fun VideoBar(
+    video: VideoSession,
+    item: NowPlaying,
+    onOpen: () -> Unit,
+    onVideoNext: (() -> Unit)?,
+    modifier: Modifier,
+) {
+    val ps = video.state
+    MediaScope(MediaType.from(item.kind ?: "movie")) {
+        Bar(
+            title = item.title,
+            subtitle = listOfNotNull(
+                if (ps.durationMs >
+                    0
+                ) {
+                    "${clockShort(ps.positionMs)} / ${clockShort(ps.durationMs)}"
+                } else {
+                    null
+                },
+                if (ps.buffering) "buffering…" else null,
+            ).joinToString("  ·  "),
+            artwork = item.artworkUrl, type = MediaType.from(item.kind ?: "movie"), fraction = ps.fraction,
+            seekable =
+            ps.durationMs > 0,
+            paused = ps.paused, onOpen = onOpen, onSeekFraction = { video.seekFraction(it) },
+            onBack = {
+                video.seekBy(-10.0)
+            }, onToggle = { video.togglePause() }, onForward = { video.seekBy(10.0) },
+            onNext = onVideoNext, nextLabel = video.next()?.subtitle, onStop = {
+                video.stop()
+            }, modifier = modifier,
+        )
+    }
+}
+
+/** The bar's seek slider; a drag seeks on release. */
+@Composable
+private fun BarSeek(fraction: Float, seekable: Boolean, onSeekFraction: (Float) -> Unit) {
+    val theme = LocalMediaTheme.current
+    var dragging by remember { mutableStateOf<Float?>(null) }
+    Slider(
+        value = dragging ?: fraction,
+        onValueChange = { dragging = it },
+        onValueChangeFinished = {
+            dragging?.let(onSeekFraction)
+            dragging = null
+        },
+        modifier = Modifier.fillMaxWidth().height(18.dp).semantics { contentDescription = "Position" },
+        enabled = seekable,
+        colors = SliderDefaults.colors(
+            thumbColor = theme.accentGradientEnd,
+            activeTrackColor = theme.accent,
+            inactiveTrackColor = Tokens.surface3,
+        ),
+    )
+}
+
+/** The bar's title and subtitle — tapping them opens the player. */
+@Composable
+private fun BarTitle(title: String, subtitle: String, onOpen: () -> Unit, modifier: Modifier) {
+    val interaction = remember { MutableInteractionSource() }
+    Column(
+        modifier.clip(
+            RoundedCornerShape(Tokens.radiusCard),
+        ).clickable(
+            interactionSource = interaction,
+            indication = null,
+            role = Role.Button,
+            onClick = onOpen,
+        ).semantics {
+            contentDescription =
+                "Open the player for $title"
+        }.padding(4.dp),
+    ) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleSmall,
+            color = Tokens.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (subtitle.isNotBlank()) {
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

@@ -102,33 +102,7 @@ internal fun PlaylistsScreen(
                     )
                 }
 
-                else -> items(state.playlists, key = { it.spaceId }) { pl ->
-                    Row(
-                        Modifier.fillMaxWidth().clip(
-                            RoundedCornerShape(Tokens.radiusInput),
-                        ).background(Tokens.surface1).clickable {
-                            onOpen(pl.spaceId, pl.name)
-                        }.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        MediaBadge(MediaType.MUSIC)
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                pl.name,
-                                style = MaterialTheme.typography.titleSmall,
-                                color = Tokens.textPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Text(
-                                "${pl.itemIds.size} item${if (pl.itemIds.size == 1) "" else "s"}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Tokens.textMuted,
-                            )
-                        }
-                    }
-                }
+                else -> items(state.playlists, key = { it.spaceId }) { pl -> PlaylistRow(pl, onOpen) }
             }
             item { GatewaySyncFooter(state.starredSpaceId, state.historySpaceId) }
         }
@@ -198,38 +172,7 @@ internal fun PlaylistScreen(
 
                 // Keyed by the stored entry id (not the work id) so per-track entries stay distinct,
                 // and Remove observes exactly that entry — a track removes the track, not the album.
-                else -> items(state.items, key = { it.itemId }) { row ->
-                    val work = row.work
-                    Row(
-                        Modifier.fillMaxWidth().clip(
-                            RoundedCornerShape(Tokens.radiusInput),
-                        ).background(Tokens.surface1).clickable {
-                            onOpenWork(work)
-                        }.padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        MediaBadge(MediaType.from(work.kind))
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                work.title,
-                                style = MaterialTheme.typography.titleSmall,
-                                color = Tokens.textPrimary,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            listOfNotNull(
-                                work.artist ?: work.author,
-                                work.year?.toString(),
-                            ).joinToString("  ·  ").takeIf {
-                                it.isNotEmpty()
-                            }?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }
-                        }
-                        IconButtonRound(Icons.Rounded.Close, "Remove ${work.title} from the playlist", {
-                            onRemove(row.itemId)
-                        }, size = 36.dp)
-                    }
-                }
+                else -> items(state.items, key = { it.itemId }) { row -> PlaylistItemRow(row, onOpenWork, onRemove) }
             }
         }
     }
@@ -238,6 +181,71 @@ internal fun PlaylistScreen(
             renaming = false
             it?.let(onRename)
         }, onDismiss = { renaming = false })
+    }
+}
+
+/** One playlist in the list: its name and how many items it holds; a tap opens it. */
+@Composable
+private fun PlaylistRow(pl: PersonalStateCoordinator.PlaylistView, onOpen: (spaceId: String, name: String) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(
+            RoundedCornerShape(Tokens.radiusInput),
+        ).background(Tokens.surface1).clickable {
+            onOpen(pl.spaceId, pl.name)
+        }.padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        MediaBadge(MediaType.MUSIC)
+        Column(Modifier.weight(1f)) {
+            Text(
+                pl.name,
+                style = MaterialTheme.typography.titleSmall,
+                color = Tokens.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                "${pl.itemIds.size} item${if (pl.itemIds.size == 1) "" else "s"}",
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
+            )
+        }
+    }
+}
+
+/** One entry of a playlist: the work, its creator and year, and Remove for exactly that entry. */
+@Composable
+private fun PlaylistItemRow(row: PlaylistViewModel.Item, onOpenWork: (Work) -> Unit, onRemove: (String) -> Unit) {
+    val work = row.work
+    Row(
+        Modifier.fillMaxWidth().clip(
+            RoundedCornerShape(Tokens.radiusInput),
+        ).background(Tokens.surface1).clickable {
+            onOpenWork(work)
+        }.padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        MediaBadge(MediaType.from(work.kind))
+        Column(Modifier.weight(1f)) {
+            Text(
+                work.title,
+                style = MaterialTheme.typography.titleSmall,
+                color = Tokens.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            listOfNotNull(
+                work.artist ?: work.author,
+                work.year?.toString(),
+            ).joinToString("  ·  ").takeIf {
+                it.isNotEmpty()
+            }?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted) }
+        }
+        IconButtonRound(Icons.Rounded.Close, "Remove ${work.title} from the playlist", {
+            onRemove(row.itemId)
+        }, size = 36.dp)
     }
 }
 

@@ -109,64 +109,71 @@ fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modif
         SectionHeader("Cast", subtitle = "Renderers on the network and what each is doing", trailing = {
             IconButtonRound(Icons.Rounded.Refresh, "Search the network again", { load(refresh = true) }, size = 36.dp)
         })
-        when {
-            state.error != null && state.renderers == null -> ErrorState("Couldn't list renderers", state.error, {
-                load()
-            })
-
-            state.renderers == null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
-
-            state.renderers!!.isEmpty() -> EmptyState(
-                "No renderers found",
-                detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again.",
-                icon = Icons.Rounded.Cast,
-            )
-
-            else -> Row(
-                Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                for (r in state.renderers!!) {
-                    FilterChip(r.name, state.selected?.udn == r.udn, {
-                        state.selected = r
-                        state.status = null
-                    }, icon = Icons.Rounded.Cast)
-                }
-            }
-        }
-        val r = state.selected
-        if (r != null) {
-            Panel(r.name) {
-                if (r.subtitle.isNotBlank()) {
-                    Text(
-                        r.subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Tokens.textMuted,
-                    )
-                }
-                when (val s = state.status) {
-                    null -> Skeleton(Modifier.fillMaxWidth().height(60.dp))
-
-                    is McpResult.Refused -> Notice("playback_status: ${s.message}", tone = Tokens.danger)
-
-                    is McpResult.Ok -> {
-                        val st = s.value
-                        if (st ==
-                            null
-                        ) {
-                            Text("No status reported.", color = Tokens.textMuted)
-                        } else {
-                            Transport(st, state.busy, ::control)
-                        }
-                    }
-                }
-            }
-        }
+        RendererList(state) { load() }
+        state.selected?.let { r -> RendererPanel(r, state, ::control) }
         Notice(
             "Playback position is the device's own report, live. heyarr keeps no play history this client can read; to send something here, use Play on… from a work.",
             icon = Icons.Rounded.Cast,
             tone = Tokens.slate,
         )
+    }
+}
+
+/** The renderers on the network as chips (or why there are none); picking one selects it. */
+@Composable
+private fun RendererList(state: CastState, onRetry: () -> Unit) {
+    when {
+        state.error != null && state.renderers == null -> ErrorState("Couldn't list renderers", state.error, onRetry)
+
+        state.renderers == null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
+
+        state.renderers!!.isEmpty() -> EmptyState(
+            "No renderers found",
+            detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again.",
+            icon = Icons.Rounded.Cast,
+        )
+
+        else -> Row(
+            Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            for (r in state.renderers!!) {
+                FilterChip(r.name, state.selected?.udn == r.udn, {
+                    state.selected = r
+                    state.status = null
+                }, icon = Icons.Rounded.Cast)
+            }
+        }
+    }
+}
+
+/** The selected renderer: what it says about itself and, live, what it is playing. */
+@Composable
+private fun RendererPanel(r: Renderer, state: CastState, control: (String) -> Unit) {
+    Panel(r.name) {
+        if (r.subtitle.isNotBlank()) {
+            Text(
+                r.subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
+            )
+        }
+        when (val s = state.status) {
+            null -> Skeleton(Modifier.fillMaxWidth().height(60.dp))
+
+            is McpResult.Refused -> Notice("playback_status: ${s.message}", tone = Tokens.danger)
+
+            is McpResult.Ok -> {
+                val st = s.value
+                if (st ==
+                    null
+                ) {
+                    Text("No status reported.", color = Tokens.textMuted)
+                } else {
+                    Transport(st, state.busy, control)
+                }
+            }
+        }
     }
 }
 

@@ -124,20 +124,7 @@ fun SearchScreen(
             search.submit()
             session.recent.push(search.query).also { recent = it }
         }, onClear = { search.updateQuery("") })
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (f in SearchFilter.entries) {
-                val count = if (f ==
-                    SearchFilter.ALL
-                ) {
-                    null
-                } else {
-                    sections.firstOrNull { f.admits(it.type) }?.rows?.size?.takeIf { it > 0 }
-                }
-                MediaScope(f.type ?: MediaType.MOVIE) {
-                    FilterChip(f.label, search.filter == f, { search.filter = f }, count = count)
-                }
-            }
-        }
+        SearchFilterChips(search)
         when {
             search.isIdle -> IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = {
                 session.recent.clear()
@@ -194,34 +181,7 @@ private fun ResultRow(
     onPlayEpisode: (EpisodeHit) -> Unit,
 ) {
     when (row) {
-        is SearchRow.WorkRow -> {
-            val hit = row.hit
-            val cover by rememberCover(session, row.type, hit.title, hit.artworkPath, hit.year, hit.creator)
-            val status = session.index.statusOf(hit.workId)
-            MediaRow(
-                title = hit.title,
-                type = row.type,
-                onOpen = onOpen,
-                subtitle = hit.creator,
-                meta = listOf(
-                    hit.year?.toString(),
-                    hit.attributes["runtime"],
-                    hit.attributes["album"],
-                    hit.attributes["series"],
-                ),
-                artwork = cover.url,
-                status = status,
-                trailing = {
-                    if (status ==
-                        LibraryStatus.NOT_TRACKED
-                    ) {
-                        IconButtonRound(Icons.Rounded.Add, "Want ${hit.title}", {
-                            onWant(hit.workId, hit.title)
-                        }, size = 36.dp)
-                    }
-                },
-            )
-        }
+        is SearchRow.WorkRow -> WorkResultRow(session, row, onOpen, onWant)
 
         is SearchRow.EpisodeRow -> MediaRow(
             title = row.hit.title,
@@ -258,6 +218,62 @@ private fun ResultRow(
             )
         }
     }
+}
+
+/** One chip per filter, each counting its section's rows once they land. */
+@Composable
+private fun SearchFilterChips(search: SearchController) {
+    val sections = search.sections
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (f in SearchFilter.entries) {
+            val count = if (f ==
+                SearchFilter.ALL
+            ) {
+                null
+            } else {
+                sections.firstOrNull { f.admits(it.type) }?.rows?.size?.takeIf { it > 0 }
+            }
+            MediaScope(f.type ?: MediaType.MOVIE) {
+                FilterChip(f.label, search.filter == f, { search.filter = f }, count = count)
+            }
+        }
+    }
+}
+
+/** A work hit: cover, meta, library status, and Want while it is not tracked. */
+@Composable
+private fun WorkResultRow(
+    session: AppSession,
+    row: SearchRow.WorkRow,
+    onOpen: () -> Unit,
+    onWant: (String, String) -> Unit,
+) {
+    val hit = row.hit
+    val cover by rememberCover(session, row.type, hit.title, hit.artworkPath, hit.year, hit.creator)
+    val status = session.index.statusOf(hit.workId)
+    MediaRow(
+        title = hit.title,
+        type = row.type,
+        onOpen = onOpen,
+        subtitle = hit.creator,
+        meta = listOf(
+            hit.year?.toString(),
+            hit.attributes["runtime"],
+            hit.attributes["album"],
+            hit.attributes["series"],
+        ),
+        artwork = cover.url,
+        status = status,
+        trailing = {
+            if (status ==
+                LibraryStatus.NOT_TRACKED
+            ) {
+                IconButtonRound(Icons.Rounded.Add, "Want ${hit.title}", {
+                    onWant(hit.workId, hit.title)
+                }, size = 36.dp)
+            }
+        },
+    )
 }
 
 @Composable

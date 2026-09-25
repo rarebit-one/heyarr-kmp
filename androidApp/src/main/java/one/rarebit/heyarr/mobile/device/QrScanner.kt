@@ -1,6 +1,7 @@
 package one.rarebit.heyarr.mobile.device
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
@@ -81,33 +83,44 @@ fun QrScanner(onQr: (String) -> Boolean, modifier: Modifier = Modifier, noPermis
             val previewView = PreviewView(ctx).apply {
                 scaleType = PreviewView.ScaleType.FILL_CENTER
             }
-            val providerFuture = ProcessCameraProvider.getInstance(ctx)
-            providerFuture.addListener({
-                val provider = providerFuture.get()
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                }
-                val analysis = ImageAnalysis.Builder()
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-                    .also { ia ->
-                        ia.setAnalyzer(ContextCompat.getMainExecutor(ctx)) { proxy ->
-                            analyze(scanner, proxy) { raw ->
-                                if (!handled && currentOnQr(raw)) handled = true
-                            }
-                        }
-                    }
-                provider.unbindAll()
-                provider.bindToLifecycle(
-                    lifecycleOwner,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
-                    preview,
-                    analysis,
-                )
-            }, ContextCompat.getMainExecutor(ctx))
+            bindCamera(ctx, previewView, lifecycleOwner, scanner) { raw ->
+                if (!handled && currentOnQr(raw)) handled = true
+            }
             previewView
         },
     )
+}
+
+/** Bind the back camera's preview to [previewView] and feed every frame's QR codes to [onRaw]. */
+private fun bindCamera(
+    ctx: Context,
+    previewView: PreviewView,
+    lifecycleOwner: LifecycleOwner,
+    scanner: BarcodeScanner,
+    onRaw: (String) -> Unit,
+) {
+    val providerFuture = ProcessCameraProvider.getInstance(ctx)
+    providerFuture.addListener({
+        val provider = providerFuture.get()
+        val preview = Preview.Builder().build().also {
+            it.setSurfaceProvider(previewView.surfaceProvider)
+        }
+        val analysis = ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+            .also { ia ->
+                ia.setAnalyzer(ContextCompat.getMainExecutor(ctx)) { proxy ->
+                    analyze(scanner, proxy, onRaw)
+                }
+            }
+        provider.unbindAll()
+        provider.bindToLifecycle(
+            lifecycleOwner,
+            CameraSelector.DEFAULT_BACK_CAMERA,
+            preview,
+            analysis,
+        )
+    }, ContextCompat.getMainExecutor(ctx))
 }
 
 @OptIn(ExperimentalGetImage::class)
