@@ -21,19 +21,30 @@ class PairDeepLinkTest {
         for (b in s.encodeToByteArray()) {
             val c = b.toInt() and 0xFF
             val ch = c.toChar()
-            if (ch in 'A'..'Z' || ch in 'a'..'z' || ch in '0'..'9' || ch == '-' || ch == '_' || ch == '.' || ch == '~') append(ch)
-            else append('%').append("0123456789ABCDEF"[c ushr 4]).append("0123456789ABCDEF"[c and 15])
+            if (ch in 'A'..'Z' || ch in 'a'..'z' || ch in '0'..'9' || ch == '-' || ch == '_' || ch == '.' ||
+                ch == '~'
+            ) {
+                append(ch)
+            } else {
+                append('%').append("0123456789ABCDEF"[c ushr 4]).append("0123456789ABCDEF"[c and 15])
+            }
         }
     }
 
     private val link = "heyarr-mobile://pair?invite=${encode(invite)}"
 
     @Test fun `the return leg reads a refusal with Cruciform's wording, and is plain done otherwise`() {
-        val refused = PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair-done?session=abc123&outcome=refused&reason=the%20SAS%20differed%3A%20%3D") as PairDeepLink.Done
+        val refused = PairDeepLink.route(
+            PairDeepLink.ACTION_VIEW,
+            "heyarr-mobile://pair-done?session=abc123&outcome=refused&reason=the%20SAS%20differed%3A%20%3D",
+        ) as PairDeepLink.Done
         assertEquals("abc123", refused.session)
         assertTrue(refused.refused)
         assertEquals("the SAS differed: =", refused.reason)
-        val done = PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair-done?session=abc123") as PairDeepLink.Done
+        val done = PairDeepLink.route(
+            PairDeepLink.ACTION_VIEW,
+            "heyarr-mobile://pair-done?session=abc123",
+        ) as PairDeepLink.Done
         assertEquals(PairDeepLink.Done("abc123"), done)
         assertTrue(!done.refused)
     }
@@ -64,14 +75,23 @@ class PairDeepLinkTest {
         assertTrue(none.message, none.message.contains("no invite"))
         val empty = PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair?invite=") as PairDeepLink.Invalid
         assertTrue(empty.message, empty.message.contains("scan", ignoreCase = true))
-        val truncated = PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair?invite=voidbind%3Apair%3Fv%3D3%2") as PairDeepLink.Invalid
+        val truncated = PairDeepLink.route(
+            PairDeepLink.ACTION_VIEW,
+            "heyarr-mobile://pair?invite=voidbind%3Apair%3Fv%3D3%2",
+        ) as PairDeepLink.Invalid
         assertTrue(truncated.message, truncated.message.contains("garbled"))
     }
 
     @Test fun `a login tuple or a v2 invite through this door is refused by the library parser`() {
-        val login = PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair?invite=${encode("voidbind:login?id=a&rp=http%3A%2F%2Fh")}") as PairDeepLink.Invalid
+        val login = PairDeepLink.route(
+            PairDeepLink.ACTION_VIEW,
+            "heyarr-mobile://pair?invite=${encode("voidbind:login?id=a&rp=http%3A%2F%2Fh")}",
+        ) as PairDeepLink.Invalid
         assertTrue(login.message, login.message.contains("LOGIN"))
-        val v2 = PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair?invite=${encode(invite.replace("v=3", "v=2"))}") as PairDeepLink.Invalid
+        val v2 = PairDeepLink.route(
+            PairDeepLink.ACTION_VIEW,
+            "heyarr-mobile://pair?invite=${encode(invite.replace("v=3", "v=2"))}",
+        ) as PairDeepLink.Invalid
         assertTrue(v2.message, v2.message.contains("version"))
     }
 

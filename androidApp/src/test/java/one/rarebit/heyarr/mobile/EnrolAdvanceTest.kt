@@ -31,7 +31,10 @@ class EnrolAdvanceTest {
         assertEquals(OnInvite.PARK, EnrolAdvance.onInvite(EnrolUiState.CompareSas(unenrolled, "482 7316")))
         assertEquals(OnInvite.PARK, EnrolAdvance.onInvite(EnrolUiState.Registering(unenrolled)))
         assertEquals(OnInvite.PARK, EnrolAdvance.onInvite(EnrolUiState.Removed(enrolled, "removed by another member")))
-        assertEquals(OnInvite.REFUSE, EnrolAdvance.onInvite(EnrolUiState.Enrolled(enrolled, "holds an admission", needsAdmin = false)))
+        assertEquals(
+            OnInvite.REFUSE,
+            EnrolAdvance.onInvite(EnrolUiState.Enrolled(enrolled, "holds an admission", needsAdmin = false)),
+        )
     }
 
     @Test

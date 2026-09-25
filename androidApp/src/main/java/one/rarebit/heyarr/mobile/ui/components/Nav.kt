@@ -97,8 +97,27 @@ fun HeyarrBottomBar(current: NavSection?, onGo: (NavSection) -> Unit, modifier: 
     val theme = LocalMediaTheme.current
     Column(modifier.fillMaxWidth().background(Tokens.surface1)) {
         Box(Modifier.fillMaxWidth().height(Tokens.hairline).background(Tokens.border))
-        Row(Modifier.fillMaxWidth().padding(horizontal = 2.dp, vertical = 4.dp).windowInsetsPadding(WindowInsets.navigationBars), verticalAlignment = Alignment.CenterVertically) {
-            for (s in NavSection.entries) NavTile(s, active = s == current, accent = theme.accent, accentEnd = theme.accentGradientEnd, style = TILE_LABEL, tileSize = 36.dp, iconSize = 20.dp, modifier = Modifier.weight(1f)) { onGo(s) }
+        Row(
+            Modifier.fillMaxWidth().padding(
+                horizontal = 2.dp,
+                vertical = 4.dp,
+            ).windowInsetsPadding(WindowInsets.navigationBars),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            for (s in NavSection.entries) {
+                NavTile(
+                    s,
+                    active = s == current,
+                    accent = theme.accent,
+                    accentEnd = theme.accentGradientEnd,
+                    style = TILE_LABEL,
+                    tileSize = 36.dp,
+                    iconSize = 20.dp,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    onGo(s)
+                }
+            }
         }
     }
 }
@@ -108,23 +127,57 @@ fun HeyarrBottomBar(current: NavSection?, onGo: (NavSection) -> Unit, modifier: 
  * and the connection at the foot — the desktop's `SideNav`, one width at every size.
  */
 @Composable
-fun HeyarrNavRail(current: NavSection?, onGo: (NavSection) -> Unit, connection: Connection, modifier: Modifier = Modifier, connectionDetail: String? = null, onConnection: () -> Unit = {}) {
+fun HeyarrNavRail(
+    current: NavSection?,
+    onGo: (NavSection) -> Unit,
+    connection: Connection,
+    modifier: Modifier = Modifier,
+    connectionDetail: String? = null,
+    onConnection: () -> Unit = {},
+) {
     val theme = LocalMediaTheme.current
     Column(
-        modifier.fillMaxHeight().width(Tokens.navWidth).background(Tokens.surface1).windowInsetsPadding(WindowInsets.statusBars).padding(vertical = 14.dp, horizontal = 8.dp),
+        modifier.fillMaxHeight().width(
+            Tokens.navWidth,
+        ).background(
+            Tokens.surface1,
+        ).windowInsetsPadding(WindowInsets.statusBars).padding(vertical = 14.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         one.rarebit.heyarr.ui.components.ArchiveMark(Modifier.padding(4.dp))
         Spacer(Modifier.height(14.dp))
-        for (s in NavSection.entries) NavTile(s, active = s == current, accent = theme.accent, accentEnd = theme.accentGradientEnd, style = RAIL_LABEL, tileSize = 44.dp, iconSize = 22.dp, modifier = Modifier.fillMaxWidth()) { onGo(s) }
+        for (s in NavSection.entries) {
+            NavTile(
+                s,
+                active = s == current,
+                accent = theme.accent,
+                accentEnd = theme.accentGradientEnd,
+                style = RAIL_LABEL,
+                tileSize = 44.dp,
+                iconSize = 22.dp,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                onGo(s)
+            }
+        }
         Spacer(Modifier.weight(1f))
         ConnectionTile(connection, connectionDetail, onConnection)
     }
 }
 
 @Composable
-private fun NavTile(item: NavSection, active: Boolean, accent: Color, accentEnd: Color, style: TextStyle, tileSize: androidx.compose.ui.unit.Dp, iconSize: androidx.compose.ui.unit.Dp, modifier: Modifier, onClick: () -> Unit) {
+private fun NavTile(
+    item: NavSection,
+    active: Boolean,
+    accent: Color,
+    accentEnd: Color,
+    style: TextStyle,
+    tileSize: androidx.compose.ui.unit.Dp,
+    iconSize: androidx.compose.ui.unit.Dp,
+    modifier: Modifier,
+    onClick: () -> Unit,
+) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val shape = RoundedCornerShape(Tokens.radiusButton)
@@ -150,10 +203,29 @@ private fun NavTile(item: NavSection, active: Boolean, accent: Color, accentEnd:
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Box(Modifier.size(tileSize).focusRing(interaction, shape).background(tile, shape).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.size(
+                tileSize,
+            ).focusRing(
+                interaction,
+                shape,
+            ).background(
+                tile,
+                shape,
+            ).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape),
+            contentAlignment = Alignment.Center,
+        ) {
             Icon(item.icon, contentDescription = null, tint = fg, modifier = Modifier.size(iconSize))
         }
-        Text(item.label.uppercase(), style = style, color = if (active) accentEnd else Tokens.textMuted, textAlign = TextAlign.Center, maxLines = 1, softWrap = false, overflow = TextOverflow.Visible)
+        Text(
+            item.label.uppercase(),
+            style = style,
+            color = if (active) accentEnd else Tokens.textMuted,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Visible,
+        )
     }
 }
 
@@ -169,15 +241,39 @@ private fun ConnectionTile(connection: Connection, detail: String?, onClick: () 
     Column(
         Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusButton))
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
-            .semantics { this.contentDescription = "heyarr connection: $label${detail?.let { ", $it" } ?: ""}. Open connection details" }
+            .semantics {
+                this.contentDescription =
+                    "heyarr connection: $label${detail?.let { ", $it" } ?: ""}. Open connection details"
+            }
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.size(36.dp).focusRing(interaction, RectangleShape).background(Tokens.surface2, RectangleShape).border(Tokens.hairline, tone.copy(alpha = 0.6f), RectangleShape), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.size(
+                36.dp,
+            ).focusRing(
+                interaction,
+                RectangleShape,
+            ).background(
+                Tokens.surface2,
+                RectangleShape,
+            ).border(Tokens.hairline, tone.copy(alpha = 0.6f), RectangleShape),
+            contentAlignment = Alignment.Center,
+        ) {
             Box(Modifier.size(10.dp).background(tone, RectangleShape))
         }
         Text(label.uppercase(), style = RAIL_LABEL, color = tone, maxLines = 1, softWrap = false)
-        if (detail != null) Text(detail.substringBefore(" ·"), style = RAIL_LABEL.copy(letterSpacing = 0.2.sp, fontWeight = FontWeight.Normal), color = Tokens.textDisabled, maxLines = 1, softWrap = false)
+        if (detail !=
+            null
+        ) {
+            Text(
+                detail.substringBefore(" ·"),
+                style = RAIL_LABEL.copy(letterSpacing = 0.2.sp, fontWeight = FontWeight.Normal),
+                color = Tokens.textDisabled,
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
     }
 }

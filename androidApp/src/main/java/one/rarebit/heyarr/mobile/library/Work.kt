@@ -63,5 +63,7 @@ data class Work(
     val recency: String? get() = updatedAt ?: createdAt
 
     /** The node's own synopsis, when a provider wrote one under any of the usual keys. */
-    val synopsis: String? get() = listOf("overview", "synopsis", "description", "summary").firstNotNullOfOrNull { k -> attributes[k]?.takeIf { it.isNotBlank() } }
+    val synopsis: String? get() = listOf("overview", "synopsis", "description", "summary").firstNotNullOfOrNull { k ->
+        attributes[k]?.takeIf { it.isNotBlank() }
+    }
 }

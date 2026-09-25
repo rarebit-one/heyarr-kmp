@@ -73,10 +73,7 @@ class DeviceLogin(private val enroller: DeviceEnroller = DeviceEnroller.NotEnrol
  * A device enrolment wins over a pasted bearer token (it is the primary, offline
  * credential); with neither, the client stays a [Credential.Guest].
  */
-class EnrolUpgrade(
-    private val device: LoginProvider = DeviceLogin(),
-    private val bearer: LoginProvider,
-) {
+class EnrolUpgrade(private val device: LoginProvider = DeviceLogin(), private val bearer: LoginProvider) {
     /** The credential to present; never null — falls back to [Credential.Guest]. */
     fun credential(): Credential = device.credential() ?: bearer.credential() ?: Credential.Guest
 

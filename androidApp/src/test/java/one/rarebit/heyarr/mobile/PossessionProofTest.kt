@@ -113,7 +113,10 @@ class PossessionProofTest {
             assertTrue("cert signature by usr", parsed.verify(JdkEd25519.verifier))
         }
         // The device key named by the cert is the one our seed derives — else a proof could never verify.
-        assertEquals(Cert.parse(certB).cert.device.render(), "ed25519:cd14b37f956e953194ff7fb73b3d81dcc561d61a7538094b7c3e1a643ee5f3aa")
+        assertEquals(
+            Cert.parse(certB).cert.device.render(),
+            "ed25519:cd14b37f956e953194ff7fb73b3d81dcc561d61a7538094b7c3e1a643ee5f3aa",
+        )
     }
 
     private fun devicePub(token: String) = Cert.parse(token).cert.device.bytes
@@ -122,17 +125,54 @@ class PossessionProofTest {
         val pub = devicePub(certA)
         // honoured 1s before expiry; expired AT ttl (strict); honoured half a skew early; refused 2 skews early
         PossessionProof.verify(proofA, pub, certA, nowA + 119, JdkEd25519.verifier)
-        assertEquals(PossessionProof.Reason.EXPIRED, refused { PossessionProof.verify(proofA, pub, certA, nowA + 120, JdkEd25519.verifier) })
+        assertEquals(
+            PossessionProof.Reason.EXPIRED,
+            refused {
+                PossessionProof.verify(proofA, pub, certA, nowA + 120, JdkEd25519.verifier)
+            },
+        )
         PossessionProof.verify(proofA, pub, certA, nowA - 15, JdkEd25519.verifier)
-        assertEquals(PossessionProof.Reason.NOT_YET_VALID, refused { PossessionProof.verify(proofA, pub, certA, nowA - 60, JdkEd25519.verifier) })
+        assertEquals(
+            PossessionProof.Reason.NOT_YET_VALID,
+            refused {
+                PossessionProof.verify(
+                    proofA,
+                    pub,
+                    certA,
+                    nowA - 60,
+                    JdkEd25519.verifier,
+                )
+            },
+        )
     }
 
     @Test fun verifyRefusesWrongCertAndTamperedBody() {
         val pub = devicePub(certA)
-        assertEquals(PossessionProof.Reason.WRONG_CERT, refused { PossessionProof.verify(proofA, pub, certB, nowA + 1, JdkEd25519.verifier) })
+        assertEquals(
+            PossessionProof.Reason.WRONG_CERT,
+            refused {
+                PossessionProof.verify(proofA, pub, certB, nowA + 1, JdkEd25519.verifier)
+            },
+        )
         val flipped = proofA.substring(0, 5) + (if (proofA[5] == 'A') 'B' else 'A') + proofA.substring(6)
-        assertEquals(PossessionProof.Reason.BAD_SIGNATURE, refused { PossessionProof.verify(flipped, pub, certA, nowA + 1, JdkEd25519.verifier) })
-        assertEquals(PossessionProof.Reason.MALFORMED, refused { PossessionProof.verify("no-dot", pub, certA, nowA + 1, JdkEd25519.verifier) })
+        assertEquals(
+            PossessionProof.Reason.BAD_SIGNATURE,
+            refused {
+                PossessionProof.verify(
+                    flipped,
+                    pub,
+                    certA,
+                    nowA + 1,
+                    JdkEd25519.verifier,
+                )
+            },
+        )
+        assertEquals(
+            PossessionProof.Reason.MALFORMED,
+            refused {
+                PossessionProof.verify("no-dot", pub, certA, nowA + 1, JdkEd25519.verifier)
+            },
+        )
     }
 
     private fun refused(block: () -> Unit): PossessionProof.Reason =

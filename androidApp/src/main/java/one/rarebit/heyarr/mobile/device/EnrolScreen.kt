@@ -358,12 +358,19 @@ fun EnrolScreen(
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
                 } else {
                     Text(if (settled) "Enrolled" else "Admission stored", style = MaterialTheme.typography.titleMedium)
-                    Text(state.registration, style = MaterialTheme.typography.bodySmall,
-                        color = if (state.needsAdmin) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        state.registration,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (state.needsAdmin) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     if (state.needsAdmin && info?.certToken != null) {
                         Text("Admitting op to register:", style = MaterialTheme.typography.labelSmall)
                         SelectionContainer {
-                            Text(info.certToken, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                            Text(
+                                info.certToken,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontFamily = FontFamily.Monospace,
+                            )
                         }
                     }
                     if (settled) {
@@ -381,7 +388,11 @@ fun EnrolScreen(
             }
 
             is EnrolUiState.Removed -> {
-                Text("This device was removed", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                Text(
+                    "This device was removed",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
                 Text(state.message, style = MaterialTheme.typography.bodySmall)
                 Text(
                     "Its credential is no longer honoured, so nothing here retries. Forget the enrolment " +
@@ -393,7 +404,11 @@ fun EnrolScreen(
             }
 
             is EnrolUiState.Error -> {
-                Text(failureTitle(state.kind), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                Text(
+                    failureTitle(state.kind),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
                 Text(state.message, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                 Button(onClick = onRetry) { Text("Try again") }
             }
@@ -455,7 +470,13 @@ private fun DeviceKeyLine(info: DeviceKeyInfo, full: Boolean) {
         Text(
             "Device key ${info.deviceKey.removePrefix("ed25519:").take(8)}… · $tier · $status",
             style = MaterialTheme.typography.bodySmall,
-            color = if (info.tier == KeyTier.SOFTWARE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            color = if (info.tier ==
+                KeyTier.SOFTWARE
+            ) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         )
         return
     }
@@ -469,12 +490,22 @@ private fun DeviceKeyLine(info: DeviceKeyInfo, full: Boolean) {
                 "Key storage: $tier (hardware-sealed, user-presence gated)".takeIf { info.tier != KeyTier.SOFTWARE }
                     ?: "Key storage: $tier",
                 style = MaterialTheme.typography.bodySmall,
-                color = if (info.tier == KeyTier.SOFTWARE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = if (info.tier ==
+                    KeyTier.SOFTWARE
+                ) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
             )
             Text("Status: $status", style = MaterialTheme.typography.bodySmall)
             if (info.userId != null) {
                 SelectionContainer {
-                    Text("Identity: " + info.userId, style = MaterialTheme.typography.bodySmall, fontFamily = FontFamily.Monospace)
+                    Text(
+                        "Identity: " + info.userId,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontFamily = FontFamily.Monospace,
+                    )
                 }
             }
         }

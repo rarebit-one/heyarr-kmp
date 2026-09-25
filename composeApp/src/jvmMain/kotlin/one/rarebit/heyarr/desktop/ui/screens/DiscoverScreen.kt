@@ -80,17 +80,41 @@ fun DiscoverScreen(session: AppSession, state: DiscoverState, onWantTitle: WantB
         }
     }
 
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
         SectionHeader("Discover", subtitle = "Ask the node's metadata provider for content the library does not hold")
         val metadata = state.providers?.filter { "metadata" in it.capabilities || "discovery" in it.capabilities }
         when {
             state.providers == null -> {}
-            metadata.isNullOrEmpty() -> Text("This node reports no metadata provider — ${state.providers?.size ?: 0} provider(s), none able to discover. Discovery will answer with a refusal; Search still finds everything catalogued, and Missing lets you Want a title by name.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-            else -> Text("Metadata via " + metadata.joinToString { p -> p.name + if (p.healthy) "" else " (unhealthy)" }, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+
+            metadata.isNullOrEmpty() -> Text(
+                "This node reports no metadata provider — ${state.providers?.size ?: 0} provider(s), none able to discover. Discovery will answer with a refusal; Search still finds everything catalogued, and Missing lets you Want a title by name.",
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
+            )
+
+            else -> Text(
+                "Metadata via " + metadata.joinToString { p ->
+                    p.name + if (p.healthy) "" else " (unhealthy)"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = Tokens.textMuted,
+            )
         }
         Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Field("Title to look for", state.query, Modifier.width(420.dp), placeholder = "e.g. Severance") { state.query = it }
-            PrimaryButton("Ask the provider", ::ask, icon = Icons.Rounded.TravelExplore, enabled = !state.busy && state.query.isNotBlank())
+            Field("Title to look for", state.query, Modifier.width(420.dp), placeholder = "e.g. Severance") {
+                state.query =
+                    it
+            }
+            PrimaryButton(
+                "Ask the provider",
+                ::ask,
+                icon = Icons.Rounded.TravelExplore,
+                enabled =
+                !state.busy && state.query.isNotBlank(),
+            )
         }
         state.asked?.let { q -> DiscoveryResults(session, q, state.result, state.busy, onWantTitle) }
     }
@@ -98,36 +122,79 @@ fun DiscoverScreen(session: AppSession, state: DiscoverState, onWantTitle: WantB
 
 /** The answer to one `discover_content` call: a refusal quoted verbatim, nothing, or hits that can be Wanted. */
 @Composable
-fun DiscoveryResults(session: AppSession, query: String, result: McpResult<List<DiscoveryHit>>?, busy: Boolean, onWantTitle: WantByTitle) {
+fun DiscoveryResults(
+    session: AppSession,
+    query: String,
+    result: McpResult<List<DiscoveryHit>>?,
+    busy: Boolean,
+    onWantTitle: WantByTitle,
+) {
     when (result) {
-        null -> if (busy) Text("Asking the provider for “$query”…", color = Tokens.textMuted, style = MaterialTheme.typography.bodyMedium)
-        else Notice("discover_content did not answer", detail = "The node could not be reached for this call. The connection state at the foot of the sidebar has the details.")
-        is McpResult.Refused -> Notice("discover_content: ${result.message}", detail = "Discovery needs a metadata provider configured on the node (ADR-0058). Wanting by title still works.")
-        is McpResult.Ok -> if (result.value.isEmpty()) Text("The provider found nothing for “$query”.", color = Tokens.textMuted, style = MaterialTheme.typography.bodyMedium)
-        else Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("${result.value.size} from the provider — Want one to have the node look for it.", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
-            for (hit in result.value) {
-                // The provider names the kind (heyarr-core ADR-0099): a tv_series/podcast/
-                // youtube_channel/rss_feed hit is followable and carries a tvdb_id; a
-                // movie/book/music hit has no calendar and is wanted by title instead —
-                // MediaType.from maps either shape onto the row's theme and onWantTitle's
-                // content_type. Defaulting to SERIES here (as this screen always did) would
-                // silently mis-want every non-series hit now that the provider sends them.
-                val type = MediaType.from(hit.type)
-                val idLine = hit.tvdbId?.let { "tvdb $it" } ?: hit.source?.let { s -> hit.externalId?.let { id -> "$s $id" } }
-                // hit.posterUrl is a plain remote URL the provider hosts (TMDB/Open
-                // Library/MusicBrainz), never proxied through heyarr. ArtworkLoader
-                // already special-cases an absolute http(s) URL as external art — no
-                // credential attached — and caches it (memory + disk) exactly like a
-                // library cover, so a repeat search or a relaunch does not re-fetch.
-                // backdropUrl is TMDB-only and this is a compact row, not a hero — not
-                // worth a second fetch here.
-                val art by session.artwork.rememberArtwork(hit.posterUrl)
-                MediaRow(
-                    hit.title, type, onOpen = { onWantTitle(hit.title, hit.year, type) },
-                    subtitle = hit.overview, meta = listOf(hit.year?.toString(), idLine), artwork = art, status = LibraryStatus.NOT_TRACKED,
-                    trailing = { PrimaryButton("Want", { onWantTitle(hit.title, hit.year, type) }, icon = Icons.Rounded.Add, compact = true, contentDescription = "Want ${hit.title}") },
+        null -> if (busy) {
+            Text(
+                "Asking the provider for “$query”…",
+                color = Tokens.textMuted,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        } else {
+            Notice(
+                "discover_content did not answer",
+                detail = "The node could not be reached for this call. The connection state at the foot of the sidebar has the details.",
+            )
+        }
+
+        is McpResult.Refused -> Notice(
+            "discover_content: ${result.message}",
+            detail = "Discovery needs a metadata provider configured on the node (ADR-0058). Wanting by title still works.",
+        )
+
+        is McpResult.Ok -> if (result.value.isEmpty()) {
+            Text(
+                "The provider found nothing for “$query”.",
+                color = Tokens.textMuted,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        } else {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "${result.value.size} from the provider — Want one to have the node look for it.",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Tokens.textMuted,
                 )
+                for (hit in result.value) {
+                    // The provider names the kind (heyarr-core ADR-0099): a tv_series/podcast/
+                    // youtube_channel/rss_feed hit is followable and carries a tvdb_id; a
+                    // movie/book/music hit has no calendar and is wanted by title instead —
+                    // MediaType.from maps either shape onto the row's theme and onWantTitle's
+                    // content_type. Defaulting to SERIES here (as this screen always did) would
+                    // silently mis-want every non-series hit now that the provider sends them.
+                    val type = MediaType.from(hit.type)
+                    val idLine =
+                        hit.tvdbId?.let { "tvdb $it" }
+                            ?: hit.source?.let { s -> hit.externalId?.let { id -> "$s $id" } }
+                    // hit.posterUrl is a plain remote URL the provider hosts (TMDB/Open
+                    // Library/MusicBrainz), never proxied through heyarr. ArtworkLoader
+                    // already special-cases an absolute http(s) URL as external art — no
+                    // credential attached — and caches it (memory + disk) exactly like a
+                    // library cover, so a repeat search or a relaunch does not re-fetch.
+                    // backdropUrl is TMDB-only and this is a compact row, not a hero — not
+                    // worth a second fetch here.
+                    val art by session.artwork.rememberArtwork(hit.posterUrl)
+                    MediaRow(
+                        hit.title,
+                        type,
+                        onOpen = { onWantTitle(hit.title, hit.year, type) },
+                        subtitle = hit.overview,
+                        meta = listOf(hit.year?.toString(), idLine),
+                        artwork = art,
+                        status = LibraryStatus.NOT_TRACKED,
+                        trailing = {
+                            PrimaryButton("Want", {
+                                onWantTitle(hit.title, hit.year, type)
+                            }, icon = Icons.Rounded.Add, compact = true, contentDescription = "Want ${hit.title}")
+                        },
+                    )
+                }
             }
         }
     }

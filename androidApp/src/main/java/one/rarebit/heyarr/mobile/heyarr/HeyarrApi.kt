@@ -71,11 +71,7 @@ import java.net.URLEncoder
  * `Dispatchers.IO`. On the phone [http] is the `DeviceAuthTransport`, so an enrolled
  * device's credential is kept fresh underneath every call.
  */
-class HeyarrApi(
-    private val http: HttpTransport,
-    val baseUrl: String,
-    private val credential: Credential,
-) {
+class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private val credential: Credential) {
     private val mcp = McpClient(http, baseUrl, credential)
     private val library = LibraryClient(http, baseUrl, credential)
     private val detail = WorkDetailClient(http, baseUrl, credential)
@@ -92,8 +88,9 @@ class HeyarrApi(
     }
 
     /** `search_content` with only a content type — everything the library holds of that kind. */
-    fun listByType(type: MediaType, limit: Int = 200): SearchHits =
-        SearchHitsJson.parse(mcp.call("search_content", mapOf("content_type" to type.apiName, "limit" to limit)).require())
+    fun listByType(type: MediaType, limit: Int = 200): SearchHits = SearchHitsJson.parse(
+        mcp.call("search_content", mapOf("content_type" to type.apiName, "limit" to limit)).require(),
+    )
 
     /** `discover_content` — ask the metadata provider (TVDB) for series the library does NOT hold. A node with no provider refuses; that refusal is returned for the UI to show. */
     fun discover(query: String): McpResult<List<DiscoveryHit>> =
@@ -102,40 +99,68 @@ class HeyarrApi(
     // ── wants ────────────────────────────────────────────────────────────────────
 
     /** `want_content` — declare that a work should exist under a named profile. */
-    fun wantWork(workId: String, qualityProfile: String, monitor: Boolean = true, reason: String? = null): McpResult<WantCreated> =
-        mcp.call(
-            "want_content",
-            linkedMapOf("work_id" to workId, "quality_profile" to qualityProfile, "monitor" to monitor, "reason" to reason),
-        ).map { WantCreatedJson.parse(it) }
+    fun wantWork(
+        workId: String,
+        qualityProfile: String,
+        monitor: Boolean = true,
+        reason: String? = null,
+    ): McpResult<WantCreated> = mcp.call(
+        "want_content",
+        linkedMapOf(
+            "work_id" to workId,
+            "quality_profile" to qualityProfile,
+            "monitor" to monitor,
+            "reason" to reason,
+        ),
+    ).map { WantCreatedJson.parse(it) }
 
     /** `want_content` by title — for content the library has never seen. */
-    fun wantTitle(title: String, type: MediaType, qualityProfile: String, year: Int? = null, monitor: Boolean = true, reason: String? = null): McpResult<WantCreated> =
-        mcp.call(
-            "want_content",
-            linkedMapOf(
-                "title" to title, "content_type" to type.apiName, "quality_profile" to qualityProfile,
-                "year" to year, "monitor" to monitor, "reason" to reason,
-            ),
-        ).map { WantCreatedJson.parse(it) }
+    fun wantTitle(
+        title: String,
+        type: MediaType,
+        qualityProfile: String,
+        year: Int? = null,
+        monitor: Boolean = true,
+        reason: String? = null,
+    ): McpResult<WantCreated> = mcp.call(
+        "want_content",
+        linkedMapOf(
+            "title" to title,
+            "content_type" to type.apiName,
+            "quality_profile" to qualityProfile,
+            "year" to year,
+            "monitor" to monitor,
+            "reason" to reason,
+        ),
+    ).map { WantCreatedJson.parse(it) }
 
     /** `monitor_content` — keep looking for something better (true) or stop once satisfied (false). */
     fun monitor(desiredItemId: String, monitor: Boolean): McpResult<Unit> =
         mcp.call("monitor_content", mapOf("desired_item_id" to desiredItemId, "monitor" to monitor)).map { }
 
     /** `get_missing_content` — wants whose content is not satisfied. */
-    fun missing(limit: Int = 200): List<Want> = WantJson.list(mcp.call("get_missing_content", mapOf("limit" to limit)).require())
+    fun missing(limit: Int = 200): List<Want> =
+        WantJson.list(mcp.call("get_missing_content", mapOf("limit" to limit)).require())
 
     /** `get_upgrade_candidates` — satisfied, monitored wants that could still improve. */
-    fun upgradeCandidates(limit: Int = 200): List<Want> = WantJson.list(mcp.call("get_upgrade_candidates", mapOf("limit" to limit)).require())
+    fun upgradeCandidates(limit: Int = 200): List<Want> =
+        WantJson.list(mcp.call("get_upgrade_candidates", mapOf("limit" to limit)).require())
 
     /** `get_content_satisfaction` — why one want is (not) satisfied, rule by rule. */
     fun satisfaction(desiredItemId: String): McpResult<Satisfaction?> =
-        mcp.call("get_content_satisfaction", mapOf("desired_item_id" to desiredItemId)).map { SatisfactionJson.parse(it) }
+        mcp.call("get_content_satisfaction", mapOf("desired_item_id" to desiredItemId)).map {
+            SatisfactionJson.parse(it)
+        }
 
     /** `explain_release` — score releases against a profile without acquiring anything. */
-    fun explain(qualityProfile: String, releases: List<ReleaseToExplain>): McpResult<Explanation?> =
-        mcp.call("explain_release", mapOf("quality_profile" to qualityProfile, "releases" to releases.map { it.toArguments() }))
-            .map { ExplanationJson.parse(it) }
+    fun explain(qualityProfile: String, releases: List<ReleaseToExplain>): McpResult<Explanation?> = mcp.call(
+        "explain_release",
+        mapOf(
+            "quality_profile" to qualityProfile,
+            "releases" to releases.map { it.toArguments() },
+        ),
+    )
+        .map { ExplanationJson.parse(it) }
 
     /** `search_releases` — queue an indexer search for a want now; the answer is a job, not releases. */
     fun searchReleases(desiredItemId: String): McpResult<QueuedJob> =
@@ -143,7 +168,9 @@ class HeyarrApi(
 
     /** `acquire_release` — fetch one named candidate. A profile-rejected candidate is refused by rule; the refusal is returned to show. */
     fun acquire(desiredItemId: String, candidateId: String): McpResult<QueuedJob> =
-        mcp.call("acquire_release", mapOf("desired_item_id" to desiredItemId, "candidate_id" to candidateId)).map { QueuedJobJson.parse(it) }
+        mcp.call("acquire_release", mapOf("desired_item_id" to desiredItemId, "candidate_id" to candidateId)).map {
+            QueuedJobJson.parse(it)
+        }
 
     /** `verify_blob` — queue a re-hash of a blob's bytes. */
     fun verifyBlob(blobHash: String): McpResult<QueuedJob> =
@@ -174,13 +201,23 @@ class HeyarrApi(
         val viaTool = mcp.call("play_here", mapOf("asset_id" to assetId, "renderer" to renderer)).map { }
         if (viaTool !is McpResult.Refused || udn == null || !viaTool.message.contains("tool failed")) return viaTool
         val resp = try {
-            http.post("$baseUrl/api/v1/renderers/${enc(udn)}/play", JsonWrite.obj(mapOf("asset_id" to assetId)), "application/json", credential.asHeader())
+            http.post(
+                "$baseUrl/api/v1/renderers/${enc(udn)}/play",
+                JsonWrite.obj(mapOf("asset_id" to assetId)),
+                "application/json",
+                credential.asHeader(),
+            )
         } catch (e: IOException) {
             throw McpTransportException("heyarr is unreachable: ${e.message}", e)
         }
         return when (resp.status) {
             200, 201, 202 -> McpResult.Ok(Unit)
-            else -> McpResult.Refused(ProblemDetail.message(resp.body, resp.status, "play on renderer"), "renderers/play", resp.status)
+
+            else -> McpResult.Refused(
+                ProblemDetail.message(resp.body, resp.status, "play on renderer"),
+                "renderers/play",
+                resp.status,
+            )
         }
     }
 
@@ -199,14 +236,26 @@ class HeyarrApi(
         FollowedSourcesJson.parse(mcp.call("list_followed", mapOf("limit" to limit)).require())
 
     /** `follow_source` — subscribe to a URL or TVDB id under a profile. */
-    fun follow(url: String?, tvdbId: String?, title: String?, qualityProfile: String, backfill: String = "from_now", type: String? = null, reason: String? = null): McpResult<FollowedSource?> =
-        mcp.call(
-            "follow_source",
-            linkedMapOf(
-                "url" to url?.ifBlank { null }, "tvdb_id" to tvdbId?.ifBlank { null }, "title" to title?.ifBlank { null },
-                "quality_profile" to qualityProfile, "backfill" to backfill, "type" to type, "reason" to reason,
-            ),
-        ).map { FollowedSourcesJson.parseOne(it) }
+    fun follow(
+        url: String?,
+        tvdbId: String?,
+        title: String?,
+        qualityProfile: String,
+        backfill: String = "from_now",
+        type: String? = null,
+        reason: String? = null,
+    ): McpResult<FollowedSource?> = mcp.call(
+        "follow_source",
+        linkedMapOf(
+            "url" to url?.ifBlank { null },
+            "tvdb_id" to tvdbId?.ifBlank { null },
+            "title" to title?.ifBlank { null },
+            "quality_profile" to qualityProfile,
+            "backfill" to backfill,
+            "type" to type,
+            "reason" to reason,
+        ),
+    ).map { FollowedSourcesJson.parseOne(it) }
 
     /** `unfollow` — stop polling; [keepArchive] false asks the node to drop the archive too (refused in phase 1, and the refusal is returned). */
     fun unfollow(sourceId: String, keepArchive: Boolean = true): McpResult<Unit> =
@@ -235,17 +284,47 @@ class HeyarrApi(
      * models the edition of an episodic work as its season, ADR-0056). There is no MCP
      * tool for a scoped want; this REST route is the one this client already used.
      */
-    fun wantEdition(workId: String, editionId: String, qualityProfile: String, monitor: Boolean = true, reason: String? = null): McpResult<DesiredItem?> {
-        val body = JsonWrite.obj(linkedMapOf("scope" to "edition", "work_id" to workId, "edition_id" to editionId, "quality_profile" to qualityProfile, "monitor" to monitor, "reason" to reason))
+    fun wantEdition(
+        workId: String,
+        editionId: String,
+        qualityProfile: String,
+        monitor: Boolean = true,
+        reason: String? = null,
+    ): McpResult<DesiredItem?> {
+        val body = JsonWrite.obj(
+            linkedMapOf(
+                "scope" to "edition",
+                "work_id" to workId,
+                "edition_id" to editionId,
+                "quality_profile" to qualityProfile,
+                "monitor" to monitor,
+                "reason" to reason,
+            ),
+        )
         val resp = try {
-            http.post("$baseUrl/api/v1/desired", body, "application/json", credential.asHeader() + ("Content-Type" to "application/json"))
+            http.post(
+                "$baseUrl/api/v1/desired",
+                body,
+                "application/json",
+                credential.asHeader() + ("Content-Type" to "application/json"),
+            )
         } catch (e: IOException) {
             throw McpTransportException("heyarr is unreachable: ${e.message}", e)
         }
         return when (resp.status) {
             200, 201 -> McpResult.Ok(DesiredItemJson.parseOne(resp.body))
-            401, 403 -> throw McpTransportException("heyarr refused the credential (HTTP ${resp.status})", null, resp.status)
-            else -> McpResult.Refused(ProblemDetail.message(resp.body, resp.status, "want season"), "POST /desired", resp.status)
+
+            401, 403 -> throw McpTransportException(
+                "heyarr refused the credential (HTTP ${resp.status})",
+                null,
+                resp.status,
+            )
+
+            else -> McpResult.Refused(
+                ProblemDetail.message(resp.body, resp.status, "want season"),
+                "POST /desired",
+                resp.status,
+            )
         }
     }
 
@@ -273,7 +352,8 @@ class HeyarrApi(
     fun followedItems(sourceId: String): List<FollowedItem> = rest { sources.items(sourceId) }
 
     /** `GET /api/v1/quality-profiles` — the names a want must be measured against. */
-    fun qualityProfiles(): List<QualityProfile> = QualityProfileJson.list(get("$baseUrl/api/v1/quality-profiles", "GET /quality-profiles"))
+    fun qualityProfiles(): List<QualityProfile> =
+        QualityProfileJson.list(get("$baseUrl/api/v1/quality-profiles", "GET /quality-profiles"))
 
     /** `GET /api/v1/desired` — every want with its acquisition state (the library-status index). */
     fun desired(): List<DesiredItem> = pageAll(
@@ -284,8 +364,9 @@ class HeyarrApi(
     )
 
     /** `GET /api/v1/desired/{id}/candidates` — the releases the last search found, scored. */
-    fun candidates(desiredItemId: String): CandidateList? =
-        CandidateJson.parse(get("$baseUrl/api/v1/desired/${enc(desiredItemId)}/candidates", "GET /desired/{id}/candidates"))
+    fun candidates(desiredItemId: String): CandidateList? = CandidateJson.parse(
+        get("$baseUrl/api/v1/desired/${enc(desiredItemId)}/candidates", "GET /desired/{id}/candidates"),
+    )
 
     /** A cheap liveness probe for the offline banner: one authenticated page of one work. */
     fun ping(): Boolean = try {
@@ -308,12 +389,25 @@ class HeyarrApi(
         } catch (e: IOException) {
             throw McpTransportException("heyarr is unreachable: ${e.message ?: e.javaClass.simpleName}", e)
         }
-        if (resp.status == 401 || resp.status == 403) throw McpTransportException("heyarr refused the credential (HTTP ${resp.status})", null, resp.status)
-        if (resp.status != 200) throw McpTransportException(ProblemDetail.message(resp.body, resp.status, what), null, resp.status)
+        if (resp.status == 401 ||
+            resp.status == 403
+        ) {
+            throw McpTransportException("heyarr refused the credential (HTTP ${resp.status})", null, resp.status)
+        }
+        if (resp.status !=
+            200
+        ) {
+            throw McpTransportException(ProblemDetail.message(resp.body, resp.status, what), null, resp.status)
+        }
         return resp.body
     }
 
-    private fun <T> pageAll(url: (String?) -> String, parse: (String) -> List<T>, cursor: (String) -> String?, what: String): List<T> {
+    private fun <T> pageAll(
+        url: (String?) -> String,
+        parse: (String) -> List<T>,
+        cursor: (String) -> String?,
+        what: String,
+    ): List<T> {
         val all = ArrayList<T>()
         var next: String? = null
         var pages = 0
@@ -326,7 +420,8 @@ class HeyarrApi(
         return all
     }
 
-    private fun paged(base: String, cursor: String?) = if (cursor.isNullOrBlank()) base else "$base&cursor=${enc(cursor)}"
+    private fun paged(base: String, cursor: String?) =
+        if (cursor.isNullOrBlank()) base else "$base&cursor=${enc(cursor)}"
     private fun enc(s: String) = URLEncoder.encode(s, "UTF-8")
 
     companion object {

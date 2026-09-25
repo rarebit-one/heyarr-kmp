@@ -92,24 +92,40 @@ fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modif
         val r = state.selected ?: return
         scope.launch {
             state.busy = true
-            session.io { session.api.control(r.name, action) }.onSuccess { res -> if (res is McpResult.Refused) session.refused(res) }
+            session.io {
+                session.api.control(r.name, action)
+            }.onSuccess { res -> if (res is McpResult.Refused) session.refused(res) }
             session.io { session.api.playbackStatus(r.name) }.onSuccess { state.status = it }
             state.busy = false
         }
     }
 
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = Tokens.screenPadding).padding(top = Tokens.s4, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+    Column(
+        modifier.fillMaxSize().verticalScroll(
+            rememberScrollState(),
+        ).padding(horizontal = Tokens.screenPadding).padding(top = Tokens.s4, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
         SectionHeader("Cast", subtitle = "Renderers on the network and what each is doing", trailing = {
             IconButtonRound(Icons.Rounded.Refresh, "Search the network again", { load(refresh = true) }, size = 36.dp)
         })
         when {
-            state.error != null && state.renderers == null -> ErrorState("Couldn't list renderers", state.error, { load() })
+            state.error != null && state.renderers == null -> ErrorState("Couldn't list renderers", state.error, {
+                load()
+            })
 
             state.renderers == null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
 
-            state.renderers!!.isEmpty() -> EmptyState("No renderers found", detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again.", icon = Icons.Rounded.Cast)
+            state.renderers!!.isEmpty() -> EmptyState(
+                "No renderers found",
+                detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again.",
+                icon = Icons.Rounded.Cast,
+            )
 
-            else -> Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            else -> Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 for (r in state.renderers!!) {
                     FilterChip(r.name, state.selected?.udn == r.udn, {
                         state.selected = r
@@ -121,7 +137,13 @@ fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modif
         val r = state.selected
         if (r != null) {
             Panel(r.name) {
-                if (r.subtitle.isNotBlank()) Text(r.subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+                if (r.subtitle.isNotBlank()) {
+                    Text(
+                        r.subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Tokens.textMuted,
+                    )
+                }
                 when (val s = state.status) {
                     null -> Skeleton(Modifier.fillMaxWidth().height(60.dp))
 
@@ -129,12 +151,22 @@ fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modif
 
                     is McpResult.Ok -> {
                         val st = s.value
-                        if (st == null) Text("No status reported.", color = Tokens.textMuted) else Transport(st, state.busy, ::control)
+                        if (st ==
+                            null
+                        ) {
+                            Text("No status reported.", color = Tokens.textMuted)
+                        } else {
+                            Transport(st, state.busy, ::control)
+                        }
                     }
                 }
             }
         }
-        Notice("Playback position is the device's own report, live. heyarr keeps no play history this client can read; to send something here, use Play on… from a work.", icon = Icons.Rounded.Cast, tone = Tokens.slate)
+        Notice(
+            "Playback position is the device's own report, live. heyarr keeps no play history this client can read; to send something here, use Play on… from a work.",
+            icon = Icons.Rounded.Cast,
+            tone = Tokens.slate,
+        )
     }
 }
 
@@ -145,7 +177,11 @@ private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -> Un
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(Modifier.size(10.dp).background(if (playing) theme.accent else Tokens.textDisabled, RectangleShape))
-            Text(st.state.lowercase().replace('_', ' '), style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)
+            Text(
+                st.state.lowercase().replace('_', ' '),
+                style = MaterialTheme.typography.titleMedium,
+                color = Tokens.textPrimary,
+            )
         }
         st.title?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted) }
         val dur = st.durationSeconds
@@ -154,12 +190,36 @@ private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -> Un
             Box(Modifier.fillMaxWidth(frac).height(6.dp).background(theme.accent, RectangleShape))
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(clock(st.elapsedSeconds) + (dur?.let { " / " + clock(it) } ?: ""), style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted, modifier = Modifier.weight(1f))
-            if (playing) IconButtonRound(Icons.Rounded.Pause, "Pause", { control("pause") }, enabled = !busy, size = 48.dp, filled = true)
-            else IconButtonRound(Icons.Rounded.PlayArrow, "Resume", { control("resume") }, enabled = !busy, size = 48.dp, filled = true)
+            Text(
+                clock(st.elapsedSeconds) + (
+                    dur?.let {
+                        " / " + clock(it)
+                    } ?: ""
+                    ),
+                style = MaterialTheme.typography.labelMedium,
+                color = Tokens.textMuted,
+                modifier = Modifier.weight(1f),
+            )
+            if (playing) {
+                IconButtonRound(Icons.Rounded.Pause, "Pause", {
+                    control("pause")
+                }, enabled = !busy, size = 48.dp, filled = true)
+            } else {
+                IconButtonRound(Icons.Rounded.PlayArrow, "Resume", {
+                    control("resume")
+                }, enabled = !busy, size = 48.dp, filled = true)
+            }
             IconButtonRound(Icons.Rounded.Stop, "Stop", { control("stop") }, enabled = !busy, size = 48.dp)
         }
-        if (st.elapsedSeconds == 0L && playing) KeyValue("position", "not reported — some devices report none until they have parsed enough of the stream", valueColor = Tokens.textMuted)
+        if (st.elapsedSeconds == 0L &&
+            playing
+        ) {
+            KeyValue(
+                "position",
+                "not reported — some devices report none until they have parsed enough of the stream",
+                valueColor = Tokens.textMuted,
+            )
+        }
     }
 }
 

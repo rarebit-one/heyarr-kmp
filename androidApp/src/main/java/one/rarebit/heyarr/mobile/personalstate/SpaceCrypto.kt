@@ -20,10 +20,14 @@ internal interface SpaceCrypto {
 
 internal object VoidbindSpaceCrypto : SpaceCrypto {
     override fun newSpaceKey(): ByteArray = VoidbindEncryption.newSpaceKey()
-    override fun seal(spaceKey: ByteArray, recipientPub: ByteArray): ByteArray = VoidbindEncryption.seal(spaceKey, recipientPub)
-    override fun unwrap(wrapped: ByteArray, recipientSeed: ByteArray): ByteArray = VoidbindEncryption.unwrap(wrapped, recipientSeed)
-    override fun encryptChange(spaceKey: ByteArray, plaintext: ByteArray): ByteArray = VoidbindEncryption.encryptChange(spaceKey, plaintext)
-    override fun decryptChange(spaceKey: ByteArray, blob: ByteArray): ByteArray = VoidbindEncryption.decryptChange(spaceKey, blob)
+    override fun seal(spaceKey: ByteArray, recipientPub: ByteArray): ByteArray =
+        VoidbindEncryption.seal(spaceKey, recipientPub)
+    override fun unwrap(wrapped: ByteArray, recipientSeed: ByteArray): ByteArray =
+        VoidbindEncryption.unwrap(wrapped, recipientSeed)
+    override fun encryptChange(spaceKey: ByteArray, plaintext: ByteArray): ByteArray =
+        VoidbindEncryption.encryptChange(spaceKey, plaintext)
+    override fun decryptChange(spaceKey: ByteArray, blob: ByteArray): ByteArray =
+        VoidbindEncryption.decryptChange(spaceKey, blob)
 }
 
 /**

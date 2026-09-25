@@ -3,70 +3,39 @@
     <file name="src/commonMain/kotlin/one/rarebit/heyarr/core/discovery/Discovery.kt">
         <error line="3" column="1" source="standard:kdoc" />
     </file>
-    <file name="src/commonMain/kotlin/one/rarebit/heyarr/core/feeds/FeedModels.kt">
-        <error line="64" column="52" source="standard:function-signature" />
-        <error line="92" column="44" source="standard:function-signature" />
-    </file>
     <file name="src/commonMain/kotlin/one/rarebit/heyarr/core/heyarr/Continue.kt">
-        <error line="66" column="50" source="standard:function-signature" />
+        <error line="105" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/commonMain/kotlin/one/rarebit/heyarr/core/heyarr/RestModels.kt">
         <error line="7" column="1" source="standard:kdoc" />
-        <error line="23" column="51" source="standard:function-signature" />
-        <error line="67" column="48" source="standard:function-signature" />
-        <error line="72" column="44" source="standard:function-signature" />
-    </file>
-    <file name="src/commonMain/kotlin/one/rarebit/heyarr/core/mcp/McpModels.kt">
-        <error line="29" column="67" source="standard:function-signature" />
-        <error line="77" column="43" source="standard:function-signature" />
-        <error line="300" column="44" source="standard:function-signature" />
-        <error line="452" column="49" source="standard:function-signature" />
-        <error line="473" column="47" source="standard:function-signature" />
     </file>
     <file name="src/commonMain/kotlin/one/rarebit/heyarr/core/state/LibraryStatus.kt">
-        <error line="51" column="50" source="standard:function-signature" />
+        <error line="60" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/commonMain/kotlin/one/rarebit/heyarr/core/vault/PersonalStateId.kt">
-        <error line="25" column="90" source="standard:function-signature" />
-        <error line="29" column="93" source="standard:function-signature" />
-    </file>
-    <file name="src/commonMain/kotlin/one/rarebit/heyarr/core/vault/VaultFrame.kt">
-        <error line="52" column="49" source="standard:function-signature" />
-        <error line="121" column="77" source="standard:function-signature" />
-        <error line="242" column="68" source="standard:function-signature" />
-    </file>
-    <file name="src/commonTest/kotlin/one/rarebit/heyarr/core/LandscapeArtworkTest.kt">
-        <error line="9" column="76" source="standard:function-signature" />
+    <file name="src/commonTest/kotlin/one/rarebit/heyarr/core/McpClientTest.kt">
+        <error line="61" column="121" source="standard:max-line-length" />
+        <error line="75" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/commonTest/kotlin/one/rarebit/heyarr/core/testfixtures/Fixtures.kt">
-        <error line="24" column="120" source="standard:function-signature" />
-        <error line="49" column="13" source="standard:multiline-if-else" />
-        <error line="49" column="219" source="standard:multiline-if-else" />
+        <error line="112" column="121" source="standard:max-line-length" />
+        <error line="113" column="121" source="standard:max-line-length" />
+        <error line="137" column="120" source="standard:max-line-length" />
+        <error line="138" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/core/vault/DriveCrdt.kt">
         <error line="7" column="1" source="standard:kdoc" />
-        <error line="409" column="1" source="standard:kdoc" />
+        <error line="403" column="1" source="standard:kdoc" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/core/vault/SyncReconcile.kt">
         <error line="3" column="1" source="standard:kdoc" />
     </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/core/crypto/Blake3Test.kt">
-        <error line="17" column="49" source="standard:function-signature" />
+    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/core/state/ExternalParsersTest.kt">
+        <error line="56" column="121" source="standard:max-line-length" />
+        <error line="59" column="121" source="standard:max-line-length" />
+        <error line="65" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmTest/kotlin/one/rarebit/heyarr/core/vault/DriveCrdtVectorsTest.kt">
-        <error line="18" column="49" source="standard:function-signature" />
-        <error line="65" column="101" source="standard:no-multi-spaces" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/core/vault/DriveRetainTest.kt">
-        <error line="16" column="49" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/core/vault/PersonalStateIdTest.kt">
-        <error line="18" column="49" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/core/vault/VaultFrameStreamingTest.kt">
-        <error line="41" column="81" source="standard:function-signature" />
-    </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/core/vault/VaultFrameVectorsTest.kt">
-        <error line="29" column="49" source="standard:function-signature" />
+        <error line="86" column="121" source="standard:max-line-length" />
+        <error line="87" column="121" source="standard:max-line-length" />
     </file>
 </baseline>

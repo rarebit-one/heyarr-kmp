@@ -17,10 +17,7 @@ import java.net.URI
  * No 401 retry here: that is [DeviceAuthTransport]'s job for API calls, and a failed
  * image simply reloads on the next composition.
  */
-class AuthInterceptor(
-    private val baseUrl: () -> String,
-    private val header: AuthHeaderSource,
-) : Interceptor {
+class AuthInterceptor(private val baseUrl: () -> String, private val header: AuthHeaderSource) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val req = chain.request()

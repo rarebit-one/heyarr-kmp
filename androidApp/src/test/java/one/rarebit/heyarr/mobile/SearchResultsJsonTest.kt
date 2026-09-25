@@ -88,7 +88,9 @@ class SearchResultsJsonEpisodesTest {
     }
 
     @Test fun anOlderNodeHasNoEpisodes() {
-        val hits = one.rarebit.heyarr.mobile.search.SearchResultsJson.parseHits("""{"works":[{"work_id":"w1","title":"X"}]}""")
+        val hits = one.rarebit.heyarr.mobile.search.SearchResultsJson.parseHits(
+            """{"works":[{"work_id":"w1","title":"X"}]}""",
+        )
         assertEquals(1, hits.works.size)
         assertEquals(0, hits.episodes.size)
         assertEquals(null, hits.works[0].artworkPath)

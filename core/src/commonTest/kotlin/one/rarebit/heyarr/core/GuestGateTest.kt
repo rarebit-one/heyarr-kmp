@@ -36,7 +36,16 @@ class GuestGateTest {
     }
 
     @Test fun guestIsGatedOnWritesAndPersonalSurfaces() {
-        for (s in listOf(Surface.WANT, Surface.FOLLOW, Surface.RATE, Surface.MONITOR, Surface.ACQUIRE, Surface.PLAYLISTS, Surface.RESUME, Surface.HISTORY)) {
+        for (s in listOf(
+            Surface.WANT,
+            Surface.FOLLOW,
+            Surface.RATE,
+            Surface.MONITOR,
+            Surface.ACQUIRE,
+            Surface.PLAYLISTS,
+            Surface.RESUME,
+            Surface.HISTORY,
+        )) {
             assertTrue(GuestGate.isGated(ClientMode.GUEST, s), "guest should be gated on $s")
             assertFalse(GuestGate.allows(ClientMode.GUEST, s), "guest should not be allowed $s")
         }

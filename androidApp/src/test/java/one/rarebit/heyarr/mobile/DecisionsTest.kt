@@ -21,8 +21,13 @@ import org.junit.Test
 class DecisionsTest {
 
     private val hash = "blake3:" + "a".repeat(64)
-    private val video = NowPlaying(PlaybackTarget("https://n/api/v1/blobs/$hash/content", Credential.Session("t"), isVideo = true), "Film")
-    private val track = AudioItem(assetId = "a1", workId = "w", title = "One", contentUrl = "https://n/api/v1/blobs/$hash/content")
+    private val video =
+        NowPlaying(
+            PlaybackTarget("https://n/api/v1/blobs/$hash/content", Credential.Session("t"), isVideo = true),
+            "Film",
+        )
+    private val track =
+        AudioItem(assetId = "a1", workId = "w", title = "One", contentUrl = "https://n/api/v1/blobs/$hash/content")
 
     @Test fun videoPreEmptsTheAudioQueueAndNothingMeansLeave() {
         assertEquals(Decisions.PlayerContent.VIDEO, Decisions.playerContent(video, track))
@@ -48,11 +53,30 @@ class DecisionsTest {
     }
 
     @Test fun anAlbumQueuesItsPlayableTracksAndKeepsTheStartTrack() {
-        val work = Work(id = "w", title = "Kid A", kind = "music", artist = "Radiohead", artworkPath = "/api/v1/blobs/$hash/content")
+        val work =
+            Work(
+                id = "w",
+                title = "Kid A",
+                kind = "music",
+                artist = "Radiohead",
+                artworkPath = "/api/v1/blobs/$hash/content",
+            )
         val tracks = listOf(
-            WorkAsset(id = "t1", editionId = "e", filename = "01 - Everything.flac", mime = "audio/flac", blobHash = hash),
+            WorkAsset(
+                id = "t1",
+                editionId = "e",
+                filename = "01 - Everything.flac",
+                mime = "audio/flac",
+                blobHash = hash,
+            ),
             WorkAsset(id = "t2", editionId = "e", filename = "02 - Kid A.flac", mime = "audio/flac", blobHash = null),
-            WorkAsset(id = "t3", editionId = "e", filename = "03 - The National Anthem.flac", mime = "audio/flac", blobHash = hash),
+            WorkAsset(
+                id = "t3",
+                editionId = "e",
+                filename = "03 - The National Anthem.flac",
+                mime = "audio/flac",
+                blobHash = hash,
+            ),
         )
         val (items, index) = Decisions.queueFor("https://n", work, tracks, start = 2)
         assertEquals(listOf("t1", "t3"), items.map { it.assetId })

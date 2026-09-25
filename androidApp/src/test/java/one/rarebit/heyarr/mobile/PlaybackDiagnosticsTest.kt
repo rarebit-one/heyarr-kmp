@@ -20,8 +20,10 @@ class PlaybackDiagnosticsTest {
     )
 
     private val h264 = TrackGroup(PlaybackDiagnostics.TYPE_VIDEO, supported = true, sampleMime = "video/avc")
-    private val ac3 = TrackGroup(PlaybackDiagnostics.TYPE_AUDIO, supported = false, sampleMime = "audio/ac3", channels = 6)
-    private val aac = TrackGroup(PlaybackDiagnostics.TYPE_AUDIO, supported = true, sampleMime = "audio/mp4a-latm", channels = 2)
+    private val ac3 =
+        TrackGroup(PlaybackDiagnostics.TYPE_AUDIO, supported = false, sampleMime = "audio/ac3", channels = 6)
+    private val aac =
+        TrackGroup(PlaybackDiagnostics.TYPE_AUDIO, supported = true, sampleMime = "audio/mp4a-latm", channels = 2)
 
     @Test fun yellowstoneAc3FiveOneOnAPlannedDirectTargetAsksForAStream() {
         val issue = PlaybackDiagnostics.assess(listOf(h264, ac3), target(PlaybackTarget.Origin.DIRECT_PLANNED))!!
@@ -68,13 +70,25 @@ class PlaybackDiagnosticsTest {
     }
 
     @Test fun decoderInitFailureIsNamedNotBlack() {
-        val msg = PlaybackDiagnostics.describeError("ERROR_CODE_DECODER_INIT_FAILED", "Decoder init failed: OMX.x", target(PlaybackTarget.Origin.DIRECT_PLANNED))
-        assertTrue(msg.startsWith("This phone has no working decoder for this file — asking the server for a phone-friendly stream"))
+        val msg = PlaybackDiagnostics.describeError(
+            "ERROR_CODE_DECODER_INIT_FAILED",
+            "Decoder init failed: OMX.x",
+            target(PlaybackTarget.Origin.DIRECT_PLANNED),
+        )
+        assertTrue(
+            msg.startsWith(
+                "This phone has no working decoder for this file — asking the server for a phone-friendly stream",
+            ),
+        )
         assertTrue(msg.contains("ERROR_CODE_DECODER_INIT_FAILED: Decoder init failed: OMX.x"))
     }
 
     @Test fun httpFailureIsNamed() {
-        val msg = PlaybackDiagnostics.describeError("ERROR_CODE_IO_BAD_HTTP_STATUS", null, target(PlaybackTarget.Origin.STREAM))
+        val msg = PlaybackDiagnostics.describeError(
+            "ERROR_CODE_IO_BAD_HTTP_STATUS",
+            null,
+            target(PlaybackTarget.Origin.STREAM),
+        )
         assertEquals("The node refused the stream (HTTP error).\nERROR_CODE_IO_BAD_HTTP_STATUS", msg)
     }
 }

@@ -25,7 +25,9 @@ object Epub {
         val title = tag(opf, "dc:title") ?: tag(opf, "title")
         val chapters = spine(opf).mapNotNull { idref ->
             val href = manifest[idref] ?: return@mapNotNull null
-            val doc = entries[resolve(baseDir, href.substringBefore('#'))]?.let { String(it, Charsets.UTF_8) } ?: return@mapNotNull null
+            val doc =
+                entries[resolve(baseDir, href.substringBefore('#'))]?.let { String(it, Charsets.UTF_8) }
+                    ?: return@mapNotNull null
             val text = stripHtml(doc)
             if (text.isBlank()) null else Chapter(heading(doc) ?: idref, text)
         }
@@ -85,8 +87,9 @@ object Epub {
         return parts.joinToString("/")
     }
 
-    private fun heading(html: String): String? =
-        RE_HEADING.find(html)?.groupValues?.get(2)?.let { stripHtml(it) }?.takeIf { it.isNotBlank() && it.length <= 120 }
+    private fun heading(html: String): String? = RE_HEADING.find(html)?.groupValues?.get(2)?.let {
+        stripHtml(it)
+    }?.takeIf { it.isNotBlank() && it.length <= 120 }
 
     private fun unescape(s: String): String = s
         .replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
@@ -96,16 +99,23 @@ object Epub {
     private fun attr(tag: String, name: String): String? =
         Regex("""\b$name\s*=\s*["']([^"']*)["']""", RegexOption.IGNORE_CASE).find(tag)?.groupValues?.get(1)
 
-    private fun tag(xml: String, name: String): String? =
-        Regex("""<$name\b[^>]*>(.*?)</$name>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)).find(xml)?.groupValues?.get(1)?.let { stripHtml(it) }
+    private fun tag(xml: String, name: String): String? = Regex(
+        """<$name\b[^>]*>(.*?)</$name>""",
+        setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL),
+    ).find(xml)?.groupValues?.get(1)?.let {
+        stripHtml(it)
+    }
 
     private val RE_ROOTFILE = Regex("""full-path\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
     private val RE_ITEM = Regex("""<item\b[^>]*>""", RegexOption.IGNORE_CASE)
     private val RE_SPINE = Regex("""<spine\b.*?</spine>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
     private val RE_ITEMREF = Regex("""<itemref\b[^>]*>""", RegexOption.IGNORE_CASE)
-    private val RE_HEADING = Regex("""<(h[1-3])\b[^>]*>(.*?)</\1>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-    private val RE_DROP = Regex("""<(script|style|head)\b.*?</\1>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
-    private val RE_BREAK = Regex("""<br\s*/?>|</(p|div|h[1-6]|li|tr|section|article|blockquote)>""", RegexOption.IGNORE_CASE)
+    private val RE_HEADING =
+        Regex("""<(h[1-3])\b[^>]*>(.*?)</\1>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+    private val RE_DROP =
+        Regex("""<(script|style|head)\b.*?</\1>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+    private val RE_BREAK =
+        Regex("""<br\s*/?>|</(p|div|h[1-6]|li|tr|section|article|blockquote)>""", RegexOption.IGNORE_CASE)
     private val RE_TAG = Regex("""<[^>]+>""")
     private val RE_BLANKS = Regex("""\n{3,}""")
     private val RE_NUMERIC = Regex("""&#(\d{1,6});""")

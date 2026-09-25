@@ -43,7 +43,9 @@ class GoDeviceStore(private val dir: File) {
 
     private fun metaField(key: String): String {
         val meta = File(dir, META_FILE)
-        require(meta.exists()) { "voidbind device store not found at ${meta.path} — is this box enrolled via `voidbind pair-join`?" }
+        require(meta.exists()) {
+            "voidbind device store not found at ${meta.path} — is this box enrolled via `voidbind pair-join`?"
+        }
         return JsonScan.stringField(meta.readText(), key)?.takeIf { it.isNotBlank() }
             ?: error("voidbind $META_FILE is missing '$key'")
     }

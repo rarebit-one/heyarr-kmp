@@ -69,7 +69,11 @@ class DevicePairingSteps(
                 keyring.saveAdmission(o.value)
                 PairingOutcome.Ready(o.value.op)
             } catch (e: Exception) {
-                PairingOutcome.Failed(PairingFailureKind.PROTOCOL, "The admission could not be stored: ${e.message}", "")
+                PairingOutcome.Failed(
+                    PairingFailureKind.PROTOCOL,
+                    "The admission could not be stored: ${e.message}",
+                    "",
+                )
             }
         }
     }

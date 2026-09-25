@@ -19,7 +19,8 @@ private class WorksTransport(private val response: HttpResponse) : HttpTransport
         lastAuth = headers["Authorization"]
         return if (url.contains("/api/v1/works")) response else HttpResponse(404, "")
     }
-    override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(405, "")
+    override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+        HttpResponse(405, "")
 }
 
 class CatalogClientTest {
@@ -90,7 +91,10 @@ class CatalogClientTest {
     }
 
     @Test fun posterUrlPrefersTheEmbedAndFallsBackToTheRedirect() {
-        assertEquals("$base/api/v1/blobs/blake3:33/content", Artwork.posterUrl("$base/", "w1", "/api/v1/blobs/blake3:33/content"))
+        assertEquals(
+            "$base/api/v1/blobs/blake3:33/content",
+            Artwork.posterUrl("$base/", "w1", "/api/v1/blobs/blake3:33/content"),
+        )
         assertEquals("https://cdn.example/p.jpg", Artwork.posterUrl(base, "w1", "https://cdn.example/p.jpg"))
         assertEquals("$base/api/v1/works/w%3A1/artwork", Artwork.posterUrl(base, "w:1", null))
         assertEquals("$base/api/v1/works/w1/artwork", Artwork.posterUrl(base, "w1", "  "))

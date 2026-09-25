@@ -41,9 +41,20 @@ class PlaybackUrlTest {
     }
 
     @Test fun blobContentUrlRefusesAnythingButABlake3Hash() {
-        for (bad in listOf("deadbeef", "blake3:DEADBEEF", "blake3:zz", "sha256:" + "a".repeat(64), "blake3:" + "a".repeat(63) + "/x"))
-            try { PlaybackClient.blobContentUrl("https://h.example", bad); throw AssertionError("accepted $bad") }
-            catch (e: IllegalArgumentException) { /* expected */ }
+        for (bad in listOf(
+            "deadbeef",
+            "blake3:DEADBEEF",
+            "blake3:zz",
+            "sha256:" + "a".repeat(64),
+            "blake3:" + "a".repeat(63) + "/x",
+        )) {
+            try {
+                PlaybackClient.blobContentUrl("https://h.example", bad)
+                throw AssertionError("accepted $bad")
+            } catch (
+                e: IllegalArgumentException,
+            ) { /* expected */ }
+        }
     }
 
     @Test fun playbackUrl() {
@@ -62,6 +73,8 @@ class PlaybackUrlTest {
     @Test fun probeReportsNoRangeSupportOn200() {
         val t = RangeTransport(status = 200)
         val client = PlaybackClient(t, "https://h.example", Credential.Session("tok"))
-        assertTrue(!client.probe("blake3:a617353faeec5b99c042ceb349976d8171e5b7efc6fb1924fbc8b0d605ad8c9e").acceptsRanges)
+        assertTrue(
+            !client.probe("blake3:a617353faeec5b99c042ceb349976d8171e5b7efc6fb1924fbc8b0d605ad8c9e").acceptsRanges,
+        )
     }
 }

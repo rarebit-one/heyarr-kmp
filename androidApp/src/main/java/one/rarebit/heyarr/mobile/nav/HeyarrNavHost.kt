@@ -227,8 +227,12 @@ fun HeyarrNavHost(
     val currentSection = Decisions.section(currentRoute)
     val focusType = when (val r = currentRoute) {
         is Route.Detail -> holder.details[r.workId]?.detail?.kind?.let { MediaType.from(it) } ?: r.typeHint
-        Route.Player -> video.current?.kind?.let { MediaType.from(it) } ?: if (audioState.item != null) MediaType.MUSIC else MediaType.MOVIE
+
+        Route.Player -> video.current?.kind?.let { MediaType.from(it) }
+            ?: if (audioState.item != null) MediaType.MUSIC else MediaType.MOVIE
+
         Route.Playlists, is Route.Playlist -> MediaType.MUSIC
+
         else -> MediaType.MOVIE
     }
     val shellTheme = if (session.appearance.adaptiveAccents) MediaThemes.of(focusType) else MediaThemes.default
@@ -236,7 +240,14 @@ fun HeyarrNavHost(
     // Encrypted personal state (playlists, starred, history), decrypted on-device.
     val personalActions: PersonalActionsViewModel = viewModel(
         key = "personal:${env.key}",
-        factory = viewModelFactory { initializer { PersonalActionsViewModel(vm.personalState(env.baseUrl, env.credential), LibraryClient(env.transport, env.baseUrl, env.credential)) } },
+        factory = viewModelFactory {
+            initializer {
+                PersonalActionsViewModel(
+                    vm.personalState(env.baseUrl, env.credential),
+                    LibraryClient(env.transport, env.baseUrl, env.credential),
+                )
+            }
+        },
     )
     val starredIds by personalActions.starredIds.collectAsStateWithLifecycle()
     val starredWorks by personalActions.starredWorks.collectAsStateWithLifecycle()
@@ -249,7 +260,15 @@ fun HeyarrNavHost(
         starredIds = starredIds,
         // A work card's id is a bare work id — i.e. ItemRef.work(id).encode() — so it round-trips as-is.
         onToggleStar = if (personalActions.enabled) ({ w: Work -> personalActions.toggleStar(w.id) }) else null,
-        onAddToPlaylist = if (personalActions.enabled) ({ w: Work -> personalActions.openAddToPlaylist(w.id) }) else null,
+        onAddToPlaylist = if (personalActions.enabled) {
+            (
+                { w: Work ->
+                    personalActions.openAddToPlaylist(w.id)
+                }
+                )
+        } else {
+            null
+        },
         onOpenPlaylists = if (personalActions.enabled) ({ navController.navigate(Route.Playlists) }) else null,
     )
     // Per-track / per-file ★ and Add-to-playlist for the detail screen (issue #41); ids arrive already
@@ -285,7 +304,14 @@ fun HeyarrNavHost(
             asset.blobHash?.let { hash ->
                 personalActions.recordPlay(work.id)
                 audio.stop()
-                context.startActivity(ReaderActivity.intent(context, asset.id, PlaybackClient.blobContentUrl(env.baseUrl, hash), work.title))
+                context.startActivity(
+                    ReaderActivity.intent(
+                        context,
+                        asset.id,
+                        PlaybackClient.blobContentUrl(env.baseUrl, hash),
+                        work.title,
+                    ),
+                )
             }
         },
     )
@@ -310,7 +336,8 @@ fun HeyarrNavHost(
             audio.playQueue(items, 0)
         }
     }
-    fun go(section: one.rarebit.heyarr.mobile.ui.components.NavSection) = navController.navigateTab(Decisions.routeOf(section))
+    fun go(section: one.rarebit.heyarr.mobile.ui.components.NavSection) =
+        navController.navigateTab(Decisions.routeOf(section))
     fun open(route: Route) = navController.navigate(route)
     fun back() {
         navController.popBackStack()
@@ -340,8 +367,14 @@ fun HeyarrNavHost(
                         if (!fullScreen) {
                             Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
                                 when (session.connection) {
-                                    Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.baseUrl, onRetry = { scope.launch { session.probe() } }, onSettings = { go(one.rarebit.heyarr.mobile.ui.components.NavSection.SETTINGS) })
-                                    Connection.UNAUTHORIZED -> OfflineBanner("heyarr refused the credential", "Sign in again, or re-check this device's authorisation in Settings.", onRetry = { scope.launch { session.probe() } }, onSettings = { go(one.rarebit.heyarr.mobile.ui.components.NavSection.SETTINGS) })
+                                    Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.baseUrl, onRetry = {
+                                        scope.launch { session.probe() }
+                                    }, onSettings = { go(one.rarebit.heyarr.mobile.ui.components.NavSection.SETTINGS) })
+
+                                    Connection.UNAUTHORIZED -> OfflineBanner("heyarr refused the credential", "Sign in again, or re-check this device's authorisation in Settings.", onRetry = {
+                                        scope.launch { session.probe() }
+                                    }, onSettings = { go(one.rarebit.heyarr.mobile.ui.components.NavSection.SETTINGS) })
+
                                     else -> {}
                                 }
                             }
@@ -349,26 +382,116 @@ fun HeyarrNavHost(
                         Box(Modifier.weight(1f)) {
                             val content = Modifier.fillMaxSize()
                             NavHost(navController = navController, startDestination = Route.Home) {
-                                composable<Route.Home> { HomeScreen(session, holder.home, ::open, onWant, onPlayContinue = { e -> e.blobHash?.let { vm.playback.playFile(e.workTitle + (e.subtitle?.let { s -> " — $s" } ?: ""), e.assetId, it, e.mime, e.contentType, startSeconds = e.positionSeconds, artworkUrl = e.artworkPath?.let { p -> one.rarebit.heyarr.mobile.heyarr.HeyarrApi.blobUrlFromPath(env.baseUrl, p) }) } }, modifier = content, personal = personalRows, onSignInToSave = onSignInToSave) }
-                                composable<Route.Discover> { HomeScreen(session, holder.home, ::open, onWant, onPlayContinue = { e -> e.blobHash?.let { vm.playback.playFile(e.workTitle, e.assetId, it, e.mime, e.contentType, startSeconds = e.positionSeconds) } }, modifier = content, discover = true, personal = personalRows, onSignInToSave = onSignInToSave) }
-                                composable<Route.Search> {
-                                    SearchScreen(session, holder.search, ::open, onWant, onPlayEpisode = { ep -> ep.blobHash?.let { vm.playback.playFile("${ep.workTitle ?: ""} — ${ep.title}".trimStart(' ', '—'), ep.assetId ?: ep.id, it, ep.mime, ep.contentType ?: "series") } }, modifier = content)
+                                composable<Route.Home> {
+                                    HomeScreen(session, holder.home, ::open, onWant, onPlayContinue = { e ->
+                                        e.blobHash?.let {
+                                            vm.playback.playFile(
+                                                e.workTitle + (
+                                                    e.subtitle?.let { s ->
+                                                        " — $s"
+                                                    } ?: ""
+                                                    ),
+                                                e.assetId,
+                                                it,
+                                                e.mime,
+                                                e.contentType,
+                                                startSeconds = e.positionSeconds,
+                                                artworkUrl = e.artworkPath?.let { p ->
+                                                    one.rarebit.heyarr.mobile.heyarr.HeyarrApi.blobUrlFromPath(
+                                                        env.baseUrl,
+                                                        p,
+                                                    )
+                                                },
+                                            )
+                                        }
+                                    }, modifier = content, personal = personalRows, onSignInToSave = onSignInToSave)
                                 }
-                                composable<Route.Library> { LibraryScreen(session, holder.library, ::open, onWant, modifier = content, onPlaylists = if (personalActions.enabled) ({ open(Route.Playlists) }) else null) }
-                                composable<Route.Missing> { MissingScreen(session, holder.missing, ::open, onWantTitle = { if (session.isGuest) signInPrompt = "want" else want = WantRequest(null, "") }, modifier = content) }
+                                composable<Route.Discover> {
+                                    HomeScreen(session, holder.home, ::open, onWant, onPlayContinue = { e ->
+                                        e.blobHash?.let {
+                                            vm.playback.playFile(
+                                                e.workTitle,
+                                                e.assetId,
+                                                it,
+                                                e.mime,
+                                                e.contentType,
+                                                startSeconds = e.positionSeconds,
+                                            )
+                                        }
+                                    }, modifier = content, discover = true, personal = personalRows, onSignInToSave = onSignInToSave)
+                                }
+                                composable<Route.Search> {
+                                    SearchScreen(session, holder.search, ::open, onWant, onPlayEpisode = { ep ->
+                                        ep.blobHash?.let {
+                                            vm.playback.playFile(
+                                                "${ep.workTitle ?: ""} — ${ep.title}".trimStart(' ', '—'),
+                                                ep.assetId ?: ep.id,
+                                                it,
+                                                ep.mime,
+                                                ep.contentType ?: "series",
+                                            )
+                                        }
+                                    }, modifier = content)
+                                }
+                                composable<Route.Library> {
+                                    LibraryScreen(
+                                        session,
+                                        holder.library,
+                                        ::open,
+                                        onWant,
+                                        modifier = content,
+                                        onPlaylists = if (personalActions.enabled) {
+                                            (
+                                                {
+                                                    open(Route.Playlists)
+                                                }
+                                                )
+                                        } else {
+                                            null
+                                        },
+                                    )
+                                }
+                                composable<Route.Missing> {
+                                    MissingScreen(session, holder.missing, ::open, onWantTitle = {
+                                        if (session.isGuest) {
+                                            signInPrompt =
+                                                "want"
+                                        } else {
+                                            want = WantRequest(null, "")
+                                        }
+                                    }, modifier = content)
+                                }
                                 composable<Route.Cast> { CastScreen(session, holder.cast, modifier = content) }
                                 composable<Route.Settings> {
                                     SettingsScreen(
                                         session, holder.settingsState, config, authority,
                                         onSaveConnection = vm::updateSettings, onResetConnection = vm::resetSettings, onSignOut = vm::signOut,
                                         onTelemetry = { open(Route.Telemetry) }, onDevice = { open(Route.Device) },
-                                        onSourcesChanged = { holder.search.invalidateSources() }, modifier = content, deviceSummary = deviceSummary,
+                                        onSourcesChanged = {
+                                            holder.search.invalidateSources()
+                                        }, modifier = content, deviceSummary = deviceSummary,
                                         isGuest = session.isGuest, onSignInToSave = onSignInToSave,
-                                        onDiscover = { vm.discoverAndSave { found -> session.toast(Toast.Kind.INFO, "Discovered a node (${found.source.name.lowercase()})", found.baseUrl) } },
+                                        onDiscover = {
+                                            vm.discoverAndSave { found ->
+                                                session.toast(
+                                                    Toast.Kind.INFO,
+                                                    "Discovered a node (${found.source.name.lowercase()})",
+                                                    found.baseUrl,
+                                                )
+                                            }
+                                        },
                                     )
                                 }
                                 composable<Route.Telemetry> {
-                                    TelemetryScreen(session, holder.telemetry, credentialSummary = credential.javaClass.simpleName.lowercase() + " credential, re-stamped per request", onBack = ::back, modifier = content)
+                                    TelemetryScreen(
+                                        session,
+                                        holder.telemetry,
+                                        credentialSummary =
+                                        credential.javaClass.simpleName.lowercase() +
+                                            " credential, re-stamped per request",
+                                        onBack = ::back,
+                                        modifier = content,
+                                    )
                                 }
                                 composable<Route.Device> {
                                     EnrolScreen(
@@ -384,12 +507,30 @@ fun HeyarrNavHost(
                                 }
                                 composable<Route.Detail> { entry ->
                                     val route = entry.toRoute<Route.Detail>()
-                                    DetailScreen(session, route, holder.detail(route.workId), play, onBack = ::back, onOpen = ::open, onWant = onWant, modifier = content, personal = detailPersonal)
+                                    DetailScreen(
+                                        session, route,
+                                        holder.detail(
+                                            route.workId,
+                                        ),
+                                        play, onBack = ::back, onOpen = ::open, onWant = onWant, modifier = content, personal = detailPersonal,
+                                    )
                                 }
                                 composable<Route.Playlists> {
-                                    val plVm: PlaylistsViewModel = viewModel(key = "playlists:${env.key}", factory = viewModelFactory { initializer { PlaylistsViewModel(vm.personalState(env.baseUrl, env.credential)) } })
+                                    val plVm: PlaylistsViewModel =
+                                        viewModel(
+                                            key = "playlists:${env.key}",
+                                            factory = viewModelFactory {
+                                                initializer {
+                                                    PlaylistsViewModel(vm.personalState(env.baseUrl, env.credential))
+                                                }
+                                            },
+                                        )
                                     val plState by plVm.state.collectAsStateWithLifecycle()
-                                    PlaylistsScreen(state = plState, onOpen = { sid, name -> open(Route.Playlist(sid, name)) }, onCreate = { name -> plVm.create(name) { sid -> open(Route.Playlist(sid, name)) } }, onBack = ::back, modifier = content)
+                                    PlaylistsScreen(state = plState, onOpen = { sid, name ->
+                                        open(Route.Playlist(sid, name))
+                                    }, onCreate = { name ->
+                                        plVm.create(name) { sid -> open(Route.Playlist(sid, name)) }
+                                    }, onBack = ::back, modifier = content)
                                 }
                                 composable<Route.Playlist> { entry ->
                                     val r = entry.toRoute<Route.Playlist>()
@@ -397,13 +538,35 @@ fun HeyarrNavHost(
                                     if (ps == null) {
                                         LaunchedEffect(Unit) { back() }
                                     } else {
-                                        val plVm: PlaylistViewModel = viewModel(key = "playlist:${r.spaceId}:${env.key}", factory = viewModelFactory { initializer { PlaylistViewModel(r.spaceId, r.title, ps, LibraryClient(env.transport, env.baseUrl, env.credential)) } })
+                                        val plVm: PlaylistViewModel =
+                                            viewModel(
+                                                key = "playlist:${r.spaceId}:${env.key}",
+                                                factory = viewModelFactory {
+                                                    initializer {
+                                                        PlaylistViewModel(
+                                                            r.spaceId,
+                                                            r.title,
+                                                            ps,
+                                                            LibraryClient(env.transport, env.baseUrl, env.credential),
+                                                        )
+                                                    }
+                                                },
+                                            )
                                         val st by plVm.state.collectAsStateWithLifecycle()
                                         PlaylistScreen(
                                             state = st,
                                             onBack = ::back,
                                             onPlayAll = playPlaylist,
-                                            onOpenWork = { w -> open(detailRoute(w.id, MediaType.from(w.kind), w.title, from = "Library")) },
+                                            onOpenWork = { w ->
+                                                open(
+                                                    detailRoute(
+                                                        w.id,
+                                                        MediaType.from(w.kind),
+                                                        w.title,
+                                                        from = "Library",
+                                                    ),
+                                                )
+                                            },
                                             onRemove = plVm::remove,
                                             onRename = plVm::rename,
                                             modifier = content,
@@ -417,7 +580,16 @@ fun HeyarrNavHost(
                                             video,
                                             holder.player,
                                             onBack = ::back,
-                                            onNext = { e -> vm.playback.playFile(e.title, e.assetId, e.blobHash, e.mime, e.kind, artworkUrl = video.current?.artworkUrl) },
+                                            onNext = { e ->
+                                                vm.playback.playFile(
+                                                    e.title,
+                                                    e.assetId,
+                                                    e.blobHash,
+                                                    e.mime,
+                                                    e.kind,
+                                                    artworkUrl = video.current?.artworkUrl,
+                                                )
+                                            },
                                             onStop = {
                                                 vm.playback.stop()
                                                 back()
@@ -449,7 +621,18 @@ fun HeyarrNavHost(
                                 onAudioNext = audio::next,
                                 onAudioSeek = audio::seekTo,
                                 onAudioStop = audio::stop,
-                                onVideoNext = video.next()?.let { e -> { vm.playback.playFile(e.title, e.assetId, e.blobHash, e.mime, e.kind, artworkUrl = video.current?.artworkUrl) } },
+                                onVideoNext = video.next()?.let { e ->
+                                    {
+                                        vm.playback.playFile(
+                                            e.title,
+                                            e.assetId,
+                                            e.blobHash,
+                                            e.mime,
+                                            e.kind,
+                                            artworkUrl = video.current?.artworkUrl,
+                                        )
+                                    }
+                                },
                             )
                         }
                         if (!wide && !fullScreen) HeyarrBottomBar(currentSection, onGo = ::go)
@@ -498,7 +681,11 @@ fun HeyarrNavHost(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GuestUpsellSheet(onSignIn: () -> Unit, onDismiss: () -> Unit) {
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Tokens.surface1, contentColor = Tokens.textPrimary) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Tokens.surface1,
+        contentColor = Tokens.textPrimary,
+    ) {
         Column(
             Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 24.dp).navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp),

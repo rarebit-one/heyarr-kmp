@@ -18,11 +18,7 @@ import java.net.URLEncoder
  *
  * Adapted from heyarr-mobile's `music.MusicClient` (trimmed to the desktop browse slice).
  */
-class MusicClient(
-    private val http: HttpTransport,
-    private val baseUrl: String,
-    private val credential: Credential,
-) {
+class MusicClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
     /** Every music artist, name-ordered as the server pages them. */
     fun listArtists(): List<Grouping> = pageAll(
         url = { cursor -> artistsUrl(baseUrl, cursor) },

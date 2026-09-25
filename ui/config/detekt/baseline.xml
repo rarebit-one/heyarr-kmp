@@ -104,12 +104,6 @@
     <ID>MagicNumber:Tokens.kt$Tokens$0xFFF5A524</ID>
     <ID>MagicNumber:Tokens.kt$Tokens$0xFFF5C518</ID>
     <ID>MatchingDeclarationName:Table.kt$TableColumn</ID>
-    <ID>MaxLineLength:ArchiveGlyph.kt$if (cell == '1') drawRect(color.copy(alpha = 0.8f), Offset((i % 5) * step, (i / 5) * step), Size(step * .7f, step * .7f))</ID>
-    <ID>MaxLineLength:ArchiveGlyph.kt$val frames = listOf("0010001110111110111000100", "1111110001101011000111111", "1000110001111111000110001", "0010000100111110010000100")</ID>
-    <ID>MaxLineLength:ArchiveGlyph.kt$val value by transition.animateFloat(0f, 4f, infiniteRepeatable(tween(3200, easing = LinearEasing)), label = "glyph phase")</ID>
-    <ID>MaxLineLength:MediaThemeTest.kt$MediaThemeTest$assertTrue(ratio(t.onAccent, t.ctaGradientStart) &gt;= 4.5, "${t.type.name} start ${ratio(t.onAccent, t.ctaGradientStart)}")</ID>
-    <ID>MaxLineLength:MediaThemes.kt$MediaThemes$ctaLabel = "Play episode"</ID>
-    <ID>MaxLineLength:MediaThemes.kt$MediaThemes$ctaLabel = "Read"</ID>
     <ID>MaxLineLength:Tokens.kt$Tokens$*</ID>
     <ID>TooManyFunctions:Primitives.kt$one.rarebit.heyarr.ui.components.Primitives.kt</ID>
   </CurrentIssues>

@@ -38,6 +38,9 @@ class RecentSearches(private val file: File, private val max: Int = 8) {
     }
 
     companion object {
-        fun defaultFile(): File = File(one.rarebit.heyarr.desktop.settings.FileSettingsStore.defaultConfigFile().parentFile, "recent-searches.json")
+        fun defaultFile(): File = File(
+            one.rarebit.heyarr.desktop.settings.FileSettingsStore.defaultConfigFile().parentFile,
+            "recent-searches.json",
+        )
     }
 }

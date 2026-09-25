@@ -20,10 +20,7 @@ import one.rarebit.voidbind.crypto.MiniJson
  *    which a guest / read-only session never has; surfaced for an operator when the
  *    self-enrol route is absent.
  */
-class EnrolClient(
-    private val http: HttpTransport,
-    private val baseUrl: String,
-) {
+class EnrolClient(private val http: HttpTransport, private val baseUrl: String) {
     sealed interface Outcome {
         /** The node accepted the admission (self-enrol, or the admin route). */
         data class Registered(val via: String, val recoveryEncryptionKey: String? = null) : Outcome
@@ -41,11 +38,16 @@ class EnrolClient(
         credential: Credential?,
         ops: List<String> = emptyList(),
     ): Outcome {
-        var self = runCatching { http.post(selfEnrolUrl(baseUrl), selfBody(certToken, proof, name, ops), "application/json") }
+        var self = runCatching {
+            http.post(selfEnrolUrl(baseUrl), selfBody(certToken, proof, name, ops), "application/json")
+        }
             .getOrElse { return Outcome.Failed("self-enrol: ${it.message}") }
         if (self.status == 400 && ops.isNotEmpty()) {
-            self = runCatching { http.post(selfEnrolUrl(baseUrl), selfBody(certToken, proof, name, emptyList()), "application/json") }
-                .getOrElse { return Outcome.Failed("self-enrol: ${it.message}") }
+            self =
+                runCatching {
+                    http.post(selfEnrolUrl(baseUrl), selfBody(certToken, proof, name, emptyList()), "application/json")
+                }
+                    .getOrElse { return Outcome.Failed("self-enrol: ${it.message}") }
         }
         when (self.status) {
             200, 201, 204 -> return Outcome.Registered("POST /enrol", recoveryKey(self.body))
@@ -56,7 +58,11 @@ class EnrolClient(
             else -> return Outcome.Failed(problem(self.body, self.status, "self-enrol"))
         }
 
-        if (credential == null || credential is Credential.Guest) return Outcome.NeedsAdmin("this node has no /enrol route")
+        if (credential == null ||
+            credential is Credential.Guest
+        ) {
+            return Outcome.NeedsAdmin("this node has no /enrol route")
+        }
         val adminBody = MiniJson.encodeObject(listOf("cert" to certToken, "name" to name))
         val admin = runCatching {
             http.post(

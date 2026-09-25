@@ -33,10 +33,8 @@ class KeychainSecretStoreTest {
     }
 
     /** An in-memory [KeychainBackend] standing in for macOS Keychain / libsecret. */
-    private class FakeKeychain(
-        private val available: Boolean = true,
-        private val writable: Boolean = true,
-    ) : KeychainBackend {
+    private class FakeKeychain(private val available: Boolean = true, private val writable: Boolean = true) :
+        KeychainBackend {
         val items = HashMap<String, ByteArray>()
         override val label = "fake"
         override fun isAvailable() = available

@@ -57,7 +57,10 @@ fun main() {
                 // The real desktop entry point turns on device enrolment ("Sign in to save"):
                 // a filesystem-backed device key store + the voidbind pairing coordinator.
                 enableDeviceEnrol = true,
-                onFullscreen = { on -> state.placement = if (on) WindowPlacement.Fullscreen else WindowPlacement.Floating },
+                onFullscreen = { on ->
+                    state.placement =
+                        if (on) WindowPlacement.Fullscreen else WindowPlacement.Floating
+                },
             )
         }
     }

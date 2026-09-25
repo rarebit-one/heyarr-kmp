@@ -26,9 +26,7 @@ import com.sun.jna.ptr.PointerByReference
  * CoreFoundation refs created here (`CFString`, `CFData`, the query `CFDictionary`) are
  * released in `finally`; a returned `CFData` from a copy is released after its bytes are read.
  */
-internal class MacKeychainBackend(
-    private val service: String = KeychainSecretStore.SERVICE,
-) : KeychainBackend {
+internal class MacKeychainBackend(private val service: String = KeychainSecretStore.SERVICE) : KeychainBackend {
 
     override val label = "macOS Keychain"
 
@@ -154,7 +152,12 @@ internal class MacKeychainBackend(
 private interface CoreFoundation : Library {
     fun CFStringCreateWithCString(alloc: Pointer?, cStr: ByteArray, encoding: Int): Pointer?
     fun CFDataCreate(alloc: Pointer?, bytes: ByteArray, length: NativeLong): Pointer?
-    fun CFDictionaryCreateMutable(alloc: Pointer?, capacity: NativeLong, keyCallBacks: Pointer?, valueCallBacks: Pointer?): Pointer?
+    fun CFDictionaryCreateMutable(
+        alloc: Pointer?,
+        capacity: NativeLong,
+        keyCallBacks: Pointer?,
+        valueCallBacks: Pointer?,
+    ): Pointer?
     fun CFDictionaryAddValue(theDict: Pointer, key: Pointer, value: Pointer)
     fun CFRelease(cf: Pointer)
     fun CFDataGetLength(theData: Pointer): NativeLong
@@ -184,7 +187,9 @@ private fun cfConst(name: String): Pointer = CF_LIB.getGlobalVariableAddress(nam
 
 /** `const CFDictionaryKeyCallBacks X` — pass the ADDRESS of the struct itself (no deref). */
 private val CF_DICT_KEY_CALLBACKS: Pointer by lazy { CF_LIB.getGlobalVariableAddress("kCFTypeDictionaryKeyCallBacks") }
-private val CF_DICT_VALUE_CALLBACKS: Pointer by lazy { CF_LIB.getGlobalVariableAddress("kCFTypeDictionaryValueCallBacks") }
+private val CF_DICT_VALUE_CALLBACKS: Pointer by lazy {
+    CF_LIB.getGlobalVariableAddress("kCFTypeDictionaryValueCallBacks")
+}
 
 private val kSecClass by lazy { secConst("kSecClass") }
 private val kSecClassGenericPassword by lazy { secConst("kSecClassGenericPassword") }
@@ -198,10 +203,9 @@ private val kSecAttrAccessible by lazy { secConst("kSecAttrAccessible") }
 private val kSecAttrAccessibleWhenUnlocked by lazy { secConst("kSecAttrAccessibleWhenUnlocked") }
 private val kCFBooleanTrue by lazy { cfConst("kCFBooleanTrue") }
 
-private fun cfString(s: String): Pointer {
-    return CF.CFStringCreateWithCString(null, nulTerminated(s), K_CF_STRING_ENCODING_UTF8)
+private fun cfString(s: String): Pointer =
+    CF.CFStringCreateWithCString(null, nulTerminated(s), K_CF_STRING_ENCODING_UTF8)
         ?: error("CFStringCreateWithCString returned null")
-}
 
 /** UTF-8 bytes of [s] with a trailing NUL — CFStringCreateWithCString wants a C string. */
 private fun nulTerminated(s: String): ByteArray {

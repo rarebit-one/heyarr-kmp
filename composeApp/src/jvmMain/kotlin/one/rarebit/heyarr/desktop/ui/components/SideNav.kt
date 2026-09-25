@@ -91,16 +91,50 @@ private val RAIL_LABEL: androidx.compose.ui.text.TextStyle
  * gets a tinted tile in the accent of the media in focus.
  */
 @Composable
-fun SideNav(current: Route, onGo: (Route) -> Unit, connection: Connection, compact: Boolean = false, modifier: Modifier = Modifier, connectionDetail: String? = null, onConnection: () -> Unit = {}, consuming: Boolean = false) {
+fun SideNav(
+    current: Route,
+    onGo: (Route) -> Unit,
+    connection: Connection,
+    compact: Boolean = false,
+    modifier: Modifier = Modifier,
+    connectionDetail: String? = null,
+    onConnection: () -> Unit = {},
+    consuming: Boolean = false,
+) {
     val theme = LocalMediaTheme.current
     Column(
-        modifier.fillMaxHeight().width(Tokens.navWidth).background(Tokens.surface1).padding(vertical = 14.dp, horizontal = 8.dp),
+        modifier.fillMaxHeight().width(
+            Tokens.navWidth,
+        ).background(Tokens.surface1).padding(vertical = 14.dp, horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         one.rarebit.heyarr.ui.components.ArchiveMark(Modifier.padding(4.dp))
         Spacer(Modifier.height(14.dp))
-        for (item in if (consuming) CONSUME_ITEMS + NAV_ITEMS.filter { it.route == Route.Settings || it.route == Route.NowPlaying } else NAV_ITEMS) RailItem(item, active = (if (current == Route.Discover) Route.Search else current).section == item.route.section, accent = theme.accent, accentEnd = theme.accentGradientEnd) { onGo(item.route) }
+        for (item in if (consuming) {
+            CONSUME_ITEMS +
+                NAV_ITEMS.filter { it.route == Route.Settings || it.route == Route.NowPlaying }
+        } else {
+            NAV_ITEMS
+        }) {
+            RailItem(
+                item,
+                active =
+                (
+                    if (current ==
+                        Route.Discover
+                    ) {
+                        Route.Search
+                    } else {
+                        current
+                    }
+                    ).section == item.route.section,
+                accent = theme.accent,
+                accentEnd = theme.accentGradientEnd,
+            ) {
+                onGo(item.route)
+            }
+        }
         Spacer(Modifier.weight(1f))
         ConnectionTile(connection, connectionDetail, onConnection)
     }
@@ -134,10 +168,28 @@ private fun RailItem(item: NavItem, active: Boolean, accent: Color, accentEnd: C
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.size(44.dp).focusRing(interaction, shape).background(tile, shape).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.size(
+                44.dp,
+            ).focusRing(
+                interaction,
+                shape,
+            ).background(
+                tile,
+                shape,
+            ).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape),
+            contentAlignment = Alignment.Center,
+        ) {
             Icon(item.icon, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))
         }
-        Text(item.label.uppercase(), style = RAIL_LABEL, color = if (active) accentEnd else Tokens.textMuted, textAlign = TextAlign.Center, maxLines = 1, softWrap = false)
+        Text(
+            item.label.uppercase(),
+            style = RAIL_LABEL,
+            color = if (active) accentEnd else Tokens.textMuted,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
 
@@ -157,15 +209,39 @@ private fun ConnectionTile(connection: Connection, detail: String?, onClick: () 
             .background(if (hovered) Tokens.surface2 else Color.Transparent, RoundedCornerShape(Tokens.radiusButton))
             .hoverable(interaction)
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
-            .semantics { this.contentDescription = "heyarr connection: $label${detail?.let { ", $it" } ?: ""}. Open connection details" }
+            .semantics {
+                this.contentDescription =
+                    "heyarr connection: $label${detail?.let { ", $it" } ?: ""}. Open connection details"
+            }
             .padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.size(36.dp).focusRing(interaction, RectangleShape).background(Tokens.surface2, RectangleShape).border(Tokens.hairline, tone.copy(alpha = 0.6f), RectangleShape), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.size(
+                36.dp,
+            ).focusRing(
+                interaction,
+                RectangleShape,
+            ).background(
+                Tokens.surface2,
+                RectangleShape,
+            ).border(Tokens.hairline, tone.copy(alpha = 0.6f), RectangleShape),
+            contentAlignment = Alignment.Center,
+        ) {
             Box(Modifier.size(10.dp).background(tone, RectangleShape))
         }
         Text(label.uppercase(), style = RAIL_LABEL, color = tone, maxLines = 1, softWrap = false)
-        if (detail != null) Text(detail.substringBefore(" ·"), style = RAIL_LABEL.copy(letterSpacing = 0.2.sp, fontWeight = FontWeight.Normal), color = Tokens.textDisabled, maxLines = 1, softWrap = false)
+        if (detail !=
+            null
+        ) {
+            Text(
+                detail.substringBefore(" ·"),
+                style = RAIL_LABEL.copy(letterSpacing = 0.2.sp, fontWeight = FontWeight.Normal),
+                color = Tokens.textDisabled,
+                maxLines = 1,
+                softWrap = false,
+            )
+        }
     }
 }

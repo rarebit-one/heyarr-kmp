@@ -109,25 +109,32 @@ class MainActivity : FragmentActivity() {
     }
 
     /** The `heyarr-mobile://pair` handoff, if this intent is one; null for anything else. */
-    private fun routeLink(intent: Intent?): LinkedInvite? = when (val r = PairDeepLink.route(intent?.action, intent?.dataString)) {
-        is PairDeepLink.Invite -> LinkedInvite(r.inviteQr, null, ++linkSeq)
+    private fun routeLink(intent: Intent?): LinkedInvite? =
+        when (val r = PairDeepLink.route(intent?.action, intent?.dataString)) {
+            is PairDeepLink.Invite -> LinkedInvite(r.inviteQr, null, ++linkSeq)
 
-        is PairDeepLink.Invalid -> LinkedInvite(null, r.message, ++linkSeq)
+            is PairDeepLink.Invalid -> LinkedInvite(null, r.message, ++linkSeq)
 
-        // The one-tap return leg (voidbind-kmp ADR-0008): nothing to join, nothing to
-        // trust — just bring the human back to the Device screen, where the app-scoped
-        // pairing has (or is about to have) reached Enrolled on its own. A refusal is
-        // the one thing it can add: Cruciform's verdict, so the wait ends now.
-        is PairDeepLink.Done -> LinkedInvite(
-            null,
-            null,
-            ++linkSeq,
-            done = true,
-            refusal = if (r.refused && r.session != null) r.session to (r.reason ?: "the report did not match the relay.") else null,
-        )
+            // The one-tap return leg (voidbind-kmp ADR-0008): nothing to join, nothing to
+            // trust — just bring the human back to the Device screen, where the app-scoped
+            // pairing has (or is about to have) reached Enrolled on its own. A refusal is
+            // the one thing it can add: Cruciform's verdict, so the wait ends now.
+            is PairDeepLink.Done -> LinkedInvite(
+                null,
+                null,
+                ++linkSeq,
+                done = true,
+                refusal = if (r.refused &&
+                    r.session != null
+                ) {
+                    r.session to (r.reason ?: "the report did not match the relay.")
+                } else {
+                    null
+                },
+            )
 
-        null -> null
-    }
+            null -> null
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -289,7 +296,10 @@ class MainActivity : FragmentActivity() {
 
                         // Guest-as-default: the browsing shell is what the app opens on, whether
                         // signed in or browsing anonymously. "Sign in to save" raises showLogin.
-                        else -> HeyarrNavHost(vm = vm, graph = app.graph, focusDevice = focusDevice, onSignInToSave = { showLogin = true })
+                        else -> HeyarrNavHost(vm = vm, graph = app.graph, focusDevice = focusDevice, onSignInToSave = {
+                            showLogin =
+                                true
+                        })
                     }
                 }
             }
@@ -313,15 +323,33 @@ private fun PreLoginScreen(
 ) {
     val frame = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.statusBars)
     Column(
-        (if (scroll) frame.verticalScroll(rememberScrollState()) else frame).padding(horizontal = Tokens.screenPadding, vertical = Tokens.s3),
+        (
+            if (scroll) {
+                frame.verticalScroll(
+                    rememberScrollState(),
+                )
+            } else {
+                frame
+            }
+            ).padding(horizontal = Tokens.screenPadding, vertical = Tokens.s3),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("heyarr", style = MaterialTheme.typography.headlineMedium, color = Tokens.textPrimary)
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Tokens.textMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
-            if (onSettings != null) IconButtonRound(Icons.Rounded.Settings, "Connection settings", onSettings, size = 40.dp)
+            if (onSettings !=
+                null
+            ) {
+                IconButtonRound(Icons.Rounded.Settings, "Connection settings", onSettings, size = 40.dp)
+            }
         }
         if (scroll) {
             content()

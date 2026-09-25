@@ -45,11 +45,7 @@ import com.google.mlkit.vision.common.InputImage
  * and renders [noPermission] if the user declines.
  */
 @Composable
-fun QrScanner(
-    onQr: (String) -> Boolean,
-    modifier: Modifier = Modifier,
-    noPermission: @Composable () -> Unit = {},
-) {
+fun QrScanner(onQr: (String) -> Boolean, modifier: Modifier = Modifier, noPermission: @Composable () -> Unit = {}) {
     val context = LocalContext.current
     var granted by remember {
         mutableStateOf(

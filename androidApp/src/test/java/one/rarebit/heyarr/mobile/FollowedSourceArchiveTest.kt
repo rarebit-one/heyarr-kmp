@@ -19,7 +19,10 @@ class FollowedSourceArchiveTest {
     @Test fun buildsTheRoutes() {
         assertEquals("$base/api/v1/followed-sources/s1", FollowedSourceClient.sourceUrl(base, "s1"))
         assertEquals("$base/api/v1/followed-sources/s1/items?limit=200", FollowedSourceClient.itemsUrl(base, "s1"))
-        assertEquals("$base/api/v1/followed-sources/s1/items?limit=200&cursor=c%2F2", FollowedSourceClient.itemsUrl(base, "s1", "c/2"))
+        assertEquals(
+            "$base/api/v1/followed-sources/s1/items?limit=200&cursor=c%2F2",
+            FollowedSourceClient.itemsUrl(base, "s1", "c/2"),
+        )
     }
 
     @Test fun parsesItemsWithAndWithoutAProjectedWant() {
@@ -40,7 +43,11 @@ class FollowedSourceArchiveTest {
     @Test fun sourceReadReturnsGoneOn404AndFoundOn200() {
         val t = RoutedTransport(
             mapOf(
-                "GET /followed-sources/s1" to HttpResponse(200, """{"id":"s1","work_id":"w1","title":"Show","type":"tv_series","feed_ref":"tvdb:1","quality_profile_id":"qp","monitor":true,"backfill":"from_now","items_known":3,"items_archived":2,"health":"healthy","created_at":"x"}"""),
+                "GET /followed-sources/s1" to
+                    HttpResponse(
+                        200,
+                        """{"id":"s1","work_id":"w1","title":"Show","type":"tv_series","feed_ref":"tvdb:1","quality_profile_id":"qp","monitor":true,"backfill":"from_now","items_known":3,"items_archived":2,"health":"healthy","created_at":"x"}""",
+                    ),
             ),
         )
         val c = FollowedSourceClient(t, base, cred)
@@ -53,8 +60,10 @@ class FollowedSourceArchiveTest {
     @Test fun itemsPagesToTheEnd() {
         val t = RoutedTransport(
             mapOf(
-                "GET /followed-sources/s1/items?limit=200" to HttpResponse(200, """{"items":[{"id":"i1","title":"a","item_key":"S01E01"}],"next_cursor":"p2"}"""),
-                "GET /followed-sources/s1/items?limit=200&cursor=p2" to HttpResponse(200, """{"items":[{"id":"i2","title":"b","item_key":"S01E02"}]}"""),
+                "GET /followed-sources/s1/items?limit=200" to
+                    HttpResponse(200, """{"items":[{"id":"i1","title":"a","item_key":"S01E01"}],"next_cursor":"p2"}"""),
+                "GET /followed-sources/s1/items?limit=200&cursor=p2" to
+                    HttpResponse(200, """{"items":[{"id":"i2","title":"b","item_key":"S01E02"}]}"""),
             ),
         )
         assertEquals(listOf("i1", "i2"), FollowedSourceClient(t, base, cred).items("s1").map { it.id })

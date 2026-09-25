@@ -71,7 +71,10 @@ class MediaThemeTest {
         assertTrue(ratio(Tokens.textMuted, Tokens.surface1) >= 4.5)
         // The CTA label against both ends of every pill gradient.
         for (t in MediaThemes.all.values) {
-            assertTrue("${t.type.name} start ${ratio(t.onAccent, t.ctaGradientStart)}", ratio(t.onAccent, t.ctaGradientStart) >= 4.5)
+            assertTrue(
+                "${t.type.name} start ${ratio(t.onAccent, t.ctaGradientStart)}",
+                ratio(t.onAccent, t.ctaGradientStart) >= 4.5,
+            )
             assertTrue("${t.type.name} end", ratio(t.onAccent, t.accentGradientEnd) >= 4.5)
         }
         // Raw accents as non-text marks (focus ring, underline, active nav tile) on the base surface: 3:1.

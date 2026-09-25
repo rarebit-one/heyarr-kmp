@@ -67,7 +67,8 @@ enum class SearchFilter(val label: String, val type: MediaType?) {
 object SearchGrouping {
 
     /** The section order for mixed results. */
-    val ORDER: List<MediaType> = listOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.PODCAST)
+    val ORDER: List<MediaType> =
+        listOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.PODCAST)
 
     /**
      * Build sections from per-type [segments] (keyed by the fan-out's kind), an

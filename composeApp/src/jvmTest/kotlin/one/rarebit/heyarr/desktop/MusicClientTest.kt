@@ -65,8 +65,12 @@ class MusicClientTest {
                "blob_hash":"blake3:${"b".repeat(64)}","blob_size":10485760,"edition_label":"Vinyl"},
               {"id":"a2","edition_id":"e1","filename":"01 - First.flac","blob_mime":"audio/flac",
                "blob_hash":"blake3:${"a".repeat(64)}"},
-              {"id":"a3","edition_id":"e1","filename":"cover.jpg","mime":"image/jpeg","blob_hash":"blake3:${"c".repeat(64)}"},
-              {"id":"a4","edition_id":"e1","filename":"gone.flac","mime":"audio/flac","blob_hash":"blake3:${"d".repeat(64)}","missing_since":"2026-01-01T00:00:00Z"}
+              {"id":"a3","edition_id":"e1","filename":"cover.jpg","mime":"image/jpeg","blob_hash":"blake3:${"c".repeat(
+            64,
+        )}"},
+              {"id":"a4","edition_id":"e1","filename":"gone.flac","mime":"audio/flac","blob_hash":"blake3:${"d".repeat(
+            64,
+        )}","missing_since":"2026-01-01T00:00:00Z"}
             ]}
         """.trimIndent()
         val tracks = TracksJson.parse(body)
@@ -82,13 +86,18 @@ class MusicClientTest {
     fun listTracksSortsByFilenameThenId() {
         val body = """
             {"items":[
-              {"id":"a1","edition_id":"e1","filename":"02 - Second.flac","mime":"audio/flac","blob_hash":"blake3:${"b".repeat(64)}"},
-              {"id":"a2","edition_id":"e1","filename":"01 - First.flac","mime":"audio/flac","blob_hash":"blake3:${"a".repeat(64)}"}
+              {"id":"a1","edition_id":"e1","filename":"02 - Second.flac","mime":"audio/flac","blob_hash":"blake3:${"b".repeat(
+            64,
+        )}"},
+              {"id":"a2","edition_id":"e1","filename":"01 - First.flac","mime":"audio/flac","blob_hash":"blake3:${"a".repeat(
+            64,
+        )}"}
             ]}
         """.trimIndent()
         val transport = object : HttpTransport {
             override fun get(url: String, headers: Map<String, String>) = HttpResponse(200, body)
-            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) = HttpResponse(405, "")
+            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+                HttpResponse(405, "")
         }
         val tracks = MusicClient(transport, "https://h.example", Credential.Bearer("t")).listTracks("w1")
         assertEquals(listOf("First", "Second"), tracks.map { it.title }) // ordered by filename

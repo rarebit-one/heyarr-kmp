@@ -78,7 +78,12 @@ class ReaderActivity : FragmentActivity() {
             val http = ReaderHttp.client(baseUrl = { app.graph.baseUrl() }, header = { app.graph.authHeader.current() })
             val retriever = AssetRetriever(contentResolver, http)
             val opener = PublicationOpener(
-                publicationParser = DefaultPublicationParser(this@ReaderActivity, httpClient = http, assetRetriever = retriever, pdfFactory = PdfiumDocumentFactory(this@ReaderActivity)),
+                publicationParser = DefaultPublicationParser(
+                    this@ReaderActivity,
+                    httpClient = http,
+                    assetRetriever = retriever,
+                    pdfFactory = PdfiumDocumentFactory(this@ReaderActivity),
+                ),
             )
             val absolute = AbsoluteUrl(url) ?: run {
                 status.text = "Not a URL: $url"
@@ -100,7 +105,11 @@ class ReaderActivity : FragmentActivity() {
             // locator the encrypted reading-position space carries (§45), caching it
             // locally so the next open is instant. The node never sees the plaintext locator.
             val localJson = positions.locator(assetId)
-            val initialJson = localJson ?: withContext(kotlinx.coroutines.Dispatchers.IO) { app.readingPositionSync.resume(assetId) }?.also { positions.put(assetId, it) }
+            val initialJson =
+                localJson
+                    ?: withContext(kotlinx.coroutines.Dispatchers.IO) {
+                        app.readingPositionSync.resume(assetId)
+                    }?.also { positions.put(assetId, it) }
             val initial = initialJson?.let { runCatching { Locator.fromJSON(org.json.JSONObject(it)) }.getOrNull() }
             val fragment = ReaderFragment.newInstance()
             fragment.setup(pub, initial) { locator ->
@@ -152,15 +161,25 @@ class ReaderFragment : Fragment() {
         val pub = publication
         if (pub != null) {
             childFragmentManager.fragmentFactory = when {
-                pub.conformsTo(Publication.Profile.PDF) -> PdfNavigatorFactory(pub, PdfiumEngineProvider()).createFragmentFactory(initialLocator = initial)
-                pub.conformsTo(Publication.Profile.DIVINA) -> ImageNavigatorFragment.createFactory(pub, initialLocator = initial)
+                pub.conformsTo(
+                    Publication.Profile.PDF,
+                ) -> PdfNavigatorFactory(pub, PdfiumEngineProvider()).createFragmentFactory(initialLocator = initial)
+
+                pub.conformsTo(
+                    Publication.Profile.DIVINA,
+                ) -> ImageNavigatorFragment.createFactory(pub, initialLocator = initial)
+
                 else -> EpubNavigatorFactory(pub).createFragmentFactory(initialLocator = initial)
             }
         }
         super.onCreate(savedInstanceState)
     }
 
-    override fun onCreateView(inflater: android.view.LayoutInflater, container: android.view.ViewGroup?, savedInstanceState: Bundle?): android.view.View {
+    override fun onCreateView(
+        inflater: android.view.LayoutInflater,
+        container: android.view.ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): android.view.View {
         val host = FrameLayout(requireContext()).apply { id = CONTAINER_ID }
         val pub = publication ?: return host
         if (savedInstanceState == null) {

@@ -31,7 +31,12 @@ class MpvPlayerTest {
     fun blobUrlRejectsNonBlobHash() {
         assertFailsWith<IllegalArgumentException> { BlobStream.contentUrl("https://h.example", "not-a-hash") }
         // A percent-encoded colon is the exact shape a live node answers 400 to.
-        assertFailsWith<IllegalArgumentException> { BlobStream.contentUrl("https://h.example", "blake3%3A" + "a".repeat(64)) }
+        assertFailsWith<IllegalArgumentException> {
+            BlobStream.contentUrl(
+                "https://h.example",
+                "blake3%3A" + "a".repeat(64),
+            )
+        }
     }
 
     @Test

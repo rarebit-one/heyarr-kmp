@@ -34,7 +34,13 @@ class JsonScanTest {
 
     @Test fun objectsOfReadsBareArrayAndEnvelope() {
         assertEquals(2, JsonScan.objectsOf("""[{"id":"1"},{"id":"2"}]""", listOf("items")).size)
-        assertEquals(1, JsonScan.objectsOf("""{"items":[{"id":"1","nested":{"id":"z"}}],"next_cursor":"c"}""", listOf("items")).size)
+        assertEquals(
+            1,
+            JsonScan.objectsOf(
+                """{"items":[{"id":"1","nested":{"id":"z"}}],"next_cursor":"c"}""",
+                listOf("items"),
+            ).size,
+        )
         assertTrue(JsonScan.objectsOf("""{"error":"x"}""", listOf("items")).isEmpty())
     }
 
@@ -61,7 +67,13 @@ class JsonScanTest {
     }
 
     @Test fun recentFirstOrdersByStampWithUnknownsLast() {
-        val items = listOf("a" to "2026-01-01T00:00:00Z", "b" to null, "c" to "2026-03-01T00:00:00Z", "d" to "bad", "e" to "2026-02-01T00:00:00Z")
+        val items = listOf(
+            "a" to "2026-01-01T00:00:00Z",
+            "b" to null,
+            "c" to "2026-03-01T00:00:00Z",
+            "d" to "bad",
+            "e" to "2026-02-01T00:00:00Z",
+        )
         val ordered = Timestamps.recentFirst(items) { it.second }.map { it.first }
         assertEquals(listOf("c", "e", "a", "b", "d"), ordered)
     }
@@ -92,7 +104,11 @@ class JsonScanTest {
 
 class JsonScanDoubleTest {
     @Test fun readsDoubles() {
-        assertEquals(6960.5, one.rarebit.heyarr.core.net.JsonScan.doubleField("""{"d":6960.5,"n":null,"q":"1.5","i":12}""", "d")!!, 0.0)
+        assertEquals(
+            6960.5,
+            one.rarebit.heyarr.core.net.JsonScan.doubleField("""{"d":6960.5,"n":null,"q":"1.5","i":12}""", "d")!!,
+            0.0,
+        )
         assertEquals(12.0, one.rarebit.heyarr.core.net.JsonScan.doubleField("""{"d":6960.5,"i":12}""", "i")!!, 0.0)
         assertEquals(null, one.rarebit.heyarr.core.net.JsonScan.doubleField("""{"n":null}""", "n"))
         assertEquals(null, one.rarebit.heyarr.core.net.JsonScan.doubleField("""{"q":"1.5"}""", "q"))

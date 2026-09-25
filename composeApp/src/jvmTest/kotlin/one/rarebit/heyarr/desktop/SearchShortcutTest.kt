@@ -34,7 +34,15 @@ class SearchShortcutTest {
             assertFalse(dispatchSearchShortcut(key, true) { fail("Unexpected search for modifiers=$modifiers") })
             assertFalse(key.isConsumed)
         }
-        assertFalse(dispatchSearchShortcut(event(KeyEvent.KEY_PRESSED, ctrl), false) { fail("Modal dialog lost focus") })
-        assertFalse(dispatchSearchShortcut(event(KeyEvent.KEY_PRESSED, ctrl, KeyEvent.VK_K), true) { fail("Old shortcut still bound") })
+        assertFalse(
+            dispatchSearchShortcut(event(KeyEvent.KEY_PRESSED, ctrl), false) {
+                fail("Modal dialog lost focus")
+            },
+        )
+        assertFalse(
+            dispatchSearchShortcut(event(KeyEvent.KEY_PRESSED, ctrl, KeyEvent.VK_K), true) {
+                fail("Old shortcut still bound")
+            },
+        )
     }
 }

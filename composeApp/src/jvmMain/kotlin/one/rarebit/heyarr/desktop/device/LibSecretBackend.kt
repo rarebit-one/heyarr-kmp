@@ -33,9 +33,7 @@ import java.util.Base64
  * calls are deliberately isolated here behind the interface, and every one is wrapped so a
  * layout / soname / D-Bus problem falls back to the sealed file rather than failing the app.
  */
-internal class LibSecretBackend(
-    private val service: String = KeychainSecretStore.SERVICE,
-) : KeychainBackend {
+internal class LibSecretBackend(private val service: String = KeychainSecretStore.SERVICE) : KeychainBackend {
 
     override val label = "libsecret (Secret Service)"
 

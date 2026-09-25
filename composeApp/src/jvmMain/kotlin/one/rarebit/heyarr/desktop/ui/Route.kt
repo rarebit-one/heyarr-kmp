@@ -23,17 +23,39 @@ sealed interface Route {
     data object Settings : Route
 
     /** The embedded player: one asset of a work, with the work's other episodes as "up next". */
-    data class Player(val workId: String, val assetId: String, val blobHash: String, val title: String, val subtitle: String? = null, val typeHint: MediaType = MediaType.MOVIE, val from: String = "Library") : Route {
+    data class Player(
+        val workId: String,
+        val assetId: String,
+        val blobHash: String,
+        val title: String,
+        val subtitle: String? = null,
+        val typeHint: MediaType = MediaType.MOVIE,
+        val from: String = "Library",
+    ) : Route {
         override val section: String get() = from
     }
 
     /** The adaptive detail template for one work. [typeHint]/[titleHint] paint the screen before the fetch lands. */
-    data class Detail(val workId: String, val typeHint: MediaType = MediaType.UNKNOWN, val titleHint: String? = null, val from: String = "Library", val curate: Boolean = false) : Route {
+    data class Detail(
+        val workId: String,
+        val typeHint: MediaType = MediaType.UNKNOWN,
+        val titleHint: String? = null,
+        val from: String = "Library",
+        val curate: Boolean = false,
+    ) : Route {
         override val section: String get() = from
     }
 
     /** The (placeholder) e-book reader: one book asset, opened from its detail's "Read" CTA. */
-    data class Reader(val workId: String, val assetId: String, val blobHash: String, val title: String, val mime: String? = null, val filename: String? = null, val from: String = "Library") : Route {
+    data class Reader(
+        val workId: String,
+        val assetId: String,
+        val blobHash: String,
+        val title: String,
+        val mime: String? = null,
+        val filename: String? = null,
+        val from: String = "Library",
+    ) : Route {
         override val section: String get() = from
     }
 }

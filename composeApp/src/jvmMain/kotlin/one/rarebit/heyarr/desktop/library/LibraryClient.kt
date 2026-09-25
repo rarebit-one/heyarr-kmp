@@ -11,11 +11,7 @@ import java.net.URLEncoder
  * per page); [listWorks] follows `next_cursor` to the end and returns the whole library
  * most-recently-touched first.
  */
-class LibraryClient(
-    private val http: HttpTransport,
-    private val baseUrl: String,
-    private val credential: Credential,
-) {
+class LibraryClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
     /** Fetch every work, recent first. Throws on a non-200 so the caller can surface the status. */
     fun listWorks(): List<Work> {
         val all = ArrayList<Work>()

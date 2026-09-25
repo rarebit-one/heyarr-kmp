@@ -16,7 +16,14 @@ object ReaderHttp {
         callback = object : DefaultHttpClient.Callback {
             override suspend fun onStartRequest(request: HttpRequest): Try<HttpRequest, HttpError> {
                 val hasAuth = request.headers.keys.any { it.equals("Authorization", ignoreCase = true) }
-                if (!AuthInterceptor.shouldStamp(request.url.toString(), baseUrl(), hasAuth)) return Try.success(request)
+                if (!AuthInterceptor.shouldStamp(
+                        request.url.toString(),
+                        baseUrl(),
+                        hasAuth,
+                    )
+                ) {
+                    return Try.success(request)
+                }
                 val value = header() ?: return Try.success(request)
                 return Try.success(request.buildUpon().setHeader("Authorization", value).build())
             }

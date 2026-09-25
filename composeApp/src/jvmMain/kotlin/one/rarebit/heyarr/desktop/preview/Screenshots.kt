@@ -39,12 +39,22 @@ fun main(args: Array<String>) {
         "02-search-results" to Route.Search,
         "02b-discover" to Route.Discover,
         "03-detail-series-watch" to Route.Detail(Fixtures.YELLOWSTONE, MediaType.SERIES, "Yellowstone", from = "Home"),
-        "03b-detail-series-curate" to Route.Detail(Fixtures.YELLOWSTONE, MediaType.SERIES, "Yellowstone", from = "Home", curate = true),
+        "03b-detail-series-curate" to
+            Route.Detail(Fixtures.YELLOWSTONE, MediaType.SERIES, "Yellowstone", from = "Home", curate = true),
         "04-detail-movie-missing" to Route.Detail(Fixtures.SINTEL, MediaType.MOVIE, "Sintel", from = "Missing"),
         "05-detail-book" to Route.Detail("w-piranesi", MediaType.BOOK, "Piranesi", from = "Library"),
         "06-library" to Route.Library,
         "06b-downloads" to Route.Library,
-        "05b-player" to Route.Player(Fixtures.YELLOWSTONE, "as-S04E03", Fixtures.HASH, "Yellowstone", "S04E03 All I See Is You", typeHint = MediaType.SERIES, from = "Back"),
+        "05b-player" to
+            Route.Player(
+                Fixtures.YELLOWSTONE,
+                "as-S04E03",
+                Fixtures.HASH,
+                "Yellowstone",
+                "S04E03 All I See Is You",
+                typeHint = MediaType.SERIES,
+                from = "Back",
+            ),
         "07-missing" to Route.Missing,
         "08-now-playing" to Route.NowPlaying,
         "09-settings" to Route.Settings,
@@ -52,7 +62,15 @@ fun main(args: Array<String>) {
     val sizes = listOf(1280 to 900)
     for ((name, route) in shots) {
         for ((w, h) in sizes) {
-            render(File(out, "$name.png"), w, h, route, query = if (name.endsWith("results")) "dune" else null, downloads = name == "06b-downloads")
+            render(
+                File(out, "$name.png"),
+                w,
+                h,
+                route,
+                query = if (name.endsWith("results")) "dune" else null,
+                downloads =
+                name == "06b-downloads",
+            )
         }
     }
     // Guest mode: no token, browsing as an anonymous guest — the "Sign in to save" affordance
@@ -69,16 +87,53 @@ fun main(args: Array<String>) {
     println("wrote ${out.listFiles()?.size ?: 0} screenshots to $out")
 }
 
-private fun render(file: File, width: Int, height: Int, route: Route, query: String? = null, connection: Boolean = false, downloads: Boolean = false, guest: Boolean = false, audio: Boolean = false) {
+private fun render(
+    file: File,
+    width: Int,
+    height: Int,
+    route: Route,
+    query: String? = null,
+    connection: Boolean = false,
+    downloads: Boolean = false,
+    guest: Boolean = false,
+    audio: Boolean = false,
+) {
     val transport = FakeHeyarrTransport()
     // A guest carries no token (browses on a trusted network); everyone else pastes one.
-    val settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://heyarr.example.test:7777", bearerToken = if (guest) "" else "heyarr_fixture_token"))
+    val settings =
+        InMemorySettingsStore(
+            DesktopConfig(
+                baseUrl = "https://heyarr.example.test:7777",
+                bearerToken = if (guest) "" else "heyarr_fixture_token",
+            ),
+        )
     val art = ArtworkLoader({ "" }, { "" }, fetcher = { PlaceholderArt.bytes(it) })
     ImageComposeScene(width = width, height = height, density = Density(1f)).use { scene ->
         scene.setContent {
             App(
                 settings = settings, transport = transport, player = NoPlayer, opener = NoOpener, downloader = NoDownloader,
-                initialAudioQueue = if (audio) listOf(Route.Player("w-album", "track-a", Fixtures.HASH, "Fixture album", "First track", MediaType.MUSIC), Route.Player("w-album", "track-b", Fixtures.HASH, "Fixture album", "Next track", MediaType.MUSIC)) else emptyList(),
+                initialAudioQueue = if (audio) {
+                    listOf(
+                        Route.Player(
+                            "w-album",
+                            "track-a",
+                            Fixtures.HASH,
+                            "Fixture album",
+                            "First track",
+                            MediaType.MUSIC,
+                        ),
+                        Route.Player(
+                            "w-album",
+                            "track-b",
+                            Fixtures.HASH,
+                            "Fixture album",
+                            "Next track",
+                            MediaType.MUSIC,
+                        ),
+                    )
+                } else {
+                    emptyList()
+                },
                 initialRoute = route, artworkLoader = art, externalMetadata = one.rarebit.heyarr.desktop.state.DesktopExternalMetadata.NONE, initialQuery = query, initialConnectionSheet = connection, initialLibraryTab = if (downloads) 1 else 0,
             )
         }
@@ -99,7 +154,8 @@ private fun render(file: File, width: Int, height: Int, route: Route, query: Str
 }
 
 private object NoPlayer : Player {
-    override fun play(baseUrl: String, blobHash: String, token: String): PlayResult = PlayResult.Failed("no player in preview")
+    override fun play(baseUrl: String, blobHash: String, token: String): PlayResult =
+        PlayResult.Failed("no player in preview")
 }
 
 private object NoOpener : ExternalOpener {
@@ -107,13 +163,15 @@ private object NoOpener : ExternalOpener {
 }
 
 private object NoDownloader : BlobDownloader {
-    override fun download(baseUrl: String, blobHash: String, token: String, ext: String): DownloadResult = DownloadResult.Failed("no download in preview")
+    override fun download(baseUrl: String, blobHash: String, token: String, ext: String): DownloadResult =
+        DownloadResult.Failed("no download in preview")
 }
 
 /** Exercises a reused composition: initial-route screenshots alone cannot catch a stale effect key. */
 private fun verifyShelfSwitch() {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-    val settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://heyarr.example.test:7777", externalMetadata = false))
+    val settings =
+        InMemorySettingsStore(DesktopConfig(baseUrl = "https://heyarr.example.test:7777", externalMetadata = false))
     val session = one.rarebit.heyarr.desktop.state.AppSession(
         settings,
         FakeHeyarrTransport(),
@@ -147,7 +205,9 @@ private fun verifyShelfSwitch() {
                     if (state.works != null) break
                     Thread.sleep(20)
                 }
-                check(!state.works.isNullOrEmpty()) { "Shelf $experience did not load after navigation: ${state.error}" }
+                check(!state.works.isNullOrEmpty()) {
+                    "Shelf $experience did not load after navigation: ${state.error}"
+                }
             }
         }
     } finally {

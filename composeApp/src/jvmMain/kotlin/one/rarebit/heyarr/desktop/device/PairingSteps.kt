@@ -59,10 +59,7 @@ sealed interface PairingState {
     }
 
     /** Joined; waiting on Cruciform's commit + reveal to derive the SAS. */
-    data class Joining(
-        override val inviteQr: String,
-        override val deadlineMillis: Long,
-    ) : Live
+    data class Joining(override val inviteQr: String, override val deadlineMillis: Long) : Live
 
     /**
      * The SAS is up for the human to compare against Cruciform's screen. Before "codes
@@ -92,9 +89,5 @@ sealed interface PairingState {
         val retriable: Boolean,
     ) : PairingState
 
-    data class Failed(
-        val inviteQr: String?,
-        val kind: PairingFailure,
-        val message: String,
-    ) : PairingState
+    data class Failed(val inviteQr: String?, val kind: PairingFailure, val message: String) : PairingState
 }

@@ -45,8 +45,12 @@ data class ContinueEntry(
             val v = progressLocator?.toDoubleOrNull()
             return when {
                 v == null -> progressLocator
-                progressUnit == "seconds" || progressUnit == "s" -> clock(v.toLong()) + (durationSeconds?.let { " / " + clock(it.toLong()) } ?: "")
+
+                progressUnit == "seconds" || progressUnit == "s" -> clock(v.toLong()) +
+                    (durationSeconds?.let { " / " + clock(it.toLong()) } ?: "")
+
                 progressUnit == "percent" || progressUnit == "%" -> "${v.toInt()}%"
+
                 else -> "$progressLocator ${progressUnit ?: ""}".trim()
             }
         }

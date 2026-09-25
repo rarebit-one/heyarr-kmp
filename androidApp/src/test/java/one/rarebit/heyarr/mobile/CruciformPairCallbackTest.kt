@@ -74,7 +74,9 @@ class CruciformPairCallbackTest {
         // real invite, and `pair-done` must not be read as an invite with no `invite=`.
         val invite = PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair?invite=voidbind%3Apair%3Fv%3D3")
         assertTrue(invite is PairDeepLink.Invalid || invite is PairDeepLink.Invite)
-        assertTrue(PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair-done?session=x") is PairDeepLink.Done)
+        assertTrue(
+            PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair-done?session=x") is PairDeepLink.Done,
+        )
         assertNull(PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pair-donex?session=x"))
     }
 }

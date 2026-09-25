@@ -22,10 +22,7 @@ import one.rarebit.heyarr.core.heyarr.DesiredItem
  * Pure and dependency-free on purpose — a natural KMP `commonMain` candidate, and unit
  * tested against the scope strings the REST `GET /desired` view emits.
  */
-data class SeriesWantState(
-    val following: Boolean,
-    val wholeSeriesWanted: Boolean,
-) {
+data class SeriesWantState(val following: Boolean, val wholeSeriesWanted: Boolean) {
     val everythingCovered: Boolean get() = following || wholeSeriesWanted
 }
 

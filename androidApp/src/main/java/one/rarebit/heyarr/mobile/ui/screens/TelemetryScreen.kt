@@ -27,8 +27,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.Capabilities
@@ -70,7 +70,13 @@ class TelemetryState {
  * roots, and the last jobs. Ported from heyarr-desktop's `ConnectionSheet`.
  */
 @Composable
-fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummary: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun TelemetryScreen(
+    session: AppSession,
+    state: TelemetryState,
+    credentialSummary: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val scope = rememberCoroutineScope()
     fun load() {
         val a = session.api
@@ -85,7 +91,11 @@ fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummar
     }
     LaunchedEffect(Unit) { load() }
 
-    LazyColumn(modifier.fillMaxSize(), contentPadding = PaddingValues(horizontal = Tokens.screenPadding, vertical = Tokens.s3), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    LazyColumn(
+        modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = Tokens.screenPadding, vertical = Tokens.s3),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
         item {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 GhostButton("Settings", onBack, icon = Icons.Rounded.ArrowBack)
@@ -102,14 +112,27 @@ fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummar
                     Connection.UNAUTHORIZED -> Tokens.warning to "Credential refused"
                     Connection.UNKNOWN -> Tokens.textDisabled to "Connecting…"
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     Box(Modifier.size(10.dp).background(tone, RectangleShape))
                     Text(label, style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)
-                    session.lastLatencyMs?.let { Text("$it ms round-trip", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted) }
+                    session.lastLatencyMs?.let {
+                        Text(
+                            "$it ms round-trip",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = Tokens.textMuted,
+                        )
+                    }
                 }
                 KeyValue("node", session.baseUrl)
                 KeyValue("last success", session.lastOkAt?.let { ago(it) } ?: "never")
-                KeyValue("probes", "${session.probes} sent · ${session.failures} failed" + (session.lastFailure?.let { " · last: $it" } ?: ""))
+                KeyValue(
+                    "probes",
+                    "${session.probes} sent · ${session.failures} failed" +
+                        (session.lastFailure?.let { " · last: $it" } ?: ""),
+                )
                 KeyValue("heartbeat", "every 30 s while online, every 8 s while not")
                 KeyValue("credential", credentialSummary)
                 PrimaryButton("Test now", { scope.launch { session.probe() } }, compact = true)
@@ -120,12 +143,19 @@ fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummar
             Panel("This credential") {
                 when (val s = state.session) {
                     null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
+
                     else -> {
                         KeyValue("kind", s.kind)
                         KeyValue("scopes", s.scopes.joinToString(", ").ifBlank { "none" })
-                        KeyValue("can write", if (s.canWrite) "yes — want, follow, acquire will succeed" else "no — this credential is read-only; writes will be refused", valueColor = if (s.canWrite) Tokens.success else Tokens.warning)
+                        KeyValue(
+                            "can write",
+                            if (s.canWrite) "yes — want, follow, acquire will succeed" else "no — this credential is read-only; writes will be refused",
+                            valueColor = if (s.canWrite) Tokens.success else Tokens.warning,
+                        )
                         s.principalId?.let { KeyValue("principal", it, valueColor = Tokens.textMuted) }
-                        s.deviceKey?.takeIf { it.isNotBlank() }?.let { KeyValue("device key", it, valueColor = Tokens.textMuted) }
+                        s.deviceKey?.takeIf {
+                            it.isNotBlank()
+                        }?.let { KeyValue("device key", it, valueColor = Tokens.textMuted) }
                     }
                 }
             }
@@ -134,16 +164,60 @@ fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummar
             Panel("Providers") {
                 when (val p = state.providers) {
                     null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
-                    else -> if (p.isEmpty()) Text("No providers configured.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-                    else for (x in p) Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Box(Modifier.padding(top = 5.dp).size(8.dp).background(if (x.healthy) Tokens.success else Tokens.danger, RectangleShape))
-                        Column(Modifier.weight(1f)) {
-                            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Text(x.name, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary)
-                                for (c in x.capabilities) RuleCode(c, tone = Tokens.textMuted)
-                                x.version?.takeIf { it != "unreported" }?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled) }
+
+                    else -> if (p.isEmpty()) {
+                        Text(
+                            "No providers configured.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Tokens.textMuted,
+                        )
+                    } else {
+                        for (x in p) {
+                            Row(
+                                verticalAlignment = Alignment.Top,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Box(
+                                    Modifier.padding(
+                                        top = 5.dp,
+                                    ).size(
+                                        8.dp,
+                                    ).background(if (x.healthy) Tokens.success else Tokens.danger, RectangleShape),
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Row(
+                                        Modifier.horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(
+                                            x.name,
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = Tokens.textPrimary,
+                                        )
+                                        for (c in x.capabilities) RuleCode(c, tone = Tokens.textMuted)
+                                        x.version?.takeIf {
+                                            it != "unreported"
+                                        }?.let {
+                                            Text(
+                                                it,
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Tokens.textDisabled,
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        listOfNotNull(
+                                            x.detail,
+                                            x.checkedAt?.let {
+                                                "checked ${it.take(19).replace('T', ' ')}"
+                                            },
+                                        ).joinToString("  ·  "),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (x.healthy) Tokens.textMuted else Tokens.danger,
+                                    )
+                                }
                             }
-                            Text(listOfNotNull(x.detail, x.checkedAt?.let { "checked ${it.take(19).replace('T', ' ')}" }).joinToString("  ·  "), style = MaterialTheme.typography.bodySmall, color = if (x.healthy) Tokens.textMuted else Tokens.danger)
                         }
                     }
                 }
@@ -153,27 +227,86 @@ fun TelemetryScreen(session: AppSession, state: TelemetryState, credentialSummar
             Panel("Node") {
                 when (val c = state.capabilities) {
                     null -> Skeleton(Modifier.fillMaxWidth().height(30.dp))
+
                     else -> {
-                        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) { for (cap in c.available) RuleCode(cap, tone = Tokens.textPrimary) }
-                        for (h in c.holders) KeyValue(h.peerName, "worker ${h.workerId} · ${h.capabilities.size} capabilities proved" + (h.expiresAt?.let { " · lease to ${it.take(19).replace('T', ' ')}" } ?: ""), valueColor = Tokens.textMuted)
+                        Row(
+                            Modifier.horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            for (cap in c.available) RuleCode(cap, tone = Tokens.textPrimary)
+                        }
+                        for (h in c.holders) {
+                            KeyValue(
+                                h.peerName,
+                                "worker ${h.workerId} · ${h.capabilities.size} capabilities proved" +
+                                    (
+                                        h.expiresAt?.let {
+                                            " · lease to ${it.take(19).replace('T', ' ')}"
+                                        } ?: ""
+                                        ),
+                                valueColor = Tokens.textMuted,
+                            )
+                        }
                     }
                 }
-                state.peers?.let { p -> for (peer in p.peers) KeyValue("peer", "${peer.name}${if (peer.isSelf) " (this node)" else ""} · ${peer.site ?: ""} · ${peer.mode ?: ""}") }
-                state.libraries?.let { l -> for (lib in l) KeyValue("library", "${lib.name} (${lib.contentType ?: "?"})${if (!lib.enabled) " · disabled" else ""} — " + lib.roots.joinToString(", "), valueColor = Tokens.textMuted) }
+                state.peers?.let { p ->
+                    for (peer in p.peers) {
+                        KeyValue(
+                            "peer",
+                            "${peer.name}${if (peer.isSelf) " (this node)" else ""} · ${peer.site ?: ""} · ${peer.mode ?: ""}",
+                        )
+                    }
+                }
+                state.libraries?.let { l ->
+                    for (lib in l) {
+                        KeyValue(
+                            "library",
+                            "${lib.name} (${lib.contentType ?: "?"})${if (!lib.enabled) " · disabled" else ""} — " +
+                                lib.roots.joinToString(", "),
+                            valueColor = Tokens.textMuted,
+                        )
+                    }
+                }
             }
         }
         item {
             Panel("Recent jobs") {
                 when (val j = state.jobs) {
                     null -> Skeleton(Modifier.fillMaxWidth().height(30.dp))
-                    else -> if (j.isEmpty()) Text("No jobs.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-                    else for (job in j) Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        RuleCode(job.state, tone = when (job.state) { "succeeded" -> Tokens.success; "failed", "dead" -> Tokens.danger; else -> Tokens.textMuted })
-                        Column(Modifier.weight(1f)) {
-                            Text(job.type, style = MaterialTheme.typography.bodySmall, color = Tokens.textPrimary)
-                            job.lastError?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.danger) }
+
+                    else -> if (j.isEmpty()) {
+                        Text("No jobs.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+                    } else {
+                        for (job in j) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RuleCode(
+                                    job.state,
+                                    tone = when (job.state) {
+                                        "succeeded" -> Tokens.success
+                                        "failed", "dead" -> Tokens.danger
+                                        else -> Tokens.textMuted
+                                    },
+                                )
+                                Column(Modifier.weight(1f)) {
+                                    Text(
+                                        job.type,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Tokens.textPrimary,
+                                    )
+                                    job.lastError?.let {
+                                        Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.danger)
+                                    }
+                                }
+                                Text(
+                                    job.updatedAt?.take(16)?.replace('T', ' ') ?: "",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = Tokens.textDisabled,
+                                )
+                            }
                         }
-                        Text(job.updatedAt?.take(16)?.replace('T', ' ') ?: "", style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled)
                     }
                 }
             }

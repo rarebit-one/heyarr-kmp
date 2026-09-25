@@ -24,6 +24,7 @@ import java.security.SecureRandom
 interface VaultFolder {
     fun scan(index: Map<String, SyncIndexEntry>): Map<String, LocalFile>
     fun read(path: String): ByteArray
+
     /**
      * Open [path] for STREAMING reads (the large-file seal path). Defaults to wrapping [read] so a
      * fake folder needn't implement it; the real folder streams straight off disk.
@@ -62,7 +63,10 @@ class RealVaultFolder(private val root: Path) : VaultFolder {
         val tmpDir = root.resolve(".sync-tmp").also { Files.createDirectories(it) }
         val tmp = Files.createTempFile(tmpDir, "dl", ".part")
         Files.write(tmp, bytes)
-        Files.setLastModifiedTime(tmp, java.nio.file.attribute.FileTime.from(java.time.Instant.ofEpochSecond(mtimeEpochSec)))
+        Files.setLastModifiedTime(
+            tmp,
+            java.nio.file.attribute.FileTime.from(java.time.Instant.ofEpochSecond(mtimeEpochSec)),
+        )
         runCatching { Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING) }
             .onFailure { Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING) }
     }
@@ -126,13 +130,33 @@ class VaultSyncEngine(
         val actions = reconcile(local, resolved, index)
 
         val newIndex = index.toMutableMap()
-        var up = 0; var down = 0; var dr = 0; var dl = 0
+        var up = 0
+        var down = 0
+        var dr = 0
+        var dl = 0
         for (a in actions) {
             when (a) {
-                is SyncAction.UploadLocal -> { upload(a.path, local.getValue(a.path), drive, newIndex); up++ }
-                is SyncAction.DownloadRemote -> { download(a.path, a.blob, resolved.getValue(a.path), newIndex); down++ }
-                is SyncAction.DeleteRemote -> { push(drive.delete(a.path)); newIndex.remove(a.path); dr++ }
-                is SyncAction.DeleteLocal -> { folder.trash(a.path); newIndex.remove(a.path); dl++ }
+                is SyncAction.UploadLocal -> {
+                    upload(a.path, local.getValue(a.path), drive, newIndex)
+                    up++
+                }
+
+                is SyncAction.DownloadRemote -> {
+                    download(a.path, a.blob, resolved.getValue(a.path), newIndex)
+                    down++
+                }
+
+                is SyncAction.DeleteRemote -> {
+                    push(drive.delete(a.path))
+                    newIndex.remove(a.path)
+                    dr++
+                }
+
+                is SyncAction.DeleteLocal -> {
+                    folder.trash(a.path)
+                    newIndex.remove(a.path)
+                    dl++
+                }
             }
         }
         indexStore.save(newIndex)
@@ -188,10 +212,10 @@ class VaultSyncEngine(
                     )
                 }
             }
-            blobs.putBlobFile(baseUrl, manifest.content, tmp, credential)      // the ciphertext content blob (streamed off disk)
+            blobs.putBlobFile(baseUrl, manifest.content, tmp, credential) // the ciphertext content blob (streamed off disk)
             val manifestBlob = VaultFrame.sealManifest(spaceKey, manifest)
             val manifestHash = Blake3.hashHex(manifestBlob)
-            blobs.putBlob(baseUrl, manifestHash, manifestBlob, credential)     // the sealed manifest (the drive entry's blob)
+            blobs.putBlob(baseUrl, manifestHash, manifestBlob, credential) // the sealed manifest (the drive entry's blob)
             push(drive.put(path, manifestHash, lf.size, lf.mtime))
             newIndex[path] = SyncIndexEntry(lf.plaintextHash, manifestHash, lf.size, lf.mtime)
         } finally {
@@ -199,7 +223,12 @@ class VaultSyncEngine(
         }
     }
 
-    private fun download(path: String, manifestHash: String, entry: DriveEntry, newIndex: MutableMap<String, SyncIndexEntry>) {
+    private fun download(
+        path: String,
+        manifestHash: String,
+        entry: DriveEntry,
+        newIndex: MutableMap<String, SyncIndexEntry>,
+    ) {
         val manifestBlob = blobs.fetchAll(baseUrl, manifestHash, credential)
         val manifest = VaultFrame.openManifest(spaceKey, manifestBlob)
         val plaintext = VaultFrame.openAll(spaceKey, manifest, blobs.fetchFor(baseUrl, manifest.content, credential))

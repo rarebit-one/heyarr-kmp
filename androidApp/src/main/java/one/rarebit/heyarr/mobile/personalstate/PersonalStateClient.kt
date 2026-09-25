@@ -95,7 +95,8 @@ class PersonalStateClient(
         require(resp.status == 201 || resp.status == 200) { fail("POST /changes", resp.status, resp.body) }
     }
 
-    private fun fail(op: String, status: Int, body: String): String = ProblemDetail.message(body, status, "personal-state: $op")
+    private fun fail(op: String, status: Int, body: String): String =
+        ProblemDetail.message(body, status, "personal-state: $op")
 
     companion object {
         fun spacesUrl(baseUrl: String): String = baseUrl.trimEnd('/') + "/api/v1/spaces"

@@ -121,8 +121,13 @@ data class DaemonConfig(
             env("HEYARR_VOIDBIND_DEVICE_DIR")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(deviceDir = it) }
             env("HEYARR_VAULT_POLL_MS")?.toLongOrNull()?.let { cfg = cfg.copy(pollMs = it) }
             env("HEYARR_VAULT_RETRY_MS")?.toLongOrNull()?.let { cfg = cfg.copy(retryMs = it) }
-            env("HEYARR_VAULT_STATUS_FILE")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(statusFile = File(it).toPath()) }
-            env("HEYARR_VAULT_SOCKET")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(socketPath = File(it).toPath()) }
+            env("HEYARR_VAULT_STATUS_FILE")?.takeIf { it.isNotBlank() }?.let {
+                cfg =
+                    cfg.copy(statusFile = File(it).toPath())
+            }
+            env("HEYARR_VAULT_SOCKET")?.takeIf {
+                it.isNotBlank()
+            }?.let { cfg = cfg.copy(socketPath = File(it).toPath()) }
             env("HEYARR_VAULT_INDEX")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(indexFile = it) }
             env("HEYARR_VAULT_TOKEN")?.let { cfg = cfg.copy(token = it.ifBlank { null }) }
             env("HEYARR_VAULT_TOKEN_FILE")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(tokenFile = it) }
@@ -156,7 +161,8 @@ data class DaemonConfig(
                 tokenFile = JsonScan.stringField(obj, "token_file")?.takeIf { it.isNotBlank() },
                 pollMs = JsonScan.longField(obj, "poll_ms") ?: base.pollMs,
                 retryMs = JsonScan.longField(obj, "retry_ms") ?: base.retryMs,
-                statusFile = JsonScan.stringField(obj, "status_file")?.takeIf { it.isNotBlank() }?.let { File(it).toPath() }
+                statusFile =
+                JsonScan.stringField(obj, "status_file")?.takeIf { it.isNotBlank() }?.let { File(it).toPath() }
                     ?: base.statusFile,
                 socketPath = JsonScan.stringField(obj, "socket")?.takeIf { it.isNotBlank() }?.let { File(it).toPath() }
                     ?: base.socketPath,
@@ -176,7 +182,8 @@ data class DaemonConfig(
                     if (eq >= 0) {
                         out[body.substring(0, eq)] = body.substring(eq + 1)
                     } else if (i + 1 < args.size && !args[i + 1].startsWith("--")) {
-                        out[body] = args[i + 1]; i++
+                        out[body] = args[i + 1]
+                        i++
                     } else {
                         out[body] = "true"
                     }

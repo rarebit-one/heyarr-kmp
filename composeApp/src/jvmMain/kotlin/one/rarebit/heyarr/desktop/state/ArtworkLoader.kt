@@ -45,7 +45,8 @@ class ArtworkLoader(
     private val gate = Semaphore(parallelism)
     private val memory: MutableMap<String, ImageBitmap> = Collections.synchronizedMap(
         object : LinkedHashMap<String, ImageBitmap>(64, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ImageBitmap>?): Boolean = size > maxInMemory
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, ImageBitmap>?): Boolean =
+                size > maxInMemory
         },
     )
     private val failed: MutableSet<String> = Collections.synchronizedSet(HashSet())

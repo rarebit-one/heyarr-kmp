@@ -20,7 +20,13 @@ object Artwork {
         val base = baseUrl.trimEnd('/')
         val path = artworkPath?.takeIf { it.isNotBlank() }
         if (path != null) {
-            return if (path.startsWith("http://") || path.startsWith("https://")) path else base + "/" + path.trimStart('/')
+            return if (path.startsWith("http://") ||
+                path.startsWith("https://")
+            ) {
+                path
+            } else {
+                base + "/" + path.trimStart('/')
+            }
         }
         return base + "/api/v1/works/" + URLEncoder.encode(workId, "UTF-8") + "/artwork"
     }

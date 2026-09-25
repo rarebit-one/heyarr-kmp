@@ -74,7 +74,9 @@ class HeyarrApp :
                     keyring = { deviceKeyring },
                     relayTransport = OkHttpVoidbindTransport(),
                     nodeTransport = graph.rawTransport,
-                    baseUrl = { HeyarrConfig.resolve(settings.baseUrlOverride, settings.qualityProfileOverride).baseUrl },
+                    baseUrl = {
+                        HeyarrConfig.resolve(settings.baseUrlOverride, settings.qualityProfileOverride).baseUrl
+                    },
                     deviceName = { deviceName },
                     credential = { credentialProvider() },
                 )
