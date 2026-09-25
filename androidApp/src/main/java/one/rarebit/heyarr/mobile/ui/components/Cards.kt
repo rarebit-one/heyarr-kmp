@@ -186,98 +186,19 @@ fun MediaCard(
                         } ?: ""}${if (hasMenu) ". Long press for actions" else ""}"
                 },
         ) {
-            Box(Modifier.fillMaxWidth().aspectRatio((aspectOverride ?: theme.aspect).ratio)) {
-                Artwork(artwork, type, Modifier.fillMaxSize(), contentDescription = null)
-                if (progress !=
-                    null
-                ) {
-                    Box(
-                        Modifier.align(
-                            Alignment.BottomStart,
-                        ).fillMaxWidth().height(4.dp).background(Tokens.bgBase.copy(alpha = 0.55f)),
-                    ) {
-                        Box(
-                            Modifier.fillMaxWidth(
-                                progress.coerceIn(0f, 1f),
-                            ).height(
-                                4.dp,
-                            ).background(Brush.horizontalGradient(listOf(theme.accent, theme.accentGradientEnd))),
-                        )
-                    }
-                }
-                if (theme.spineShadow) {
-                    Box(
-                        Modifier.width(
-                            10.dp,
-                        ).fillMaxSize().background(
-                            Brush.horizontalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent)),
-                        ),
-                    )
-                }
+            CardArtBox(
+                Modifier.fillMaxWidth().aspectRatio((aspectOverride ?: theme.aspect).ratio),
+                artwork,
+                type,
+                progress,
+            ) {
                 if (showBadge) MediaBadge(type, Modifier.align(Alignment.TopStart).padding(8.dp))
                 if (status != null) StatusPill(status, Modifier.align(Alignment.TopEnd).padding(8.dp), compact = true)
             }
-            Column(
-                Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    title,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = Tokens.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                if (subtitle !=
-                    null
-                ) {
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Tokens.textMuted,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                MetaLine(meta)
-            }
+            CardCaption(title, subtitle, meta)
         }
         if (hasMenu) {
-            DropdownMenu(expanded = menuOpen, onDismissRequest = {
-                menuOpen = false
-            }, modifier = Modifier.background(Tokens.surface3)) {
-                DropdownMenuItem(text = {
-                    Text("Open", color = Tokens.textPrimary)
-                }, leadingIcon = { Icon(Icons.Rounded.OpenInNew, null, tint = Tokens.textMuted) }, onClick = {
-                    menuOpen =
-                        false
-                    onOpen()
-                })
-                if (wantable) {
-                    DropdownMenuItem(text = {
-                        Text("Want", color = Tokens.textPrimary)
-                    }, leadingIcon = { Icon(Icons.Rounded.Add, null, tint = theme.accentGradientEnd) }, onClick = {
-                        menuOpen =
-                            false
-                        onWant?.invoke()
-                    })
-                }
-                for (a in actions) {
-                    DropdownMenuItem(
-                        text = {
-                            Text(a.label, color = Tokens.textPrimary)
-                        },
-                        leadingIcon = a.icon?.let { ic ->
-                            @Composable { Icon(ic, null, tint = Tokens.textMuted) }
-                        },
-                        onClick = {
-                            menuOpen =
-                                false
-                            a.onClick()
-                        },
-                    )
-                }
-            }
+            CardMenu(menuOpen, { menuOpen = false }, onOpen, if (wantable) onWant else null, actions)
         }
     }
 }
@@ -439,28 +360,7 @@ fun Hero(
         ).clip(shape).background(Tokens.surface1).border(Tokens.hairline, Tokens.border, shape),
     ) {
         Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 72.dp)
-        // Layered scrim: bottom-up darkening, plus a left-to-right one so the text column reads on any art.
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.verticalGradient(
-                    listOf(Color.Transparent, Tokens.bgBase.copy(alpha = 0.55f), Tokens.bgBase.copy(alpha = 0.96f)),
-                ),
-            ),
-        )
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.horizontalGradient(
-                    listOf(Tokens.bgBase.copy(alpha = 0.7f), Tokens.bgBase.copy(alpha = 0.25f), Color.Transparent),
-                ),
-            ),
-        )
-        Box(
-            Modifier.fillMaxWidth().height(
-                3.dp,
-            ).align(
-                Alignment.BottomStart,
-            ).background(Brush.horizontalGradient(listOf(theme.accent, theme.accentGradientEnd, Color.Transparent))),
-        )
+        HeroScrim()
         Column(
             Modifier.align(Alignment.BottomStart).padding(20.dp).fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),

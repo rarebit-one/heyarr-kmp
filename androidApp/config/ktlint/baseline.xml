@@ -53,21 +53,13 @@
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/CastScreen.kt">
         <error line="121" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/DetailCurate.kt">
-        <error line="248" column="121" source="standard:max-line-length" />
-        <error line="339" column="121" source="standard:max-line-length" />
-        <error line="397" column="121" source="standard:max-line-length" />
-        <error line="542" column="121" source="standard:max-line-length" />
-        <error line="570" column="121" source="standard:max-line-length" />
-    </file>
-    <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/DetailScreen.kt">
-        <error line="578" column="121" source="standard:max-line-length" />
-        <error line="589" column="121" source="standard:max-line-length" />
+    <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/CurateSections.kt">
+        <error line="249" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/DetailWatch.kt">
-        <error line="197" column="121" source="standard:max-line-length" />
-        <error line="393" column="121" source="standard:max-line-length" />
-        <error line="535" column="121" source="standard:max-line-length" />
+        <error line="174" column="121" source="standard:max-line-length" />
+        <error line="213" column="121" source="standard:max-line-length" />
+        <error line="285" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/HomeScreen.kt">
         <error line="230" column="121" source="standard:max-line-length" />
