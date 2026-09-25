@@ -176,23 +176,7 @@ fun MediaCard(
     ) {
         Box(Modifier.fillMaxWidth().aspectRatio((aspectOverride ?: theme.aspect).ratio)) {
             Artwork(artwork, type, Modifier.fillMaxSize(), contentDescription = null)
-            if (progress !=
-                null
-            ) {
-                Box(
-                    Modifier.align(
-                        Alignment.BottomStart,
-                    ).fillMaxWidth().height(4.dp).background(Tokens.bgBase.copy(alpha = 0.55f)),
-                ) {
-                    Box(
-                        Modifier.fillMaxWidth(
-                            progress.coerceIn(0f, 1f),
-                        ).height(
-                            4.dp,
-                        ).background(Brush.horizontalGradient(listOf(theme.accent, theme.accentGradientEnd))),
-                    )
-                }
-            }
+            if (progress != null) CardProgressBar(progress, Modifier.align(Alignment.BottomStart))
             if (theme.spineShadow) {
                 Box(
                     Modifier.width(
@@ -205,54 +189,10 @@ fun MediaCard(
             if (showBadge) MediaBadge(type, Modifier.align(Alignment.TopStart).padding(8.dp))
             if (status != null) StatusPill(status, Modifier.align(Alignment.TopEnd).padding(8.dp), compact = !hovered)
             if (onWant != null && wantVisible(mode, status) && hovered) {
-                Box(Modifier.align(Alignment.BottomEnd).padding(8.dp)) {
-                    PrimaryButton(
-                        if (status == LibraryStatus.NOT_TRACKED ||
-                            status == null
-                        ) {
-                            "Want"
-                        } else {
-                            "Wanted"
-                        },
-                        onWant,
-                        icon = if (status == LibraryStatus.NOT_TRACKED ||
-                            status == null
-                        ) {
-                            Icons.Rounded.Add
-                        } else {
-                            Icons.Rounded.Check
-                        },
-                        compact = true,
-                        enabled =
-                        status == LibraryStatus.NOT_TRACKED || status == null,
-                    )
-                }
+                CardWantButton(status, onWant, Modifier.align(Alignment.BottomEnd))
             }
         }
-        Column(
-            Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                title,
-                style = MaterialTheme.typography.titleSmall,
-                color = Tokens.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (subtitle !=
-                null
-            ) {
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Tokens.textMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            MetaLine(meta)
-        }
+        CardCaption(title, subtitle, meta)
     }
 }
 
@@ -415,45 +355,12 @@ fun Hero(
         ).clip(shape).background(Tokens.surface1).border(Tokens.hairline, Tokens.border, shape),
     ) {
         Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 72.dp)
-        // Layered scrim: bottom-up darkening, plus a left-to-right one so the text column reads on any art.
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.verticalGradient(
-                    listOf(Color.Transparent, Tokens.bgBase.copy(alpha = 0.55f), Tokens.bgBase.copy(alpha = 0.96f)),
-                ),
-            ),
-        )
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.horizontalGradient(
-                    listOf(Tokens.bgBase.copy(alpha = 0.85f), Tokens.bgBase.copy(alpha = 0.35f), Color.Transparent),
-                ),
-            ),
-        )
-        Box(
-            Modifier.fillMaxWidth().height(
-                3.dp,
-            ).align(
-                Alignment.BottomStart,
-            ).background(Brush.horizontalGradient(listOf(theme.accent, theme.accentGradientEnd, Color.Transparent))),
-        )
+        HeroScrims()
         Column(
             Modifier.align(Alignment.BottomStart).padding(28.dp).fillMaxWidth(0.62f),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MediaBadge(type)
-                if (kicker !=
-                    null
-                ) {
-                    Text(
-                        kicker.uppercase(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = theme.accentGradientEnd,
-                    )
-                }
-                if (status != null) StatusPill(status)
-            }
+            HeroKicker(type, kicker, status)
             Text(
                 title,
                 style = MaterialTheme.typography.displayMedium,

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -42,6 +43,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
@@ -109,26 +111,7 @@ fun SearchScreen(
 
     fun open(row: SearchRow) {
         session.recent.push(search.query).also { recent = it }
-        when (row) {
-            is SearchRow.WorkRow -> onOpen(
-                Route.Detail(row.hit.workId, MediaType.from(row.hit.contentType), row.hit.title, from = "Search"),
-            )
-
-            is SearchRow.EpisodeRow -> row.hit.workId?.let {
-                onOpen(
-                    Route.Detail(
-                        it,
-                        MediaType.SERIES,
-                        row.hit.workTitle ?: row.hit.title,
-                        from = "Search",
-                    ),
-                )
-            }
-
-            is SearchRow.SourceRow -> row.source.workId?.let {
-                onOpen(Route.Detail(it, MediaType.from(row.source.type), row.source.title, from = "Search"))
-            }
-        }
+        routeFor(row)?.let(onOpen)
     }
 
     LaunchedEffect(search.selected) {
@@ -161,23 +144,7 @@ fun SearchScreen(
             ProviderSearchPane(session, search.query, onWantTitle)
             return@Column
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (f in SearchFilter.entries) {
-                val count = if (f ==
-                    SearchFilter.ALL
-                ) {
-                    null
-                } else {
-                    sections.firstOrNull { f.admits(it.type) }?.rows?.size?.takeIf { it > 0 }
-                }
-                MediaScope(f.type ?: MediaType.MOVIE) {
-                    FilterChip(f.label, search.filter == f, {
-                        search.filter = f
-                        search.selected = -1
-                    }, count = count)
-                }
-            }
-        }
+        SearchFilterChips(search, sections)
         when {
             search.isIdle -> IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = {
                 session.recent.clear()
@@ -193,47 +160,7 @@ fun SearchScreen(
                 }, icon = Icons.Rounded.TravelExplore)
             })
 
-            else -> LazyColumn(
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                var index = 0
-                for (section in sections) {
-                    if (section.segment is Segment.Loaded && section.rows.isEmpty()) continue
-                    item(key = "h:" + section.type) {
-                        MediaScope(section.type) {
-                            SectionHeader(
-                                section.title,
-                                icon = section.type.icon(),
-                                modifier = Modifier.padding(top = 12.dp, bottom = 6.dp),
-                                subtitle = (section.segment as? Segment.Loaded)?.let {
-                                    if (it.truncated) "Showing the first ${it.rows.size} — narrow the query for more." else null
-                                },
-                            )
-                        }
-                    }
-                    when (val seg = section.segment) {
-                        Segment.Pending -> item(key = "p:" + section.type) { MediaRowSkeleton(2) }
-
-                        is Segment.Failed -> item(key = "f:" + section.type) {
-                            Notice("Couldn't search ${section.title.lowercase()}: ${seg.message}", tone = Tokens.danger)
-                        }
-
-                        is Segment.Loaded -> {
-                            val start = index
-                            items(seg.rows, key = { it.key }) { row ->
-                                val i = start + seg.rows.indexOf(row)
-                                ResultRow(session, row, selected = i == search.selected, onOpen = {
-                                    open(row)
-                                }, onWant = onWant)
-                            }
-                            index += seg.rows.size
-                        }
-                    }
-                }
-                item { Spacer(Modifier.height(24.dp)) }
-            }
+            else -> SearchResults(session, search, listState, ::open, onWant)
         }
     }
 }
@@ -348,32 +275,7 @@ private fun SearchBox(
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSubmit() }),
                 modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
-                    .onPreviewKeyEvent { e ->
-                        if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
-                        when (e.key) {
-                            Key.DirectionDown -> {
-                                onMove(1)
-                                true
-                            }
-
-                            Key.DirectionUp -> {
-                                onMove(-1)
-                                true
-                            }
-
-                            Key.Enter -> {
-                                onSubmit()
-                                true
-                            }
-
-                            Key.Escape -> {
-                                onClear()
-                                true
-                            }
-
-                            else -> false
-                        }
-                    }
+                    .onPreviewKeyEvent { e -> searchKeys(e, onMove, onSubmit, onClear) }
                     .semantics { this.contentDescription = "Universal search" },
                 interactionSource = interaction,
             )
@@ -387,6 +289,128 @@ private fun SearchBox(
                 Kbd("↵")
             }
         }
+    }
+}
+
+/** Where a search row leads: its work's detail page, or nowhere for an episode or source with no work. */
+private fun routeFor(row: SearchRow): Route.Detail? = when (row) {
+    is SearchRow.WorkRow ->
+        Route.Detail(row.hit.workId, MediaType.from(row.hit.contentType), row.hit.title, from = "Search")
+
+    is SearchRow.EpisodeRow -> row.hit.workId?.let {
+        Route.Detail(
+            it,
+            MediaType.SERIES,
+            row.hit.workTitle ?: row.hit.title,
+            from = "Search",
+        )
+    }
+
+    is SearchRow.SourceRow -> row.source.workId?.let {
+        Route.Detail(it, MediaType.from(row.source.type), row.source.title, from = "Search")
+    }
+}
+
+/** One chip per media filter, each counting its section's rows and wearing that media's accent. */
+@Composable
+private fun SearchFilterChips(search: SearchController, sections: List<SearchSection>) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (f in SearchFilter.entries) {
+            val count = if (f ==
+                SearchFilter.ALL
+            ) {
+                null
+            } else {
+                sections.firstOrNull { f.admits(it.type) }?.rows?.size?.takeIf { it > 0 }
+            }
+            MediaScope(f.type ?: MediaType.MOVIE) {
+                FilterChip(f.label, search.filter == f, {
+                    search.filter = f
+                    search.selected = -1
+                }, count = count)
+            }
+        }
+    }
+}
+
+/** The results, a header per media section, streamed in as each segment lands; ↑/↓ selection is by flattened index. */
+@Composable
+private fun SearchResults(
+    session: AppSession,
+    search: SearchController,
+    listState: LazyListState,
+    onOpenRow: (SearchRow) -> Unit,
+    onWant: (String, String, MediaType) -> Unit,
+) {
+    val sections = search.sections
+    LazyColumn(
+        state = listState,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        var index = 0
+        for (section in sections) {
+            if (section.segment is Segment.Loaded && section.rows.isEmpty()) continue
+            item(key = "h:" + section.type) {
+                MediaScope(section.type) {
+                    SectionHeader(
+                        section.title,
+                        icon = section.type.icon(),
+                        modifier = Modifier.padding(top = 12.dp, bottom = 6.dp),
+                        subtitle = (section.segment as? Segment.Loaded)?.let {
+                            if (it.truncated) "Showing the first ${it.rows.size} — narrow the query for more." else null
+                        },
+                    )
+                }
+            }
+            when (val seg = section.segment) {
+                Segment.Pending -> item(key = "p:" + section.type) { MediaRowSkeleton(2) }
+
+                is Segment.Failed -> item(key = "f:" + section.type) {
+                    Notice("Couldn't search ${section.title.lowercase()}: ${seg.message}", tone = Tokens.danger)
+                }
+
+                is Segment.Loaded -> {
+                    val start = index
+                    items(seg.rows, key = { it.key }) { row ->
+                        val i = start + seg.rows.indexOf(row)
+                        ResultRow(session, row, selected = i == search.selected, onOpen = {
+                            onOpenRow(row)
+                        }, onWant = onWant)
+                    }
+                    index += seg.rows.size
+                }
+            }
+        }
+        item { Spacer(Modifier.height(24.dp)) }
+    }
+}
+
+/** The box's own keys: ↑/↓ move the selection, Enter opens it (or searches), Esc clears. */
+private fun searchKeys(e: KeyEvent, onMove: (Int) -> Unit, onSubmit: () -> Unit, onClear: () -> Unit): Boolean {
+    if (e.type != KeyEventType.KeyDown) return false
+    return when (e.key) {
+        Key.DirectionDown -> {
+            onMove(1)
+            true
+        }
+
+        Key.DirectionUp -> {
+            onMove(-1)
+            true
+        }
+
+        Key.Enter -> {
+            onSubmit()
+            true
+        }
+
+        Key.Escape -> {
+            onClear()
+            true
+        }
+
+        else -> false
     }
 }
 

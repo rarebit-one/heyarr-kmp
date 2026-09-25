@@ -118,10 +118,8 @@
         <error line="142" column="121" source="standard:max-line-length" />
         <error line="148" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/HomeScreen.kt">
-        <error line="184" column="121" source="standard:max-line-length" />
-        <error line="193" column="121" source="standard:max-line-length" />
-        <error line="305" column="121" source="standard:max-line-length" />
+    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/HomeRails.kt">
+        <error line="60" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/LibraryScreen.kt">
         <error line="290" column="121" source="standard:max-line-length" />
@@ -130,20 +128,19 @@
         <error line="259" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/NowPlayingScreen.kt">
-        <error line="128" column="121" source="standard:max-line-length" />
+        <error line="118" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/PlayerScreen.kt">
-        <error line="347" column="121" source="standard:max-line-length" />
+        <error line="326" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/SearchScreen.kt">
-        <error line="189" column="121" source="standard:max-line-length" />
-        <error line="211" column="121" source="standard:max-line-length" />
-        <error line="399" column="121" source="standard:max-line-length" />
-        <error line="447" column="121" source="standard:max-line-length" />
+        <error line="156" column="121" source="standard:max-line-length" />
+        <error line="423" column="121" source="standard:max-line-length" />
+        <error line="471" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/SettingsScreen.kt">
-        <error line="94" column="121" source="standard:max-line-length" />
-        <error line="188" column="121" source="standard:max-line-length" />
+        <error line="95" column="121" source="standard:max-line-length" />
+        <error line="189" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/vault/VaultSyncEngine.kt">
         <error line="215" column="121" source="standard:max-line-length" />

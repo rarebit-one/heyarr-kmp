@@ -11,7 +11,6 @@
     <ID>CyclomaticComplexMethod:App.kt$@Composable fun App( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
     <ID>CyclomaticComplexMethod:App.kt$@Composable private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:AudioDock.kt$@Composable fun AudioDock(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
-    <ID>CyclomaticComplexMethod:Cards.kt$@Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The client's mode; a guest ([ClientMode.GUEST]) never sees the Want affordance. */ mode: ClientMode = ClientMode.ENROLLED, width: Dp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, )</ID>
     <ID>CyclomaticComplexMethod:ConnectionSheet.kt$@Composable fun ConnectionSheet(session: AppSession, state: ConnectionState, onClose: () -&gt; Unit, onSettings: () -&gt; Unit)</ID>
     <ID>CyclomaticComplexMethod:DaemonConfig.kt$DaemonConfig.Companion$fun resolve(args: Array&lt;String&gt;, env: (String) -&gt; String? = System::getenv): DaemonConfig</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable fun DetailScreen( session: AppSession, route: Route.Detail, state: DetailState, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
@@ -22,16 +21,11 @@
     <ID>CyclomaticComplexMethod:EnrolPanel.kt$@Composable fun EnrolPanel(session: AppSession)</ID>
     <ID>CyclomaticComplexMethod:Fixtures.kt$FakeHeyarrTransport$override fun get(url: String, headers: Map&lt;String, String&gt;): HttpResponse</ID>
     <ID>CyclomaticComplexMethod:Fixtures.kt$FakeHeyarrTransport$override fun post(url: String, body: String?, contentType: String?, headers: Map&lt;String, String&gt;): HttpResponse</ID>
-    <ID>CyclomaticComplexMethod:HomeScreen.kt$@Composable fun HomeScreen( session: AppSession, state: HomeState, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>CyclomaticComplexMethod:LibraryScreen.kt$@Composable fun LibraryScreen( session: AppSession, state: LibraryState, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, experience: Experience? = null, )</ID>
     <ID>CyclomaticComplexMethod:MissingScreen.kt$@Composable fun MissingScreen( session: AppSession, state: MissingState, onOpen: (Route) -&gt; Unit, onWantTitle: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>CyclomaticComplexMethod:NowPlayingScreen.kt$@Composable fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modifier = Modifier)</ID>
-    <ID>CyclomaticComplexMethod:PlayerScreen.kt$@Composable private fun TrackMenu(ps: PlayerState, p: EmbeddedPlayer)</ID>
     <ID>CyclomaticComplexMethod:PlayerScreen.kt$@OptIn(ExperimentalComposeUiApi::class) @Composable fun PlayerScreen( session: AppSession, route: Route.Player, state: PlayerScreenState, fullscreen: Boolean, onFullscreen: (Boolean) -&gt; Unit, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>CyclomaticComplexMethod:PlayerScreen.kt$PlayerKeys$fun fromAwt(code: Int): Key?</ID>
-    <ID>CyclomaticComplexMethod:SearchScreen.kt$@Composable fun SearchScreen( session: AppSession, search: SearchController, onOpen: (Route) -&gt; Unit, onWant: (workId: String, title: String, type: MediaType) -&gt; Unit, onWantTitle: WantByTitle, focusRequester: FocusRequester, modifier: Modifier = Modifier, initialDiscover: Boolean = false, )</ID>
-    <ID>CyclomaticComplexMethod:SettingsScreen.kt$@Composable private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () -&gt; Unit)</ID>
-    <ID>CyclomaticComplexMethod:SettingsScreen.kt$@Composable private fun VaultPanel(session: AppSession)</ID>
     <ID>CyclomaticComplexMethod:VideoSurface.kt$@Composable fun PlaybackHost(session: AppSession)</ID>
     <ID>EmptyFunctionBlock:KeychainSecretStoreTest.kt$KeychainSecretStoreTest.&lt;no name provided&gt;${}</ID>
     <ID>ForbiddenComment:VaultSyncEngine.kt$VaultSyncEngine$// TODO: causal parents = the applied frontier</ID>
@@ -39,6 +33,11 @@
     <ID>FunctionNaming:App.kt$@Composable private fun SignInSheet(session: AppSession, onClose: () -&gt; Unit, onOpenSettings: () -&gt; Unit)</ID>
     <ID>FunctionNaming:App.kt$@Composable private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
     <ID>FunctionNaming:AudioDock.kt$@Composable fun AudioDock(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:CardPieces.kt$@Composable internal fun BoxScope.HeroScrims()</ID>
+    <ID>FunctionNaming:CardPieces.kt$@Composable internal fun CardCaption(title: String, subtitle: String?, meta: List&lt;String?&gt;)</ID>
+    <ID>FunctionNaming:CardPieces.kt$@Composable internal fun CardProgressBar(progress: Float, modifier: Modifier)</ID>
+    <ID>FunctionNaming:CardPieces.kt$@Composable internal fun CardWantButton(status: LibraryStatus?, onWant: () -&gt; Unit, modifier: Modifier)</ID>
+    <ID>FunctionNaming:CardPieces.kt$@Composable internal fun HeroKicker(type: MediaType, kicker: String?, status: LibraryStatus?)</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun &lt;T&gt; Rail( title: String, state: RailState&lt;T&gt;, modifier: Modifier = Modifier, subtitle: String? = null, emptyText: String = "Nothing here yet.", skeletonAspect: CardAspect = CardAspect.POSTER, skeletonWidth: Dp = Tokens.posterWidth, trailing: (@Composable () -&gt; Unit)? = null, onRetry: (() -&gt; Unit)? = null, key: ((T) -&gt; Any)? = null, card: @Composable (T) -&gt; Unit, )</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun Artwork( bitmap: ImageBitmap?, type: MediaType, modifier: Modifier = Modifier, contentDescription: String? = null, glyphSize: Dp = 28.dp, )</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun Hero( title: String, type: MediaType, modifier: Modifier = Modifier, kicker: String? = null, meta: List&lt;String?&gt; = emptyList(), description: String? = null, artwork: ImageBitmap? = null, status: LibraryStatus? = null, primary: (@Composable () -&gt; Unit)? = null, secondary: (@Composable () -&gt; Unit)? = null, height: Dp = 380.dp, )</ID>
@@ -100,7 +99,17 @@
     <ID>FunctionNaming:DiscoverScreen.kt$@Composable fun DiscoveryResults( session: AppSession, query: String, result: McpResult&lt;List&lt;DiscoveryHit&gt;&gt;?, busy: Boolean, onWantTitle: WantByTitle, )</ID>
     <ID>FunctionNaming:DownloadsScreen.kt$@Composable fun DownloadsScreen( session: AppSession, state: DownloadsState, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>FunctionNaming:EnrolPanel.kt$@Composable fun EnrolPanel(session: AppSession)</ID>
+    <ID>FunctionNaming:FollowedPanel.kt$@Composable internal fun FollowedPanel(session: AppSession, state: SettingsState, reload: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:FollowedPanel.kt$@Composable private fun FollowChoices( profiles: List&lt;String&gt;, profile: String, onProfile: (String) -&gt; Unit, backfill: String, onBackfill: (String) -&gt; Unit, )</ID>
+    <ID>FunctionNaming:FollowedPanel.kt$@Composable private fun FollowHeading()</ID>
+    <ID>FunctionNaming:FollowedPanel.kt$@Composable private fun FollowedList(session: AppSession, list: List&lt;FollowedSource&gt;?, reload: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:FollowedPanel.kt$@Composable private fun FollowedRow(s: FollowedSource, onUnfollow: () -&gt; Unit)</ID>
+    <ID>FunctionNaming:HomeRails.kt$@Composable internal fun ContinueRail(session: AppSession, cont: RailState&lt;ContinueEntry&gt;, onOpen: (Route) -&gt; Unit)</ID>
+    <ID>FunctionNaming:HomeRails.kt$@Composable internal fun FollowingRail(session: AppSession, followed: RailState&lt;FollowedSource&gt;, onOpen: (Route) -&gt; Unit)</ID>
+    <ID>FunctionNaming:HomeRails.kt$@Composable internal fun TypeRail( session: AppSession, t: MediaType, rail: RailState&lt;SearchHit&gt;, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
     <ID>FunctionNaming:HomeScreen.kt$@Composable fun HomeScreen( session: AppSession, state: HomeState, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
+    <ID>FunctionNaming:HomeScreen.kt$@Composable private fun ConnectFirst(onOpen: (Route) -&gt; Unit, modifier: Modifier)</ID>
+    <ID>FunctionNaming:HomeScreen.kt$@Composable private fun GuestNotice()</ID>
     <ID>FunctionNaming:HomeScreen.kt$@Composable private fun SpotlightBlock( session: AppSession, state: HomeState, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
     <ID>FunctionNaming:HomeScreen.kt$@Composable private fun WantRail( title: String, state: RailState&lt;Want&gt;, session: AppSession, onOpen: (Route) -&gt; Unit, subtitle: String, emptyText: String, )</ID>
     <ID>FunctionNaming:HomeScreen.kt$@Composable private fun WorkRail( title: String, state: RailState&lt;Work&gt;, session: AppSession, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, trailing: (@Composable () -&gt; Unit)? = null, )</ID>
@@ -135,13 +144,19 @@
     <ID>FunctionNaming:MissingScreen.kt$@Composable fun MissingScreen( session: AppSession, state: MissingState, onOpen: (Route) -&gt; Unit, onWantTitle: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>FunctionNaming:NowPlayingBar.kt$@Composable fun NowPlayingBar(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:NowPlayingScreen.kt$@Composable fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modifier = Modifier)</ID>
+    <ID>FunctionNaming:NowPlayingScreen.kt$@Composable private fun RendererPanel(r: Renderer, state: NowPlayingState, control: (String) -&gt; Unit)</ID>
     <ID>FunctionNaming:NowPlayingScreen.kt$@Composable private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -&gt; Unit)</ID>
+    <ID>FunctionNaming:PlayerControls.kt$@Composable internal fun PlaybackStatusText(ps: PlayerState)</ID>
+    <ID>FunctionNaming:PlayerControls.kt$@Composable internal fun PopoutNotice(modifier: Modifier)</ID>
+    <ID>FunctionNaming:PlayerControls.kt$@Composable internal fun TrackMenu(ps: PlayerState, p: EmbeddedPlayer)</ID>
+    <ID>FunctionNaming:PlayerControls.kt$@Composable internal fun VolumeControl(ps: PlayerState, p: EmbeddedPlayer)</ID>
+    <ID>FunctionNaming:PlayerControls.kt$@Composable private fun AudioMenuItems(ps: PlayerState, onPick: (Int) -&gt; Unit)</ID>
+    <ID>FunctionNaming:PlayerControls.kt$@Composable private fun CaptionMenuItems(ps: PlayerState, onPick: (Int?) -&gt; Unit)</ID>
     <ID>FunctionNaming:PlayerScreen.kt$@Composable fun Picture(m: Modifier)</ID>
     <ID>FunctionNaming:PlayerScreen.kt$@Composable fun Transport(overlay: Boolean)</ID>
     <ID>FunctionNaming:PlayerScreen.kt$@Composable private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.Player)</ID>
     <ID>FunctionNaming:PlayerScreen.kt$@Composable private fun SeekBar(ps: PlayerState, onSeek: (Float) -&gt; Unit)</ID>
     <ID>FunctionNaming:PlayerScreen.kt$@Composable private fun StartingOverlay(label: String)</ID>
-    <ID>FunctionNaming:PlayerScreen.kt$@Composable private fun TrackMenu(ps: PlayerState, p: EmbeddedPlayer)</ID>
     <ID>FunctionNaming:PlayerScreen.kt$@OptIn(ExperimentalComposeUiApi::class) @Composable fun PlayerScreen( session: AppSession, route: Route.Player, state: PlayerScreenState, fullscreen: Boolean, onFullscreen: (Boolean) -&gt; Unit, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>FunctionNaming:ReaderScreen.kt$@Composable fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -&gt; Unit)</ID>
     <ID>FunctionNaming:ReaderScreen.kt$@Composable private fun Centered(text: String)</ID>
@@ -150,12 +165,15 @@
     <ID>FunctionNaming:SearchScreen.kt$@Composable private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: WantByTitle)</ID>
     <ID>FunctionNaming:SearchScreen.kt$@Composable private fun ResultRow( session: AppSession, row: SearchRow, selected: Boolean, onOpen: () -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
     <ID>FunctionNaming:SearchScreen.kt$@Composable private fun SearchBox( value: String, onValueChange: (String) -&gt; Unit, onSubmit: () -&gt; Unit, onMove: (Int) -&gt; Unit, onClear: () -&gt; Unit, focusRequester: FocusRequester, )</ID>
+    <ID>FunctionNaming:SearchScreen.kt$@Composable private fun SearchFilterChips(search: SearchController, sections: List&lt;SearchSection&gt;)</ID>
+    <ID>FunctionNaming:SearchScreen.kt$@Composable private fun SearchResults( session: AppSession, search: SearchController, listState: LazyListState, onOpenRow: (SearchRow) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable fun SettingsScreen( session: AppSession, state: SettingsState, onSourcesChanged: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun AccentPreview()</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun AppearancePanel(session: AppSession)</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun ConnectionPanel(session: AppSession)</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () -&gt; Unit)</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun PeersPanel(session: AppSession, state: SettingsState)</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun VaultPanel(session: AppSession)</ID>
+    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun VaultStatus(vault: VaultService)</ID>
     <ID>FunctionNaming:SideNav.kt$@Composable fun SideNav( current: Route, onGo: (Route) -&gt; Unit, connection: Connection, compact: Boolean = false, modifier: Modifier = Modifier, connectionDetail: String? = null, onConnection: () -&gt; Unit = {}, consuming: Boolean = false, )</ID>
     <ID>FunctionNaming:SideNav.kt$@Composable private fun ConnectionTile(connection: Connection, detail: String?, onClick: () -&gt; Unit)</ID>
     <ID>FunctionNaming:SideNav.kt$@Composable private fun RailItem(item: NavItem, active: Boolean, accent: Color, accentEnd: Color, onClick: () -&gt; Unit)</ID>
@@ -167,29 +185,16 @@
     <ID>LongMethod:App.kt$@Composable fun App( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
     <ID>LongMethod:App.kt$@Composable private fun WantSheet(session: AppSession, req: WantRequest, onClose: () -&gt; Unit)</ID>
     <ID>LongMethod:AudioDock.kt$@Composable fun AudioDock(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
-    <ID>LongMethod:Cards.kt$@Composable fun Hero( title: String, type: MediaType, modifier: Modifier = Modifier, kicker: String? = null, meta: List&lt;String?&gt; = emptyList(), description: String? = null, artwork: ImageBitmap? = null, status: LibraryStatus? = null, primary: (@Composable () -&gt; Unit)? = null, secondary: (@Composable () -&gt; Unit)? = null, height: Dp = 380.dp, )</ID>
-    <ID>LongMethod:Cards.kt$@Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The client's mode; a guest ([ClientMode.GUEST]) never sees the Want affordance. */ mode: ClientMode = ClientMode.ENROLLED, width: Dp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, )</ID>
     <ID>LongMethod:ConnectionSheet.kt$@Composable fun ConnectionSheet(session: AppSession, state: ConnectionState, onClose: () -&gt; Unit, onSettings: () -&gt; Unit)</ID>
     <ID>LongMethod:DownloadsScreen.kt$@Composable fun DownloadsScreen( session: AppSession, state: DownloadsState, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>LongMethod:EmbeddedPlayer.kt$EmbeddedPlayer$fun start( embedded: Boolean, url: String, token: String, title: String, knownDurationSec: Double? = null, streamBaseUrl: String? = null, ): String?</ID>
     <ID>LongMethod:EnrolPanel.kt$@Composable fun EnrolPanel(session: AppSession)</ID>
-    <ID>LongMethod:HomeScreen.kt$@Composable fun HomeScreen( session: AppSession, state: HomeState, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
-    <ID>LongMethod:HomeScreen.kt$fun load()</ID>
     <ID>LongMethod:LibraryScreen.kt$@Composable fun LibraryScreen( session: AppSession, state: LibraryState, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, experience: Experience? = null, )</ID>
     <ID>LongMethod:MissingScreen.kt$@Composable fun MissingScreen( session: AppSession, state: MissingState, onOpen: (Route) -&gt; Unit, onWantTitle: () -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>LongMethod:NowPlayingBar.kt$@Composable fun NowPlayingBar(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
-    <ID>LongMethod:NowPlayingScreen.kt$@Composable fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modifier = Modifier)</ID>
-    <ID>LongMethod:PlayerScreen.kt$@Composable fun Picture(m: Modifier)</ID>
-    <ID>LongMethod:PlayerScreen.kt$@Composable fun Transport(overlay: Boolean)</ID>
-    <ID>LongMethod:PlayerScreen.kt$@Composable private fun TrackMenu(ps: PlayerState, p: EmbeddedPlayer)</ID>
     <ID>LongMethod:PlayerScreen.kt$@OptIn(ExperimentalComposeUiApi::class) @Composable fun PlayerScreen( session: AppSession, route: Route.Player, state: PlayerScreenState, fullscreen: Boolean, onFullscreen: (Boolean) -&gt; Unit, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>LongMethod:ReaderScreen.kt$@Composable fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -&gt; Unit)</ID>
     <ID>LongMethod:RelaySmokeTest.kt$RelaySmokeTest$@Test fun desktop_enroller_pairs_against_a_real_voidbind_relay()</ID>
-    <ID>LongMethod:SearchScreen.kt$@Composable fun SearchScreen( session: AppSession, search: SearchController, onOpen: (Route) -&gt; Unit, onWant: (workId: String, title: String, type: MediaType) -&gt; Unit, onWantTitle: WantByTitle, focusRequester: FocusRequester, modifier: Modifier = Modifier, initialDiscover: Boolean = false, )</ID>
-    <ID>LongMethod:SearchScreen.kt$@Composable private fun SearchBox( value: String, onValueChange: (String) -&gt; Unit, onSubmit: () -&gt; Unit, onMove: (Int) -&gt; Unit, onClear: () -&gt; Unit, focusRequester: FocusRequester, )</ID>
-    <ID>LongMethod:SettingsScreen.kt$@Composable private fun AppearancePanel(session: AppSession)</ID>
-    <ID>LongMethod:SettingsScreen.kt$@Composable private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () -&gt; Unit)</ID>
-    <ID>LongMethod:SettingsScreen.kt$@Composable private fun VaultPanel(session: AppSession)</ID>
     <ID>LongParameterList:App.kt$( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
     <ID>LongParameterList:AppSession.kt$AppSession$( private val settings: SettingsStore, private val transport: HttpTransport, val player: Player, val openExternally: OpenExternally, private val scope: CoroutineScope, artworkLoader: ArtworkLoader? = null, externalMetadata: ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** * Turn on the REAL desktop device-enrol stack (a filesystem-backed [DesktopDeviceKeyring], * its [PairingCoordinator] and the device-credential enroller). Off by default so previews * and tests stay guest and touch no disk / no device key store; the desktop entry point * ([one.rarebit.heyarr.desktop.MainKt]) turns it on. */ enableDeviceEnrol: Boolean = false, )</ID>
     <ID>LongParameterList:AppSession.kt$AppSession$( workId: String, title: String, profile: String, monitor: Boolean = true, reason: String? = null, onDone: (McpResult&lt;*&gt;?) -&gt; Unit = {}, )</ID>
@@ -400,10 +405,10 @@
     <ID>MagicNumber:PlaceholderArt.kt$PlaceholderArt$600</ID>
     <ID>MagicNumber:PlaceholderArt.kt$PlaceholderArt$60f</ID>
     <ID>MagicNumber:PlaceholderArt.kt$PlaceholderArt$90</ID>
-    <ID>MagicNumber:PlayerScreen.kt$1.3f</ID>
+    <ID>MagicNumber:PlayerControls.kt$1.3f</ID>
+    <ID>MagicNumber:PlayerControls.kt$100.0</ID>
     <ID>MagicNumber:PlayerScreen.kt$10.0</ID>
     <ID>MagicNumber:PlayerScreen.kt$100</ID>
-    <ID>MagicNumber:PlayerScreen.kt$100.0</ID>
     <ID>MagicNumber:PlayerScreen.kt$16f</ID>
     <ID>MagicNumber:PlayerScreen.kt$255</ID>
     <ID>MagicNumber:PlayerScreen.kt$3</ID>
@@ -515,8 +520,7 @@
     <ID>MaxLineLength:HeyarrApi.kt$HeyarrApi$/** `GET /api/v1/consumption/continue` — the node's continue rail: the newest unfinished playback session per work (ADR-0075). */</ID>
     <ID>MaxLineLength:HeyarrApi.kt$HeyarrApi$/** `acquire_release` — fetch one named candidate. A profile-rejected candidate is refused by rule; the refusal is returned to show. */</ID>
     <ID>MaxLineLength:HeyarrApi.kt$HeyarrApi$/** `discover_content` — ask the metadata provider (TVDB) for series the library does NOT hold. A node with no provider refuses; that refusal is returned for the UI to show. */</ID>
-    <ID>MaxLineLength:HomeScreen.kt$Rail</ID>
-    <ID>MaxLineLength:HomeScreen.kt$detail = "Sign in to save your place, keep playlists, and want or follow things. Open Settings to sign in."</ID>
+    <ID>MaxLineLength:HomeRails.kt$Rail</ID>
     <ID>MaxLineLength:LandscapeMetadataTest.kt$LandscapeMetadataTest$"""[{"type":"background","resolutions":{"original":{"width":1920,"height":1080,"url":"https://art/wide"}}}]"""</ID>
     <ID>MaxLineLength:Libmpv.kt$MpvLib.UpdateCallback$/** `mpv_render_update_fn`: mpv has a new frame (or wants attention). Called on mpv's thread; must return at once. */</ID>
     <ID>MaxLineLength:Libmpv.kt$VideoFrame$/** One rendered picture: an immutable Skia image plus its pixel size. Owned by [MpvRenderer]; never closed while a draw holds it. */</ID>
@@ -535,7 +539,6 @@
     <ID>MaxLineLength:SearchScreen.kt$"Kept on this machine only — heyarr's personal history is encrypted controller-side and not reachable from here."</ID>
     <ID>MaxLineLength:SearchScreen.kt$)</ID>
     <ID>MaxLineLength:SearchScreen.kt$detail = "Movies, series, music and books come from the library; podcasts and feeds from what you follow. Results appear per type as each answer lands."</ID>
-    <ID>MaxLineLength:SearchScreen.kt$if (it.truncated) "Showing the first ${it.rows.size} — narrow the query for more." else null</ID>
     <ID>MaxLineLength:SearchScreen.kt$subtitle = "Find titles to add — series, movies, books and music the node's metadata providers know about but the library doesn't hold yet."</ID>
     <ID>MaxLineLength:SeriesTest.kt$SeriesTest$id = id</ID>
     <ID>MaxLineLength:SettingsScreen.kt$"A JVM under XWayland on a HiDPI Wayland desktop reports 1× and ignores the JVM scale flags, so pick the scale here (or set HEYARR_UI_SCALE / GDK_SCALE)."</ID>

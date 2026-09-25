@@ -36,6 +36,7 @@ import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.state.SyncStatus
 import one.rarebit.heyarr.desktop.state.VaultPhase
+import one.rarebit.heyarr.desktop.state.VaultService
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.KeyValue
@@ -208,27 +209,7 @@ private fun VaultPanel(session: AppSession) {
                 PrimaryButton("Stop sync", { vault.disable() }, compact = true)
             }
         }
-        KeyValue(
-            "status",
-            when (val p = phase) {
-                VaultPhase.Off -> "off"
-
-                is VaultPhase.Preparing -> "getting ready — ${p.reason}"
-
-                VaultPhase.Running -> when (val s = vault.controller.status) {
-                    SyncStatus.Off -> "stopped"
-                    SyncStatus.Waiting -> "waiting for setup"
-                    SyncStatus.Idle -> "up to date"
-                    SyncStatus.Syncing -> "syncing…"
-                    is SyncStatus.Error -> "error: ${s.message}"
-                }
-            },
-            valueColor = when {
-                phase is VaultPhase.Running && vault.controller.status is SyncStatus.Error -> Tokens.textPrimary
-                phase is VaultPhase.Running && vault.controller.status == SyncStatus.Idle -> Tokens.success
-                else -> Tokens.textMuted
-            },
-        )
+        VaultStatus(vault)
         vault.controller.lastStats?.let { s ->
             KeyValue("last sync", "↑${s.uploaded}  ↓${s.downloaded}  ⌫${s.deletedRemote}/${s.deletedLocal}")
         }
@@ -240,6 +221,33 @@ private fun VaultPanel(session: AppSession) {
             color = Tokens.textDisabled,
         )
     }
+}
+
+/** The sync's phase, and once it runs the engine's own status: off, waiting, up to date, syncing, error. */
+@Composable
+private fun VaultStatus(vault: VaultService) {
+    val phase = vault.phase
+    KeyValue(
+        "status",
+        when (val p = phase) {
+            VaultPhase.Off -> "off"
+
+            is VaultPhase.Preparing -> "getting ready — ${p.reason}"
+
+            VaultPhase.Running -> when (val s = vault.controller.status) {
+                SyncStatus.Off -> "stopped"
+                SyncStatus.Waiting -> "waiting for setup"
+                SyncStatus.Idle -> "up to date"
+                SyncStatus.Syncing -> "syncing…"
+                is SyncStatus.Error -> "error: ${s.message}"
+            }
+        },
+        valueColor = when {
+            phase is VaultPhase.Running && vault.controller.status is SyncStatus.Error -> Tokens.textPrimary
+            phase is VaultPhase.Running && vault.controller.status == SyncStatus.Idle -> Tokens.success
+            else -> Tokens.textMuted
+        },
+    )
 }
 
 /** A native directory picker (Swing, EDT — runs on the button click, never during render). */
@@ -260,125 +268,6 @@ private fun chooseDirectory(current: String): String? {
         chooser.selectedFile?.absolutePath
     } else {
         null
-    }
-}
-
-@Composable
-private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    var url by remember { mutableStateOf("") }
-    var tvdb by remember { mutableStateOf("") }
-    var title by remember { mutableStateOf("") }
-    var profile by remember(session.profiles) { mutableStateOf(session.profiles.firstOrNull()?.name ?: "") }
-    var backfill by remember { mutableStateOf("from_now") }
-    Panel("Followed sources", trailing = { GhostButton("Refresh", reload) }) {
-        when (val list = state.followed) {
-            null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
-
-            else -> if (list.isEmpty()) {
-                Text("Nothing followed yet.", style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-            } else {
-                for (s in list) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        MediaBadge(MediaType.from(s.type))
-                        Column(Modifier.weight(1f)) {
-                            Text(s.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary)
-                            Text(
-                                listOfNotNull(
-                                    s.feedRef,
-                                    "${s.itemsArchived}/${s.itemsKnown} archived",
-                                    s.health?.let {
-                                        "health $it"
-                                    },
-                                ).joinToString("  ·  "),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Tokens.textMuted,
-                                maxLines = 1,
-                            )
-                        }
-                        SecondaryButton("Unfollow", {
-                            val a = session.api ?: return@SecondaryButton
-                            scope.launch {
-                                session.io { a.unfollow(s.id) }.onSuccess { r ->
-                                    when (r) {
-                                        is McpResult.Ok -> {
-                                            session.toast(
-                                                Toast.Kind.SUCCESS,
-                                                "Unfollowed ${s.title}",
-                                                "Archived items are kept.",
-                                            )
-                                            reload()
-                                        }
-
-                                        is McpResult.Refused -> session.refused(r)
-                                    }
-                                }
-                            }
-                        }, compact = true, danger = true)
-                    }
-                }
-            }
-        }
-        Text(
-            "Follow something new",
-            style = MaterialTheme.typography.titleSmall,
-            color = Tokens.textPrimary,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Text(
-            "A TVDB id or URL is a series; any other http(s) feed URL is a podcast (or an article feed).",
-            style = MaterialTheme.typography.bodySmall,
-            color = Tokens.textMuted,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Field("Feed / TVDB URL", url, Modifier.weight(2f), placeholder = "https://…/rss") { url = it }
-            Field("TVDB id", tvdb, Modifier.weight(1f)) { tvdb = it.filter { c -> c.isDigit() } }
-        }
-        Field("Title (only for content the library has never seen)", title) { title = it }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Profile", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-            for (p in session.profiles) FilterChip(p.name, profile == p.name, { profile = p.name })
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Backfill", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-            FilterChip("from now", backfill == "from_now", { backfill = "from_now" })
-            FilterChip("full back-catalogue", backfill == "full", { backfill = "full" })
-        }
-        PrimaryButton(
-            "Follow",
-            {
-                val a = session.api ?: return@PrimaryButton
-                scope.launch {
-                    state.busy = true
-                    session.io { a.follow(url, tvdb, title, profile, backfill) }.onSuccess { r ->
-                        when (r) {
-                            is McpResult.Ok -> {
-                                session.toast(
-                                    Toast.Kind.SUCCESS,
-                                    "Following",
-                                    r.value?.title ?: url.ifBlank { tvdb },
-                                )
-                                url = ""
-                                tvdb = ""
-                                title = ""
-                                reload()
-                            }
-
-                            is McpResult.Refused -> session.refused(r)
-                        }
-                    }
-                    state.busy = false
-                }
-            },
-            icon = Icons.Rounded.Add,
-            compact = true,
-            enabled =
-            !state.busy && (url.isNotBlank() || tvdb.isNotBlank()) && profile.isNotBlank(),
-        )
     }
 }
 
@@ -465,20 +354,7 @@ private fun AppearancePanel(session: AppSession) {
             style = MaterialTheme.typography.bodySmall,
             color = Tokens.textMuted,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (t in listOf(
-                MediaType.MOVIE,
-                MediaType.SERIES,
-                MediaType.BOOK,
-                MediaType.AUDIOBOOK,
-                MediaType.PODCAST,
-                MediaType.MUSIC,
-            )) {
-                MediaScope(t) {
-                    PrimaryButton(MediaThemes.of(t).ctaLabel, {}, compact = true)
-                }
-            }
-        }
+        AccentPreview()
         Text(
             "UI scale",
             style = MaterialTheme.typography.titleSmall,
@@ -500,5 +376,24 @@ private fun AppearancePanel(session: AppSession) {
             style = MaterialTheme.typography.bodySmall,
             color = Tokens.textMuted,
         )
+    }
+}
+
+/** One call-to-action per media type, each under its own accent — a live key for the paragraph above. */
+@Composable
+private fun AccentPreview() {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (t in listOf(
+            MediaType.MOVIE,
+            MediaType.SERIES,
+            MediaType.BOOK,
+            MediaType.AUDIOBOOK,
+            MediaType.PODCAST,
+            MediaType.MUSIC,
+        )) {
+            MediaScope(t) {
+                PrimaryButton(MediaThemes.of(t).ctaLabel, {}, compact = true)
+            }
+        }
     }
 }
