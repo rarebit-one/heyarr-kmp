@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package one.rarebit.heyarr.desktop.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
@@ -13,6 +15,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.GridView
@@ -143,7 +148,7 @@ fun LibraryScreen(
 
             filtered.isEmpty() -> EmptyState(
                 if (all.isEmpty()) "The library is empty" else "Nothing matches these filters",
-                detail = if (all.isEmpty()) "Scan a library root on the node, or Want something and let heyarr find it." else "Clear a filter to see more.",
+                detail = libraryEmptyDetail(all.isEmpty()),
             )
 
             state.grid -> LibraryGrid(session, filtered, gridCell(state, experience), openWork, onWant)
@@ -151,6 +156,12 @@ fun LibraryScreen(
             else -> LibraryList(session, filtered, openWork)
         }
     }
+}
+
+private fun libraryEmptyDetail(libraryIsEmpty: Boolean): String = if (libraryIsEmpty) {
+    "Scan a library root on the node, or Want something and let heyarr find it."
+} else {
+    "Clear a filter to see more."
 }
 
 /** Load (or reload) every work the node catalogues. */
@@ -218,10 +229,10 @@ private fun LibraryGrid(
     onOpenWork: (Work) -> Unit,
     onWant: (String, String, MediaType) -> Unit,
 ) {
-    LazyVerticalGrid(
-        GridCells.Adaptive(cell),
+    LazyVerticalStaggeredGrid(
+        StaggeredGridCells.Adaptive(cell),
         horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap),
-        verticalArrangement = Arrangement.spacedBy(Tokens.gridGap),
+        verticalItemSpacing = Tokens.gridGap,
         contentPadding = PaddingValues(bottom = 32.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -237,7 +248,7 @@ private fun LibraryGrid(
                 ),
                 artwork = cover.bitmap, status = session.index.statusOf(w.id), onWant = {
                     onWant(w.id, w.title, type)
-                }, mode = session.mode, width = Tokens.posterWidth,
+                }, mode = session.mode, width = null,
             )
         }
     }
