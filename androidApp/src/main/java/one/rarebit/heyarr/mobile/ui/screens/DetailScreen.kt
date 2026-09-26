@@ -65,7 +65,6 @@ import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.mobile.catalog.ContinueEntry
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.library.Season
@@ -97,7 +96,7 @@ import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 
 /** The two faces of a work: what you came to watch, and the tooling that keeps it that way. */
-enum class DetailTab(val label: String) { WATCH("Watch"), CURATE("Curate") }
+enum class DetailTab(val label: String) { WATCH("Overview"), CURATE("Manage") }
 
 /** Everything the detail screen loads for one work, each piece independently. */
 class DetailState(val workId: String) {
@@ -107,11 +106,12 @@ class DetailState(val workId: String) {
     var loading by mutableStateOf(true)
     var assets by mutableStateOf<List<WorkAsset>?>(null)
     var season by mutableStateOf<Int?>(null)
-    var continueEntry by mutableStateOf<ContinueEntry?>(null)
     var feedItems by mutableStateOf<List<FollowedItem>?>(null)
     var externalIds by mutableStateOf<List<ExternalId>>(emptyList())
     var satisfaction by mutableStateOf<Map<String, McpResult<Satisfaction?>>>(emptyMap())
     var candidates by mutableStateOf<Map<String, List<Candidate>>>(emptyMap())
+    var acquisitionError by mutableStateOf<String?>(null)
+    var acquisitionRefused by mutableStateOf(false)
     var replicas by mutableStateOf<McpResult<List<Replica>>?>(null)
     var renderers by mutableStateOf<List<Renderer>?>(null)
 
@@ -185,7 +185,7 @@ internal fun AssetPersonalActions(personal: DetailPersonal, assetId: String, tit
  * when the node has one (a public source's, labelled, when it has not; an honest line
  * when neither knows), and the thing itself — seasons and episodes with their
  * thumbnails for a series, tracks for an album, the file for a film, the archive for a
- * feed. **Curate** keeps every technical surface — status, held files with verdicts,
+ * feed. **Manage** keeps every technical surface — status, held files with verdicts,
  * indexer candidates, scoring, health, captions and artwork, variants — one tab away.
  */
 @Composable
@@ -239,12 +239,6 @@ fun DetailScreen(
             session.io { a.works() }.onSuccess { all ->
                 state.variants =
                     Variants.group(all)[route.workId].orEmpty()
-            }
-        }
-        scope.launch {
-            session.io { a.continueRail() }.onSuccess { list ->
-                state.continueEntry =
-                    list.firstOrNull { it.workId == route.workId }
             }
         }
     }

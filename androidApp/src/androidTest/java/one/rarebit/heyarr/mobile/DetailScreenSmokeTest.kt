@@ -5,6 +5,7 @@ import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
@@ -98,7 +99,7 @@ class DetailScreenSmokeTest {
 
     @Test fun aMovieDetailRenders() {
         renders(Fixtures.SINTEL, "MOVIE", "Sintel")
-        compose.onNodeWithText("CURATE").performClick()
+        compose.onNodeWithContentDescription("Manage").performClick()
         showText("Captions & artwork")
     }
 

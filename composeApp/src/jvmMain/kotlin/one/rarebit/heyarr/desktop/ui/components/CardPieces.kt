@@ -80,23 +80,6 @@ import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 
-/** The continue rail's progress along the art's bottom edge, in the media's accent. */
-@Composable
-internal fun CardProgressBar(progress: Float, modifier: Modifier) {
-    val theme = LocalMediaTheme.current
-    Box(
-        modifier.fillMaxWidth().height(4.dp).background(Tokens.bgBase.copy(alpha = 0.55f)),
-    ) {
-        Box(
-            Modifier.fillMaxWidth(
-                progress.coerceIn(0f, 1f),
-            ).height(
-                4.dp,
-            ).background(Brush.horizontalGradient(listOf(theme.accent, theme.accentGradientEnd))),
-        )
-    }
-}
-
 /** The hover-revealed Want button; once wanted it reads "Wanted" and stays disabled. */
 @Composable
 internal fun CardWantButton(status: LibraryStatus?, onWant: () -> Unit, modifier: Modifier) {
@@ -183,7 +166,7 @@ internal fun BoxScope.HeroScrims() {
     )
 }
 
-/** The hero's kicker line: the media badge, a kicker such as "Continue · …", and the library status. */
+/** The hero's kicker line: the media badge, optional work context, and the library status. */
 @Composable
 internal fun HeroKicker(type: MediaType, kicker: String?, status: LibraryStatus?) {
     val theme = LocalMediaTheme.current

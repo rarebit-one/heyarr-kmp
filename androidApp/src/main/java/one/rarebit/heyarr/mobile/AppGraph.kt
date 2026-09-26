@@ -7,8 +7,6 @@ import okhttp3.OkHttpClient
 import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.state.ExternalMetadata
-import one.rarebit.heyarr.mobile.consumption.DeviceIdStore
-import one.rarebit.heyarr.mobile.consumption.PrefsDeviceIdStore
 import one.rarebit.heyarr.mobile.net.AuthHeaderSource
 import one.rarebit.heyarr.mobile.net.AuthInterceptor
 import one.rarebit.heyarr.mobile.net.NsdMdnsResolver
@@ -41,10 +39,7 @@ class AppGraph(app: Application, scope: CoroutineScope) {
 
     val settings: SettingsStore = PrefsSettingsStore(app)
 
-    /** This phone's node-issued device ids, for consumption sessions. */
-    val deviceIds: DeviceIdStore = PrefsDeviceIdStore(app)
-
-    /** The device-side personal-state role map (which space holds starred/history/reading). */
+    /** The device-side personal-state role map (which space holds starred/playlists). */
     internal val spaceRegistry: one.rarebit.heyarr.mobile.personalstate.SpaceRegistry =
         one.rarebit.heyarr.mobile.personalstate.PrefsSpaceRegistry(app)
 

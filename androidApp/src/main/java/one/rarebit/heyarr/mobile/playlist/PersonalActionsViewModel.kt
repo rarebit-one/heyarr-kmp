@@ -15,8 +15,8 @@ import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.personalstate.PersonalStateCoordinator
 
 /**
- * The cross-screen personal-state actions — star/unstar, add to a playlist, record a
- * play — plus the derived rows Home shows (starred, recently played), all decrypted
+ * The cross-screen personal-state actions — star/unstar and add to a playlist — plus
+ * the derived row Home shows (starred), all decrypted
  * on this device. It is the one place a ★ or an "Add to playlist" tap on any card,
  * track or work goes, so those affordances share one optimistic path and one refresh.
  *
@@ -37,9 +37,6 @@ internal class PersonalActionsViewModel(
 
     private val _starredWorks = MutableStateFlow<List<Work>>(emptyList())
     val starredWorks: StateFlow<List<Work>> = _starredWorks.asStateFlow()
-
-    private val _recentWorks = MutableStateFlow<List<Work>>(emptyList())
-    val recentWorks: StateFlow<List<Work>> = _recentWorks.asStateFlow()
 
     private val _playlists = MutableStateFlow<List<PersonalStateCoordinator.PlaylistView>>(emptyList())
     val playlists: StateFlow<List<PersonalStateCoordinator.PlaylistView>> = _playlists.asStateFlow()
@@ -63,9 +60,6 @@ internal class PersonalActionsViewModel(
                 // state checks `ItemRef.asset(id).encode() in starredIds`, a work card's `w.id`.
                 _starredIds.value = ids.toSet()
                 _starredWorks.value = ids.mapNotNull { runCatching { resolver.resolve(it)?.work }.getOrNull() }
-                    .distinctBy { it.id }
-                _recentWorks.value = runCatching { ps.recentlyPlayedIds() }.getOrDefault(emptyList())
-                    .mapNotNull { runCatching { resolver.resolve(it)?.work }.getOrNull() }
                     .distinctBy { it.id }
                 _playlists.value = runCatching { ps.playlists() }.getOrDefault(emptyList())
             }
@@ -115,11 +109,5 @@ internal class PersonalActionsViewModel(
             }
             refresh()
         }
-    }
-
-    /** Record a play in history (feeds the recently-played row and the gateway's recent list). */
-    fun recordPlay(itemId: String) {
-        val ps = personalState ?: return
-        viewModelScope.launch { withContext(io) { runCatching { ps.recordPlay(itemId) } } }
     }
 }

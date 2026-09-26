@@ -35,10 +35,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,16 +48,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
-import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.mcp.EpisodeHit
+import one.rarebit.heyarr.core.state.DiscoveryAnswer
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.SearchFilter
 import one.rarebit.heyarr.core.state.SearchGrouping
 import one.rarebit.heyarr.core.state.SearchRow
 import one.rarebit.heyarr.core.state.Segment
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
 import one.rarebit.heyarr.mobile.state.AppSession
@@ -64,16 +63,17 @@ import one.rarebit.heyarr.mobile.state.SearchController
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.MediaRow
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
+import one.rarebit.heyarr.ui.components.ArchiveLoading
 import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
-import one.rarebit.heyarr.ui.components.MediaRowSkeleton
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.TechnicalDisclosure
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
 
@@ -133,7 +133,7 @@ fun SearchScreen(
                 recent = emptyList()
             })
 
-            SearchGrouping.empty(sections) -> NoResultsPane(session, search.query, onWant)
+            SearchGrouping.empty(sections) -> NoResultsPane(session, search.query)
 
             else -> LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -158,10 +158,15 @@ fun SearchScreen(
                         }
                     }
                     when (val seg = section.segment) {
-                        Segment.Pending -> item(key = "p:" + section.type) { MediaRowSkeleton(2) }
+                        Segment.Pending -> item(key = "p:" + section.type) {
+                            ArchiveLoading("Searching ${section.title.lowercase()}…")
+                        }
 
                         is Segment.Failed -> item(key = "f:" + section.type) {
-                            Notice("Couldn't search ${section.title.lowercase()}: ${seg.message}", tone = Tokens.danger)
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Notice("Couldn't search ${section.title.lowercase()}.", tone = Tokens.danger)
+                                TechnicalDisclosure(seg.message)
+                            }
                         }
 
                         is Segment.Loaded -> loadedSegment(session, seg, ::open, onWant, onPlayEpisode)
@@ -375,28 +380,33 @@ private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: ()
 
 /** No library match: offer the honest next step — ask the metadata provider, quoting its refusal when there is none. */
 @Composable
-private fun NoResultsPane(session: AppSession, query: String, onWant: (String, String) -> Unit) {
-    val scope = rememberCoroutineScope()
-    var discovery by remember(query) { mutableStateOf<McpResult<List<DiscoveryHit>>?>(null) }
-    var busy by remember(query) { mutableStateOf(false) }
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun NoResultsPane(session: AppSession, query: String) {
+    val discovery by session.discoveryController.state.collectAsState()
+    LaunchedEffect(session) { session.discoveryController.loadForGeneration(0) }
+    LaunchedEffect(query) { session.discoveryController.updateQuery(query) }
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        NoResultsEmptyState(query, busy) {
-            busy = true
-            scope.launch {
-                session.io { session.api.discover(query) }.onSuccess { discovery = it }
-                busy = false
+        NoResultsEmptyState(query, discovery.busy) {
+            session.discoveryController.updateQuery(query)
+            session.discoveryController.submit()
+        }
+        discovery.error?.let { error ->
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Notice("Discovery could not complete.", tone = Tokens.danger)
+                TechnicalDisclosure(error)
             }
         }
-        when (val d = discovery) {
+        when (val answer = discovery.result) {
             null -> {}
 
-            is McpResult.Refused -> Notice(
-                "discover_content: ${d.message}",
-                detail = "Discovery needs a TVDB provider configured on the node (ADR-0058). " +
-                    "Wanting by title still works.",
-            )
+            is DiscoveryAnswer.Refused -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Notice("Discovery refused", detail = "The node declined this discovery request.", tone = Tokens.warning)
+                TechnicalDisclosure(
+                    "${answer.error.tool} (code ${answer.error.code}): ${answer.error.message}",
+                )
+            }
 
-            is McpResult.Ok -> if (d.value.isEmpty()) {
+            is DiscoveryAnswer.Hits -> if (answer.values.isEmpty()) {
                 Text(
                     "The provider found nothing for “$query”.",
                     color = Tokens.textMuted,
@@ -404,10 +414,10 @@ private fun NoResultsPane(session: AppSession, query: String, onWant: (String, S
                 )
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    for (hit in d.value) {
+                    for (hit in answer.values) {
                         MediaRow(
                             hit.title,
-                            MediaType.SERIES,
+                            MediaType.from(hit.type),
                             onOpen = {
                             },
                             subtitle = hit.overview,

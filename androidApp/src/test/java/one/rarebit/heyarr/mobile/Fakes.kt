@@ -58,6 +58,10 @@ internal class FakeAudioPlayer : AudioPlayer {
     override fun skipTo(index: Int) {
         commands.add("skip:$index")
     }
+    override fun setVolume(volume: Float) {
+        commands.add("volume:$volume")
+        flow.value = flow.value.copy(volume = volume.coerceIn(0f, 1f))
+    }
     override fun stop() {
         commands.add("stop")
         flow.value = AudioState()

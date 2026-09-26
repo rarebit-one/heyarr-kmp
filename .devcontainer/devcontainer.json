@@ -1,6 +1,6 @@
 {
   "name": "heyarr-desktop",
-  "image": "mcr.microsoft.com/devcontainers/java:17-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/java:21-bookworm",
   "postCreateCommand": ".devcontainer/setup.sh",
   "containerEnv": {
     "GRADLE_OPTS": "-Dorg.gradle.daemon=false",

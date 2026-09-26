@@ -47,11 +47,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       # Use the runner's preinstalled Android SDK and accept licenses deterministically.
       # (android-actions/setup-android re-downloads a newer cmdline-tools whose license
@@ -80,4 +80,3 @@ jobs:
           name: heyarr-android-debug
           path: androidApp/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
-

@@ -1,5 +1,5 @@
 # The one place every module's plugin and library versions live. Toolchain matches the rest
-# of the org: Kotlin 2.3.20, Gradle 8.9, AGP 8.7.3, JDK 17. Compose Multiplatform is NEW to
+# of the org: Kotlin 2.3.20, Gradle 8.9, AGP 8.7.3, JDK 21. Compose Multiplatform is NEW to
 # the org — this project establishes it.
 
 [versions]

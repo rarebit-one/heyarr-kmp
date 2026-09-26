@@ -27,7 +27,6 @@ import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.feeds.FollowedSource
-import one.rarebit.heyarr.core.heyarr.ContinueEntry
 import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.state.LibraryStatus
@@ -64,7 +63,6 @@ class HomeState {
     var missing by mutableStateOf<RailState<Want>>(RailState.Loading)
     var upgrades by mutableStateOf<RailState<Want>>(RailState.Loading)
     var followed by mutableStateOf<RailState<FollowedSource>>(RailState.Loading)
-    var continueRail by mutableStateOf<RailState<ContinueEntry>>(RailState.Loading)
     var loadedOnce = false
 }
 
@@ -72,9 +70,7 @@ class HomeState {
  * Home — a media-mixed spotlight over themed rails. Spotlight and "Recently
  * added" come from the works list (recent first, artwork preferred); the per-type rails
  * from `search_content` by content type; "Wanted but missing" and "Could be better"
- * from `get_missing_content` / `get_upgrade_candidates`; "Following" from
- * `list_followed`. There is no server-side "continue watching" — heyarr cannot see
- * playback history — so none is shown.
+ * from `get_missing_content` / `get_upgrade_candidates`; "Following" from `list_followed`.
  */
 @Composable
 fun HomeScreen(
@@ -104,12 +100,8 @@ fun HomeScreen(
         if (session.isGuest) {
             item { GuestNotice() }
         }
-        val cont = state.continueRail
-        if (cont !is RailState.Loaded || cont.items.isNotEmpty()) {
-            item { ContinueRail(session, cont, onOpen) }
-        }
         item {
-            WorkRail("Recently added", state.recent, session, onOpen, onWant, trailing = {
+            WorkRail("Recently catalogued", state.recent, session, onOpen, onWant, trailing = {
                 GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh)
             })
         }
@@ -179,16 +171,15 @@ private fun loadHome(session: AppSession, state: HomeState, scope: CoroutineScop
     loadPersonalRails(session, state, a, scope)
 }
 
-/** The personal rails: missing, upgrades, following and continue. */
+/** The personal rails: missing, upgrades and followed sources. */
 private fun loadPersonalRails(session: AppSession, state: HomeState, a: HeyarrApi, scope: CoroutineScope) {
-    // Missing / upgrades / following / continue are enrolled-only, personal surfaces —
+    // Missing / upgrades / following are enrolled-only, personal surfaces —
     // a guest cannot read them (they 403). Skip the calls and leave the rails empty so
     // they simply don't render; the guest sees a "Sign in to save" affordance instead.
     if (session.isGuest) {
         state.missing = RailState.Loaded(emptyList())
         state.upgrades = RailState.Loaded(emptyList())
         state.followed = RailState.Loaded(emptyList())
-        state.continueRail = RailState.Loaded(emptyList())
     } else {
         scope.launch {
             state.missing =
@@ -214,14 +205,6 @@ private fun loadPersonalRails(session: AppSession, state: HomeState, a: HeyarrAp
                     RailState.Loaded(it)
                 }, onFailure = { RailState.Failed(it.message ?: "failed") })
         }
-        scope.launch {
-            state.continueRail =
-                session.io {
-                    a.continueRail()
-                }.fold(onSuccess = {
-                    RailState.Loaded(it)
-                }, onFailure = { RailState.Failed(it.message ?: "failed") })
-        }
     }
 }
 
@@ -230,7 +213,7 @@ private fun loadPersonalRails(session: AppSession, state: HomeState, a: HeyarrAp
 private fun GuestNotice() {
     Notice(
         "Browsing as a guest — watch and listen freely, no account needed.",
-        detail = "Sign in to save your place, keep playlists, and want or follow things. Open Settings to sign in.",
+        detail = "Sign in to keep playlists, and want or follow things. Open Settings to sign in.",
         icon = Icons.Rounded.Info,
         tone = Tokens.slate,
     )
@@ -285,7 +268,7 @@ private fun SpotlightBlock(
             )
             val status = session.index.statusOf(work.id)
             Hero(
-                title = work.title, type = type, kicker = "Spotlight",
+                title = work.title, type = type, kicker = "Featured from your library",
                 meta = listOf(
                     work.year?.toString(),
                     work.artist ?: work.author,

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package one.rarebit.heyarr.mobile.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +14,10 @@ import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -31,6 +37,7 @@ import one.rarebit.heyarr.mobile.nav.detailRoute
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.ui.components.Cell
+import one.rarebit.heyarr.ui.components.DashedDivider
 import one.rarebit.heyarr.ui.components.DataTable
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.Notice
@@ -40,8 +47,11 @@ import one.rarebit.heyarr.ui.components.RejectedBy
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.Section
 import one.rarebit.heyarr.ui.components.Skeleton
+import one.rarebit.heyarr.ui.components.StatusMark
 import one.rarebit.heyarr.ui.components.TableColumn
+import one.rarebit.heyarr.ui.components.TechnicalDisclosure
 import one.rarebit.heyarr.ui.components.verdictColor
+import one.rarebit.heyarr.ui.theme.LocalHeyarrPlatform
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 
 // The lower sections of the Curate tab ([CurateTab]): indexer candidates, health, variants,
@@ -50,6 +60,7 @@ import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 
 /** Curate → 3. the indexer candidates of every want, each with Acquire (the rules behind a tap). */
 @Composable
+@Suppress("LongMethod", "CyclomaticComplexMethod") // Desktop table and mobile card actions share this section.
 internal fun CandidatesSection(
     session: AppSession,
     wants: List<DesiredItem>,
@@ -61,18 +72,30 @@ internal fun CandidatesSection(
     val acquire: (DesiredItem, Candidate) -> Unit = { w, cand ->
         scope.launch {
             state.busy = cand.candidateId
-            session.io { session.api.acquire(w.id, cand.candidateId) }.onSuccess { res ->
-                when (res) {
-                    is McpResult.Ok -> {
-                        session.toast(Toast.Kind.SUCCESS, "Acquiring", cand.title)
-                        session.refreshIndex()
-                        reload()
-                    }
+            state.acquisitionError = null
+            state.acquisitionRefused = false
+            try {
+                session.io { session.api.acquire(w.id, cand.candidateId) }.fold(
+                    onSuccess = { res ->
+                        when (res) {
+                            is McpResult.Ok -> {
+                                session.toast(Toast.Kind.SUCCESS, "Acquiring", cand.title)
+                                session.refreshIndex()
+                                reload()
+                            }
 
-                    is McpResult.Refused -> session.refused(res)
-                }
+                            is McpResult.Refused -> {
+                                state.acquisitionRefused = true
+                                state.acquisitionError = "${res.tool}: ${res.message}"
+                                session.refused(res)
+                            }
+                        }
+                    },
+                    onFailure = { state.acquisitionError = it.message ?: "The node could not request this release." },
+                )
+            } finally {
+                state.busy = null
             }
-            state.busy = null
         }
     }
     val subtitle =
@@ -81,9 +104,43 @@ internal fun CandidatesSection(
         } else {
             "${cands.size} from the last search"
         }
-    Section("Indexer candidates", subtitle = subtitle, trailing = {
+    Section("Releases", subtitle = subtitle, trailing = {
         if (wants.isNotEmpty()) SearchNowButton(session, wants.first(), scope)
     }) {
+        state.acquisitionError?.let { error ->
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    if (state.acquisitionRefused) {
+                        "The node declined this release request. Choose another release or view the reason."
+                    } else {
+                        "Could not request this release. Check the connection and try again."
+                    },
+                    color = Tokens.danger,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                TechnicalDisclosure(error)
+            }
+        }
+        if (LocalHeyarrPlatform.current.touch) {
+            if (cands.isEmpty()) {
+                Text(
+                    if (wants.isEmpty()) {
+                        "No want, no candidates."
+                    } else {
+                        "The last search found no releases${wants.firstOrNull()?.detail?.let { " — $it" } ?: "."}"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Tokens.textMuted,
+                )
+            }
+            cands.forEachIndexed { index, (want, candidate) ->
+                CandidateReleaseCard(candidate, enabled = state.busy == null) {
+                    acquire(want, candidate)
+                }
+                if (index < cands.lastIndex) DashedDivider()
+            }
+            return@Section
+        }
         DataTable(
             columns = listOf(
                 TableColumn("Release", width = 260.dp),
@@ -111,6 +168,44 @@ internal fun CandidatesSection(
         ) { r, c ->
             val (w, cand) = cands[r]
             CandidateCell(cand, c, enabled = state.busy == null) { acquire(w, cand) }
+        }
+    }
+}
+
+/** Mobile acquisition review uses a stacked row so release names and actions keep room. */
+@Composable
+private fun CandidateReleaseCard(candidate: Candidate, enabled: Boolean, onAcquire: () -> Unit) {
+    var expanded by remember(candidate.candidateId) { mutableStateOf(false) }
+    Column(
+        Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Tokens.s2),
+    ) {
+        Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(Tokens.s2)) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text(candidate.title, style = MaterialTheme.typography.titleSmall, color = Tokens.textPrimary)
+                Text(
+                    listOfNotNull(candidate.provider, "Score ${candidate.score}").joinToString("  ·  "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Tokens.textMuted,
+                )
+                StatusMark(
+                    if (candidate.accepted) "Accepted" else "Rejected",
+                    verdictColor(if (candidate.accepted) "pass" else "fail"),
+                )
+                if (candidate.selected) {
+                    Text("SELECTED BY NODE", style = MaterialTheme.typography.labelSmall, color = Tokens.accentGradEnd)
+                }
+            }
+            PrimaryButton("Acquire", onAcquire, icon = Icons.Rounded.Download, compact = true, enabled = enabled)
+        }
+        SecondaryButton(
+            if (expanded) "Hide rule details" else "Why this release · ${candidate.reasons.size} rules",
+            { expanded = !expanded },
+            compact = true,
+        )
+        if (expanded) {
+            RejectedBy(candidate.rejectedBy)
+            ReasonList(candidate.reasons)
         }
     }
 }
@@ -246,7 +341,8 @@ private fun ReplicaTable(replicas: List<Replica>) {
 internal fun VariantsSection(work: Work, variants: List<Work>, onOpen: (Route) -> Unit) {
     Section(
         "Also catalogued as",
-        subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — hidden from listings, folded here",
+        subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — " +
+            "hidden from listings, folded here",
     ) {
         DataTable(
             columns = listOf(

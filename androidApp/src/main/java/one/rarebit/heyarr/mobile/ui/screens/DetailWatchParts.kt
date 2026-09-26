@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package one.rarebit.heyarr.mobile.ui.screens
 
 import androidx.compose.foundation.background
@@ -298,33 +300,17 @@ private fun followByTvdb(session: AppSession, scope: CoroutineScope, title: Stri
     }
 }
 
-/** An episode's thumbnail, with the resume bar along its bottom edge when it is the one to continue. */
+/** An episode's thumbnail. */
 @Composable
-internal fun EpisodeThumb(thumb: String?, fraction: Float?) {
-    val theme = LocalMediaTheme.current
+internal fun EpisodeThumb(thumb: String?) {
     Box(Modifier.width(112.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard))) {
         Artwork(thumb, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 22.dp)
-        fraction?.let { f ->
-            Box(
-                Modifier.align(
-                    Alignment.BottomStart,
-                ).fillMaxWidth().height(4.dp).background(Tokens.bgBase.copy(alpha = 0.5f)),
-            ) {
-                Box(Modifier.fillMaxWidth(f).height(4.dp).background(theme.accent))
-            }
-        }
     }
 }
 
-/** An episode's code and title over its facts; [progressLabel] is set only on the one to continue. */
+/** An episode's code and title over its facts. */
 @Composable
-internal fun EpisodeText(
-    ep: Episode,
-    ext: ExternalEpisode?,
-    isContinue: Boolean,
-    progressLabel: String?,
-    modifier: Modifier,
-) {
+internal fun EpisodeText(ep: Episode, ext: ExternalEpisode?, modifier: Modifier) {
     val theme = LocalMediaTheme.current
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -338,14 +324,13 @@ internal fun EpisodeText(
                 modifier = Modifier.weight(1f, fill = false),
             )
         }
-        EpisodeFacts(ep, ext, isContinue, progressLabel)
+        EpisodeFacts(ep, ext)
     }
 }
 
-/** The facts line under an episode: quality tags, size, captions, air date, resume point, missing file. */
+/** The facts line under an episode: quality tags, size, captions, air date and file state. */
 @Composable
-private fun EpisodeFacts(ep: Episode, ext: ExternalEpisode?, isContinue: Boolean, progressLabel: String?) {
-    val theme = LocalMediaTheme.current
+private fun EpisodeFacts(ep: Episode, ext: ExternalEpisode?) {
     Row(
         Modifier.horizontalScroll(rememberScrollState()),
         verticalAlignment = Alignment.CenterVertically,
@@ -378,13 +363,6 @@ private fun EpisodeFacts(ep: Episode, ext: ExternalEpisode?, isContinue: Boolean
             }
         }
         ext?.airdate?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled) }
-        if (isContinue) {
-            Text(
-                "continue · $progressLabel",
-                style = MaterialTheme.typography.labelSmall,
-                color = theme.accentGradientEnd,
-            )
-        }
         if (!ep.isPlayable) {
             Text(
                 "file missing since ${ep.asset.missingSince?.take(10)}",

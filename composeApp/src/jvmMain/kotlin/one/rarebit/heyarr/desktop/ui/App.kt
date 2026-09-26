@@ -67,13 +67,12 @@ import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.state.SearchController
 import one.rarebit.heyarr.desktop.ui.components.AudioDock
 import one.rarebit.heyarr.desktop.ui.components.ModalScrim
+import one.rarebit.heyarr.desktop.ui.components.NavConnectionInfo
 import one.rarebit.heyarr.desktop.ui.components.NowPlayingBar
 import one.rarebit.heyarr.desktop.ui.components.PlaybackHost
 import one.rarebit.heyarr.desktop.ui.components.SideNav
 import one.rarebit.heyarr.desktop.ui.screens.DetailScreen
 import one.rarebit.heyarr.desktop.ui.screens.DetailState
-import one.rarebit.heyarr.desktop.ui.screens.DiscoverScreen
-import one.rarebit.heyarr.desktop.ui.screens.DiscoverState
 import one.rarebit.heyarr.desktop.ui.screens.Field
 import one.rarebit.heyarr.desktop.ui.screens.HomeScreen
 import one.rarebit.heyarr.desktop.ui.screens.HomeState
@@ -92,11 +91,11 @@ import one.rarebit.heyarr.desktop.ui.screens.SettingsScreen
 import one.rarebit.heyarr.desktop.ui.screens.SettingsState
 import one.rarebit.heyarr.desktop.ui.screens.WantByTitle
 import one.rarebit.heyarr.desktop.ui.screens.accentHex
-import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.OfflineBanner
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.SearchEntryButton
 import one.rarebit.heyarr.ui.components.ToastCard
 import one.rarebit.heyarr.ui.theme.HeyarrTheme
 import one.rarebit.heyarr.ui.theme.LocalAppearance
@@ -114,9 +113,8 @@ data class WantRequest(
 /**
  * The shell: left nav, offline banner, the routed screen, the toast stack and the Want
  * sheet. Global keys: Ctrl+F focuses search, Ctrl-1…5 jump sections, ⌘, opens
- * Settings, Esc goes back or closes the sheet. The accent in force follows the media
- * of the screen in focus (a series detail turns the nav violet), per the appearance
- * preference.
+ * Settings, Esc goes back or closes the sheet. Adaptive media accents stay within the
+ * shared Archive palette and can be disabled in Appearance settings.
  */
 @Composable
 fun App(
@@ -163,7 +161,6 @@ fun App(
     val nav = remember { Nav(initialRoute) }
     val search = remember { SearchController(scope, { session.api }, session::noteTransportFailure) }
     val home = remember { HomeState() }
-    val discover = remember { DiscoverState() }
     val library = remember { LibraryState().apply { tab = initialLibraryTab } }
     val shelves = remember { Experience.entries.associateWith { LibraryState() } }
     var consuming by remember { mutableStateOf(initialRoute is Route.Consume) }
@@ -384,56 +381,46 @@ fun App(
                 },
             ) {
                 BoxWithConstraints(Modifier.fillMaxSize()) {
-                    val compact = maxWidth < Tokens.compactBreakpoint
                     val audioDock = showAudioDock(playback.type, playback.active, maxWidth.value, fullscreen)
                     Row(Modifier.fillMaxSize()) {
                         if (!fullscreen) {
                             SideNav(
                                 current,
                                 onGo = { if (it == Route.Search) openSearch() else nav.go(it) },
-                                connection = session.connection,
-                                compact = compact,
-                                connectionDetail = run {
-                                    val host = session.config.baseUrl.removePrefix(
-                                        "https://",
-                                    ).removePrefix("http://").substringBefore('/').substringBefore(':')
-                                    session.lastLatencyMs?.let { "$it ms · $host" } ?: host.ifBlank { null }
-                                },
-                                onConnection = { showConnection = true },
-                                consuming = consuming,
+                                connection = NavConnectionInfo(
+                                    state = session.connection,
+                                    detail = run {
+                                        val host = session.config.baseUrl.removePrefix("https://")
+                                            .removePrefix("http://").substringBefore('/').substringBefore(':')
+                                        session.lastLatencyMs?.let { "$it ms · $host" } ?: host.ifBlank { null }
+                                    },
+                                    onOpen = { showConnection = true },
+                                ),
                             )
                         }
                         Column(Modifier.weight(1f).fillMaxHeight()) {
-                            if (!fullscreen) {
-                                Row(
-                                    Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 10.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    FilterChip("Consume", consuming, {
-                                        consuming = true
-                                        nav.go(Route.Consume(Experience.WATCH))
-                                    })
-                                    FilterChip("Manage", !consuming, {
-                                        consuming = false
-                                        nav.go(Route.Search)
-                                    })
-                                    GhostButton(
-                                        "Search everything · Ctrl+F",
-                                        ::openSearch,
-                                        icon = androidx.compose.material.icons.Icons.Rounded.Search,
-                                    )
-                                }
+                            if (!fullscreen && current != Route.Search && current != Route.Discover) {
+                                SearchEntryButton(
+                                    ::openSearch,
+                                    Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
+                                    shortcut = "Ctrl+F",
+                                )
                             }
                             if (!fullscreen) {
                                 when (session.connection) {
-                                    Connection.OFFLINE -> OfflineBanner("Can't reach heyarr", session.config.baseUrl, onRetry = {
-                                        scope.launch { session.probe() }
-                                    }, onSettings = { nav.go(Route.Settings) })
+                                    Connection.OFFLINE -> OfflineBanner(
+                                        "Can't reach heyarr",
+                                        session.config.baseUrl,
+                                        onRetry = { scope.launch { session.probe() } },
+                                        onSettings = { nav.go(Route.Settings) },
+                                    )
 
-                                    Connection.UNAUTHORIZED -> OfflineBanner("heyarr refused the token", "Check the bearer token in Settings.", onRetry = {
-                                        scope.launch { session.probe() }
-                                    }, onSettings = { nav.go(Route.Settings) })
+                                    Connection.UNAUTHORIZED -> OfflineBanner(
+                                        "heyarr refused the token",
+                                        "Check the bearer token in Settings.",
+                                        onRetry = { scope.launch { session.probe() } },
+                                        onSettings = { nav.go(Route.Settings) },
+                                    )
 
                                     else -> {}
                                 }
@@ -521,10 +508,18 @@ fun App(
                                         onWant = onWant,
                                     )
 
-                                    is Route.Player -> PlayerScreen(session, r, playerScreen, fullscreen = fullscreen, onFullscreen = ::setFullscreen, onBack = {
-                                        if (fullscreen) setFullscreen(false)
-                                        nav.back()
-                                    }, onOpen = ::go)
+                                    is Route.Player -> PlayerScreen(
+                                        session,
+                                        r,
+                                        playerScreen,
+                                        fullscreen = fullscreen,
+                                        onFullscreen = ::setFullscreen,
+                                        onBack = {
+                                            if (fullscreen) setFullscreen(false)
+                                            nav.back()
+                                        },
+                                        onOpen = ::go,
+                                    )
 
                                     is Route.Reader -> ReaderScreen(session, r, onBack = nav::back)
                                 }
@@ -535,7 +530,13 @@ fun App(
                                 NowPlayingBar(session, onOpen = { playback.current?.let { nav.go(it) } })
                             }
                         }
-                        if (audioDock) AudioDock(session, onOpen = { playback.current?.let { nav.go(it) } })
+                        if (audioDock) {
+                            AudioDock(
+                                session,
+                                onOpen = { playback.current?.let { nav.go(it) } },
+                                companion = current is Route.Reader,
+                            )
+                        }
                     }
                 }
                 PlaybackHost(session)
@@ -576,7 +577,8 @@ private fun SignInSheet(session: AppSession, onClose: () -> Unit, onOpenSettings
     ModalScrim(onClose, Modifier.width(520.dp)) {
         Panel("Sign in to save", trailing = { GhostButton("Close", onClose) }) {
             Text(
-                "You're browsing as a guest — watch and listen freely, no account needed. Sign in to save your place, keep playlists, and want or follow things.",
+                "You're browsing as a guest — watch and listen freely, no account needed. " +
+                    "Sign in to keep playlists, want or follow things.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Tokens.textPrimary,
             )

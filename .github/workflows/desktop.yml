@@ -47,11 +47,11 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       # Installs the Android SDK and exports ANDROID_HOME, which switches ON the android
       # target in :core / :ui (they register it only when an SDK is present — see their
@@ -118,4 +118,3 @@ jobs:
           name: heyarr-desktop-test-reports
           path: composeApp/build/reports/tests/**
           if-no-files-found: ignore
-

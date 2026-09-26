@@ -22,12 +22,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.ReportProblem
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -38,7 +35,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -58,22 +54,19 @@ import one.rarebit.heyarr.ui.components.focusRing
 import one.rarebit.heyarr.ui.theme.HeyarrFonts
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 
-/** The top-level destinations, in bar order. No Forum. */
+/** Reachable phone destinations; detailed management routes live under Manage. */
 enum class NavSection(val label: String, val icon: ImageVector) {
     HOME("Home", Icons.Rounded.Home),
-    DISCOVER("Discover", Icons.Rounded.Explore),
     SEARCH("Search", Icons.Rounded.Search),
     LIBRARY("Library", Icons.Rounded.VideoLibrary),
-    MISSING("Missing", Icons.Rounded.ReportProblem),
-    CAST("Cast", Icons.Rounded.Cast),
-    SETTINGS("Settings", Icons.Rounded.Settings),
+    MANAGE("Manage", Icons.Rounded.Tune),
 }
 
 /** The tracked UPPERCASE Rubik caption under each tile — the desktop rail's, sized for a phone. */
 private val TILE_LABEL: TextStyle
     @Composable get() = TextStyle(
         fontFamily = HeyarrFonts.rubik,
-        fontSize = 8.5.sp,
+        fontSize = 9.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 0.6.sp,
         lineHeight = 11.sp,
@@ -88,8 +81,8 @@ private val RAIL_LABEL: TextStyle
     )
 
 /**
- * The phone's bottom bar: every destination as an icon tile over an uppercase caption,
- * the active tile tinted in the accent of the media in focus. Sits above the system
+ * The phone's bottom bar: reachable destinations as an icon over an uppercase caption.
+ * Sits above the system
  * navigation bar inset.
  */
 @Composable
@@ -123,8 +116,7 @@ fun HeyarrBottomBar(current: NavSection?, onGo: (NavSection) -> Unit, modifier: 
 }
 
 /**
- * The tablet rail: a logo, then each destination as an icon over an uppercase caption,
- * and the connection at the foot — the desktop's `SideNav`, one width at every size.
+ * The tablet rail: the phone's top-level destinations with the connection at the foot.
  */
 @Composable
 fun HeyarrNavRail(
@@ -182,7 +174,7 @@ private fun NavTile(
     val pressed by interaction.collectIsPressedAsState()
     val shape = RoundedCornerShape(Tokens.radiusButton)
     val tile = when {
-        active -> accent.copy(alpha = 0.18f)
+        active -> accent.copy(alpha = 0.12f)
         pressed -> Tokens.surface2
         else -> Color.Transparent
     }
@@ -212,7 +204,7 @@ private fun NavTile(
             ).background(
                 tile,
                 shape,
-            ).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape),
+            ).border(Tokens.hairline, Color.Transparent, shape),
             contentAlignment = Alignment.Center,
         ) {
             Icon(item.icon, contentDescription = null, tint = fg, modifier = Modifier.size(iconSize))

@@ -350,7 +350,8 @@ private fun AppearancePanel(session: AppSession) {
             color = Tokens.textMuted,
         )
         Text(
-            "The accent follows the media in focus: emerald for film, violet for series, amber for books, teal for audiobooks, magenta for podcasts, rose for music. Surfaces and text never change.",
+            "Adaptive accents use Fern, Pale Mint, Ochre and related muted Archive tones. " +
+                "Artwork keeps its original colors; app surfaces and text stay consistent.",
             style = MaterialTheme.typography.bodySmall,
             color = Tokens.textMuted,
         )

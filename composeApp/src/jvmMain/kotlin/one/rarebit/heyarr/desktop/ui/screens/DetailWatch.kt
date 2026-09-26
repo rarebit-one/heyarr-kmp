@@ -147,8 +147,9 @@ internal fun SeasonsBlock(
         }, { if (it.number == 0) Int.MAX_VALUE else it.number ?: 0 }),
     )
     if (all.isEmpty()) {
+        val lookingHint = if (wants.isNotEmpty()) " heyarr is looking — Manage → Releases shows what it found." else ""
         Notice(
-            "No episode files are held for this series yet.${if (wants.isNotEmpty()) " heyarr is looking — Curate → Releases shows what it found." else ""}",
+            "No episode files are held for this series yet.$lookingHint",
         )
         return
     }

@@ -32,10 +32,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,10 +52,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
-import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.SearchFilter
 import one.rarebit.heyarr.core.state.SearchGrouping
@@ -63,25 +61,26 @@ import one.rarebit.heyarr.core.state.SearchRow
 import one.rarebit.heyarr.core.state.SearchSection
 import one.rarebit.heyarr.core.state.Segment
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.ArtworkLoader
 import one.rarebit.heyarr.desktop.state.SearchController
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.MediaRow
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
+import one.rarebit.heyarr.ui.components.ArchiveLoading
 import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Kbd
-import one.rarebit.heyarr.ui.components.MediaRowSkeleton
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.TechnicalDisclosure
 import one.rarebit.heyarr.ui.components.icon
+import one.rarebit.heyarr.ui.theme.LocalAppearance
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.Tokens
@@ -103,12 +102,12 @@ fun SearchScreen(
     modifier: Modifier = Modifier,
     initialDiscover: Boolean = false,
 ) {
-    val scope = rememberCoroutineScope()
     var discovering by remember { mutableStateOf(initialDiscover) }
     var recent by remember { mutableStateOf(session.recent.load()) }
     val sections = search.sections
     val rows = search.rows
     val listState = rememberLazyListState()
+    val reduceMotion = LocalAppearance.current.reduceMotion
 
     fun open(row: SearchRow) {
         session.recent.push(search.query).also { recent = it }
@@ -119,9 +118,8 @@ fun SearchScreen(
         if (search.selected >=
             0
         ) {
-            listState.animateScrollToItem(
-                search.selected.coerceAtMost(maxOf(0, listState.layoutInfo.totalItemsCount - 1)),
-            )
+            val index = search.selected.coerceAtMost(maxOf(0, listState.layoutInfo.totalItemsCount - 1))
+            if (reduceMotion) listState.scrollToItem(index) else listState.animateScrollToItem(index)
         }
     }
 
@@ -368,10 +366,15 @@ private fun SearchResults(
                 }
             }
             when (val seg = section.segment) {
-                Segment.Pending -> item(key = "p:" + section.type) { MediaRowSkeleton(2) }
+                Segment.Pending -> item(key = "p:" + section.type) {
+                    ArchiveLoading("Searching ${section.title.lowercase()}…")
+                }
 
                 is Segment.Failed -> item(key = "f:" + section.type) {
-                    Notice("Couldn't search ${section.title.lowercase()}: ${seg.message}", tone = Tokens.danger)
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Notice("Couldn't search ${section.title.lowercase()}.", tone = Tokens.danger)
+                        TechnicalDisclosure(seg.message)
+                    }
                 }
 
                 is Segment.Loaded -> {
@@ -453,7 +456,7 @@ private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: ()
                 for (q in recent) FilterChip(q, false, { onPick(q) })
             }
             Text(
-                "Kept on this machine only — heyarr's personal history is encrypted controller-side and not reachable from here.",
+                "Recent searches stay on this machine and are not sent to heyarr.",
                 style = MaterialTheme.typography.bodySmall,
                 color = Tokens.textDisabled,
             )
@@ -464,14 +467,11 @@ private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: ()
 /** Metadata discovery shares the query but keeps provider answers separate from owned works. */
 @Composable
 private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: WantByTitle) {
-    var result by remember(query, session.generation) { mutableStateOf<McpResult<List<DiscoveryHit>>?>(null) }
-    var busy by remember(query, session.generation) { mutableStateOf(query.isNotBlank()) }
+    val discovery by session.discoveryController.state.collectAsState()
     LaunchedEffect(query, session.generation) {
-        if (query.isBlank()) return@LaunchedEffect
-        kotlinx.coroutines.delay(300)
-        val api = session.api
-        result = if (api == null) null else session.io { api.discover(query.trim()) }.getOrNull()
-        busy = false
+        session.discoveryController.loadForGeneration(session.generation)
+        session.discoveryController.updateQuery(query)
+        if (query.isNotBlank()) session.discoveryController.searchDebounced(query)
     }
     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item {
@@ -486,7 +486,16 @@ private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: 
             if (query.isBlank()) {
                 Text("Enter a title above to explore the metadata catalogue.", color = Tokens.textMuted)
             } else {
-                DiscoveryResults(session, query, result, busy, onWantTitle)
+                DiscoveryResults(
+                    DiscoveryResultModel(
+                        session,
+                        query,
+                        discovery.result,
+                        discovery.busy,
+                        discovery.error,
+                    ),
+                    onWantTitle,
+                )
             }
         }
     }

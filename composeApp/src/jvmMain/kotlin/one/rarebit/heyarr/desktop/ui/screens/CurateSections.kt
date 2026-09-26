@@ -37,8 +37,6 @@ import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
-import one.rarebit.heyarr.ui.components.ReasonList
-import one.rarebit.heyarr.ui.components.RejectedBy
 import one.rarebit.heyarr.ui.components.RuleCode
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.Section
@@ -49,7 +47,7 @@ import one.rarebit.heyarr.ui.components.verdictColor
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.Tokens
 
-/** 3. Indexer candidates from each want's last search, with Acquire. */
+/** 3. Releases from each want's last search, with Acquire. */
 @Composable
 internal fun CandidatesSection(
     session: AppSession,
@@ -59,54 +57,24 @@ internal fun CandidatesSection(
     reload: () -> Unit,
 ) {
     val cands = wants.flatMap { w -> state.candidates[w.id].orEmpty().map { w to it } }
-    val acquire: (DesiredItem, Candidate) -> Unit = acquire@{ w, cand ->
-        val a = session.api ?: return@acquire
-        scope.launch {
-            state.busy = cand.candidateId
-            session.io { a.acquire(w.id, cand.candidateId) }.onSuccess { res ->
-                when (res) {
-                    is McpResult.Ok -> {
-                        session.toast(Toast.Kind.SUCCESS, "Acquiring", cand.title)
-                        session.refreshIndex()
-                        reload()
-                    }
-
-                    is McpResult.Refused -> session.refused(res)
-                }
-            }
-            state.busy = null
-        }
+    val acquirer = CandidateAcquirer(session, state, scope, reload)
+    val subtitle = if (wants.isEmpty()) {
+        "Want it first — candidates belong to a want"
+    } else {
+        "${cands.size} from the last search"
     }
-    Section("Indexer candidates", subtitle = if (wants.isEmpty()) "Want it first — candidates belong to a want" else "${cands.size} from the last search", trailing = {
-        if (wants.isNotEmpty()) SearchIndexersButton(session, wants, scope)
-    }) {
-        DataTable(
-            columns = listOf(
-                TableColumn("Release", 3f),
-                TableColumn("Provider", width = 110.dp),
-                TableColumn("Score", width = 60.dp, alignEnd = true),
-                TableColumn("Verdict", width = 100.dp),
-                TableColumn("", width = 110.dp, alignEnd = true),
-            ),
-            rowCount = cands.size,
-            emptyText = if (wants.isEmpty()) {
-                "No want, no candidates."
-            } else {
-                "The last search found nothing${wants.firstOrNull()?.detail?.let {
-                    " — $it"
-                } ?: ""}."
-            },
-            detailLabel = { r -> cands[r].second.title },
-            detail = { r ->
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    RejectedBy(cands[r].second.rejectedBy)
-                    ReasonList(cands[r].second.reasons)
-                }
-            },
-        ) { r, c ->
-            val (w, cand) = cands[r]
-            CandidateCell(cand, c, acquireEnabled = state.busy == null) { acquire(w, cand) }
+    Section(
+        "Releases",
+        subtitle = subtitle,
+        trailing = { if (wants.isNotEmpty()) SearchIndexersButton(session, wants, scope) },
+    ) {
+        CandidateAcquisitionError(state)
+        val emptyText = if (wants.isEmpty()) {
+            "No want, no candidates."
+        } else {
+            "The last search found nothing${wants.firstOrNull()?.detail?.let { " — $it" } ?: ""}."
         }
+        CandidateTable(cands, state.busy, emptyText, acquirer::acquire)
     }
 }
 
@@ -131,7 +99,8 @@ private fun SearchIndexersButton(session: AppSession, wants: List<DesiredItem>, 
 }
 
 @Composable
-private fun CandidateCell(cand: Candidate, c: Int, acquireEnabled: Boolean, onAcquire: () -> Unit) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+internal fun CandidateCell(cand: Candidate, c: Int, acquireEnabled: Boolean, onAcquire: () -> Unit) {
     when (c) {
         0 -> Row(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -250,7 +219,8 @@ private fun ReplicaTable(replicas: McpResult<List<Replica>>?, hash: String?) {
 internal fun VariantsSection(state: DetailState) {
     Section(
         "Also catalogued as",
-        subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — hidden from listings, folded here",
+        subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — " +
+            "hidden from listings, folded here",
     ) {
         DataTable(
             columns = listOf(

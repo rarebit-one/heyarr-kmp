@@ -45,10 +45,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.RectangleShape
@@ -103,7 +106,7 @@ private fun Modifier.hoverableUnless(touch: Boolean, interaction: MutableInterac
 
 /** Touch platforms keep a minimum target height; the desktop sizes controls to content. */
 private fun Modifier.minTouchHeight(touch: Boolean, height: Dp): Modifier {
-    val min = if (touch) Modifier.defaultMinSize(minHeight = height) else Modifier
+    val min = if (touch) Modifier.defaultMinSize(minHeight = height.coerceAtLeast(44.dp)) else Modifier
     return this.then(min)
 }
 
@@ -126,7 +129,11 @@ fun Modifier.interactiveSurface(interaction: MutableInteractionSource, shape: Sh
         return this.background(if (pressed) Tokens.surface2 else Tokens.surface1, shape)
     }
     val hovered by interaction.collectIsHoveredAsState()
-    val bg by animateColorAsState(if (hovered) Tokens.surface2 else Tokens.surface1)
+    val bg = if (LocalAppearance.current.reduceMotion) {
+        if (hovered) Tokens.surface2 else Tokens.surface1
+    } else {
+        animateColorAsState(if (hovered) Tokens.surface2 else Tokens.surface1).value
+    }
     return this.hoverable(interaction).background(bg, shape)
 }
 
@@ -307,6 +314,9 @@ fun IconButtonRound(
     Box(
         modifier
             .focusRing(interaction, RectangleShape, inset = 2.dp)
+            .then(
+                if (touch) Modifier.defaultMinSize(minWidth = 44.dp, minHeight = 44.dp) else Modifier,
+            )
             .size(size)
             .clip(RectangleShape)
             .background(bg, RectangleShape)
@@ -451,7 +461,7 @@ fun Kbd(text: String, modifier: Modifier = Modifier) {
 
 // ── section header ───────────────────────────────────────────────────────────────
 
-/** A rail/grid header with a solid section rule, optional icon, subtitle and trailing action. */
+/** A rail/grid header with a light dashed rule, optional icon, subtitle and trailing action. */
 @Composable
 fun SectionHeader(
     title: String,
@@ -477,12 +487,7 @@ fun SectionHeader(
         if (subtitle != null) {
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
         }
-        // Full sections get a quiet solid rule; the short accent lead keeps the hierarchy crisp.
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.width(28.dp).height(2.dp).background(accent, RectangleShape))
-            Spacer(Modifier.width(8.dp))
-            Box(Modifier.weight(1f).height(Tokens.hairline).background(Tokens.border, RectangleShape))
-        }
+        DashedDivider()
     }
 }
 
@@ -504,6 +509,104 @@ fun EditorialRule(modifier: Modifier = Modifier, dashed: Boolean = false) {
             strokeWidth = size.height,
             pathEffect = pathEffect,
         )
+    }
+}
+
+/** A reusable archive list separator. A dashed rhythm keeps secondary rows light. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun DashedDivider(modifier: Modifier = Modifier, tone: Color = Tokens.border) {
+    Canvas(modifier.fillMaxWidth().height(Tokens.hairline)) {
+        drawLine(
+            color = tone.copy(alpha = 0.82f),
+            start = androidx.compose.ui.geometry.Offset(0f, size.height / 2f),
+            end = androidx.compose.ui.geometry.Offset(size.width, size.height / 2f),
+            strokeWidth = size.height,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(2.dp.toPx(), 3.dp.toPx())),
+        )
+    }
+}
+
+/** Small original pixel ornament for section markers and empty states. */
+@Composable
+@Suppress("FunctionNaming", "MagicNumber") // Compose name and grid cells are intentional design primitives.
+fun PixelCluster(modifier: Modifier = Modifier.size(18.dp), color: Color = Tokens.accentGradEnd, pattern: Int = 0) {
+    val patterns = listOf(
+        listOf(0, 2, 4, 6, 7, 8, 10, 12, 14, 16, 18, 20, 22, 24),
+        listOf(1, 3, 5, 6, 8, 10, 12, 14, 16, 18, 20, 21, 23),
+        listOf(0, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24),
+    )
+    Canvas(modifier) {
+        val cells = 5
+        val step = size.minDimension / cells
+        patterns[pattern.mod(patterns.size)].forEach { cell ->
+            drawRect(
+                color.copy(alpha = if ((cell + pattern) % 3 == 0) 0.58f else 0.95f),
+                Offset((cell % cells) * step, (cell / cells) * step),
+                Size(step * 0.62f, step * 0.62f),
+            )
+        }
+    }
+}
+
+/** Four quiet corner marks frame a primary workspace without adding another card. */
+@Composable
+@Suppress("FunctionNaming", "MagicNumber") // Compose name and corner ratio are intentional design primitives.
+fun CornerBracket(modifier: Modifier = Modifier, color: Color = Tokens.accent.copy(alpha = 0.7f)) {
+    Canvas(modifier) {
+        val arm = size.minDimension * 0.18f
+        val stroke = 1.dp.toPx()
+        val corners = listOf(
+            androidx.compose.ui.geometry.Offset.Zero to 1f,
+            androidx.compose.ui.geometry.Offset(size.width, 0f) to -1f,
+            androidx.compose.ui.geometry.Offset(0f, size.height) to 1f,
+            androidx.compose.ui.geometry.Offset(size.width, size.height) to -1f,
+        )
+        corners.forEachIndexed { index, (corner, direction) ->
+            val horizontalStart = if (direction > 0) corner.x else corner.x - arm
+            val verticalStart = if (index < 2) corner.y else corner.y - arm
+            drawLine(
+                color,
+                androidx.compose.ui.geometry.Offset(horizontalStart, corner.y),
+                androidx.compose.ui.geometry.Offset(horizontalStart + arm, corner.y),
+                stroke,
+            )
+            val verticalX = if (direction > 0) corner.x else corner.x
+            drawLine(
+                color,
+                androidx.compose.ui.geometry.Offset(verticalX, verticalStart),
+                androidx.compose.ui.geometry.Offset(verticalX, verticalStart + arm),
+                stroke,
+            )
+        }
+    }
+}
+
+/** Labelled micro status mark; shape and text both communicate state. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun StatusMark(label: String, tone: Color, modifier: Modifier = Modifier) {
+    Row(
+        modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(Modifier.size(6.dp).background(tone, RectangleShape))
+        Text(label.uppercase(), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+    }
+}
+
+/** Indeterminate archive glyph for pending search segments and other unmeasured waits. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun ArchiveLoading(label: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        ArchiveActivity(LocalAppearance.current.reduceMotion, color = Tokens.accentGradEnd)
+        Text(label, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
     }
 }
 
@@ -545,6 +648,57 @@ fun Field(
                 visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
                 keyboardOptions = KeyboardOptions(keyboardType = keyboard),
             )
+        }
+    }
+}
+
+/** A global-search affordance styled as one field and backed by the screen's real query box. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun SearchEntryButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    label: String = "Search titles, people, and releases",
+    shortcut: String? = null,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    Row(
+        modifier.fillMaxWidth()
+            .focusRing(interaction, RectangleShape, inset = 2.dp)
+            .clip(RectangleShape)
+            .background(if (hovered && !LocalHeyarrPlatform.current.touch) Tokens.surface2 else Tokens.surface1)
+            .border(Tokens.hairline, Tokens.border, RectangleShape)
+            .hoverableUnless(LocalHeyarrPlatform.current.touch, interaction)
+            .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = label }
+            .minTouchHeight(LocalHeyarrPlatform.current.touch, 48.dp)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(Icons.Rounded.Search, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(18.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Tokens.textMuted,
+            modifier = Modifier.weight(1f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (shortcut != null && !LocalHeyarrPlatform.current.touch) Kbd(shortcut)
+    }
+}
+
+/** Collapsed technical detail for provider refusals and network failures. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun TechnicalDisclosure(detail: String, modifier: Modifier = Modifier, label: String = "More details") {
+    var expanded by remember(detail) { androidx.compose.runtime.mutableStateOf(false) }
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        GhostButton(if (expanded) "Hide details" else label, { expanded = !expanded })
+        if (expanded) {
+            Text(detail, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
         }
     }
 }
@@ -591,6 +745,11 @@ fun EmptyState(
             contentAlignment = Alignment.Center,
         ) {
             Icon(icon, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(26.dp))
+            PixelCluster(
+                Modifier.align(Alignment.TopEnd).padding(6.dp).size(14.dp),
+                color = Tokens.accentGradEnd,
+                pattern = 1,
+            )
         }
         Spacer(Modifier.height(4.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)

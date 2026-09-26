@@ -188,6 +188,11 @@ internal fun PlayerTopBar(
         GhostButton("Back", onBack, icon = Icons.Rounded.ArrowBack)
         Column(Modifier.weight(1f)) {
             Text(
+                if (isVideo) "PLAY HERE · MEDIA3 / EXOPLAYER" else "LISTEN HERE · MEDIA3 / EXOPLAYER",
+                style = MaterialTheme.typography.labelSmall,
+                color = Tokens.accentGradEnd,
+            )
+            Text(
                 title,
                 style = MaterialTheme.typography.titleMedium,
                 color = Tokens.textPrimary,

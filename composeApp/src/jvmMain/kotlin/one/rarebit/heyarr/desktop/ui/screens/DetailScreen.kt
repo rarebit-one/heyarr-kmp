@@ -50,7 +50,6 @@ import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.feeds.FollowedItem
 import one.rarebit.heyarr.core.heyarr.Candidate
-import one.rarebit.heyarr.core.heyarr.ContinueEntry
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.library.Variants
@@ -90,7 +89,7 @@ import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 
 /** The two faces of a work: what you came to watch, and the tooling that keeps it that way. */
-enum class DetailTab(val label: String) { WATCH("Watch"), CURATE("Curate") }
+enum class DetailTab(val label: String) { WATCH("Overview"), CURATE("Manage") }
 
 /** Everything the detail screen loads for one work, each piece independently. */
 class DetailState(val workId: String) {
@@ -100,11 +99,12 @@ class DetailState(val workId: String) {
     var loading by mutableStateOf(true)
     var assets by mutableStateOf<List<Track>?>(null)
     var season by mutableStateOf<Int?>(null)
-    var continueEntry by mutableStateOf<ContinueEntry?>(null)
     var feedItems by mutableStateOf<List<FollowedItem>?>(null)
     var externalIds by mutableStateOf<List<ExternalId>>(emptyList())
     var satisfaction by mutableStateOf<Map<String, McpResult<Satisfaction?>>>(emptyMap())
     var candidates by mutableStateOf<Map<String, List<Candidate>>>(emptyMap())
+    var acquisitionError by mutableStateOf<String?>(null)
+    var acquisitionRefused by mutableStateOf(false)
     var replicas by mutableStateOf<McpResult<List<Replica>>?>(null)
     var renderers by mutableStateOf<List<Renderer>?>(null)
 
@@ -129,10 +129,10 @@ class DetailState(val workId: String) {
 }
 
 /**
- * The one adaptive detail template, built for consumption first. **Watch** is what
+ * The one adaptive detail template, built around the work identity. **Overview** is what
  * you came for: the art, a synopsis when the node has one (and an honest line when it
  * has not), and the thing itself — seasons and episodes with their thumbnails for a
- * series, tracks for an album, the file for a film, the archive for a feed. **Curate**
+ * series, tracks for an album, the file for a film, the archive for a feed. **Manage**
  * keeps every technical surface — why this release, indexer candidates, scoring, health,
  * captions and artwork inventory, files — one tab away, never on the way.
  */
@@ -281,22 +281,26 @@ private fun RemoveWorkDialog(
                 }
             },
             confirmButton = {
-                one.rarebit.heyarr.ui.components.PrimaryButton(if (removing) "Removing…" else "Remove", enabled = !removing, onClick = {
-                    val api = session.api ?: return@PrimaryButton
-                    removing = true
-                    removalError = null
-                    scope.launch {
-                        session.io { api.removeWork(route.workId) }.fold(
-                            onSuccess = {
-                                session.catalogChanged()
-                                onOpenChange(false)
-                                onBack()
-                            },
-                            onFailure = { removalError = it.message ?: "Removal failed" },
-                        )
-                        removing = false
-                    }
-                })
+                one.rarebit.heyarr.ui.components.PrimaryButton(
+                    if (removing) "Removing…" else "Remove",
+                    enabled = !removing,
+                    onClick = {
+                        val api = session.api ?: return@PrimaryButton
+                        removing = true
+                        removalError = null
+                        scope.launch {
+                            session.io { api.removeWork(route.workId) }.fold(
+                                onSuccess = {
+                                    session.catalogChanged()
+                                    onOpenChange(false)
+                                    onBack()
+                                },
+                                onFailure = { removalError = it.message ?: "Removal failed" },
+                            )
+                            removing = false
+                        }
+                    },
+                )
             },
             dismissButton = { GhostButton("Cancel", { onOpenChange(false) }, enabled = !removing) },
         )
@@ -343,12 +347,6 @@ private fun loadDetail(session: AppSession, state: DetailState, workId: String, 
         session.io { a.works() }.onSuccess { all ->
             state.variants =
                 Variants.group(all)[workId].orEmpty()
-        }
-    }
-    scope.launch {
-        session.io { a.continueRail() }.onSuccess { list ->
-            state.continueEntry =
-                list.firstOrNull { it.workId == workId }
         }
     }
 }

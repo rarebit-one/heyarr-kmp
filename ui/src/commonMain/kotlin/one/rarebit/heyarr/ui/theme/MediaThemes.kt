@@ -23,13 +23,11 @@ data class MediaTheme(
     val metadataKeys: List<String>,
     /** Whether the cover gets the book "spine" shadow. */
     val spineShadow: Boolean = false,
-    /** Text on the CTA pill: near-black, which meets AA against every CTA gradient. */
-    val onAccent: Color = Color(0xFF080709),
+    /** Text on the CTA control: Forest Black, with contrast against the light palette accents. */
+    val onAccent: Color = Tokens.bgBase,
     /**
-     * Where the CTA gradient starts. Defaults to the accent; magenta is the one accent
-     * whose raw value (`#C13BAD`) misses 4.5:1 with either black or white text, so its
-     * pill starts from the hover tone; the raw accent remains for underlines and active-nav
-     * marks, while focus rings use the brighter hover tone.
+     * Where the CTA gradient starts. A light palette tone can improve label contrast;
+     * focus rings use [accentHover] so they stay visible on raised surfaces.
      */
     val ctaStart: Color? = null,
 ) {
@@ -40,37 +38,36 @@ data class MediaTheme(
 }
 
 /**
- * The media → theme table. Exactly the brief's values: each accent swaps the CTA
- * gradient, active-nav highlight, progress bars and section underline. Focus rings use
- * the brighter hover tone so they stay visible on raised surfaces.
+ * The media → theme table reuses the Archive palette. Media accents distinguish actions
+ * without importing unrelated neon colors into the shared chrome. Artwork is never tinted.
  * Unknown / non-media kinds fall back to a neutral slate so they never look like a
  * movie.
  */
+@Suppress("MagicNumber") // The media accent table documents exact design-system colour values.
 object MediaThemes {
-    @Suppress("MagicNumber") // The media accent table documents exact design-system colour values.
     private val MOVIE = MediaTheme(
         MediaType.MOVIE,
-        Color(0xFF2E7D5B),
-        Color(0xFF43A478),
-        Color(0xFF7EE0B3),
+        Color(0xFF599C7B),
+        Color(0xFF78B493),
+        Color(0xFFB8D8C7),
         CardAspect.WIDE,
         ctaLabel = "Play",
         ctaSecondaryLabel = null,
         metadataKeys = listOf("runtime", "year", "rating", "genre"),
-        ctaStart = Color(0xFF43A478),
+        ctaStart = Color(0xFF78B493),
     )
     private val SERIES = MediaTheme(
         MediaType.SERIES,
-        Color(0xFF7C5CFF),
-        Color(0xFF8F73FF),
-        Color(0xFFA48BFF),
+        Color(0xFF78A58B),
+        Color(0xFF97BFA7),
+        Color(0xFFB8D8C7),
         CardAspect.WIDE,
         ctaLabel = "Play",
         ctaSecondaryLabel = "Next episode",
         metadataKeys = listOf("season", "episode", "air_status", "year"),
     )
     private val BOOK = MediaTheme(
-        MediaType.BOOK, Color(0xFFE0A458), Color(0xFFE8B672), Color(0xFFF0C88C), CardAspect.POSTER,
+        MediaType.BOOK, Color(0xFFC7B66D), Color(0xFFD7C77E), Color(0xFFE6D99D), CardAspect.POSTER,
         ctaLabel = "Read", ctaSecondaryLabel = null,
         metadataKeys = listOf(
             "author",
@@ -81,30 +78,34 @@ object MediaThemes {
     )
     private val AUDIOBOOK = MediaTheme(
         MediaType.AUDIOBOOK,
-        Color(0xFF2DB3A6),
-        Color(0xFF43C3B7),
-        Color(0xFF5CD3C8),
+        Color(0xFF6FA58C),
+        Color(0xFF8FBEA6),
+        Color(0xFFB8D8C7),
         CardAspect.SQUARE,
         ctaLabel = "Listen",
         ctaSecondaryLabel = null,
         metadataKeys = listOf("narrator", "duration", "author"),
     )
     private val PODCAST = MediaTheme(
-        MediaType.PODCAST, Color(0xFFC13BAD), Color(0xFFD052BD), Color(0xFFDE6ACD), CardAspect.SQUARE,
-        ctaLabel = "Play episode", ctaSecondaryLabel = null,
+        MediaType.PODCAST,
+        Color(0xFF8DAE8D),
+        Color(0xFFAFC9A4),
+        Color(0xFFD1DDB5),
+        CardAspect.SQUARE,
+        ctaLabel = "Play episode",
+        ctaSecondaryLabel = null,
         metadataKeys = listOf(
             "show",
             "episode",
             "date",
             "duration",
         ),
-        ctaStart = Color(0xFFD052BD),
     )
     private val MUSIC = MediaTheme(
         MediaType.MUSIC,
-        Color(0xFFFF4D6D),
-        Color(0xFFFF6682),
-        Color(0xFFFF7F98),
+        Color(0xFF83A876),
+        Color(0xFFA1C18C),
+        Color(0xFFC1D8A8),
         CardAspect.SQUARE,
         ctaLabel = "Play",
         ctaSecondaryLabel = null,

@@ -103,7 +103,7 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
         modifier.fillMaxSize().padding(horizontal = 32.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        SectionHeader("Now playing", subtitle = "Renderers on the network and what each is doing", trailing = {
+        SectionHeader("Cast / renderer", subtitle = "Live playback reported by each renderer", trailing = {
             GhostButton("Search the network again", { load(refresh = true) }, icon = Icons.Rounded.Refresh)
         })
         when {

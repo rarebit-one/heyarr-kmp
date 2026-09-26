@@ -88,7 +88,7 @@ internal fun WantsSection(
         } else {
             "${wants.size} want${if (wants.size == 1) "" else "s"} on this work"
         }
-    Section("Wants & status", subtitle = subtitle, trailing = {
+    Section("Overview", subtitle = subtitle, trailing = {
         GhostButton("Refresh", reload)
     }) {
         DataTable(

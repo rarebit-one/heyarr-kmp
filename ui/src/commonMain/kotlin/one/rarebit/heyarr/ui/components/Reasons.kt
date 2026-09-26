@@ -72,7 +72,7 @@ fun RuleCode(rule: String, modifier: Modifier = Modifier, tone: Color = Tokens.t
  */
 @Composable
 fun ReasonList(reasons: List<Reason>, modifier: Modifier = Modifier, emphasiseFailures: Boolean = true) {
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier.fillMaxWidth()) {
         if (reasons.isEmpty()) {
             Text(
                 "No rules reported.",
@@ -80,7 +80,7 @@ fun ReasonList(reasons: List<Reason>, modifier: Modifier = Modifier, emphasiseFa
                 color = Tokens.textMuted,
             )
         }
-        for (r in reasons) {
+        for ((index, r) in reasons.withIndex()) {
             val tone = verdictColor(r.result)
             val strong = emphasiseFailures && r.isFailure
             Row(
@@ -89,7 +89,7 @@ fun ReasonList(reasons: List<Reason>, modifier: Modifier = Modifier, emphasiseFa
                         if (strong) Tokens.danger.copy(alpha = 0.08f) else Color.Transparent,
                         RoundedCornerShape(Tokens.radiusCard),
                     )
-                    .padding(horizontal = 6.dp, vertical = 4.dp)
+                    .padding(horizontal = 2.dp, vertical = 8.dp)
                     .semantics { this.contentDescription = "Rule ${r.rule}, ${r.section}, ${r.result}. ${r.detail}" },
                 verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -118,6 +118,7 @@ fun ReasonList(reasons: List<Reason>, modifier: Modifier = Modifier, emphasiseFa
                     }
                 }
             }
+            if (index < reasons.lastIndex) DashedDivider()
         }
     }
 }
@@ -137,7 +138,7 @@ fun RejectedBy(reasons: List<Reason>, modifier: Modifier = Modifier) {
     }
 }
 
-/** A small panel with a hairline and title, for a screen's (or the detail screen's side) sections. */
+/** A light section grouping: title, dashed rule, then content without another nested card. */
 @Composable
 fun Panel(
     title: String,
@@ -145,13 +146,7 @@ fun Panel(
     trailing: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    Column(
-        modifier.fillMaxWidth().background(
-            Tokens.surface1,
-            RoundedCornerShape(Tokens.radiusCard),
-        ).border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusCard)).padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
+    Column(modifier.fillMaxWidth().padding(vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 title,
@@ -161,6 +156,7 @@ fun Panel(
             )
             if (trailing != null) trailing()
         }
+        DashedDivider()
         content()
     }
 }

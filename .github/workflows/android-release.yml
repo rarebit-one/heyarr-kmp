@@ -49,7 +49,7 @@ jobs:
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "21"
 
       # Use the runner's preinstalled Android SDK + accept licenses deterministically
       # (android-actions/setup-android re-downloads cmdline-tools whose license re-accept

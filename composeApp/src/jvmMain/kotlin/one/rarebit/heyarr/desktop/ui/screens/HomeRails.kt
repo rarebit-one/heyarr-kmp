@@ -27,7 +27,6 @@ import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.feeds.FollowedSource
-import one.rarebit.heyarr.core.heyarr.ContinueEntry
 import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.state.LibraryStatus
@@ -50,41 +49,8 @@ import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
-import one.rarebit.heyarr.ui.theme.CardAspect as Aspect
 
-// The Home screen's own rails ([HomeScreen]): continue, one per media type, and following.
-
-/** Where each device stopped: this node's unfinished playback sessions. */
-@Composable
-internal fun ContinueRail(session: AppSession, cont: RailState<ContinueEntry>, onOpen: (Route) -> Unit) {
-    Rail("Continue", cont, subtitle = "Unfinished playback sessions this node recorded — not history, just where a device stopped", emptyText = "", skeletonAspect = Aspect.SQUARE, skeletonWidth = 240.dp, key = {
-        it.sessionId
-    }) { e ->
-        val type = MediaType.from(e.contentType)
-        val art by rememberCover(session, type, e.title, e.artworkPath, e.year).let { c ->
-            androidx.compose.runtime.derivedStateOf { c.value.bitmap }
-        }
-        MediaCard(
-            e.title, type, onOpen = {
-                onOpen(Route.Detail(e.workId, type, e.title, from = "Home"))
-            },
-            subtitle = listOfNotNull(
-                e.editionLabel,
-                e.progressLabel,
-            ).joinToString(
-                "  ·  ",
-            ),
-            meta = listOf(
-                e.state,
-            ),
-            artwork = art,
-            status = session.index.statusOf(
-                e.workId,
-            ),
-            width = 240.dp, progress = e.fraction, aspectOverride = Aspect.SQUARE,
-        )
-    }
-}
+// The Home screen's own rails ([HomeScreen]): one per media type, and followed sources.
 
 /** One media type's rail, in that type's accent. */
 @Composable
@@ -97,7 +63,7 @@ internal fun TypeRail(
 ) {
     MediaScope(t) {
         Rail(
-            t.plural,
+            if (t == MediaType.BOOK) "For reading" else t.plural,
             rail,
             emptyText = "No ${t.plural.lowercase()} in the library yet.",
             skeletonAspect = MediaThemes.of(t).aspect,

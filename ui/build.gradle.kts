@@ -1,4 +1,5 @@
 import com.android.build.gradle.LibraryExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -18,11 +19,19 @@ kotlin {
     // media → accent theme table (`MediaThemes`) and the self-hosted fonts (`HeyarrFonts`).
     // Compose-typed (Color/Dp), so it lives apart from the pure `:core` — but still cross-platform, ready for the android/ios
     // targets that arrive when heyarr-mobile folds in.
-    jvm()
+    jvm {
+        // Compile desktop consumers for JDK 21 while using the same toolchain as CI.
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
+    }
 
-    if (hasAndroidSdk) androidTarget()
+    if (hasAndroidSdk) {
+        androidTarget {
+            // Android artifacts retain the bytecode level supported by the app's minSdk.
+            compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
 
-    jvmToolchain(17)
+    jvmToolchain(21)
 
     sourceSets {
         val commonMain by getting {

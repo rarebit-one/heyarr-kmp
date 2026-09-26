@@ -61,7 +61,7 @@ internal fun WantsSection(
     scope: CoroutineScope,
     reload: () -> Unit,
 ) {
-    Section("Wants & status", subtitle = if (wants.isEmpty()) "Not wanted — nothing measures this work" else "${wants.size} want${if (wants.size == 1) "" else "s"} on this work", trailing = {
+    Section("Overview", subtitle = if (wants.isEmpty()) "Not wanted — nothing measures this work" else "${wants.size} want${if (wants.size == 1) "" else "s"} on this work", trailing = {
         GhostButton("Refresh", reload)
     }) {
         DataTable(

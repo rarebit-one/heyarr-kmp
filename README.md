@@ -16,7 +16,8 @@ New shared logic belongs in `:core` (or `:ui` if it is Compose-typed), not in ei
 
 ## Build & test
 
-JDK 17 is required (the modules declare a JDK 17 toolchain). Everything resolves
+JDK 21 is required (the JVM targets declare a JDK 21 toolchain). Android variants
+keep Java/Kotlin bytecode at 17 for device compatibility. Everything resolves
 `one.rarebit.voidbind:voidbind-client` from the org's GitHub Packages, so every build
 needs a token with `read:packages`. Set `gpr.user` / `gpr.token` in
 `~/.gradle/gradle.properties`, or pass `GITHUB_ACTOR` / `GITHUB_TOKEN`
@@ -35,7 +36,7 @@ needs a token with `read:packages`. Set `gpr.user` / `gpr.token` in
 left out of the build and `:core` / `:ui` build JVM-only. A desktop-only machine can
 still build and test everything except the phone app.
 
-A devcontainer (`.devcontainer/`) provides JDK 17 and the Skia/X11 libraries for headless
+A devcontainer (`.devcontainer/`) provides JDK 21 and the Skia/X11 libraries for headless
 builds and screenshots. `scripts/devcontainer-exec <cmd>` rsyncs the tree to a container
 host, runs the command there, and syncs reports and screenshots back.
 
@@ -54,7 +55,7 @@ host, runs the command there, and syncs reports and screenshots back.
 |-------|---------|
 | Kotlin | 2.3.20 (matches the org) |
 | Gradle | 8.9 |
-| JDK | 17 (Temurin) |
+| JDK | 21 (Temurin) |
 | AGP | 8.7.3 (compileSdk 35, minSdk 33) |
 | Compose Multiplatform | 1.9.3 (desktop, `:ui`) |
 | Compose compiler | bundled with Kotlin (`org.jetbrains.kotlin.plugin.compose`) |
@@ -108,17 +109,17 @@ spacing, type scale) — and the media table in `:ui`'s `theme/MediaThemes.kt`, 
 
 | Media | Accent | Card | CTA |
 |-------|--------|------|-----|
-| Movie | `#2E7D5B` fern (mint CTA) | 16:9 | Play |
-| Series | `#7C5CFF` violet | 16:9 | Play / Next episode |
-| Book | `#E0A458` amber, spine shadow | 2:3 | Read |
-| Audiobook | `#2DB3A6` teal | 1:1 | Listen |
-| Podcast | `#C13BAD` magenta | 1:1 | Play episode |
-| Music | `#FF4D6D` rose | 1:1 | Play |
-| Feed / document / unknown | `#7A8598` slate | — | Open |
+| Movie | `#599C7B` fern | 16:9 | Play |
+| Series | `#78A58B` fern | 16:9 | Play / Next episode |
+| Book | `#C7B66D` ochre, spine shadow | 2:3 | Read |
+| Audiobook | `#6FA58C` fern | 1:1 | Listen |
+| Podcast | `#8DAE8D` fern | 1:1 | Play episode |
+| Music | `#83A876` fern | 1:1 | Play |
+| Feed / document / unknown | `#9CAAA0` slate | varies | Open |
 
-The accent swaps the CTA gradient, active-nav mark and progress bars; focus rings use the
-brighter hover tone to stay visible on raised surfaces. Major sections use solid rules,
-while dense search results use light dashed separators. Wrap any subtree in
+The accent marks the active destination, primary controls and progress bars; focus rings use the
+brighter hover tone to stay visible on raised surfaces. Sections and secondary lists use dashed rules.
+Wrap any subtree in
 `MediaScope(type) { … }` to re-skin it. Fonts are self-hosted (OFL): **Rubik** fills
 every interface type slot, from headings and body to the compact technical labels — shipped
 once for both apps from `:ui` (`ui/src/commonMain/composeResources/font`, exposed as

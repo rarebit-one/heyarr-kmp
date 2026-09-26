@@ -1,4 +1,5 @@
 import com.android.build.gradle.LibraryExtension
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -22,11 +23,19 @@ kotlin {
     // Targets: JVM (desktop) always; Android when an SDK is present (see `hasAndroidSdk`).
     // The code all lives in commonMain, so adding a target is a source-set add, not a
     // rewrite. `iosX64()` … arrive the same way later.
-    jvm()
+    jvm {
+        // Compile desktop consumers for JDK 21 while using the same toolchain as CI.
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
+    }
 
-    if (hasAndroidSdk) androidTarget()
+    if (hasAndroidSdk) {
+        androidTarget {
+            // Android artifacts retain the bytecode level supported by the app's minSdk.
+            compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
+        }
+    }
 
-    jvmToolchain(17)
+    jvmToolchain(21)
 
     // `jvmAndAndroidMain`: code for both JVM-based targets that needs java.* (java.io.File,
     // MessageDigest, URLEncoder) — today the public-metadata cache (`state/ExternalMetadata`),

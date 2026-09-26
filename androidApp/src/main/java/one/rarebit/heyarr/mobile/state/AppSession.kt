@@ -15,8 +15,12 @@ import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.auth.mode
 import one.rarebit.heyarr.core.heyarr.QualityProfile
+import one.rarebit.heyarr.core.mcp.McpError
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
+import one.rarebit.heyarr.core.state.DiscoveryAnswer
+import one.rarebit.heyarr.core.state.DiscoveryBackend
+import one.rarebit.heyarr.core.state.DiscoveryController
 import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.core.state.LibraryIndex
 import one.rarebit.heyarr.core.state.Toast
@@ -53,6 +57,14 @@ class AppSession(
     val credential: Credential = Credential.Guest,
 ) {
     val baseUrl: String get() = api.baseUrl
+
+    /** Shared provider-discovery request state for Search and the standalone Discover surface. */
+    val discoveryController = DiscoveryController(
+        scope = scope,
+        backend = { MobileDiscoveryBackend(api) },
+        onTransportFailure = ::noteTransportFailure,
+        ioDispatcher = Dispatchers.IO,
+    )
 
     /** GUEST (anonymous lease) vs ENROLLED (a real credential) — the single gate every screen consults. */
     val mode: ClientMode get() = credential.mode()
@@ -231,5 +243,14 @@ class AppSession(
 
     fun dismiss(toast: Toast) {
         toasts.remove(toast)
+    }
+}
+
+private class MobileDiscoveryBackend(private val api: HeyarrApi) : DiscoveryBackend {
+    override fun providers() = api.providers()
+
+    override fun discover(query: String): DiscoveryAnswer = when (val result = api.discover(query)) {
+        is McpResult.Ok -> DiscoveryAnswer.Hits(result.value)
+        is McpResult.Refused -> DiscoveryAnswer.Refused(McpError(result.code, result.message, result.tool))
     }
 }

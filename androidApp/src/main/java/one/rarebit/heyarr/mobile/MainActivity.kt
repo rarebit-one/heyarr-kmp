@@ -162,7 +162,6 @@ class MainActivity : FragmentActivity() {
                                 settings = app.graph.settings,
                                 pairing = app.pairing,
                                 rawTransport = app.graph.rawTransport,
-                                deviceIds = app.graph.deviceIds,
                                 spaceRegistry = app.graph.spaceRegistry,
                                 mdns = app.graph.mdns,
                             )
@@ -181,9 +180,6 @@ class MainActivity : FragmentActivity() {
                     vm.autoDiscover()
                     // What this phone can decode, for the playback planner (#432).
                     vm.playback.capabilities = MediaCodecCapabilities.probe(appContext)
-                    vm.attachAudio(app.graph.audio)
-                    app.reporter = vm.progressReporter
-                    app.readingPositionSync = vm.readingPositionSync
                 }
                 val enrolState by vm.enrolState.collectAsStateWithLifecycle()
                 val loginState by vm.loginState.collectAsStateWithLifecycle()

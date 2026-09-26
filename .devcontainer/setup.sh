@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Container provisioning for heyarr-desktop. The image brings JDK 17; the Gradle
+# Container provisioning for heyarr-desktop. The image brings JDK 21; the Gradle
 # wrapper fetches Gradle 8.9 itself. What the image lacks is the handful of X11 /
 # GL / fontconfig libraries Skiko (Compose's Skia binding) dlopens even when
 # rendering off-screen, plus Xvfb so the app can be launched headlessly for

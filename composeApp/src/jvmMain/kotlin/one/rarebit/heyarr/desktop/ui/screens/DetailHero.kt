@@ -73,23 +73,30 @@ internal fun DetailHero(
     val status = session.index.statusOf(detail.work.id)
     val asset = detail.primaryAsset
     val work = detail.work
-    val cont = state.continueEntry
     val first = Series.firstPlayable(seasons)
     val actions = HeroActions(session, state, detail, type, scope)
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Hero(
-            title = work.title, type = type, meta = heroMeta(detail, type, seasons, state), artwork = art,
-            status = status, height = 340.dp,
-            kicker = cont?.let { "Continue · ${it.editionLabel ?: ""} ${it.progressLabel ?: ""}".trim() },
+            title = work.title,
+            type = type,
+            meta = heroMeta(detail, type, seasons, state),
+            artwork = art,
+            status = status,
+            height = 340.dp,
             primary = { HeroPrimaryAction(actions, first, wants) { onWant(work.id, work.title, type) } },
             secondary = { HeroSecondaryActions(actions, first) { onWant(work.id, work.title, type) } },
         )
         if (asset == null && type != MediaType.SERIES && type != MediaType.FEED &&
             type != MediaType.PODCAST
         ) {
+            val wantHint = if (wants.isEmpty()) {
+                "not wanted, so nothing is looking for a copy."
+            } else {
+                "heyarr is looking. Manage → Releases shows what the indexers found."
+            }
             Notice(
-                "Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Releases shows what the indexers found."}",
+                "Nothing to play yet — $wantHint",
             )
         }
         CastPicker(session, state)
@@ -173,7 +180,7 @@ private class HeroActions(
                     is McpResult.Ok -> session.toast(
                         Toast.Kind.INFO,
                         "Search queued",
-                        "An indexer can take thirty seconds to answer; open Curate → Releases in a moment.",
+                        "An indexer can take thirty seconds to answer; open Manage → Releases in a moment.",
                     )
 
                     is McpResult.Refused -> session.refused(r)
@@ -219,7 +226,7 @@ private class HeroActions(
     }
 }
 
-/** The hero's one primary call to action: continue, play, look for a copy, want it — or nothing, for a guest. */
+/** The hero's one primary call to action: play, look for a copy, want it — or nothing, for a guest. */
 @Composable
 private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, wants: List<DesiredItem>, onWant: () -> Unit) {
     val session = actions.session
@@ -227,15 +234,9 @@ private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, wants: List
     val type = actions.type
     val work = actions.detail.work
     val asset = actions.detail.primaryAsset
-    val cont = state.continueEntry
     val theme = MediaThemes.of(type)
     val idle = state.busy == null
     when {
-        cont?.blobHash != null && type != MediaType.BOOK -> PrimaryButton("Continue", {
-            val hash = cont.blobHash ?: return@PrimaryButton
-            actions.play(hash, "${work.title} — ${cont.editionLabel ?: ""}", cont.assetId)
-        }, icon = Icons.Rounded.PlayArrow, enabled = idle)
-
         type == MediaType.SERIES && first != null -> PrimaryButton(
             "Play ${first.code ?: ""}".trim(),
             { actions.play(first.asset.blobHash!!, Series.playTitle(work, first), first.asset.id) },

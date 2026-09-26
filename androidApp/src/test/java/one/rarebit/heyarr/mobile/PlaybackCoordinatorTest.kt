@@ -175,7 +175,7 @@ class PlaybackCoordinatorResumeTest {
         }
     }
 
-    @Test fun aPlayLooksUpTheResumePositionAndOpensASession() {
+    @Test fun aPlayStartsAtTheBeginningAndOpensASession() {
         val spy = Spy()
         val c = PlaybackCoordinator(
             RoutedTransport(emptyMap()),
@@ -184,11 +184,10 @@ class PlaybackCoordinatorResumeTest {
             CoroutineScope(dispatcher),
             dispatcher,
             reporter = spy,
-            resumeAt = { id -> if (id == "a1") 1284.5 else null },
         )
         c.play(Work(id = "w1", title = "Arrival", blobHash = hash, mime = "video/mp4", primaryAssetId = "a1"))
         val np = c.nowPlaying.value!!
-        assertEquals(1284.5, np.startSeconds, 0.0)
+        assertEquals(0.0, np.startSeconds, 0.0)
         assertEquals("watch", np.verb)
         assertEquals(listOf("begin:a1:watch"), spy.events)
         c.reportProgress(1300.0)
@@ -196,9 +195,8 @@ class PlaybackCoordinatorResumeTest {
         assertEquals(listOf("begin:a1:watch", "progress:1300", "end:false"), spy.events)
     }
 
-    @Test fun aKnownStartSkipsTheLookupAndAudioIsAListen() {
+    @Test fun anExplicitPlaybackOffsetIsKeptAndAudioIsAListen() {
         val spy = Spy()
-        var looked = false
         val c = PlaybackCoordinator(
             RoutedTransport(emptyMap()),
             { "https://h" },
@@ -206,14 +204,9 @@ class PlaybackCoordinatorResumeTest {
             CoroutineScope(dispatcher),
             dispatcher,
             reporter = spy,
-            resumeAt = {
-                looked = true
-                5.0
-            },
         )
         c.playFile("Track", "a9", hash, "audio/flac", "music", startSeconds = 42.0)
         assertEquals(42.0, c.nowPlaying.value!!.startSeconds, 0.0)
         assertEquals("listen", c.nowPlaying.value!!.verb)
-        assertFalse(looked)
     }
 }
