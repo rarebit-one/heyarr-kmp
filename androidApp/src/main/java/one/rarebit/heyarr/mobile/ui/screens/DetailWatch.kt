@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package one.rarebit.heyarr.mobile.ui.screens
 
 import androidx.compose.foundation.background
@@ -76,7 +78,6 @@ import one.rarebit.heyarr.ui.components.RuleCode
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.focusRing
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.core.library.Episode as CoreEpisode
 
 /** The synopsis: the node's when it has one, else a public source's (labelled), else an honest line. */
@@ -125,6 +126,7 @@ internal fun SynopsisBlock(work: Work, state: DetailState, coverIsExternal: Bool
 
 /** Seasons as chips, then the selected season's episodes with the thumbnails the scan already recorded. */
 @Composable
+@Suppress("LongMethod", "CyclomaticComplexMethod") // Coordinates season selection and its episode rows.
 internal fun SeasonsBlock(
     session: AppSession,
     work: Work,
@@ -141,8 +143,9 @@ internal fun SeasonsBlock(
     val ext = state.externalEpisodes
     val all: List<Season> = allSeasons(seasons, ext)
     if (all.isEmpty()) {
+        val looking = if (wants.isNotEmpty()) " heyarr is looking — Manage → Releases shows what it found." else ""
         Notice(
-            "No episode files are held for this series yet.${if (wants.isNotEmpty()) " heyarr is looking — Curate → Indexer candidates shows what it found." else ""}",
+            "No episode files are held for this series yet.$looking",
         )
         return
     }
@@ -171,12 +174,26 @@ internal fun SeasonsBlock(
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             for (row in rows) {
                 when (row) {
-                    is CoreEpisode<*> -> EpisodeRow(session, work, row.phone(), state, extForSeason[row.number], onPlay = { ep ->
-                        play.playVideo(
-                            work, ep.asset.id, ep.asset.blobHash!!,
-                            ep.asset.mime ?: work.mime, Series.playTitle(work, ep), null, queue, art, ep.subtitles,
-                        )
-                    })
+                    is CoreEpisode<*> -> EpisodeRow(
+                        session,
+                        work,
+                        row.phone(),
+                        state,
+                        extForSeason[row.number],
+                        onPlay = { ep ->
+                            play.playVideo(
+                                work,
+                                ep.asset.id,
+                                ep.asset.blobHash!!,
+                                ep.asset.mime ?: work.mime,
+                                Series.playTitle(work, ep),
+                                null,
+                                queue,
+                                art,
+                                ep.subtitles,
+                            )
+                        },
+                    )
 
                     is Int -> MissingEpisodeRow(session, selected, row, wants, extForSeason[row])
                 }
@@ -195,31 +212,31 @@ private fun EpisodeRow(
     onPlay: (Episode) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val theme = LocalMediaTheme.current
     val thumb =
         ep.thumbnailPath?.let { HeyarrApi.blobUrlFromPath(session.baseUrl, it) }
             ?: ext?.imageUrl?.takeIf { session.externalMetadata }
     val interaction = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(Tokens.radiusInput)
-    val cont = state.continueEntry
-    val isContinue =
-        cont != null && (cont.assetId == ep.asset.id || (cont.blobHash != null && cont.blobHash == ep.asset.blobHash))
     Row(
         Modifier.fillMaxWidth().focusRing(interaction, shape).clip(shape)
             .background(
                 Tokens.surface1,
                 shape,
-            ).border(Tokens.hairline, if (isContinue) theme.accent.copy(alpha = 0.6f) else Tokens.border, shape)
-            .clickable(interactionSource = interaction, indication = null, role = Role.Button, enabled = ep.isPlayable, onClick = {
-                onPlay(ep)
-            })
+            ).border(Tokens.hairline, Tokens.border, shape)
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                role = Role.Button,
+                enabled = ep.isPlayable,
+                onClick = { onPlay(ep) },
+            )
             .semantics { contentDescription = "${ep.label}${if (!ep.isPlayable) ", file missing" else ""}" }
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        EpisodeThumb(thumb, state.continueEntry?.takeIf { isContinue }?.fraction)
-        EpisodeText(ep, ext, isContinue, state.continueEntry?.progressLabel, Modifier.weight(1f))
+        EpisodeThumb(thumb)
+        EpisodeText(ep, ext, Modifier.weight(1f))
         if (ep.isPlayable) {
             IconButtonRound(Icons.Rounded.Cast, "Play ${ep.label} on a renderer", {
                 toggleCast(session, state, ep.asset.id, scope)
@@ -248,7 +265,6 @@ private fun MissingEpisodeRow(
     wants: List<DesiredItem>,
     ext: ExternalEpisode?,
 ) {
-    val scope = rememberCoroutineScope()
     val code = "S%02dE%02d".format(season.number ?: 0, number)
     Row(
         Modifier.fillMaxWidth().clip(
@@ -282,29 +298,44 @@ private fun MissingEpisodeRow(
                 )
             }
             Text(
-                if (wants.isEmpty()) "Want this series and heyarr will look for it." else "Wanted — heyarr searches on its schedule; ask now to jump the queue.",
+                if (wants.isEmpty()) {
+                    "Want this series and heyarr will look for it."
+                } else {
+                    "Wanted — heyarr searches on its schedule; ask now to jump the queue."
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = Tokens.textMuted,
             )
         }
         if (wants.isNotEmpty()) {
-            IconButtonRound(Icons.Rounded.Search, "Look for $code now", {
-                scope.launch {
-                    session.io { session.api.searchReleases(wants.first().id) }.onSuccess { r ->
-                        when (r) {
-                            is McpResult.Ok -> session.toast(
-                                Toast.Kind.INFO,
-                                "Search queued for ${season.label}",
-                                "Results land under Curate → Indexer candidates.",
-                            )
-
-                            is McpResult.Refused -> session.refused(r)
-                        }
-                    }
-                }
-            }, size = 36.dp)
+            SearchForEpisodeButton(session, season, wants.first().id, code)
         }
     }
+}
+
+@Composable
+private fun SearchForEpisodeButton(session: AppSession, season: Season, wantId: String, code: String) {
+    val scope = rememberCoroutineScope()
+    IconButtonRound(
+        Icons.Rounded.Search,
+        "Look for $code now",
+        {
+            scope.launch {
+                session.io { session.api.searchReleases(wantId) }.onSuccess { result ->
+                    when (result) {
+                        is McpResult.Ok -> session.toast(
+                            Toast.Kind.INFO,
+                            "Search queued for ${season.label}",
+                            "Results land under Manage → Releases.",
+                        )
+
+                        is McpResult.Refused -> session.refused(result)
+                    }
+                }
+            }
+        },
+        size = 36.dp,
+    )
 }
 
 @Composable

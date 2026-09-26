@@ -1,6 +1,8 @@
 package one.rarebit.heyarr.desktop.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
@@ -96,6 +98,7 @@ import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.Skeleton
+import one.rarebit.heyarr.ui.theme.LocalAppearance
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
@@ -210,6 +213,9 @@ fun PlayerScreen(
     val p = playback.player
     val ps = p.state
     val headless = remember { GraphicsEnvironment.isHeadless() }
+    val reduceMotion = LocalAppearance.current.reduceMotion
+    val controlsEnter = if (reduceMotion) EnterTransition.None else fadeIn()
+    val controlsExit = if (reduceMotion) ExitTransition.None else fadeOut()
 
     DisposableEffect(Unit) {
         playback.onPlayerScreen = true
@@ -323,9 +329,13 @@ fun PlayerScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     IconButtonRound(Icons.Rounded.Replay10, "Back 10 seconds (←)", { p.seekBy(-10.0) }, size = 36.dp)
-                    IconButtonRound(if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause, if (ps.paused) "Play (space)" else "Pause (space)", {
-                        p.togglePause()
-                    }, size = 48.dp, filled = true)
+                    IconButtonRound(
+                        if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause,
+                        if (ps.paused) "Play (space)" else "Pause (space)",
+                        { p.togglePause() },
+                        size = 48.dp,
+                        filled = true,
+                    )
                     IconButtonRound(Icons.Rounded.Forward10, "Forward 10 seconds (→)", { p.seekBy(10.0) }, size = 36.dp)
                     val next = playback.next()
                     if (next !=
@@ -373,8 +383,8 @@ fun PlayerScreen(
                 Picture(Modifier.fillMaxSize())
                 AnimatedVisibility(
                     overlayShowing,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
+                    enter = controlsEnter,
+                    exit = controlsExit,
                     modifier = Modifier.align(Alignment.TopStart),
                 ) {
                     Row(
@@ -406,8 +416,8 @@ fun PlayerScreen(
                 }
                 AnimatedVisibility(
                     overlayShowing,
-                    enter = fadeIn(),
-                    exit = fadeOut(),
+                    enter = controlsEnter,
+                    exit = controlsExit,
                     modifier = Modifier.align(Alignment.BottomCenter),
                 ) {
                     Box(
@@ -430,6 +440,7 @@ fun PlayerScreen(
             ) {
                 GhostButton(item.from, onBack, icon = Icons.Rounded.ArrowBack)
                 Column(Modifier.weight(1f)) {
+                    Text("PLAY HERE · MPV", style = MaterialTheme.typography.labelSmall, color = Tokens.accentGradEnd)
                     Text(
                         item.title,
                         style = MaterialTheme.typography.titleMedium,

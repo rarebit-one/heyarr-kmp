@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package one.rarebit.heyarr.mobile.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -80,41 +82,22 @@ import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 
-// The parts of [MediaCard] and [Hero]: the card's art with its progress bar and spine, its
+// The parts of [MediaCard] and [Hero]: the card's art and book spine, its
 // caption, its long-press menu, and the hero's scrim.
 
 /**
- * A card's art at its aspect, with the continue rail's progress bar and a book's spine
- * shadow; [overlay] adds the corner badges.
+ * A card's art at its aspect, with a book's spine shadow; [overlay] adds the corner badges.
  */
 @Composable
 internal fun CardArtBox(
     modifier: Modifier,
     artwork: String?,
     type: MediaType,
-    progress: Float?,
     overlay: @Composable BoxScope.() -> Unit,
 ) {
     val theme = LocalMediaTheme.current
     Box(modifier) {
         Artwork(artwork, type, Modifier.fillMaxSize(), contentDescription = null)
-        if (progress !=
-            null
-        ) {
-            Box(
-                Modifier.align(
-                    Alignment.BottomStart,
-                ).fillMaxWidth().height(4.dp).background(Tokens.bgBase.copy(alpha = 0.55f)),
-            ) {
-                Box(
-                    Modifier.fillMaxWidth(
-                        progress.coerceIn(0f, 1f),
-                    ).height(
-                        4.dp,
-                    ).background(Brush.horizontalGradient(listOf(theme.accent, theme.accentGradientEnd))),
-                )
-            }
-        }
         if (theme.spineShadow) {
             Box(
                 Modifier.width(

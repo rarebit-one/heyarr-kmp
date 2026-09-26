@@ -44,7 +44,10 @@ class DecisionsTest {
 
     @Test fun aDetailLightsTheSectionItWasOpenedFrom() {
         assertEquals(NavSection.HOME, Decisions.section(Route.Home))
-        assertEquals(NavSection.SETTINGS, Decisions.section(Route.Telemetry))
+        assertEquals(NavSection.MANAGE, Decisions.section(Route.Manage))
+        assertEquals(NavSection.MANAGE, Decisions.section(Route.Discover))
+        assertEquals(NavSection.MANAGE, Decisions.section(Route.Missing))
+        assertEquals(NavSection.MANAGE, Decisions.section(Route.Telemetry))
         assertEquals(NavSection.LIBRARY, Decisions.section(Route.Playlists))
         assertEquals(NavSection.SEARCH, Decisions.section(detailRoute("w", MediaType.MOVIE, "T", from = "Search")))
         assertEquals(NavSection.LIBRARY, Decisions.section(detailRoute("w", MediaType.MOVIE, "T", from = "Downloads")))

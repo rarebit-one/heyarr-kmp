@@ -13,37 +13,37 @@ import androidx.compose.ui.unit.sp
  */
 @Suppress("MagicNumber") // Design tokens are intentionally declared as literal colour values.
 object Tokens {
-    // The forest palette keeps the chrome quiet so artwork and the reading surface lead.
-    val bgBase = Color(0xFF0A1410)
-    val surface1 = Color(0xFF111E18)
-    val surface2 = Color(0xFF17271F)
-    val surface3 = Color(0xFF20362B)
-    val border = Color(0xFF2E493A)
+    // Archive palette: warm forest surfaces and chalk text keep real artwork prominent.
+    val bgBase = Color(0xFF101815) // Forest Black
+    val surface1 = Color(0xFF1C2520) // Raised Panel
+    val surface2 = Color(0xFF242F29)
+    val surface3 = Color(0xFF2C3932)
+    val border = Color(0xFF46554C)
 
     // Text ramp.
-    val textPrimary = Color(0xFFE6EBD7)
-    val textMuted = Color(0xFFB1C0B1)
-    val textDisabled = Color(0xFF778A7C)
+    val textPrimary = Color(0xFFE5E9DC) // Chalk
+    val textMuted = Color(0xFFB8C1B5)
+    val textDisabled = Color(0xFF849188)
 
     // The reader gets its own paper and ink rather than borrowing the chrome colours.
-    val readingPaper = Color(0xFFF0EBDD)
-    val readingInk = Color(0xFF20231E)
+    val readingPaper = Color(0xFFE5E9DC)
+    val readingInk = Color(0xFF202720)
 
     // Semantic.
-    val ratingGold = Color(0xFFF4B860)
-    val danger = Color(0xFFE56E66)
-    val warning = Color(0xFFF4B860)
-    val success = Color(0xFF7EE0B3)
+    val ratingGold = Color(0xFFC7B66D) // Ochre
+    val danger = Color(0xFFE58B7F)
+    val warning = Color(0xFFC7B66D)
+    val success = Color(0xFF8DBD9E)
 
     // Default accent = the forest fern (Movie accent; also the app's neutral CTA).
-    val accent = Color(0xFF2E7D5B)
-    val accentHover = Color(0xFF43A478)
-    val accentGradEnd = Color(0xFF7EE0B3)
+    val accent = Color(0xFF599C7B) // Fern
+    val accentHover = Color(0xFF78B493)
+    val accentGradEnd = Color(0xFFB8D8C7) // Pale Mint
 
     /** Neutral slate accent for unknown / non-media types (documents, feeds). */
-    val slate = Color(0xFF7A8598)
-    val slateHover = Color(0xFF8C97AA)
-    val slateGradEnd = Color(0xFF9AA5B8)
+    val slate = Color(0xFF9CAAA0)
+    val slateHover = Color(0xFFBCC8BE)
+    val slateGradEnd = Color(0xFFDCE3D9)
 
     // Archive surfaces and controls have square corners.
     val radiusCard: Dp = 0.dp
@@ -66,10 +66,13 @@ object Tokens {
     val hairline: Dp = 1.dp
 
     // Layout.
-    val navWidth: Dp = 84.dp
+    val navWidth: Dp = 76.dp
     val compactBreakpoint: Dp = 900.dp
     val posterWidth: Dp = 160.dp
     val squareWidth: Dp = 168.dp
+
+    /** Compact glyph scale, drawn in dp so the same marks work on desktop and touch. */
+    val pixel: Dp = 3.dp
 
     // Compact desktop type scale (Rubik).
     object Type {

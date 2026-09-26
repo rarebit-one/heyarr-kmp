@@ -48,7 +48,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import one.rarebit.heyarr.core.heyarr.ContinueEntry
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.state.ExternalEpisode
@@ -89,13 +88,10 @@ internal fun EpisodeRow(
     ext: ExternalEpisode? = null,
 ) {
     val scope = rememberCoroutineScope()
-    val theme = LocalMediaTheme.current
     val art = rememberEpisodeThumb(session, ep, ext)
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val shape = RoundedCornerShape(Tokens.radiusInput)
-    val cont = state.continueEntry
-    val isContinue = cont.isFor(ep)
     val play: () -> Unit = {
         ep.asset.blobHash?.let {
             playLocal(
@@ -114,7 +110,7 @@ internal fun EpisodeRow(
             .background(
                 if (hovered) Tokens.surface2 else Tokens.surface1,
                 shape,
-            ).border(Tokens.hairline, if (isContinue) theme.accent.copy(alpha = 0.6f) else Tokens.border, shape)
+            ).border(Tokens.hairline, Tokens.border, shape)
             .clickable(
                 interactionSource = interaction,
                 indication = null,
@@ -127,15 +123,10 @@ internal fun EpisodeRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        EpisodeThumb(
-            art,
-            playOverlay = hovered && ep.isPlayable,
-            progress = state.continueEntry?.takeIf { isContinue }?.fraction,
-        )
+        EpisodeThumb(art, playOverlay = hovered && ep.isPlayable)
         EpisodeInfo(
             ep,
             ext,
-            continueLabel = if (isContinue) "continue · ${state.continueEntry?.progressLabel}" else null,
             Modifier.weight(1f),
         )
         if (ep.isPlayable) {
@@ -181,16 +172,10 @@ private fun rememberEpisodeThumb(session: AppSession, ep: Episode, ext: External
     return thumb ?: extThumb
 }
 
-/** Whether the continue rail's entry is this episode: by asset when it names one, else by bytes. */
-private fun ContinueEntry?.isFor(ep: Episode): Boolean = when {
-    this == null -> false
-    assetId != null -> assetId == ep.asset.id
-    else -> blobHash != null && blobHash == ep.asset.blobHash
-}
-
-/** An episode's 16:9 thumbnail, a play affordance while hovered, and how far in it was left. */
+/** An episode's 16:9 thumbnail and a play affordance while hovered. */
+@Suppress("FunctionNaming")
 @Composable
-private fun EpisodeThumb(art: ImageBitmap?, playOverlay: Boolean, progress: Float?) {
+private fun EpisodeThumb(art: ImageBitmap?, playOverlay: Boolean) {
     val theme = LocalMediaTheme.current
     Box(Modifier.width(152.dp).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard))) {
         Artwork(art, MediaType.SERIES, Modifier.fillMaxSize(), glyphSize = 22.dp)
@@ -212,21 +197,13 @@ private fun EpisodeThumb(art: ImageBitmap?, playOverlay: Boolean, progress: Floa
                 }
             }
         }
-        progress?.let { f ->
-            Box(
-                Modifier.align(
-                    Alignment.BottomStart,
-                ).fillMaxWidth().height(4.dp).background(Tokens.bgBase.copy(alpha = 0.5f)),
-            ) {
-                Box(Modifier.fillMaxWidth(f).height(4.dp).background(theme.accent))
-            }
-        }
     }
 }
 
 /** An episode's code, title and air date, its file facts, and the public source's summary. */
+@Suppress("FunctionNaming")
 @Composable
-private fun EpisodeInfo(ep: Episode, ext: ExternalEpisode?, continueLabel: String?, modifier: Modifier) {
+private fun EpisodeInfo(ep: Episode, ext: ExternalEpisode?, modifier: Modifier) {
     val theme = LocalMediaTheme.current
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -239,13 +216,6 @@ private fun EpisodeInfo(ep: Episode, ext: ExternalEpisode?, continueLabel: Strin
                 overflow = TextOverflow.Ellipsis,
             )
             ext?.airdate?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled) }
-            if (continueLabel != null) {
-                Text(
-                    continueLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = theme.accentGradientEnd,
-                )
-            }
         }
         EpisodeFileFacts(ep)
         ext?.summary?.let {
@@ -339,7 +309,11 @@ internal fun MissingEpisodeRow(
                 ext?.airdate?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled) }
             }
             Text(
-                if (wants.isEmpty()) "Want this series and heyarr will look for it." else "Wanted — heyarr searches on its schedule; ask now to jump the queue.",
+                if (wants.isEmpty()) {
+                    "Want this series and heyarr will look for it."
+                } else {
+                    "Wanted — heyarr searches on its schedule; ask now to jump the queue."
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = Tokens.textMuted,
             )
@@ -382,7 +356,7 @@ private fun LookForEpisodeButton(session: AppSession, season: Season, wants: Lis
                     is McpResult.Ok -> session.toast(
                         Toast.Kind.INFO,
                         "Search queued for ${season.label}",
-                        "Results land under Curate → Releases.",
+                        "Results land under Manage → Releases.",
                     )
 
                     is McpResult.Refused -> session.refused(r)

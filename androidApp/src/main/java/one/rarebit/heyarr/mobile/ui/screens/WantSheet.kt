@@ -38,7 +38,7 @@ import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.PrimaryButton
 
 /** A pending Want: either an existing work by id, or a title the library has never seen. */
-data class WantRequest(val workId: String?, val title: String)
+data class WantRequest(val workId: String?, val title: String, val year: Int? = null, val type: MediaType? = null)
 
 /**
  * The Want sheet: pick a quality profile (required — "this should exist" with no
@@ -52,8 +52,8 @@ data class WantRequest(val workId: String?, val title: String)
 fun WantSheet(session: AppSession, req: WantRequest, onClose: () -> Unit) {
     val scope = rememberCoroutineScope()
     var title by remember { mutableStateOf(req.title) }
-    var year by remember { mutableStateOf("") }
-    var type by remember { mutableStateOf(MediaType.MOVIE) }
+    var year by remember(req.year) { mutableStateOf(req.year?.toString().orEmpty()) }
+    var type by remember(req.type) { mutableStateOf(req.type ?: MediaType.MOVIE) }
     var profile by remember(session.profiles) {
         mutableStateOf(
             session.profiles.firstOrNull {

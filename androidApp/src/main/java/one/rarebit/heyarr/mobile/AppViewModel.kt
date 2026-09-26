@@ -17,11 +17,6 @@ import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.discovery.NodeDiscovery
 import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.heyarr.mobile.catalog.ContinueClient
-import one.rarebit.heyarr.mobile.consumption.ConsumptionClient
-import one.rarebit.heyarr.mobile.consumption.ConsumptionReporter
-import one.rarebit.heyarr.mobile.consumption.DeviceIdStore
-import one.rarebit.heyarr.mobile.consumption.InMemoryDeviceIdStore
 import one.rarebit.heyarr.mobile.device.DeviceEnrolment
 import one.rarebit.heyarr.mobile.device.DeviceKeyring
 import one.rarebit.heyarr.mobile.device.EnrolClient
@@ -37,8 +32,6 @@ import one.rarebit.heyarr.mobile.login.QrLoginClient
 import one.rarebit.heyarr.mobile.login.VoidbindLogin
 import one.rarebit.heyarr.mobile.net.DeviceAuthTransport
 import one.rarebit.heyarr.mobile.net.OkHttpTransport
-import one.rarebit.heyarr.mobile.playback.AudioPlayer
-import one.rarebit.heyarr.mobile.playback.AudioSessionBridge
 import one.rarebit.heyarr.mobile.playback.PlaybackCoordinator
 import one.rarebit.heyarr.mobile.search.SessionAuthority
 import one.rarebit.heyarr.mobile.search.SessionClient
@@ -93,8 +86,6 @@ class AppViewModel internal constructor(
      * [transport] wraps for Device auth.
      */
     private val rawTransport: HttpTransport = OkHttpTransport(),
-    /** Where this phone's node-issued device ids live (SharedPreferences on the phone). */
-    private val deviceIds: DeviceIdStore = InMemoryDeviceIdStore(),
     /** The device-side personal-state role map (SharedPreferences on the phone; in-memory in tests). */
     private val spaceRegistry: one.rarebit.heyarr.mobile.personalstate.SpaceRegistry =
         one.rarebit.heyarr.mobile.personalstate.InMemorySpaceRegistry(),
@@ -152,15 +143,6 @@ class AppViewModel internal constructor(
         return coordinator
     }
 
-    /** The coordinator for the current node + credential (null before enrolment). */
-    private fun currentPersonalState(): one.rarebit.heyarr.mobile.personalstate.PersonalStateCoordinator? =
-        credentialOrNull()?.let { personalState(config.baseUrl, it) }
-
-    /** Syncs a reader's exact locator through the encrypted reading-position space (§45). */
-    val readingPositionSync: one.rarebit.heyarr.mobile.reader.ReadingPositionSync by lazy {
-        one.rarebit.heyarr.mobile.reader.CoordinatorReadingPositionSync({ currentPersonalState() }, viewModelScope)
-    }
-
     /**
      * What is playing and how it came to be: planning, fallback and the one re-plan
      * (playback/PlaybackCoordinator). Reads the credential and node per call, so it
@@ -172,43 +154,8 @@ class AppViewModel internal constructor(
             baseUrl = { config.baseUrl },
             credential = { credential },
             scope = viewModelScope,
-            reporter = reporter,
-            resumeAt = { assetId ->
-                val cred = credential ?: return@PlaybackCoordinator null
-                val rail = ContinueClient(transport, config.baseUrl, cred).rail() as? ContinueClient.Outcome.Rail
-                rail?.entries?.firstOrNull { it.assetId == assetId }?.positionSeconds
-            },
         )
     }
-
-    /**
-     * Tells the node where playback reached (§67): silent until this credential can
-     * write, i.e. an enrolled, authorised device. The device registers itself once per
-     * node under its enrolled key.
-     */
-    private val reporter: ConsumptionReporter by lazy {
-        ConsumptionReporter(
-            client = ConsumptionClient(transport, { config.baseUrl }, { credential }),
-            store = deviceIds,
-            scope = viewModelScope,
-            baseUrl = { config.baseUrl },
-            canWrite = { _sessionAuthority.value?.canWrite == true },
-            enrolledDeviceKey = { _sessionAuthority.value?.deviceKey },
-            deviceName = { deviceName },
-            capabilities = { playback.capabilities },
-        )
-    }
-
-    /** The audio queue reports too: a track is a `listen` session. Attach once from the Activity. */
-    fun attachAudio(audio: AudioPlayer) {
-        if (audioBridge != null) return
-        audioBridge = AudioSessionBridge(audio, reporter, viewModelScope)
-    }
-
-    /** The reporter, for the reader activity to share (it runs outside this ViewModel). */
-    val progressReporter: one.rarebit.heyarr.mobile.consumption.ProgressReporter get() = reporter
-
-    private var audioBridge: AudioSessionBridge? = null
 
     private val _config = MutableStateFlow(resolveConfig())
     val configState: StateFlow<HeyarrConfig> = _config.asStateFlow()

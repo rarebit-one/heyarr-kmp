@@ -87,6 +87,7 @@ class SessionAudioPlayer(private val context: Context, private val scope: Corout
             }
             c.addListener(listener)
             controller = c
+            _state.update { it.copy(volume = c.volume.coerceIn(0f, 1f)) }
             while (pending.isNotEmpty()) pending.removeFirst()(c)
         }, MoreExecutors.directExecutor())
     }
@@ -94,8 +95,10 @@ class SessionAudioPlayer(private val context: Context, private val scope: Corout
     override fun playQueue(items: List<AudioItem>, startIndex: Int) {
         if (items.isEmpty()) return
         val start = startIndex.coerceIn(0, items.size - 1)
-        _state.value = AudioState(queue = items, index = start)
+        val volume = _state.value.volume
+        _state.value = AudioState(queue = items, index = start, volume = volume)
         withController { c ->
+            c.volume = volume
             c.setMediaItems(items.map { it.toMediaItem() }, start, 0L)
             c.prepare()
             c.play()
@@ -121,9 +124,15 @@ class SessionAudioPlayer(private val context: Context, private val scope: Corout
         }
     }
 
+    override fun setVolume(volume: Float) {
+        val level = volume.coerceIn(0f, 1f)
+        _state.update { it.copy(volume = level) }
+        withController { it.volume = level }
+    }
+
     override fun stop() {
         stopTicker()
-        _state.value = AudioState()
+        _state.value = AudioState(volume = _state.value.volume)
         controller?.let {
             it.stop()
             it.clearMediaItems()

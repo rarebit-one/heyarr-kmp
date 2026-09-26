@@ -22,10 +22,17 @@ import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.discovery.NodeDiscovery
 import one.rarebit.heyarr.core.heyarr.QualityProfile
+import one.rarebit.heyarr.core.mcp.McpError
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.heyarr.core.state.*
+import one.rarebit.heyarr.core.state.DiscoveryAnswer
+import one.rarebit.heyarr.core.state.DiscoveryBackend
+import one.rarebit.heyarr.core.state.DiscoveryController
+import one.rarebit.heyarr.core.state.ExternalMetadata
+import one.rarebit.heyarr.core.state.LibraryIndex
+import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.state.ToastAction
 import one.rarebit.heyarr.desktop.device.DesktopDeviceEnroller
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DevicePairingSteps
@@ -68,16 +75,15 @@ enum class Connection {
     }
 }
 
+/** How long one liveness probe may take before it counts as no answer. */
+private const val PROBE_TIMEOUT_MS = 6_000L
+
 /**
  * App-wide state every screen shares: the saved connection, the [HeyarrApi] built from
  * it, connectivity, the library-status index, quality profiles, and the toast queue.
  * Plain Compose state (the org's stance for this app; a ViewModel layer comes with the
  * shared module). Network work is launched on [Dispatchers.IO] through [io].
  */
-
-/** How long one liveness probe may take before it counts as no answer. */
-private const val PROBE_TIMEOUT_MS = 6_000L
-
 class AppSession(
     private val settings: SettingsStore,
     private val transport: HttpTransport,
@@ -152,6 +158,14 @@ class AppSession(
     val api: HeyarrApi? get() = config.baseUrl.trim().takeIf { it.isNotEmpty() }?.let {
         HeyarrApi(transport, config.baseUrl, credential)
     }
+
+    /** Shared provider-discovery request state for Search and the standalone Discover surface. */
+    val discoveryController = DiscoveryController(
+        scope = scope,
+        backend = { api?.let(::DesktopDiscoveryBackend) },
+        onTransportFailure = ::noteTransportFailure,
+        ioDispatcher = Dispatchers.IO,
+    )
 
     /** App-wide playback: one mpv for the session, surface owned by the shell. */
     val playback = PlaybackSession()
@@ -506,4 +520,13 @@ class AppSession(
      * cancel it (and its toast) mid-flight, which is exactly the "nothing happened" bug.
      */
     fun launch(block: suspend CoroutineScope.() -> Unit) = scope.launch(block = block)
+}
+
+private class DesktopDiscoveryBackend(private val api: HeyarrApi) : DiscoveryBackend {
+    override fun providers() = api.providers()
+
+    override fun discover(query: String): DiscoveryAnswer = when (val result = api.discover(query)) {
+        is McpResult.Ok -> DiscoveryAnswer.Hits(result.value)
+        is McpResult.Refused -> DiscoveryAnswer.Refused(McpError(result.code, result.message, result.tool))
+    }
 }

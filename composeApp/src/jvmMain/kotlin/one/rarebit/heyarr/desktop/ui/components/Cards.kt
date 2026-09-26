@@ -62,9 +62,11 @@ import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.ui.components.CornerBracket
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.MetaLine
 import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.PixelCluster
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.RailState
 import one.rarebit.heyarr.ui.components.SectionHeader
@@ -83,7 +85,7 @@ import one.rarebit.heyarr.ui.theme.Tokens
 private const val HERO_CROSSFADE_DURATION_MS = 500
 
 /**
- * Artwork with a blur-up: an accent-tinted gradient placeholder (with the type glyph)
+ * Artwork with a blur-up: a restrained archive fallback (type glyph + pixel cluster)
  * shows at once; the decoded bitmap fades over it when it lands. Loading is lazy —
  * see [one.rarebit.heyarr.desktop.state.ArtworkLoader.rememberArtwork] at the call site.
  */
@@ -100,7 +102,7 @@ fun Artwork(
     val alpha by animateFloatAsState(if (bitmap != null) 1f else 0f, tween(if (reduce) 0 else 350))
     Box(
         modifier.background(
-            Brush.linearGradient(listOf(theme.accent.copy(alpha = 0.35f), Tokens.surface2, Tokens.surface1)),
+            Brush.linearGradient(listOf(theme.accent.copy(alpha = 0.15f), Tokens.surface2, Tokens.surface1)),
         ),
         contentAlignment = Alignment.Center,
     ) {
@@ -112,6 +114,15 @@ fun Artwork(
                 contentDescription = null,
                 tint = theme.accent.copy(alpha = 0.55f),
                 modifier = Modifier.size(glyphSize),
+            )
+            PixelCluster(
+                Modifier.align(Alignment.TopEnd).padding(12.dp).size(16.dp),
+                color = theme.accentGradientEnd,
+                pattern = type.ordinal % 3,
+            )
+            CornerBracket(
+                Modifier.fillMaxSize().padding(8.dp),
+                color = theme.accent.copy(alpha = 0.45f),
             )
         }
         if (bitmap !=
@@ -145,6 +156,7 @@ fun wantVisible(mode: ClientMode, status: LibraryStatus?): Boolean =
  * client ([wantVisible]); a guest never sees a want button that would only be refused.
  * Fully keyboard-operable: the card is a focusable button, and Want is a second focus stop.
  */
+@Suppress("FunctionNaming", "LongParameterList")
 @Composable
 fun MediaCard(
     title: String,
@@ -160,8 +172,6 @@ fun MediaCard(
     mode: ClientMode = ClientMode.ENROLLED,
     width: Dp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth,
     showBadge: Boolean = true,
-    /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */
-    progress: Float? = null,
     aspectOverride: CardAspect? = null,
 ) = MediaScope(type) {
     val theme = LocalMediaTheme.current
@@ -179,7 +189,6 @@ fun MediaCard(
     ) {
         Box(Modifier.fillMaxWidth().aspectRatio((aspectOverride ?: theme.aspect).ratio)) {
             Artwork(artwork, type, Modifier.fillMaxSize(), contentDescription = null)
-            if (progress != null) CardProgressBar(progress, Modifier.align(Alignment.BottomStart))
             if (theme.spineShadow) {
                 Box(
                     Modifier.width(

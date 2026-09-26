@@ -106,7 +106,7 @@ fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modif
         ).padding(horizontal = Tokens.screenPadding).padding(top = Tokens.s4, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        SectionHeader("Cast", subtitle = "Renderers on the network and what each is doing", trailing = {
+        SectionHeader("Cast / renderer", subtitle = "Renderers on the network and what each is doing", trailing = {
             IconButtonRound(Icons.Rounded.Refresh, "Search the network again", { load(refresh = true) }, size = 36.dp)
         })
         RendererList(state) { load() }

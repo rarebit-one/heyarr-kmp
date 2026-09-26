@@ -1,6 +1,5 @@
 package one.rarebit.heyarr.mobile.theme
 
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,9 +36,9 @@ object Tokens {
     val accentGradEnd = one.rarebit.heyarr.ui.theme.Tokens.accentGradEnd
 
     /** Neutral slate accent for unknown / non-media types (documents, feeds). */
-    val slate = Color(0xFF7A8598)
-    val slateHover = Color(0xFF8C97AA)
-    val slateGradEnd = Color(0xFF9AA5B8)
+    val slate = one.rarebit.heyarr.ui.theme.Tokens.slate
+    val slateHover = one.rarebit.heyarr.ui.theme.Tokens.slateHover
+    val slateGradEnd = one.rarebit.heyarr.ui.theme.Tokens.slateGradEnd
 
     // Radii.
     val radiusCard: Dp = one.rarebit.heyarr.ui.theme.Tokens.radiusCard

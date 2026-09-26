@@ -15,8 +15,11 @@ import one.rarebit.heyarr.core.theme.MediaType
  */
 sealed interface Route {
 
-    // ── Top level (the bottom bar / rail): Home · Discover · Search · Library · Missing · Cast · Settings ──
+    // ── Top level: Home · Search · Library · Manage ─────────────────────────────
     @Serializable data object Home : Route
+
+    /** Mobile management hub for Missing, Discover, Cast and Settings destinations. */
+    @Serializable data object Manage : Route
 
     @Serializable data object Discover : Route
 

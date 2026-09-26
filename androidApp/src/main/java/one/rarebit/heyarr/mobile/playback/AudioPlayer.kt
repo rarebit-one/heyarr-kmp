@@ -24,6 +24,7 @@ data class AudioState(
     val playing: Boolean = false,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
+    val volume: Float = 1f,
     val error: String? = null,
 ) {
     val item: AudioItem? get() = queue.getOrNull(index)
@@ -53,5 +54,6 @@ interface AudioPlayer {
     fun previous()
     fun seekTo(positionMs: Long)
     fun skipTo(index: Int)
+    fun setVolume(volume: Float)
     fun stop()
 }

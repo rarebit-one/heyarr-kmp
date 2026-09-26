@@ -5,8 +5,7 @@ import one.rarebit.heyarr.core.net.JsonScan
 
 /**
  * The reader's exact position per asset — a Readium Locator, as JSON — kept locally
- * so a book reopens where it was left. The node gets the coarser `page` through the
- * consumption session (the Continue row needs no more than that).
+ * so a book reopens where it was left. It stays on this device.
  */
 interface ReadingPositionStore {
     fun locator(assetId: String): String?

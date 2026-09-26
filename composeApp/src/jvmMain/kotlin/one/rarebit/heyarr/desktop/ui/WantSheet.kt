@@ -72,8 +72,6 @@ import one.rarebit.heyarr.desktop.ui.components.PlaybackHost
 import one.rarebit.heyarr.desktop.ui.components.SideNav
 import one.rarebit.heyarr.desktop.ui.screens.DetailScreen
 import one.rarebit.heyarr.desktop.ui.screens.DetailState
-import one.rarebit.heyarr.desktop.ui.screens.DiscoverScreen
-import one.rarebit.heyarr.desktop.ui.screens.DiscoverState
 import one.rarebit.heyarr.desktop.ui.screens.Field
 import one.rarebit.heyarr.desktop.ui.screens.HomeScreen
 import one.rarebit.heyarr.desktop.ui.screens.HomeState

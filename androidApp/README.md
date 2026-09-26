@@ -83,17 +83,17 @@ type scale) — and the media table in `:ui`'s `MediaThemes` (over `:core`'s `Me
 
 | Media | Accent | Card | CTA |
 |-------|--------|------|-----|
-| Movie | `#2E7D5B` fern (mint CTA) | 16:9 | Play |
-| Series | `#7C5CFF` violet | 2:3 | Play / Next episode |
-| Book | `#E0A458` amber, spine shadow | 2:3 | Read |
-| Audiobook | `#2DB3A6` teal | 1:1 | Listen |
-| Podcast | `#C13BAD` magenta | 1:1 | Play episode |
-| Music | `#FF4D6D` rose | 1:1 | Play |
-| Feed / document / unknown | `#7A8598` slate | — | Open |
+| Movie | `#599C7B` fern | 16:9 | Play |
+| Series | `#78A58B` fern | 16:9 | Play / Next episode |
+| Book | `#C7B66D` ochre, spine shadow | 2:3 | Read |
+| Audiobook | `#6FA58C` fern | 1:1 | Listen |
+| Podcast | `#8DAE8D` fern | 1:1 | Play episode |
+| Music | `#83A876` fern | 1:1 | Play |
+| Feed / document / unknown | `#9CAAA0` slate | varies | Open |
 
-The accent swaps the CTA gradient, pressed states, the active nav tile and progress bars;
-focus rings use the brighter hover tone to stay visible on raised surfaces. Major sections
-use solid rules, while dense search results use light dashed separators. Wrap any subtree in
+The accent marks the active destination, primary controls and progress bars; focus rings
+use the brighter hover tone to stay visible on raised surfaces. Sections and secondary
+lists use dashed rules. Wrap any subtree in
 `MediaScope(type) { … }` to re-skin it. Fonts are self-hosted (OFL): **Rubik** in every
 type slot, shipped once by `:ui` (`ui/src/commonMain/composeResources/font`, exposed as
 `HeyarrFonts`). `MediaThemeTest` pins
@@ -107,7 +107,7 @@ tests and previews share with the desktop.
 ./gradlew :androidApp:assembleDebug       # debug APK
 ```
 
-Requires JDK 17+ and an Android SDK (API 35). Point `local.properties` at your SDK
+Requires JDK 21+ and an Android SDK (API 35). Point `local.properties` at your SDK
 (`sdk.dir=…`) — CI provisions it via `android-actions/setup-android`.
 
 ## Phone-gated follow-ups (deferred by design)

@@ -58,8 +58,8 @@ import java.net.http.HttpResponse
  * real reference). It fetches the book blob with the connection credential, and for an
  * EPUB shows a linear-text pass ([Epub]) — no CSS, images or pagination. Anything else,
  * or a parse that yields nothing, falls back to "open in your default app" via the
- * existing [AppSession.openExternally] plumbing. Reading-position sync (mobile's
- * `ReadingPositionSync`, §72 personal state) is deliberately out of scope for this pass.
+ * existing [AppSession.openExternally] plumbing. This surface does not save or sync a
+ * reading position; the Android reader keeps its locator only on the same device.
  */
 @Composable
 fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {

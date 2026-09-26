@@ -66,7 +66,6 @@ import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.mobile.catalog.ContinueEntry
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.library.Season
@@ -99,7 +98,7 @@ import one.rarebit.heyarr.ui.theme.MediaThemes
 
 /**
  * What the detail hero knows about its work, derived once per composition and read by its
- * buttons: the held bytes, the continue point, the first playable episode, the audio
+ * buttons: the held bytes, the first playable episode, the audio
  * tracks and the readable file.
  */
 private class HeroWork(
@@ -111,7 +110,6 @@ private class HeroWork(
     val art: String?,
 ) {
     val hash = work.blobHash
-    val cont = state.continueEntry
     val first = Series.firstPlayable(seasons)
     val status = session.index.statusOf(work.id)
     val readable = state.assets.orEmpty().firstOrNull {
@@ -119,10 +117,6 @@ private class HeroWork(
             ReaderFormat.of(it.mime, it.filename)?.let { f -> f != ReaderFormat.AUDIOBOOK } == true
     }
     val audioTracks = Tracks.playable(state.assets.orEmpty())
-
-    /** A video-like work with a continue point that has bytes to resume. */
-    val canContinue = cont?.blobHash != null && type != MediaType.BOOK && type != MediaType.MUSIC &&
-        type != MediaType.AUDIOBOOK
 
     /** Music or an audiobook with playable tracks: the hero queues them all. */
     val playsAlbum = (type == MediaType.MUSIC || type == MediaType.AUDIOBOOK) && audioTracks.isNotEmpty()
@@ -139,21 +133,6 @@ private class HeroWork(
     /** A single-file work with no bytes held — the hero says why there is nothing to play. */
     val nothingToPlay = hash == null && type != MediaType.SERIES && type != MediaType.FEED &&
         type != MediaType.PODCAST && type != MediaType.MUSIC
-
-    /** Resume where the continue rail left off, with the work's episodes as "up next". */
-    fun playContinue(play: DetailPlayback) {
-        val cont = cont ?: return
-        val blobHash = cont.blobHash ?: return
-        play.playVideo(
-            work, cont.assetId, blobHash,
-            cont.mime ?: work.mime,
-            "${work.title} — ${cont.subtitle ?: cont.editionLabel ?: ""}".trimEnd(
-                ' ',
-                '—',
-            ),
-            cont.positionSeconds, queueOf(work, seasons, session), art, emptyList(),
-        )
-    }
 
     /** Play the series' first playable episode. */
     fun playFirst(play: DetailPlayback) {
@@ -234,14 +213,16 @@ internal fun DetailHero(
 ) {
     val scope = rememberCoroutineScope()
     val h = HeroWork(session, work, type, state, seasons, art)
-    val cont = h.cont
     val hash = h.hash
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Hero(
-            title = work.title, type = type, meta = heroMeta(work, type, seasons, state), artwork = art,
-            status = h.status, height = 300.dp,
-            kicker = cont?.let { "Continue · ${it.editionLabel ?: ""} ${it.progressLabel ?: ""}".trim() },
+            title = work.title,
+            type = type,
+            meta = heroMeta(work, type, seasons, state),
+            artwork = art,
+            status = h.status,
+            height = 300.dp,
             primary = { HeroPrimary(h, wants, play, onWant, scope) },
             secondary = {
                 val castId = h.castId
@@ -260,15 +241,20 @@ internal fun DetailHero(
             },
         )
         if (h.nothingToPlay) {
+            val explanation = if (wants.isEmpty()) {
+                "not wanted, so nothing is looking for a copy."
+            } else {
+                "heyarr is looking. Manage → Releases shows what the indexers found."
+            }
             Notice(
-                "Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Indexer candidates shows what the indexers found."}",
+                "Nothing to play yet — $explanation",
             )
         }
         CastPicker(session, state)
     }
 }
 
-/** The hero's one primary action: continue, play, listen or read what is held — else look for it, or want it. */
+/** The hero's one primary action: play, listen or read what is held — else look for it, or want it. */
 @Composable
 private fun HeroPrimary(
     h: HeroWork,
@@ -282,9 +268,6 @@ private fun HeroPrimary(
     val theme = MediaThemes.of(type)
     val idle = h.state.busy == null
     when {
-        h.canContinue ->
-            PrimaryButton("Continue", { h.playContinue(play) }, icon = Icons.Rounded.PlayArrow, enabled = idle)
-
         type == MediaType.SERIES && h.first != null ->
             PrimaryButton(
                 "Play ${h.first.code ?: ""}".trim(),
@@ -348,7 +331,7 @@ private fun lookForIt(session: AppSession, state: DetailState, w: DesiredItem, s
                 is McpResult.Ok -> session.toast(
                     Toast.Kind.INFO,
                     "Search queued",
-                    "An indexer can take thirty seconds to answer; open Curate → Indexer candidates in a moment.",
+                    "An indexer can take thirty seconds to answer; open Manage → Releases in a moment.",
                 )
 
                 is McpResult.Refused -> session.refused(r)

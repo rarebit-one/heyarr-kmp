@@ -37,7 +37,7 @@ Rules:
 
 ## Build & test
 
-JDK 17. Every module resolves the private `one.rarebit.voidbind:voidbind-client` from
+JDK 21. Every module resolves the private `one.rarebit.voidbind:voidbind-client` from
 GitHub Packages, so builds need `gpr.user`/`gpr.token` in `~/.gradle/gradle.properties` or
 `GITHUB_ACTOR`/`GITHUB_TOKEN` (e.g. `GITHUB_TOKEN=$(gh auth token)`).
 
@@ -77,7 +77,7 @@ CI: `desktop.yml` (desktop + shared modules), `android.yml` (unit tests + debug 
 Plugin and library versions live in `gradle/libs.versions.toml`. Build scripts reference
 `libs.*` and never hard-code a version. `voidbind-client` has a single version for every
 module; bump it there, once. Toolchain: Kotlin 2.3.20, Gradle 8.9, AGP 8.7.3, Compose MP
-1.9.3, compileSdk 35 / minSdk 33, JDK 17.
+1.9.3, compileSdk 35 / minSdk 33, JDK 21. Android bytecode remains at Java 17.
 
 ## Conventions
 

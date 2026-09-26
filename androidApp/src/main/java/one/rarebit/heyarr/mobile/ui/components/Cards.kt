@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package one.rarebit.heyarr.mobile.ui.components
 
 import androidx.compose.animation.Crossfade
@@ -65,9 +67,11 @@ import coil.request.ImageRequest
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
+import one.rarebit.heyarr.ui.components.CornerBracket
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.MetaLine
 import one.rarebit.heyarr.ui.components.Notice
+import one.rarebit.heyarr.ui.components.PixelCluster
 import one.rarebit.heyarr.ui.components.RailState
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.Skeleton
@@ -84,7 +88,7 @@ import one.rarebit.heyarr.ui.theme.MediaThemes
 private const val HERO_CROSSFADE_DURATION_MS = 500
 
 /**
- * Artwork with a blur-up: an accent-tinted gradient placeholder (with the type glyph)
+ * Artwork with a blur-up: a restrained archive fallback (type glyph + pixel cluster)
  * shows at once; the image fades over it when Coil lands it. Loading is lazy and
  * cached on disk by Coil over the app's shared OkHttp client, so a poster on our node
  * carries the credential (net/AuthInterceptor) and one on a public host goes out bare.
@@ -103,7 +107,7 @@ fun Artwork(
     val context = LocalContext.current
     Box(
         modifier.background(
-            Brush.linearGradient(listOf(theme.accent.copy(alpha = 0.35f), Tokens.surface2, Tokens.surface1)),
+            Brush.linearGradient(listOf(theme.accent.copy(alpha = 0.15f), Tokens.surface2, Tokens.surface1)),
         ),
         contentAlignment = Alignment.Center,
     ) {
@@ -113,6 +117,17 @@ fun Artwork(
             tint = theme.accent.copy(alpha = 0.55f),
             modifier = Modifier.size(glyphSize),
         )
+        if (url == null) {
+            PixelCluster(
+                Modifier.align(Alignment.TopEnd).padding(12.dp).size(16.dp),
+                color = theme.accentGradientEnd,
+                pattern = type.ordinal % 3,
+            )
+            CornerBracket(
+                Modifier.fillMaxSize().padding(8.dp),
+                color = theme.accent.copy(alpha = 0.45f),
+            )
+        }
         if (url != null) {
             AsyncImage(
                 model = ImageRequest.Builder(context).data(url).crossfade(if (reduce) 0 else 350).build(),
@@ -136,6 +151,7 @@ data class CardAction(val label: String, val icon: ImageVector? = null, val onCl
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+@Suppress("LongParameterList", "CyclomaticComplexMethod") // One reusable card maps independent media and action state.
 fun MediaCard(
     title: String,
     type: MediaType,
@@ -149,8 +165,6 @@ fun MediaCard(
     /** The card width; null fills the parent (a grid cell). */
     width: Dp? = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth,
     showBadge: Boolean = true,
-    /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */
-    progress: Float? = null,
     aspectOverride: CardAspect? = null,
     actions: List<CardAction> = emptyList(),
 ) = MediaScope(type) {
@@ -194,7 +208,6 @@ fun MediaCard(
                 Modifier.fillMaxWidth().aspectRatio((aspectOverride ?: theme.aspect).ratio),
                 artwork,
                 type,
-                progress,
             ) {
                 if (showBadge) MediaBadge(type, Modifier.align(Alignment.TopStart).padding(8.dp))
                 if (status != null) StatusPill(status, Modifier.align(Alignment.TopEnd).padding(8.dp), compact = true)

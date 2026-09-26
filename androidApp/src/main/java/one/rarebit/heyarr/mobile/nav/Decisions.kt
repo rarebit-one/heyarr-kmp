@@ -34,23 +34,18 @@ object Decisions {
     fun section(route: Route?): NavSection? = when (route) {
         Route.Home -> NavSection.HOME
 
-        Route.Discover -> NavSection.DISCOVER
-
         Route.Search -> NavSection.SEARCH
 
         Route.Library, Route.Playlists, is Route.Playlist -> NavSection.LIBRARY
 
-        Route.Missing -> NavSection.MISSING
-
-        Route.Cast -> NavSection.CAST
-
-        Route.Settings, Route.Telemetry, Route.Device -> NavSection.SETTINGS
+        Route.Manage, Route.Discover, Route.Missing, Route.Cast,
+        Route.Settings, Route.Telemetry, Route.Device,
+        -> NavSection.MANAGE
 
         is Route.Detail -> when (route.from) {
             "Home" -> NavSection.HOME
-            "Discover" -> NavSection.DISCOVER
+            "Discover", "Missing", "Cast", "Settings" -> NavSection.MANAGE
             "Search" -> NavSection.SEARCH
-            "Missing" -> NavSection.MISSING
             else -> NavSection.LIBRARY
         }
 
@@ -60,12 +55,9 @@ object Decisions {
     /** The route a nav tile goes to. */
     fun routeOf(section: NavSection): Route = when (section) {
         NavSection.HOME -> Route.Home
-        NavSection.DISCOVER -> Route.Discover
         NavSection.SEARCH -> Route.Search
         NavSection.LIBRARY -> Route.Library
-        NavSection.MISSING -> Route.Missing
-        NavSection.CAST -> Route.Cast
-        NavSection.SETTINGS -> Route.Settings
+        NavSection.MANAGE -> Route.Manage
     }
 
     /**

@@ -27,6 +27,7 @@ import java.io.File
  * writes them under build/screenshots/. This is how a headless build environment shows
  * the running app; the same fixtures back the JVM tests.
  */
+@Suppress("MagicNumber") // Dimensions and fixed names describe the screenshot fixture matrix.
 fun main(args: Array<String>) {
     verifyShelfSwitch()
     val out = File(args.firstOrNull() ?: "build/screenshots").apply { mkdirs() }
@@ -84,6 +85,8 @@ fun main(args: Array<String>) {
     render(File(out, "11-search-compact.png"), 760, 620, Route.Search, query = "yellow")
     render(File(out, "12-read-with-audio.png"), 1280, 900, Route.Consume(Experience.READ), audio = true)
     render(File(out, "13-audio-compact.png"), 760, 620, Route.Consume(Experience.READ), audio = true)
+    render(File(out, "15-home-wide.png"), 1600, 1000, Route.Home)
+    render(File(out, "15-search-wide.png"), 1600, 1000, Route.Search, query = "dune")
     println("wrote ${out.listFiles()?.size ?: 0} screenshots to $out")
 }
 
@@ -105,13 +108,18 @@ private fun render(
             DesktopConfig(
                 baseUrl = "https://heyarr.example.test:7777",
                 bearerToken = if (guest) "" else "heyarr_fixture_token",
+                uiScale = 1f,
             ),
         )
     val art = ArtworkLoader({ "" }, { "" }, fetcher = { PlaceholderArt.bytes(it) })
     ImageComposeScene(width = width, height = height, density = Density(1f)).use { scene ->
         scene.setContent {
             App(
-                settings = settings, transport = transport, player = NoPlayer, opener = NoOpener, downloader = NoDownloader,
+                settings = settings,
+                transport = transport,
+                player = NoPlayer,
+                opener = NoOpener,
+                downloader = NoDownloader,
                 initialAudioQueue = if (audio) {
                     listOf(
                         Route.Player(
@@ -134,23 +142,34 @@ private fun render(
                 } else {
                     emptyList()
                 },
-                initialRoute = route, artworkLoader = art, externalMetadata = one.rarebit.heyarr.desktop.state.DesktopExternalMetadata.NONE, initialQuery = query, initialConnectionSheet = connection, initialLibraryTab = if (downloads) 1 else 0,
+                initialRoute = route,
+                artworkLoader = art,
+                externalMetadata = one.rarebit.heyarr.desktop.state.DesktopExternalMetadata.NONE,
+                initialQuery = query,
+                initialConnectionSheet = connection,
+                initialLibraryTab = if (downloads) 1 else 0,
             )
         }
-        // Let effects (fixture fetches on IO) land: render, wait, re-render until quiet.
-        var image = scene.render(System.nanoTime())
-        repeat(30) {
-            Thread.sleep(150)
-            if (scene.hasInvalidations()) image = scene.render(System.nanoTime())
-        }
-        Thread.sleep(400)
-        image = scene.render(System.nanoTime())
-        val artPath = "/api/v1/blobs/${Fixtures.HASH}/content"
-        System.err.println("  artwork cached for fixture hash: ${art.peek(artPath) != null}")
-        val png = image.encodeToData(EncodedImageFormat.PNG) ?: error("encode failed")
-        file.writeBytes(png.bytes)
-        println("rendered ${file.name} (${width}x$height, $route)")
+        saveScreenshot(scene, art, ScreenshotTarget(file, width, height, route))
     }
+}
+
+private data class ScreenshotTarget(val file: File, val width: Int, val height: Int, val route: Route)
+
+private fun saveScreenshot(scene: ImageComposeScene, art: ArtworkLoader, target: ScreenshotTarget) {
+    // Let effects (fixture fetches on IO) land: render, wait, re-render until quiet.
+    var image = scene.render(System.nanoTime())
+    repeat(30) {
+        Thread.sleep(150)
+        if (scene.hasInvalidations()) image = scene.render(System.nanoTime())
+    }
+    Thread.sleep(400)
+    image = scene.render(System.nanoTime())
+    val artPath = "/api/v1/blobs/${Fixtures.HASH}/content"
+    System.err.println("  artwork cached for fixture hash: ${art.peek(artPath) != null}")
+    val png = image.encodeToData(EncodedImageFormat.PNG) ?: error("encode failed")
+    target.file.writeBytes(png.bytes)
+    println("rendered ${target.file.name} (${target.width}x${target.height}, ${target.route})")
 }
 
 private object NoPlayer : Player {

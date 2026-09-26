@@ -74,7 +74,7 @@ import one.rarebit.heyarr.ui.components.verdictColor
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.Tokens
 
-/** Curate → captions and artwork: what is held per episode, and the honest limits of what the node can fetch. */
+/** Manage → captions and artwork: what is held per episode, and the honest limits of what the node can fetch. */
 @Composable
 private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List<Season>, wants: List<DesiredItem>) {
     val assets = state.assets.orEmpty()
@@ -151,7 +151,7 @@ private fun ExplainPanel(session: AppSession, wants: List<DesiredItem>) {
     var size by remember { mutableStateOf("") }
     var result by remember { mutableStateOf<McpResult<Explanation?>?>(null) }
     var busy by remember { mutableStateOf(false) }
-    Panel("Score a release") {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
             "Describe a release and heyarr explains, rule by rule, whether the profile would accept it. Leave a field blank when you do not know — a blank reads as undetermined, a guess reads as a claim.",
             style = MaterialTheme.typography.bodySmall,
@@ -316,13 +316,13 @@ internal fun CurateTab(
         // 2. Held files with verdicts
         HeldFilesSection(wants, state)
 
-        // 3. Indexer candidates
+        // 3. Releases
         CandidatesSection(session, wants, state, scope, reload)
 
-        // 4. Score a release
+        // 4. Rules
         Section(
-            "Score a release",
-            subtitle = "Ask the profile about a release you are looking at",
+            "Rules",
+            subtitle = "Score a release against the active profile",
             initiallyOpen = false,
         ) {
             ExplainPanel(session, wants)

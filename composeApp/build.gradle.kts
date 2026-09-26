@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -13,9 +14,11 @@ kotlin {
     // shared client is extracted later, adding `androidTarget()` / `iosX64()` … and a
     // `commonMain` is a source-set move, not a plugin swap. A generic JVM/desktop
     // target covers Linux x64 AND aarch64 (Asahi/Omarchy) — the JVM is the portability layer.
-    jvm()
+    jvm {
+        compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
+    }
 
-    jvmToolchain(17)
+    jvmToolchain(21)
 
     sourceSets {
         val jvmMain by getting {

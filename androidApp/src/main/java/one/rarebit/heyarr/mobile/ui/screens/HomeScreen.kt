@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package one.rarebit.heyarr.mobile.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +35,6 @@ import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.mobile.catalog.ContinueEntry
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.nav.Route
@@ -52,6 +53,7 @@ import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.RailState
 import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.StatusMark
 import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
@@ -68,18 +70,16 @@ class HomeState {
     var missing by mutableStateOf<RailState<Want>>(RailState.Loading)
     var upgrades by mutableStateOf<RailState<Want>>(RailState.Loading)
     var followed by mutableStateOf<RailState<FollowedSource>>(RailState.Loading)
-    var continueRail by mutableStateOf<RailState<ContinueEntry>>(RailState.Loading)
     var loadedOnce = false
 }
 
 /**
- * The personal rows this phone can decrypt (starred, recently played) and the actions
+ * The personal row this phone can decrypt (starred) and the actions
  * behind a card's long-press — present only on an enrolled device with a key. Nothing
  * here comes from the node in the clear; it is folded on this device (`personalstate/`).
  */
 data class PersonalRows(
     val starred: List<Work> = emptyList(),
-    val recentlyPlayed: List<Work> = emptyList(),
     val starredIds: Set<String> = emptySet(),
     val onToggleStar: ((Work) -> Unit)? = null,
     val onAddToPlaylist: ((Work) -> Unit)? = null,
@@ -90,20 +90,19 @@ data class PersonalRows(
  * Home / Discover — a media-mixed spotlight over themed rails, ported from
  * heyarr-desktop's `HomeScreen`. Spotlight and "Recently added" come from the works
  * list (recent first, artwork preferred); the per-type rails from `search_content` by
- * content type; "Continue" from the node's own consumption sessions; "Wanted but
+ * content type; "Wanted but
  * missing" and "Could be better" from `get_missing_content` / `get_upgrade_candidates`;
- * "Following" from `list_followed`. Starred and Recently played are this phone's
- * decrypted personal state, labelled as such, and absent without a device key.
+ * "Following" from `list_followed`. Starred is this phone's decrypted personal state,
+ * labelled as such, and absent without a device key.
  */
 @Composable
+@Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod") // Compose the independent archive rails.
 fun HomeScreen(
     session: AppSession,
     state: HomeState,
     onOpen: (Route) -> Unit,
     onWant: (String, String) -> Unit,
-    onPlayContinue: (ContinueEntry) -> Unit,
     modifier: Modifier = Modifier,
-    discover: Boolean = false,
     personal: PersonalRows = PersonalRows(),
     /** Raise the "Sign in to save" upgrade — shown on the guest banner. */
     onSignInToSave: () -> Unit = {},
@@ -181,53 +180,16 @@ fun HomeScreen(
             }
         }
         item {
+            val (label, tone) = when (session.connection) {
+                one.rarebit.heyarr.mobile.state.Connection.ONLINE -> "Node connected" to Tokens.success
+                one.rarebit.heyarr.mobile.state.Connection.OFFLINE -> "Node offline" to Tokens.danger
+                one.rarebit.heyarr.mobile.state.Connection.UNAUTHORIZED -> "Node refused connection" to Tokens.warning
+                one.rarebit.heyarr.mobile.state.Connection.UNKNOWN -> "Checking node" to Tokens.textMuted
+            }
+            StatusMark(label, tone, Modifier.padding(horizontal = Tokens.screenPadding))
+        }
+        item {
             Box(Modifier.padding(horizontal = Tokens.screenPadding)) { SpotlightBlock(session, state, onOpen, onWant) }
-        }
-        if (discover) {
-            item {
-                Notice(
-                    "Discover asks the metadata provider for content the library does not hold.",
-                    Modifier.padding(horizontal = Tokens.screenPadding),
-                    detail = "A node with no TVDB provider configured (ADR-0058) answers discovery with a refusal, quoted as sent. Search still finds everything already catalogued, and Missing lets you Want a title the library has never seen.",
-                    icon = Icons.Rounded.Info,
-                )
-            }
-        }
-        val cont = state.continueRail
-        if (cont !is RailState.Loaded || cont.items.isNotEmpty()) {
-            item {
-                Rail("Continue", cont, subtitle = "Unfinished sessions this node recorded — where a device stopped, not personal history", emptyText = "", skeletonAspect = CardAspect.SQUARE, skeletonWidth = 200.dp, key = {
-                    it.sessionId
-                }) { e ->
-                    val type = MediaType.from(e.contentType)
-                    val cover by rememberCover(session, type, e.workTitle, e.artworkPath, e.year)
-                    MediaCard(
-                        e.workTitle, type, onOpen = {
-                            if (e.isPlayable) {
-                                onPlayContinue(
-                                    e,
-                                )
-                            } else {
-                                onOpen(detailRoute(e.workId, type, e.workTitle, from = "Home"))
-                            }
-                        },
-                        subtitle = listOfNotNull(
-                            e.subtitle,
-                            e.progressLabel,
-                        ).joinToString("  ·  "),
-                        meta = listOf(e.state), artwork = cover.url,
-                        status = session.index.statusOf(
-                            e.workId,
-                        ),
-                        width = 200.dp, progress = e.fraction, aspectOverride = CardAspect.SQUARE,
-                        actions = listOf(
-                            CardAction("Open ${e.workTitle}") {
-                                onOpen(detailRoute(e.workId, type, e.workTitle, from = "Home"))
-                            },
-                        ),
-                    )
-                }
-            }
         }
         if (personal.starred.isNotEmpty()) {
             item {
@@ -246,24 +208,8 @@ fun HomeScreen(
                 }
             }
         }
-        if (personal.recentlyPlayed.isNotEmpty()) {
-            item {
-                Rail(
-                    "Recently played",
-                    RailState.Loaded(
-                        personal.recentlyPlayed,
-                    ),
-                    subtitle = "This phone's own history, decrypted here",
-                    key = {
-                        it.id
-                    },
-                ) { w ->
-                    WorkCard(session, w, onOpen, onWant, actionsFor(w), from = "Home")
-                }
-            }
-        }
         item {
-            Rail("Recently added", state.recent, emptyText = "Nothing added yet.", trailing = {
+            Rail("Recently catalogued", state.recent, emptyText = "Nothing added yet.", trailing = {
                 GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh)
             }, key = { it.id }) { w ->
                 WorkCard(session, w, onOpen, onWant, actionsFor(w), from = "Home")
@@ -274,7 +220,7 @@ fun HomeScreen(
                 MediaScope(t) {
                     val square = MediaThemes.of(t).aspect == CardAspect.SQUARE
                     Rail(
-                        t.plural,
+                        if (t == MediaType.BOOK) "For reading" else t.plural,
                         state.byType[t] ?: RailState.Loading,
                         emptyText = "No ${t.plural.lowercase()} in the library yet.",
                         skeletonAspect = MediaThemes.of(t).aspect,
@@ -325,9 +271,15 @@ fun HomeScreen(
         if (!session.isGuest) {
             item {
                 MediaScope(MediaType.PODCAST) {
-                    Rail("Following", state.followed, subtitle = "Standing subscriptions the node polls", emptyText = "You follow nothing yet — add a feed or TVDB series in Settings.", skeletonAspect = CardAspect.SQUARE, skeletonWidth = Tokens.squareWidth, key = {
-                        it.id
-                    }) { s ->
+                    Rail(
+                        "Following",
+                        state.followed,
+                        subtitle = "Standing subscriptions the node polls",
+                        emptyText = "You follow nothing yet — add a feed or TVDB series in Settings.",
+                        skeletonAspect = CardAspect.SQUARE,
+                        skeletonWidth = Tokens.squareWidth,
+                        key = { it.id },
+                    ) { s ->
                         val type = MediaType.from(s.type)
                         val cover by rememberCover(session, type, s.title, null, feedRef = s.feedRef)
                         MediaCard(
@@ -350,7 +302,7 @@ fun HomeScreen(
 }
 
 /**
- * The want index (Missing / Could-be-better), followed sources and the continue rail
+ * The want index (Missing / Could-be-better) and followed sources
  * are enrolled-only surfaces (GuestGate): a guest would only earn a 403, so skip them
  * and leave the rails empty (they hide themselves) rather than showing an error.
  */
@@ -359,7 +311,6 @@ private fun loadOwnerRails(session: AppSession, a: HeyarrApi, state: HomeState, 
         state.missing = RailState.Loaded(emptyList())
         state.upgrades = RailState.Loaded(emptyList())
         state.followed = RailState.Loaded(emptyList())
-        state.continueRail = RailState.Loaded(emptyList())
     } else {
         scope.launch {
             state.missing =
@@ -385,14 +336,6 @@ private fun loadOwnerRails(session: AppSession, a: HeyarrApi, state: HomeState, 
                     RailState.Loaded(it)
                 }, onFailure = { RailState.Failed(it.message ?: "failed") })
         }
-        scope.launch {
-            state.continueRail =
-                session.io {
-                    a.continueRail()
-                }.fold(onSuccess = {
-                    RailState.Loaded(it)
-                }, onFailure = { RailState.Failed(it.message ?: "failed") })
-        }
     }
 }
 
@@ -404,7 +347,7 @@ private fun GuestBanner(onSignIn: () -> Unit) {
             "Browsing as guest — watch, listen and read freely.",
             tone = Tokens.slate,
             icon = Icons.Rounded.Info,
-            detail = "Sign in to keep wants, follows, playlists and your place across devices.",
+            detail = "Sign in to keep wants and follows, and use playlists across devices.",
         )
         SecondaryButton("Sign in to save", onSignIn, icon = Icons.Rounded.Star)
     }
@@ -467,7 +410,7 @@ private fun SpotlightBlock(
             )
             val status = session.index.statusOf(work.id)
             Hero(
-                title = work.title, type = type, kicker = "Spotlight",
+                title = work.title, type = type, kicker = "Featured from your library",
                 meta = listOf(
                     work.year?.toString(),
                     work.artist ?: work.author,

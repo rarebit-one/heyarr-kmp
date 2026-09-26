@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import one.rarebit.heyarr.ui.theme.HeyarrFonts
+import one.rarebit.heyarr.ui.theme.LocalAppearance
 import one.rarebit.heyarr.ui.theme.LocalHeyarrPlatform
 import one.rarebit.heyarr.ui.theme.Tokens
 
@@ -94,10 +95,10 @@ private fun TableBody(
     detailLabel: (row: Int) -> String?,
     cell: @Composable RowScope.(row: Int, column: Int) -> Unit,
 ) {
-    val shape = RoundedCornerShape(Tokens.radiusInput)
-    Column(modifier.clip(shape).border(Tokens.hairline, Tokens.border, shape)) {
+    val reduceMotion = LocalAppearance.current.reduceMotion
+    Column(modifier) {
         Row(
-            Modifier.fillMaxWidth().background(Tokens.surface2).padding(horizontal = 12.dp, vertical = 7.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -118,8 +119,7 @@ private fun TableBody(
             var open by remember { mutableStateOf(false) }
             val interaction = remember { MutableInteractionSource() }
             val label = detailLabel(r)
-            val stripe = if (r % 2 == 1) Tokens.surface1.copy(alpha = 0.6f) else Color.Transparent
-            Column(Modifier.fillMaxWidth().background(stripe)) {
+            Column(Modifier.fillMaxWidth()) {
                 val toggle = if (detail != null) {
                     Modifier
                         .clickable(interactionSource = interaction, indication = null, role = Role.Button) {
@@ -157,18 +157,20 @@ private fun TableBody(
                         )
                     }
                 }
-                if (detail != null) {
+                if (detail != null && !reduceMotion) {
                     AnimatedVisibility(open) {
                         Box(
-                            Modifier.fillMaxWidth().background(
-                                Tokens.bgBase.copy(alpha = 0.5f),
-                            ).padding(horizontal = 16.dp, vertical = 10.dp),
+                            Modifier.fillMaxWidth()
+                                .background(Tokens.bgBase.copy(alpha = 0.5f))
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
                         ) {
                             detail(r)
                         }
                     }
+                } else if (detail != null && open) {
+                    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) { detail(r) }
                 }
-                if (r < rowCount - 1) Box(Modifier.fillMaxWidth().height(Tokens.hairline).background(Tokens.border))
+                if (r < rowCount - 1) EditorialRule(Modifier.padding(horizontal = 12.dp), dashed = true)
             }
         }
     }
@@ -232,6 +234,7 @@ fun Section(
     var open by remember { mutableStateOf(initiallyOpen) }
     val interaction = remember { MutableInteractionSource() }
     val touch = LocalHeyarrPlatform.current.touch
+    val reduceMotion = LocalAppearance.current.reduceMotion
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
             Modifier.fillMaxWidth()
@@ -261,6 +264,11 @@ fun Section(
             }
             if (trailing != null) trailing()
         }
-        AnimatedVisibility(open) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { content() } }
+        DashedDivider()
+        if (reduceMotion) {
+            if (open) Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { content() }
+        } else {
+            AnimatedVisibility(open) { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { content() } }
+        }
     }
 }

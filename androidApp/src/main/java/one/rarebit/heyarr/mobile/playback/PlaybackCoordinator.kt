@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.consumption.ProgressReporter
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
 
@@ -25,9 +26,9 @@ data class NowPlaying(
     val blobHash: String? = null,
     val banner: String? = null,
     val replanned: Boolean = false,
-    /** Where to start, in seconds — the continue rail's position, or 0. */
+    /** Optional starting offset requested by the caller; 0 starts at the beginning. */
     val startSeconds: Double = 0.0,
-    /** `watch` | `listen` — what the consumption session records. */
+    /** `watch` | `listen` — the media kind of the active item. */
     val verb: String = "watch",
     /** The work's kind (`movie`, `series`, `music`…), so the player and the bar skin themselves. */
     val kind: String? = null,
@@ -51,10 +52,8 @@ class PlaybackCoordinator(
     private val credential: () -> Credential?,
     private val scope: CoroutineScope,
     private val io: CoroutineDispatcher = Dispatchers.IO,
-    /** Tells the node where playback has reached; NoOp when it cannot write. */
-    private val reporter: one.rarebit.heyarr.mobile.consumption.ProgressReporter = one.rarebit.heyarr.mobile.consumption.ProgressReporter.NoOp,
-    /** The position to resume an asset from, if the node remembers one (the continue rail). Called on IO. */
-    private val resumeAt: (assetId: String) -> Double? = { null },
+    // Test seam; production clients do not report consumption.
+    private val reporter: ProgressReporter = ProgressReporter.NoOp,
 ) {
     /**
      * What this phone can decode, for `POST /playback/plan`. Null (tests, or before the
@@ -166,18 +165,27 @@ class PlaybackCoordinator(
             )
             return
         }
-        resolveInto(client, assetId, blobHash, isVideo, mime, title, caps, startSeconds, kind = kind, artworkUrl = artworkUrl, subtitles = subs)
+        resolveInto(
+            client,
+            assetId,
+            blobHash,
+            isVideo,
+            mime,
+            title,
+            caps,
+            startSeconds,
+            kind = kind,
+            artworkUrl = artworkUrl,
+            subtitles = subs,
+        )
     }
 
     /**
-     * Put an item in front: look up where the node last saw this asset (unless the
-     * caller already knows), open a consumption session, then show it.
+     * Put an item in front at the caller's explicit offset, or from the beginning.
      */
     private fun present(np: NowPlaying, knownStart: Double? = null) {
         scope.launch {
-            val start =
-                knownStart ?: np.assetId?.let { id -> withContext(io) { runCatching { resumeAt(id) }.getOrNull() } }
-                    ?: 0.0
+            val start = knownStart ?: 0.0
             np.assetId?.let { reporter.begin(it, np.verb) }
             _nowPlaying.value = np.copy(startSeconds = start.coerceAtLeast(0.0))
         }

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package one.rarebit.heyarr.mobile.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
@@ -68,6 +70,7 @@ import one.rarebit.heyarr.ui.components.Skeleton
 import one.rarebit.heyarr.ui.components.StatusPill
 import one.rarebit.heyarr.ui.components.TableColumn
 import one.rarebit.heyarr.ui.components.verdictColor
+import one.rarebit.heyarr.ui.theme.LocalHeyarrPlatform
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 
 /** Curate → captions and artwork: what is held per episode, and the honest limits of what the node can fetch. */
@@ -122,7 +125,8 @@ private fun SidecarsPanel(state: DetailState, seasons: List<Season>) {
             }
         }
         Notice(
-            "heyarr's tool surface has no caption or artwork search yet: sidecars arrive with a release or a scan. Asking the indexers again (Indexer candidates) is the only fetch this node can queue.",
+            "heyarr's tool surface has no caption or artwork search yet: sidecars arrive with a release or a scan. " +
+                "Asking the indexers again (Releases) is the only fetch this node can queue.",
             tone = Tokens.slate,
         )
     }
@@ -130,6 +134,7 @@ private fun SidecarsPanel(state: DetailState, seasons: List<Season>) {
 
 /** "Would this be accepted?" — describe a release, get every rule back. Absent fields stay absent so they read as undetermined. */
 @Composable
+@Suppress("LongMethod") // The form and its responsive layout are one cohesive release-rule explanation task.
 private fun ExplainPanel(session: AppSession, wants: List<DesiredItem>) {
     val scope = rememberCoroutineScope()
     val profiles = session.profiles
@@ -149,7 +154,8 @@ private fun ExplainPanel(session: AppSession, wants: List<DesiredItem>) {
     var busy by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
-            "Describe a release and heyarr explains, rule by rule, whether the profile would accept it. Leave a field blank when you do not know — a blank reads as undetermined, a guess reads as a claim.",
+            "Describe a release and heyarr explains, rule by rule, whether the profile would accept it. " +
+                "Leave a field blank when you do not know — a blank reads as undetermined, a guess reads as a claim.",
             style = MaterialTheme.typography.bodySmall,
             color = Tokens.textMuted,
         )
@@ -163,18 +169,39 @@ private fun ExplainPanel(session: AppSession, wants: List<DesiredItem>) {
             }
         }
         Field("Title", title) { title = it }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Field("Resolution (480/720/1080/2160)", resolution, Modifier.weight(1f), keyboard = KeyboardType.Number) {
-                resolution =
-                    it.filter { c -> c.isDigit() }
+        if (LocalHeyarrPlatform.current.touch) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Field(
+                    "Resolution (480/720/1080/2160)",
+                    resolution,
+                    Modifier.fillMaxWidth(),
+                    keyboard = KeyboardType.Number,
+                ) {
+                    resolution = it.filter { c -> c.isDigit() }
+                }
+                Field("Source (remux/bluray/web-dl/…)", source, Modifier.fillMaxWidth()) { source = it }
+                Field("Video codec", codec, Modifier.fillMaxWidth()) { codec = it }
+                Field("Size (bytes)", size, Modifier.fillMaxWidth(), keyboard = KeyboardType.Number) {
+                    size = it.filter { c -> c.isDigit() }
+                }
             }
-            Field("Source (remux/bluray/web-dl/…)", source, Modifier.weight(1f)) { source = it }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Field("Video codec", codec, Modifier.weight(1f)) { codec = it }
-            Field("Size (bytes)", size, Modifier.weight(1f), keyboard = KeyboardType.Number) {
-                size =
-                    it.filter { c -> c.isDigit() }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Field(
+                    "Resolution (480/720/1080/2160)",
+                    resolution,
+                    Modifier.weight(1f),
+                    keyboard = KeyboardType.Number,
+                ) {
+                    resolution = it.filter { c -> c.isDigit() }
+                }
+                Field("Source (remux/bluray/web-dl/…)", source, Modifier.weight(1f)) { source = it }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Field("Video codec", codec, Modifier.weight(1f)) { codec = it }
+                Field("Size (bytes)", size, Modifier.weight(1f), keyboard = KeyboardType.Number) {
+                    size = it.filter { c -> c.isDigit() }
+                }
             }
         }
         PrimaryButton("Explain", {
@@ -270,13 +297,13 @@ internal fun CurateTab(
         // 2. Held files with verdicts
         HeldFilesSection(wants, state)
 
-        // 3. Indexer candidates
+        // 3. Releases
         CandidatesSection(session, wants, state, scope, reload)
 
-        // 4. Score a release
+        // 4. Rules
         Section(
-            "Score a release",
-            subtitle = "Ask the profile about a release you are looking at",
+            "Rules",
+            subtitle = "Score a release against the active profile",
             initiallyOpen = false,
         ) {
             ExplainPanel(session, wants)

@@ -16,7 +16,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.Explore
@@ -29,7 +31,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -52,13 +52,16 @@ import androidx.compose.ui.unit.sp
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.ui.Experience
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.focusRing
 import one.rarebit.heyarr.ui.theme.HeyarrFonts
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.Tokens
 
 /** A nav destination: label, icon, route, optional keyboard hint. */
 data class NavItem(val route: Route, val label: String, val icon: ImageVector, val hint: String? = null)
+
+/** Connection status and the action that opens its details sheet. */
+data class NavConnectionInfo(val state: Connection, val detail: String?, val onOpen: () -> Unit)
 
 val CONSUME_ITEMS = listOf(
     NavItem(Route.Consume(Experience.WATCH), "Watch", Icons.Rounded.Movie, "Ctrl 1"),
@@ -91,17 +94,8 @@ private val RAIL_LABEL: androidx.compose.ui.text.TextStyle
  * gets a tinted tile in the accent of the media in focus.
  */
 @Composable
-fun SideNav(
-    current: Route,
-    onGo: (Route) -> Unit,
-    connection: Connection,
-    compact: Boolean = false,
-    modifier: Modifier = Modifier,
-    connectionDetail: String? = null,
-    onConnection: () -> Unit = {},
-    consuming: Boolean = false,
-) {
-    val theme = LocalMediaTheme.current
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun SideNav(current: Route, onGo: (Route) -> Unit, connection: NavConnectionInfo, modifier: Modifier = Modifier) {
     Column(
         modifier.fillMaxHeight().width(
             Tokens.navWidth,
@@ -110,48 +104,48 @@ fun SideNav(
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         one.rarebit.heyarr.ui.components.ArchiveMark(Modifier.padding(4.dp))
-        Spacer(Modifier.height(14.dp))
-        for (item in if (consuming) {
-            CONSUME_ITEMS +
-                NAV_ITEMS.filter { it.route == Route.Settings || it.route == Route.NowPlaying }
-        } else {
-            NAV_ITEMS
-        }) {
-            RailItem(
-                item,
-                active =
-                (
-                    if (current ==
-                        Route.Discover
-                    ) {
-                        Route.Search
-                    } else {
-                        current
-                    }
-                    ).section == item.route.section,
-                accent = theme.accent,
-                accentEnd = theme.accentGradientEnd,
-            ) {
-                onGo(item.route)
+        Column(
+            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Spacer(Modifier.height(8.dp))
+            for (item in CONSUME_ITEMS) {
+                RailItem(item, active = current.section == item.route.section, accent = Tokens.accent) {
+                    onGo(item.route)
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+            EditorialRule(Modifier.padding(horizontal = 10.dp), dashed = true)
+            Spacer(Modifier.height(4.dp))
+            for (item in NAV_ITEMS) {
+                val selected = when {
+                    current == Route.Discover -> item.route == Route.Search
+                    current.section == item.route.section -> true
+                    else -> false
+                }
+                RailItem(item, active = selected, accent = Tokens.accent) {
+                    onGo(item.route)
+                }
             }
         }
-        Spacer(Modifier.weight(1f))
-        ConnectionTile(connection, connectionDetail, onConnection)
+        ConnectionTile(connection.state, connection.detail, connection.onOpen)
     }
 }
 
 @Composable
-private fun RailItem(item: NavItem, active: Boolean, accent: Color, accentEnd: Color, onClick: () -> Unit) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun RailItem(item: NavItem, active: Boolean, accent: Color, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
-    val shape = RoundedCornerShape(Tokens.radiusButton)
+    val shape = RectangleShape
     val tile = when {
-        active -> accent.copy(alpha = 0.18f)
+        active -> accent.copy(alpha = 0.1f)
         hovered -> Tokens.surface2
         else -> Color.Transparent
     }
     val fg = when {
-        active -> accentEnd
+        active -> Tokens.accentGradEnd
         hovered -> Tokens.textPrimary
         else -> Tokens.textMuted
     }
@@ -169,23 +163,24 @@ private fun RailItem(item: NavItem, active: Boolean, accent: Color, accentEnd: C
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Box(
-            Modifier.size(
-                44.dp,
-            ).focusRing(
+            Modifier.size(38.dp).focusRing(
                 interaction,
                 shape,
             ).background(
                 tile,
                 shape,
-            ).border(Tokens.hairline, if (active) accent.copy(alpha = 0.45f) else Color.Transparent, shape),
+            ),
             contentAlignment = Alignment.Center,
         ) {
             Icon(item.icon, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))
+            if (active) {
+                Box(Modifier.align(Alignment.CenterStart).width(2.dp).height(14.dp).background(accent))
+            }
         }
         Text(
             item.label.uppercase(),
             style = RAIL_LABEL,
-            color = if (active) accentEnd else Tokens.textMuted,
+            color = if (active) Tokens.accentGradEnd else Tokens.textMuted,
             textAlign = TextAlign.Center,
             maxLines = 1,
             softWrap = false,
