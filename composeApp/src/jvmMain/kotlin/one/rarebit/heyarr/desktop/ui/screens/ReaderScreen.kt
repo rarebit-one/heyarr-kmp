@@ -29,6 +29,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,7 +46,6 @@ import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.Tokens
 import java.net.URI
@@ -116,7 +117,6 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
     }
 
     MediaScope(MediaType.BOOK) {
-        val accent = LocalMediaTheme.current.accentGradientEnd
         Column(Modifier.fillMaxSize().background(Tokens.bgBase)) {
             Row(
                 Modifier.fillMaxWidth().background(Tokens.surface1).padding(horizontal = 12.dp, vertical = 10.dp),
@@ -148,7 +148,10 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                         (readingSize + 1).coerceAtMost(32)
                 }, enabled = readingSize < 32)
             }
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+            Box(
+                Modifier.fillMaxSize().background(Tokens.bgBase).padding(horizontal = 24.dp, vertical = 20.dp),
+                contentAlignment = Alignment.TopCenter,
+            ) {
                 when {
                     loading -> Centered("Opening…")
 
@@ -177,26 +180,29 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                     book != null -> {
                         val listState = rememberLazyListState()
                         LazyColumn(
-                            Modifier.fillMaxSize(),
+                            Modifier.fillMaxSize().widthIn(max = 900.dp).background(Tokens.readingPaper),
                             state = listState,
-                            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 28.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                            contentPadding = PaddingValues(horizontal = 72.dp, vertical = 56.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             book!!.chapters.forEachIndexed { i, ch ->
                                 item(key = "h$i") {
                                     Text(
                                         ch.title,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = accent,
+                                        style = MaterialTheme.typography.headlineMedium.copy(
+                                            fontFamily = FontFamily.Serif,
+                                            fontWeight = FontWeight.SemiBold,
+                                        ),
+                                        color = Tokens.readingInk,
                                         modifier = Modifier.widthIn(max = 760.dp).fillMaxWidth().padding(
                                             top = if (i ==
                                                 0
                                             ) {
                                                 0.dp
                                             } else {
-                                                28.dp
+                                                48.dp
                                             },
-                                            bottom = 10.dp,
+                                            bottom = 18.dp,
                                         ),
                                     )
                                 }
@@ -205,13 +211,15 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                                         Text(
                                             ch.text,
                                             style = MaterialTheme.typography.bodyLarge.copy(
+                                                fontFamily = FontFamily.Serif,
                                                 fontSize = readingSize.sp,
                                                 lineHeight = (
                                                     readingSize *
-                                                        1.6f
+                                                        1.72f
                                                     ).sp,
+                                                letterSpacing = 0.15.sp,
                                             ),
-                                            color = Tokens.textPrimary,
+                                            color = Tokens.readingInk,
                                         )
                                     }
                                 }

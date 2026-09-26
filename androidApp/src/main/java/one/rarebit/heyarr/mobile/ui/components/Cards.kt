@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.mobile.ui.components
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -78,6 +80,8 @@ import one.rarebit.heyarr.ui.theme.LocalAppearance
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
+
+private const val HERO_CROSSFADE_DURATION_MS = 500
 
 /**
  * Artwork with a blur-up: an accent-tinted gradient placeholder (with the type glyph)
@@ -359,7 +363,7 @@ fun Hero(
             height,
         ).clip(shape).background(Tokens.surface1).border(Tokens.hairline, Tokens.border, shape),
     ) {
-        Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 72.dp)
+        SpotlightArtwork(artwork, type)
         HeroScrim()
         Column(
             Modifier.align(Alignment.BottomStart).padding(20.dp).fillMaxWidth(),
@@ -406,6 +410,19 @@ fun Hero(
                 if (secondary != null) secondary()
             }
         }
+    }
+}
+
+@Composable
+@Suppress("FunctionNaming") // This private helper follows Compose's composable naming convention.
+private fun SpotlightArtwork(artwork: String?, type: MediaType) {
+    val reduceMotion = LocalAppearance.current.reduceMotion
+    Crossfade(
+        artwork,
+        animationSpec = tween(if (reduceMotion) 0 else HERO_CROSSFADE_DURATION_MS),
+        label = "spotlight-artwork",
+    ) { image ->
+        Artwork(image, type, Modifier.fillMaxSize(), glyphSize = 72.dp)
     }
 }
 

@@ -139,7 +139,7 @@ class PlaybackSession {
     var resolvePlaybackTarget: (
         Route.Player,
     ) -> PlaybackTarget = { PlaybackTarget(HeyarrApi.blobUrl(baseUrl, it.blobHash)) }
-    var accentHex: String = "#00935E"
+    var accentHex: String = "#2E7D5B"
 
     fun title(item: Route.Player): String = item.title + (item.subtitle?.let { " — $it" } ?: "")
 }

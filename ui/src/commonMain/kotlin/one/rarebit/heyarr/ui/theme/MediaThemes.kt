@@ -28,8 +28,8 @@ data class MediaTheme(
     /**
      * Where the CTA gradient starts. Defaults to the accent; magenta is the one accent
      * whose raw value (`#C13BAD`) misses 4.5:1 with either black or white text, so its
-     * pill starts from the hover tone and the raw accent stays for rings, underlines and
-     * the active-nav mark (non-text, 3:1).
+     * pill starts from the hover tone; the raw accent remains for underlines and active-nav
+     * marks, while focus rings use the brighter hover tone.
      */
     val ctaStart: Color? = null,
 ) {
@@ -41,20 +41,23 @@ data class MediaTheme(
 
 /**
  * The media → theme table. Exactly the brief's values: each accent swaps the CTA
- * gradient, focus rings, active-nav highlight, progress bars and section underline.
+ * gradient, active-nav highlight, progress bars and section underline. Focus rings use
+ * the brighter hover tone so they stay visible on raised surfaces.
  * Unknown / non-media kinds fall back to a neutral slate so they never look like a
  * movie.
  */
 object MediaThemes {
+    @Suppress("MagicNumber") // The media accent table documents exact design-system colour values.
     private val MOVIE = MediaTheme(
         MediaType.MOVIE,
-        Color(0xFF00935E),
-        Color(0xFF12A96E),
-        Color(0xFF21C063),
+        Color(0xFF2E7D5B),
+        Color(0xFF43A478),
+        Color(0xFF7EE0B3),
         CardAspect.WIDE,
         ctaLabel = "Play",
         ctaSecondaryLabel = null,
         metadataKeys = listOf("runtime", "year", "rating", "genre"),
+        ctaStart = Color(0xFF43A478),
     )
     private val SERIES = MediaTheme(
         MediaType.SERIES,

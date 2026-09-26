@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -63,6 +64,7 @@ import one.rarebit.heyarr.mobile.state.SearchController
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.MediaRow
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
+import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
@@ -146,7 +148,11 @@ fun SearchScreen(
                                 section.title,
                                 Modifier.padding(top = 12.dp, bottom = 6.dp),
                                 subtitle = (section.segment as? Segment.Loaded)?.let {
-                                    if (it.truncated) "Showing the first ${it.rows.size} — narrow the query for more." else null
+                                    if (it.truncated) {
+                                        "Showing the first ${it.rows.size} — narrow the query for more."
+                                    } else {
+                                        null
+                                    }
                                 },
                             )
                         }
@@ -158,15 +164,26 @@ fun SearchScreen(
                             Notice("Couldn't search ${section.title.lowercase()}: ${seg.message}", tone = Tokens.danger)
                         }
 
-                        is Segment.Loaded -> items(seg.rows, key = {
-                            it.key
-                        }) { row ->
-                            ResultRow(session, row, onOpen = {
-                                open(row)
-                            }, onWant = onWant, onPlayEpisode = onPlayEpisode)
-                        }
+                        is Segment.Loaded -> loadedSegment(session, seg, ::open, onWant, onPlayEpisode)
                     }
                 }
+            }
+        }
+    }
+}
+
+private fun LazyListScope.loadedSegment(
+    session: AppSession,
+    segment: Segment.Loaded,
+    open: (SearchRow) -> Unit,
+    onWant: (workId: String, title: String) -> Unit,
+    onPlayEpisode: (EpisodeHit) -> Unit,
+) {
+    items(segment.rows, key = { it.key }) { row ->
+        Column {
+            ResultRow(session, row, onOpen = { open(row) }, onWant = onWant, onPlayEpisode = onPlayEpisode)
+            if (row.key != segment.rows.lastOrNull()?.key) {
+                EditorialRule(Modifier.padding(start = 60.dp, end = 8.dp), dashed = true)
             }
         }
     }
@@ -324,7 +341,8 @@ private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: ()
         if (recent.isEmpty()) {
             EmptyState(
                 "Search everything at once",
-                detail = "Movies, series, music and books come from the library; podcasts and feeds from what you follow. Results appear per type as each answer lands.",
+                detail = "Movies, series, music and books come from the library; podcasts and feeds from what you " +
+                    "follow. Results appear per type as each answer lands.",
             )
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -362,25 +380,20 @@ private fun NoResultsPane(session: AppSession, query: String, onWant: (String, S
     var discovery by remember(query) { mutableStateOf<McpResult<List<DiscoveryHit>>?>(null) }
     var busy by remember(query) { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        EmptyState(
-            "Nothing in the library matches “$query”",
-            detail = "Search matches titles the library already knows. To bring in something new, ask the metadata provider or Want it by title from the Missing screen.",
-            action = {
-                SecondaryButton("Ask the metadata provider", icon = Icons.Rounded.TravelExplore, enabled = !busy, onClick = {
-                    busy = true
-                    scope.launch {
-                        session.io { session.api.discover(query) }.onSuccess { discovery = it }
-                        busy = false
-                    }
-                })
-            },
-        )
+        NoResultsEmptyState(query, busy) {
+            busy = true
+            scope.launch {
+                session.io { session.api.discover(query) }.onSuccess { discovery = it }
+                busy = false
+            }
+        }
         when (val d = discovery) {
             null -> {}
 
             is McpResult.Refused -> Notice(
                 "discover_content: ${d.message}",
-                detail = "Discovery needs a TVDB provider configured on the node (ADR-0058). Wanting by title still works.",
+                detail = "Discovery needs a TVDB provider configured on the node (ADR-0058). " +
+                    "Wanting by title still works.",
             )
 
             is McpResult.Ok -> if (d.value.isEmpty()) {
@@ -411,4 +424,22 @@ private fun NoResultsPane(session: AppSession, query: String, onWant: (String, S
             }
         }
     }
+}
+
+@Composable
+@Suppress("FunctionNaming") // Private Compose helper.
+private fun NoResultsEmptyState(query: String, busy: Boolean, onAsk: () -> Unit) {
+    EmptyState(
+        "Nothing in the library matches “$query”",
+        detail = "Search matches titles the library already knows. To bring in something new, ask " +
+            "the metadata provider or Want it by title from the Missing screen.",
+        action = {
+            SecondaryButton(
+                "Ask the metadata provider",
+                icon = Icons.Rounded.TravelExplore,
+                enabled = !busy,
+                onClick = onAsk,
+            )
+        },
+    )
 }

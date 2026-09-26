@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -49,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.SolidColor
@@ -105,12 +107,12 @@ private fun Modifier.minTouchHeight(touch: Boolean, height: Dp): Modifier {
     return this.then(min)
 }
 
-/** A visible 2px focus ring in the active accent, drawn only while keyboard/D-pad focused. */
+/** A visible 2px focus ring in the brighter accent-hover tone, drawn only while keyboard/D-pad focused. */
 @Composable
 fun Modifier.focusRing(interaction: MutableInteractionSource, shape: Shape, inset: Dp = 0.dp): Modifier {
     val focused by interaction.collectIsFocusedAsState()
-    val accent = LocalMediaTheme.current.accent
-    return if (focused) this.padding(inset).border(2.dp, accent, shape) else this.padding(inset)
+    val focusAccent = LocalMediaTheme.current.accentHover
+    return if (focused) this.padding(inset).border(2.dp, focusAccent, shape) else this.padding(inset)
 }
 
 /**
@@ -449,7 +451,7 @@ fun Kbd(text: String, modifier: Modifier = Modifier) {
 
 // ── section header ───────────────────────────────────────────────────────────────
 
-/** A rail/grid header: display-face title with a short accent underline, optional trailing action. */
+/** A rail/grid header with a solid section rule, optional icon, subtitle and trailing action. */
 @Composable
 fun SectionHeader(
     title: String,
@@ -459,26 +461,49 @@ fun SectionHeader(
     icon: ImageVector? = null,
 ) {
     val accent = LocalMediaTheme.current.accent
-    Row(modifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-        Column(Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (icon != null) Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(22.dp))
-                Text(
-                    title,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = Tokens.textPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Spacer(Modifier.height(6.dp))
-            Box(Modifier.width(36.dp).height(3.dp).background(accent, RectangleShape))
-            if (subtitle != null) {
-                Spacer(Modifier.height(6.dp))
-                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
-            }
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (icon != null) Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
+            Text(
+                title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleLarge,
+                color = Tokens.textPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            if (trailing != null) trailing()
         }
-        if (trailing != null) trailing()
+        if (subtitle != null) {
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+        }
+        // Full sections get a quiet solid rule; the short accent lead keeps the hierarchy crisp.
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(28.dp).height(2.dp).background(accent, RectangleShape))
+            Spacer(Modifier.width(8.dp))
+            Box(Modifier.weight(1f).height(Tokens.hairline).background(Tokens.border, RectangleShape))
+        }
+    }
+}
+
+/** Fine separators for dense, scan-friendly lists such as search results. */
+@Composable
+@Suppress("FunctionNaming") // Compose component naming follows the shared component set.
+fun EditorialRule(modifier: Modifier = Modifier, dashed: Boolean = false) {
+    Canvas(modifier.fillMaxWidth().height(Tokens.hairline)) {
+        val pathEffect = if (dashed) {
+            PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 4.dp.toPx()))
+        } else {
+            null
+        }
+        val y = size.height / 2f
+        drawLine(
+            color = Tokens.border.copy(alpha = 0.72f),
+            start = androidx.compose.ui.geometry.Offset(0f, y),
+            end = androidx.compose.ui.geometry.Offset(size.width, y),
+            strokeWidth = size.height,
+            pathEffect = pathEffect,
+        )
     }
 }
 
