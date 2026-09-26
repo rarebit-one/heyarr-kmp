@@ -70,6 +70,7 @@ import one.rarebit.heyarr.desktop.state.SearchController
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.MediaRow
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
+import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
@@ -153,12 +154,15 @@ fun SearchScreen(
 
             SearchGrouping.empty(
                 sections,
-            ) -> EmptyState("Nothing in the library matches “${search.query}”", detail = "Discover can find titles to add from the metadata catalogue.", action = {
-                SecondaryButton("Discover titles", {
-                    discovering =
-                        true
-                }, icon = Icons.Rounded.TravelExplore)
-            })
+            ) -> EmptyState(
+                "Nothing in the library matches “${search.query}”",
+                detail = "Discover can find titles to add from the metadata catalogue.",
+                action = {
+                    SecondaryButton("Discover titles", {
+                        discovering = true
+                    }, icon = Icons.Rounded.TravelExplore)
+                },
+            )
 
             else -> SearchResults(session, search, listState, ::open, onWant)
         }
@@ -374,9 +378,14 @@ private fun SearchResults(
                     val start = index
                     items(seg.rows, key = { it.key }) { row ->
                         val i = start + seg.rows.indexOf(row)
-                        ResultRow(session, row, selected = i == search.selected, onOpen = {
-                            onOpenRow(row)
-                        }, onWant = onWant)
+                        Column {
+                            ResultRow(session, row, selected = i == search.selected, onOpen = {
+                                onOpenRow(row)
+                            }, onWant = onWant)
+                            if (row.key != seg.rows.lastOrNull()?.key) {
+                                EditorialRule(Modifier.padding(start = 60.dp, end = 8.dp), dashed = true)
+                            }
+                        }
                     }
                     index += seg.rows.size
                 }
@@ -420,7 +429,8 @@ private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: ()
         if (recent.isEmpty()) {
             EmptyState(
                 "Search everything at once",
-                detail = "Movies, series, music and books come from the library; podcasts and feeds from what you follow. Results appear per type as each answer lands.",
+                detail = "Movies, series, music and books come from the library; podcasts and feeds from what you " +
+                    "follow. Results appear per type as each answer lands.",
             )
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -468,7 +478,8 @@ private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: 
             SectionHeader(
                 "Discover",
                 icon = Icons.Rounded.TravelExplore,
-                subtitle = "Find titles to add — series, movies, books and music the node's metadata providers know about but the library doesn't hold yet.",
+                subtitle = "Find titles to add — series, movies, books and music the node's metadata providers know " +
+                    "about but the library doesn't hold yet.",
             )
         }
         item {

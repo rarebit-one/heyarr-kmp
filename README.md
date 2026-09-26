@@ -108,7 +108,7 @@ spacing, type scale) — and the media table in `:ui`'s `theme/MediaThemes.kt`, 
 
 | Media | Accent | Card | CTA |
 |-------|--------|------|-----|
-| Movie | `#00935E` emerald (app default) | 16:9 | Play |
+| Movie | `#2E7D5B` fern (mint CTA) | 16:9 | Play |
 | Series | `#7C5CFF` violet | 16:9 | Play / Next episode |
 | Book | `#E0A458` amber, spine shadow | 2:3 | Read |
 | Audiobook | `#2DB3A6` teal | 1:1 | Listen |
@@ -116,11 +116,12 @@ spacing, type scale) — and the media table in `:ui`'s `theme/MediaThemes.kt`, 
 | Music | `#FF4D6D` rose | 1:1 | Play |
 | Feed / document / unknown | `#7A8598` slate | — | Open |
 
-The accent swaps the CTA gradient, focus rings, active-nav mark, progress bars and
-section underline; surfaces and text stay constant. Wrap any subtree in
+The accent swaps the CTA gradient, active-nav mark and progress bars; focus rings use the
+brighter hover tone to stay visible on raised surfaces. Major sections use solid rules,
+while dense search results use light dashed separators. Wrap any subtree in
 `MediaScope(type) { … }` to re-skin it. Fonts are self-hosted (OFL): **Rubik** fills
-every type slot, from headings and body to the compact technical labels — shipped once,
-for both apps, from `:ui` (`ui/src/commonMain/composeResources/font`, exposed as
+every interface type slot, from headings and body to the compact technical labels — shipped
+once for both apps from `:ui` (`ui/src/commonMain/composeResources/font`, exposed as
 `HeyarrFonts`).
 
 ## How heyarr is reached

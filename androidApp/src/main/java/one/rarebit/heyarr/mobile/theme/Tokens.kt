@@ -26,15 +26,15 @@ object Tokens {
     val textDisabled = one.rarebit.heyarr.ui.theme.Tokens.textDisabled
 
     // Semantic.
-    val ratingGold = Color(0xFFF5C518)
-    val danger = Color(0xFFE5484D)
-    val warning = Color(0xFFF5A524)
-    val success = Color(0xFF21C063)
+    val ratingGold = one.rarebit.heyarr.ui.theme.Tokens.ratingGold
+    val danger = one.rarebit.heyarr.ui.theme.Tokens.danger
+    val warning = one.rarebit.heyarr.ui.theme.Tokens.warning
+    val success = one.rarebit.heyarr.ui.theme.Tokens.success
 
     // Default accent = the Movie emerald; also the app's neutral CTA.
-    val accent = Color(0xFF00935E)
-    val accentHover = Color(0xFF12A96E)
-    val accentGradEnd = Color(0xFF21C063)
+    val accent = one.rarebit.heyarr.ui.theme.Tokens.accent
+    val accentHover = one.rarebit.heyarr.ui.theme.Tokens.accentHover
+    val accentGradEnd = one.rarebit.heyarr.ui.theme.Tokens.accentGradEnd
 
     /** Neutral slate accent for unknown / non-media types (documents, feeds). */
     val slate = Color(0xFF7A8598)

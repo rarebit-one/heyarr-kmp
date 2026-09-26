@@ -11,29 +11,34 @@ import androidx.compose.ui.unit.sp
  * these are the constant base the accents sit on so a mixed-media screen reads as one
  * app.
  */
+@Suppress("MagicNumber") // Design tokens are intentionally declared as literal colour values.
 object Tokens {
-    // Surfaces — near-black, warm-neutral.
-    val bgBase = Color(0xFF101815)
-    val surface1 = Color(0xFF17221C)
-    val surface2 = Color(0xFF1C2921)
-    val surface3 = Color(0xFF25362B)
-    val border = Color(0xFF3B5244)
+    // The forest palette keeps the chrome quiet so artwork and the reading surface lead.
+    val bgBase = Color(0xFF0A1410)
+    val surface1 = Color(0xFF111E18)
+    val surface2 = Color(0xFF17271F)
+    val surface3 = Color(0xFF20362B)
+    val border = Color(0xFF2E493A)
 
     // Text ramp.
-    val textPrimary = Color(0xFFE5E9DC)
-    val textMuted = Color(0xFFADBDAF)
-    val textDisabled = Color(0xFF829387)
+    val textPrimary = Color(0xFFE6EBD7)
+    val textMuted = Color(0xFFB1C0B1)
+    val textDisabled = Color(0xFF778A7C)
+
+    // The reader gets its own paper and ink rather than borrowing the chrome colours.
+    val readingPaper = Color(0xFFF0EBDD)
+    val readingInk = Color(0xFF20231E)
 
     // Semantic.
-    val ratingGold = Color(0xFFF5C518)
-    val danger = Color(0xFFE5484D)
-    val warning = Color(0xFFF5A524)
-    val success = Color(0xFF21C063)
+    val ratingGold = Color(0xFFF4B860)
+    val danger = Color(0xFFE56E66)
+    val warning = Color(0xFFF4B860)
+    val success = Color(0xFF7EE0B3)
 
-    // Default accent = SaintStream emerald (the Movie accent; also the app's neutral CTA).
-    val accent = Color(0xFF00935E)
-    val accentHover = Color(0xFF12A96E)
-    val accentGradEnd = Color(0xFF21C063)
+    // Default accent = the forest fern (Movie accent; also the app's neutral CTA).
+    val accent = Color(0xFF2E7D5B)
+    val accentHover = Color(0xFF43A478)
+    val accentGradEnd = Color(0xFF7EE0B3)
 
     /** Neutral slate accent for unknown / non-media types (documents, feeds). */
     val slate = Color(0xFF7A8598)
