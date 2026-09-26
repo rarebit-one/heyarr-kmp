@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+
 package one.rarebit.heyarr.mobile.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
@@ -14,6 +16,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.GridView
@@ -261,11 +266,11 @@ fun LibraryScreen(
 
             filtered.isEmpty() -> EmptyState(
                 if (all.isEmpty()) "The library is empty" else "Nothing matches these filters",
-                detail = if (all.isEmpty()) "Scan a library root on the node, or Want something and let heyarr find it." else "Clear a filter to see more.",
+                detail = libraryEmptyDetail(all.isEmpty()),
             )
 
-            state.grid -> LazyVerticalGrid(
-                GridCells.Adaptive(
+            state.grid -> LazyVerticalStaggeredGrid(
+                StaggeredGridCells.Adaptive(
                     if (state.type == MediaType.MOVIE ||
                         state.type == MediaType.SERIES
                     ) {
@@ -275,7 +280,7 @@ fun LibraryScreen(
                     },
                 ),
                 horizontalArrangement = Arrangement.spacedBy(Tokens.s3),
-                verticalArrangement = Arrangement.spacedBy(Tokens.s3),
+                verticalItemSpacing = Tokens.s3,
                 contentPadding = PaddingValues(bottom = 32.dp),
                 modifier = Modifier.fillMaxSize(),
             ) {
@@ -322,6 +327,12 @@ fun LibraryScreen(
             }
         }
     }
+}
+
+private fun libraryEmptyDetail(libraryIsEmpty: Boolean): String = if (libraryIsEmpty) {
+    "Scan a library root on the node, or Want something and let heyarr find it."
+} else {
+    "Clear a filter to see more."
 }
 
 class DownloadsState {

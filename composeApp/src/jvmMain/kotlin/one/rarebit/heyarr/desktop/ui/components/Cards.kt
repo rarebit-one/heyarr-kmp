@@ -170,7 +170,7 @@ fun MediaCard(
     onWant: (() -> Unit)? = null,
     /** The client's mode; a guest ([ClientMode.GUEST]) never sees the Want affordance. */
     mode: ClientMode = ClientMode.ENROLLED,
-    width: Dp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth,
+    width: Dp? = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth,
     showBadge: Boolean = true,
     aspectOverride: CardAspect? = null,
 ) = MediaScope(type) {
@@ -179,11 +179,15 @@ fun MediaCard(
     val hovered by interaction.collectIsHoveredAsState()
     val shape = RoundedCornerShape(Tokens.radiusCard)
     Column(
-        modifier.width(width)
+        modifier.then(if (width == null) Modifier.fillMaxWidth() else Modifier.width(width))
             .focusRing(interaction, shape, inset = 2.dp)
             .clip(shape)
             .interactiveSurface(interaction, shape)
-            .border(Tokens.hairline, if (hovered) theme.accent.copy(alpha = 0.6f) else Tokens.border, shape)
+            .border(
+                Tokens.hairline,
+                if (hovered) theme.accent.copy(alpha = 0.6f) else Tokens.border.copy(alpha = 0.42f),
+                shape,
+            )
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen)
             .semantics { this.contentDescription = "${type.label}: $title${status?.let { ", ${it.label}" } ?: ""}" },
     ) {

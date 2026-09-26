@@ -180,7 +180,7 @@ fun MediaCard(
                 .focusRing(interaction, shape, inset = 2.dp)
                 .clip(shape)
                 .interactiveSurface(interaction, shape)
-                .border(Tokens.hairline, Tokens.border, shape)
+                .border(Tokens.hairline, Tokens.border.copy(alpha = 0.42f), shape)
                 .combinedClickable(
                     interactionSource = interaction,
                     indication = null,

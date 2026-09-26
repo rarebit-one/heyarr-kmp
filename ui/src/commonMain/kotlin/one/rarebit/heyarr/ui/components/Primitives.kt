@@ -352,11 +352,13 @@ fun FilterChip(
     val interaction = remember { MutableInteractionSource() }
     val active by interaction.collectIsActiveAsState(touch)
     val shape = RectangleShape
+    val emphasized = active || touch
     val bg = when {
         selected -> theme.tint(0.22f)
-        active -> Tokens.surface3
-        else -> Tokens.surface2
+        emphasized -> Tokens.surface2
+        else -> Color.Transparent
     }
+    val border = if (selected) theme.accent else Color.Transparent
     val fg = when {
         !enabled -> Tokens.textDisabled
         selected -> Tokens.textPrimary
@@ -367,7 +369,7 @@ fun FilterChip(
             .focusRing(interaction, shape, inset = 2.dp)
             .clip(shape)
             .background(bg, shape)
-            .border(Tokens.hairline, if (selected) theme.accent else Tokens.border, shape)
+            .border(Tokens.hairline, border, shape)
             .hoverableUnless(touch, interaction)
             .clickable(
                 interactionSource = interaction,
