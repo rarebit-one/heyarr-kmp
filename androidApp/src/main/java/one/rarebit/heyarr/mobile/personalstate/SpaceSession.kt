@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.mobile.personalstate
 
+import one.rarebit.heyarr.core.vault.SnapshotEnvelope
 import java.util.UUID
 
 /**
@@ -43,26 +44,57 @@ internal class SpaceSession(
 
     private class Folded<S>(val state: S, val changes: List<EncryptedChange>, val frontier: List<String>)
 
-    private fun <S> load(
-        spaceId: String,
-        key: ByteArray,
-        empty: () -> S,
-        fromSnapshot: (String) -> S,
-        apply: (S, String) -> Unit,
-    ): Folded<S> {
-        var state = empty()
+    /** How one CRDT kind is built empty, read from and written to its snapshot, and folded. */
+    private class Kind<S>(
+        val empty: () -> S,
+        val fromSnapshot: (String) -> S,
+        val snapshotOf: (S) -> String,
+        val apply: (S, String) -> Unit,
+    )
+
+    private fun <S> load(spaceId: String, key: ByteArray, kind: Kind<S>): Folded<S> {
+        var state = kind.empty()
         var frontier = emptyList<String>()
         val snap = client.snapshot(spaceId)
         if (snap != null && snap.validate()) {
-            state = fromSnapshot(crypto.decryptChange(key, snap.ciphertext).decodeToString())
+            state = openSnapshot(snap, crypto.decryptChange(key, snap.ciphertext), kind)
             frontier = snap.frontier
         }
         val changes = client.changes(spaceId)
         for (c in changes) {
-            if (c.validate()) apply(state, crypto.decryptChange(key, c.ciphertext).decodeToString())
+            if (c.validate()) kind.apply(state, crypto.decryptChange(key, c.ciphertext).decodeToString())
         }
         return Folded(state, changes, frontier)
     }
+
+    /**
+     * The state inside a decrypted snapshot, after checking what it was sealed with (heyarr-core#681).
+     * The frontier and space ride outside the ciphertext, and the snapshot id is a public digest, so
+     * a `write` token with no space key could relabel a valid snapshot; the envelope inside the
+     * ciphertext is what proves the frontier. A relabelled snapshot fails the fold rather than being
+     * folded under a causal point it was never taken at — the same fail-closed stance an undecryptable
+     * change already gets here.
+     *
+     * A snapshot sealed before the envelope is still read, since a key rotation can leave one as the
+     * only copy of the state. It must then be the CANONICAL snapshot of this kind (it re-serialises to
+     * its own bytes), so another record's ciphertext — a change — cannot pass as an empty snapshot and
+     * hide what compaction removed from the log.
+     */
+    private fun <S> openSnapshot(snap: EncryptedSnapshot, plaintext: ByteArray, kind: Kind<S>): S =
+        when (val opened = SnapshotEnvelope.open(snap.spaceId, snap.frontier, plaintext)) {
+            is SnapshotEnvelope.Opened.Authenticated -> kind.fromSnapshot(opened.state.decodeToString())
+
+            is SnapshotEnvelope.Opened.Legacy -> {
+                val json = opened.state.decodeToString()
+                val state = kind.fromSnapshot(json)
+                check(kind.snapshotOf(state) == json) {
+                    "refusing snapshot ${snap.snapshotId}: not a canonical legacy snapshot"
+                }
+                state
+            }
+
+            is SnapshotEnvelope.Opened.Refused -> error("refusing snapshot ${snap.snapshotId}: ${opened.reason}")
+        }
 
     /** Encrypt a minted change's plaintext, mint it at the current heads, and push it. */
     private fun post(spaceId: String, key: ByteArray, folded: Folded<*>, plaintext: String) {
@@ -152,19 +184,40 @@ internal class SpaceSession(
 
     // --- folds --------------------------------------------------------------------
 
-    private fun foldPlaylist(spaceId: String, key: ByteArray): Folded<Playlist> = load(spaceId, key, {
-        Playlist()
-    }, { Playlist.fromSnapshot(it) }) { s, pt -> PlaylistChange.decode(pt)?.let(s::apply) }
+    private val playlistKind = Kind<Playlist>(
+        empty = { Playlist() },
+        fromSnapshot = { Playlist.fromSnapshot(it) },
+        snapshotOf = { it.snapshot() },
+        // An unknown op decodes to null and is ignored, never coerced (heyarr-kmp#111).
+        apply = { s, pt -> PlaylistChange.decode(pt)?.let(s::apply) },
+    )
 
-    private fun foldStarred(spaceId: String, key: ByteArray): Folded<StarSet> =
-        load(spaceId, key, { StarSet() }, { StarSet.fromSnapshot(it) }) { s, pt ->
-            StarChange.decode(pt)?.let(s::apply)
-        }
+    private val starredKind = Kind<StarSet>(
+        empty = { StarSet() },
+        fromSnapshot = { StarSet.fromSnapshot(it) },
+        snapshotOf = { it.snapshot() },
+        apply = { s, pt -> StarChange.decode(pt)?.let(s::apply) },
+    )
 
-    private fun foldHistory(spaceId: String, key: ByteArray): Folded<PlayLog> =
-        load(spaceId, key, { PlayLog() }, { PlayLog.fromSnapshot(it) }) { s, pt -> s.apply(PlayChange.decode(pt)) }
+    private val historyKind = Kind<PlayLog>(
+        empty = { PlayLog() },
+        fromSnapshot = { PlayLog.fromSnapshot(it) },
+        snapshotOf = { it.snapshot() },
+        apply = { s, pt -> s.apply(PlayChange.decode(pt)) },
+    )
 
-    private fun foldReading(spaceId: String, key: ByteArray): Folded<ReadingPositions> = load(spaceId, key, {
-        ReadingPositions()
-    }, { ReadingPositions.fromSnapshot(it) }) { s, pt -> s.apply(PositionChange.decode(pt)) }
+    private val readingKind = Kind<ReadingPositions>(
+        empty = { ReadingPositions() },
+        fromSnapshot = { ReadingPositions.fromSnapshot(it) },
+        snapshotOf = { it.snapshot() },
+        apply = { s, pt -> s.apply(PositionChange.decode(pt)) },
+    )
+
+    private fun foldPlaylist(spaceId: String, key: ByteArray): Folded<Playlist> = load(spaceId, key, playlistKind)
+
+    private fun foldStarred(spaceId: String, key: ByteArray): Folded<StarSet> = load(spaceId, key, starredKind)
+
+    private fun foldHistory(spaceId: String, key: ByteArray): Folded<PlayLog> = load(spaceId, key, historyKind)
+
+    private fun foldReading(spaceId: String, key: ByteArray): Folded<ReadingPositions> = load(spaceId, key, readingKind)
 }
