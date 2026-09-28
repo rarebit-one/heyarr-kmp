@@ -15,7 +15,8 @@ class DriveUnknownOpTest {
 
     @Test
     fun unknownOpWithAValidBlobDoesNotParseToAPut() {
-        val future = """{"op":7,"path":"notes.txt","blob":"$blob","size":3,"at":9,"writer":"w1","base":{"At":0,"Writer":""}}"""
+        val future = """{"op":7,"path":"notes.txt","blob":"$blob","size":3,""" +
+            """"at":9,"writer":"w1","base":{"At":0,"Writer":""}}"""
         assertNull(Drive.parseChange(future), "an unknown drive op must not parse to a change")
     }
 

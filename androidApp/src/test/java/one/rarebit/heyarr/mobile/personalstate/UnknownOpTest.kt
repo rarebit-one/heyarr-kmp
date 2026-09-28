@@ -21,7 +21,8 @@ class UnknownOpTest {
 
     @Test
     fun unknownPlaylistOpCarryingAnItemDecodesToNothing() {
-        val future = """{"Op":200,"ItemID":"phantom","Tag":"t9","Order":{"Counter":50,"Tag":"t9"},"Observed":["t1"]}"""
+        val future = """{"Op":200,"ItemID":"phantom","Tag":"t9",""" +
+            """"Order":{"Counter":50,"Tag":"t9"},"Observed":["t1"]}"""
         assertNull("an unknown playlist op must not decode to a change", PlaylistChange.decode(future))
     }
 
@@ -35,7 +36,9 @@ class UnknownOpTest {
     fun knownOpsStillDecode() {
         assertEquals(
             PlaylistOp.ADD,
-            PlaylistChange.decode("""{"Op":0,"ItemID":"a","Tag":"t1","Order":{"Counter":1,"Tag":"t1"},"Observed":null}""")?.op,
+            PlaylistChange.decode(
+                """{"Op":0,"ItemID":"a","Tag":"t1","Order":{"Counter":1,"Tag":"t1"},"Observed":null}""",
+            )?.op,
         )
         assertEquals(PlaylistOp.REMOVE, PlaylistChange.decode("""{"Op":1,"ItemID":"a","Observed":["t1"]}""")?.op)
         assertEquals(StarOp.UNSTAR, StarChange.decode("""{"Op":1,"ItemID":"a","Observed":["s1"]}""")?.op)
