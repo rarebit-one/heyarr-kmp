@@ -33,7 +33,8 @@ class CrdtParityTest {
 
     @Test
     fun playlist() = forEachVector("playlist.json") { name, changes, encode, snapshot ->
-        val decoded = changes.map { PlaylistChange.decode(it) }
+        // An unknown op decodes to null and is skipped, as Go's fold ignores it (#111).
+        val decoded = changes.mapNotNull { PlaylistChange.decode(it) }
         for (order in listOf(decoded, decoded.reversed())) {
             val p = Playlist()
             p.apply(order)
@@ -46,7 +47,7 @@ class CrdtParityTest {
 
     @Test
     fun starred() = forEachVector("starred.json") { name, changes, encode, snapshot ->
-        val decoded = changes.map { StarChange.decode(it) }
+        val decoded = changes.mapNotNull { StarChange.decode(it) }
         for (order in listOf(decoded, decoded.reversed())) {
             val s = StarSet()
             s.apply(order)

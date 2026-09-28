@@ -154,10 +154,12 @@ internal class SpaceSession(
 
     private fun foldPlaylist(spaceId: String, key: ByteArray): Folded<Playlist> = load(spaceId, key, {
         Playlist()
-    }, { Playlist.fromSnapshot(it) }) { s, pt -> s.apply(PlaylistChange.decode(pt)) }
+    }, { Playlist.fromSnapshot(it) }) { s, pt -> PlaylistChange.decode(pt)?.let(s::apply) }
 
     private fun foldStarred(spaceId: String, key: ByteArray): Folded<StarSet> =
-        load(spaceId, key, { StarSet() }, { StarSet.fromSnapshot(it) }) { s, pt -> s.apply(StarChange.decode(pt)) }
+        load(spaceId, key, { StarSet() }, { StarSet.fromSnapshot(it) }) { s, pt ->
+            StarChange.decode(pt)?.let(s::apply)
+        }
 
     private fun foldHistory(spaceId: String, key: ByteArray): Folded<PlayLog> =
         load(spaceId, key, { PlayLog() }, { PlayLog.fromSnapshot(it) }) { s, pt -> s.apply(PlayChange.decode(pt)) }

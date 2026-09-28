@@ -32,7 +32,7 @@ class DriveCrdtVectorsTest {
         for (caseObj in cases) {
             val name = JsonScan.stringField(caseObj, "name") ?: "?"
             val changes = JsonScan.objectsOf(JsonScan.arrayOf(caseObj, listOf("changes")) ?: "[]", emptyList())
-                .map { Drive.parseChange(it) }
+                .mapNotNull { Drive.parseChange(it) }
             val expectedSnapshot = JsonScan.stringField(caseObj, "snapshot") ?: fail("[$name] no snapshot")
             val expectedList = JsonScan.objectsOf(JsonScan.arrayOf(caseObj, listOf("list")) ?: "[]", emptyList())
                 .map {
