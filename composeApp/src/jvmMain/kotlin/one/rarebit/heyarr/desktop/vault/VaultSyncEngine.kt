@@ -108,19 +108,24 @@ class VaultSyncEngine(
     private val credential: Credential,
     private val spaceId: String,
     private val spaceKey: ByteArray,
+    /** Where the folded drive + cursor survive a restart (#73). The default keeps nothing. */
+    private val stateStore: DriveStateStore = NoDriveStateStore,
 ) : VaultSync {
     data class Stats(val uploaded: Int, val downloaded: Int, val deletedRemote: Int, val deletedLocal: Int)
 
     /**
      * The folded remote drive, carried BETWEEN passes so a steady-state sync pulls nothing.
-     * Null until the first successful fold. Held in memory only: a restarted daemon simply
-     * starts from cursor 0 and pays one full pull, which is the old cost exactly once rather
-     * than on every poll.
+     * Null until the first successful fold or a restored [stateStore] state. Persisted through
+     * [stateStore] after every fold that took in new changes, so a restarted daemon resumes from
+     * where it stopped instead of re-pulling the whole log (#73).
      */
     private var drive: Drive? = null
 
     /** The peer's opaque arrival position we have folded up to. 0 = nothing yet. */
     private var cursor: Long = 0
+
+    /** Whether [stateStore] has been consulted since the drive was last discarded. */
+    private var restored = false
 
     override fun syncOnce(): Stats {
         val index = indexStore.load()
@@ -128,7 +133,30 @@ class VaultSyncEngine(
         val drive = buildDrive()
         val resolved = drive.resolved().associateBy { it.path }
         val actions = reconcile(local, resolved, index)
+        var completed = false
+        try {
+            return apply(actions, local, resolved, drive, index).also { completed = true }
+        } finally {
+            if (!completed) {
+                // A pass that fails part-way can leave a local write in the drive that never
+                // reached the server (a push that threw). Keeping that drive would make it look
+                // remote from then on, and persisting it would carry that across restarts. So
+                // drop it: the next pass restores the last saved fold, which holds only changes
+                // the server has, or re-folds from 0 when nothing was saved.
+                this.drive = null
+                cursor = 0
+                restored = false
+            }
+        }
+    }
 
+    private fun apply(
+        actions: List<SyncAction>,
+        local: Map<String, LocalFile>,
+        resolved: Map<String, DriveEntry>,
+        drive: Drive,
+        index: Map<String, SyncIndexEntry>,
+    ): Stats {
         val newIndex = index.toMutableMap()
         var up = 0
         var down = 0
@@ -183,6 +211,13 @@ class VaultSyncEngine(
      * back on a later pull and they fold in again idempotently, landing on the identical key.
      */
     private fun buildDrive(): Drive {
+        if (drive == null && !restored) {
+            restored = true
+            stateStore.load(baseUrl, spaceId)?.let {
+                drive = it.drive
+                cursor = it.cursor
+            }
+        }
         val d = drive ?: Drive()
         val page = space.pullChangesSince(spaceId, cursor)
         for (c in page.changes) {
@@ -191,7 +226,21 @@ class VaultSyncEngine(
         }
         drive = d
         cursor = page.cursor
+        if (page.changes.isNotEmpty()) persist(d)
         return d
+    }
+
+    /**
+     * Save the drive with the cursor it was just folded to. This runs straight after a fold,
+     * before this pass writes anything locally, so the drive is exactly the log up to [cursor].
+     * Earlier passes' local writes are in it too, but they were pushed before this pull, so they
+     * are part of that log already.
+     *
+     * A failed save is not a failed sync. The file on disk is then an older but still consistent
+     * pair, and the worst a restart pays is a longer tail.
+     */
+    private fun persist(d: Drive) {
+        runCatching { stateStore.save(baseUrl, spaceId, DriveState(cursor, d)) }
     }
 
     private fun upload(path: String, lf: LocalFile, drive: Drive, newIndex: MutableMap<String, SyncIndexEntry>) {
@@ -212,10 +261,12 @@ class VaultSyncEngine(
                     )
                 }
             }
-            blobs.putBlobFile(baseUrl, manifest.content, tmp, credential) // the ciphertext content blob (streamed off disk)
+            // The ciphertext content blob, streamed off disk.
+            blobs.putBlobFile(baseUrl, manifest.content, tmp, credential)
             val manifestBlob = VaultFrame.sealManifest(spaceKey, manifest)
             val manifestHash = Blake3.hashHex(manifestBlob)
-            blobs.putBlob(baseUrl, manifestHash, manifestBlob, credential) // the sealed manifest (the drive entry's blob)
+            // The sealed manifest: the drive entry's blob.
+            blobs.putBlob(baseUrl, manifestHash, manifestBlob, credential)
             push(drive.put(path, manifestHash, lf.size, lf.mtime))
             newIndex[path] = SyncIndexEntry(lf.plaintextHash, manifestHash, lf.size, lf.mtime)
         } finally {

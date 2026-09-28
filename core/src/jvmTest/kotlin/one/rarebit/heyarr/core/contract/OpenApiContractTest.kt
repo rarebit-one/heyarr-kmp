@@ -97,6 +97,7 @@ class OpenApiContractTest {
             val local = "a file this app writes and reads itself"
             listOf("DaemonConfig", "FileSettingsStore", "FileSyncIndexStore", "RecentSearches", "ReaderPosition")
                 .forEach { put(it, local) }
+            put("FileDriveStateStore", local)
             put("ExternalMetadata", "its own on-disk cache of third-party metadata")
             put("VaultSyncDaemon", "requests on its own local control socket")
             put("ExternalParsers", "third-party public metadata APIs, not heyarr")
