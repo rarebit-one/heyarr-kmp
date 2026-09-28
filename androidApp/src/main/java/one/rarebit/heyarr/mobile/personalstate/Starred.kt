@@ -17,7 +17,8 @@ internal enum class StarOp(val wire: Int) {
     ;
 
     companion object {
-        fun of(wire: Int): StarOp = if (wire == UNSTAR.wire) UNSTAR else STAR
+        /** The op for a wire value, or null for an unknown one — never coerced to STAR (#111). */
+        fun of(wire: Int): StarOp? = entries.firstOrNull { it.wire == wire }
     }
 }
 
@@ -38,8 +39,9 @@ internal data class StarChange(
     }
 
     companion object {
-        fun decode(json: String): StarChange = StarChange(
-            StarOp.of(JsonScan.longField(json, "Op")?.toInt() ?: 0),
+        /** Decode Go's `json.Marshal(crdt.StarChange)`, or null for an unknown op (skipped, as in Go). */
+        fun decode(json: String): StarChange? = StarChange(
+            StarOp.of(PlaylistChange.wireOp(json)) ?: return null,
             JsonScan.stringField(json, "ItemID") ?: "",
             JsonScan.stringField(json, "Tag") ?: "",
             PsJson.ulong(json, "At") ?: 0UL,

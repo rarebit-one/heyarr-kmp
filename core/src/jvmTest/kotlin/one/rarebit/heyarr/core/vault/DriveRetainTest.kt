@@ -26,7 +26,7 @@ class DriveRetainTest {
         for (c in cases) {
             val name = JsonScan.stringField(c, "name") ?: "?"
             val changes = JsonScan.objectsOf(JsonScan.arrayOf(c, listOf("changes")) ?: "[]", emptyList())
-                .map { Drive.parseChange(it) }
+                .mapNotNull { Drive.parseChange(it) }
             val policy = RetentionPolicy(
                 maxVersionsPerPath = JsonScan.intField(c, "maxVersionsPerPath")!!,
                 trashTtlSeconds = JsonScan.longField(c, "trashTtlSeconds")!!,

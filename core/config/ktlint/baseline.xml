@@ -24,7 +24,6 @@
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/core/vault/DriveCrdt.kt">
         <error line="7" column="1" source="standard:kdoc" />
-        <error line="403" column="1" source="standard:kdoc" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/core/vault/SyncReconcile.kt">
         <error line="3" column="1" source="standard:kdoc" />

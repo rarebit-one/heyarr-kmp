@@ -222,7 +222,8 @@ class VaultSyncEngine(
         val page = space.pullChangesSince(spaceId, cursor)
         for (c in page.changes) {
             val json = VoidbindEncryption.decryptChange(spaceKey, c.ciphertext).decodeToString()
-            d.apply(Drive.parseChange(json))
+            // An unknown op parses to null and is skipped, as Go's fold skips it (#111).
+            Drive.parseChange(json)?.let { d.apply(it) }
         }
         drive = d
         cursor = page.cursor

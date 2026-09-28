@@ -34,7 +34,20 @@ data class PosKey(val at: Long, val writer: String) {
     }
 }
 
-enum class DriveOp(val wire: Int) { PUT(0), DELETE(1) }
+enum class DriveOp(val wire: Int) {
+    PUT(0),
+    DELETE(1),
+    ;
+
+    companion object {
+        /**
+         * The op for a wire value, or null for one this client does not know. Go's
+         * `DriveChange.Validate` rejects an unknown op and the fold skips it, so reading it as a
+         * PUT (as this used to) would let a well-formed blob into this replica only (§43, #111).
+         */
+        fun of(wire: Long): DriveOp? = entries.firstOrNull { it.wire.toLong() == wire }
+    }
+}
 
 /** One write to the drive. Its JSON fields are the wire contract (§7). */
 data class DriveChange(
@@ -378,8 +391,13 @@ class Drive {
             return d
         }
 
-        /** Parse a Go-marshalled [DriveChange] object slice. */
-        fun parseChange(obj: String): DriveChange {
+        /**
+         * Parse a Go-marshalled [DriveChange] object slice, or null when its op is one this
+         * client does not know — the caller skips it, as Go's fold does (#111). An absent op is
+         * 0 (PUT), Go's zero value.
+         */
+        fun parseChange(obj: String): DriveChange? {
+            val op = DriveOp.of(JsonScan.longField(obj, "op") ?: 0) ?: return null
             val baseObj = JsonScan.objectAt(obj, "base")
             val base = if (baseObj != null) {
                 PosKey(JsonScan.longField(baseObj, "At") ?: 0, JsonScan.stringField(baseObj, "Writer") ?: "")
@@ -387,7 +405,7 @@ class Drive {
                 PosKey.ZERO
             }
             return DriveChange(
-                op = if ((JsonScan.intField(obj, "op") ?: 0) == 1) DriveOp.DELETE else DriveOp.PUT,
+                op = op,
                 path = JsonScan.stringField(obj, "path") ?: "",
                 blob = JsonScan.stringField(obj, "blob") ?: "",
                 size = JsonScan.longField(obj, "size") ?: 0,
@@ -400,7 +418,7 @@ class Drive {
     }
 }
 
-/**
+/*
  * The wire path rule (ADR-0095) so two devices derive the IDENTICAL key for "the same
  * path": Unicode NFC, forward slashes, cleaned (resolve . and .., collapse //), leading
  * slash trimmed, case-sensitive.

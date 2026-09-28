@@ -21,7 +21,13 @@ internal enum class PlaylistOp(val wire: Int) {
     ;
 
     companion object {
-        fun of(wire: Int): PlaylistOp = if (wire == REMOVE.wire) REMOVE else ADD
+        /**
+         * The op for a wire value, or null for one this client does not know. Never coerce an
+         * unknown op to ADD: Go's `applyOne` ignores it, so folding it as an add would grow a
+         * phantom entry on this replica only (§43, #111). ADR-0100's playlist-name op is the
+         * first such op a newer writer ships.
+         */
+        fun of(wire: Int): PlaylistOp? = entries.firstOrNull { it.wire == wire }
     }
 }
 
@@ -48,8 +54,27 @@ internal data class PlaylistChange(
     }
 
     companion object {
-        fun decode(json: String): PlaylistChange {
-            val op = PlaylistOp.of(JsonScan.longField(json, "Op")?.toInt() ?: 0)
+        /**
+         * A change's `Op` as Go's `uint8` sees it: an absent or null field is 0 (Go's zero value),
+         * and a value outside 0..255 is -1, which no op matches. It is never truncated into range,
+         * because a wrapped value could land on a known op and be folded as one (#111). The
+         * starred decoder shares it.
+         */
+        fun wireOp(json: String): Int {
+            val v = JsonScan.longField(json, "Op") ?: return 0
+            return if (v in 0L..MAX_WIRE_OP) v.toInt() else -1
+        }
+
+        /** Go's `crdt.Op` / `crdt.StarOp` are `uint8`. */
+        private const val MAX_WIRE_OP = 255L
+
+        /**
+         * Decode Go's `json.Marshal(crdt.Change)`, or null when its op is one this client does
+         * not know — the caller skips it, exactly as Go's fold ignores it (#111). The change stays
+         * in the peer's log untouched; only this device's fold passes over it.
+         */
+        fun decode(json: String): PlaylistChange? {
+            val op = PlaylistOp.of(wireOp(json)) ?: return null
             val itemId = JsonScan.stringField(json, "ItemID") ?: ""
             val tag = JsonScan.stringField(json, "Tag") ?: ""
             val orderObj = JsonScan.objectAt(json, "Order")
