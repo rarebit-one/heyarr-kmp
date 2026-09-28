@@ -62,8 +62,11 @@ internal data class PlaylistChange(
          */
         fun wireOp(json: String): Int {
             val v = JsonScan.longField(json, "Op") ?: return 0
-            return if (v in 0L..255L) v.toInt() else -1
+            return if (v in 0L..MAX_WIRE_OP) v.toInt() else -1
         }
+
+        /** Go's `crdt.Op` / `crdt.StarOp` are `uint8`. */
+        private const val MAX_WIRE_OP = 255L
 
         /**
          * Decode Go's `json.Marshal(crdt.Change)`, or null when its op is one this client does
