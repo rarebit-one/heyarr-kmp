@@ -4,8 +4,13 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.crypto.Blake3
 import one.rarebit.heyarr.core.vault.LocalFile
 import one.rarebit.heyarr.core.vault.SyncIndexEntry
+import java.io.File
+import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -48,7 +53,15 @@ class VaultSyncEngineTest {
             served += tail.size
             return ChangePage(tail, changes.size.toLong())
         }
+
+        /** When set, the next push throws — a network that dropped mid-pass. */
+        var failNextPush = false
+
         override fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String {
+            if (failNextPush) {
+                failNextPush = false
+                error("push failed")
+            }
             val id = Blake3.hashHex(ciphertext)
             changes.add(EncryptedChange(spaceId, id, parents, ciphertext))
             return id
@@ -187,5 +200,119 @@ class VaultSyncEngineTest {
                 "$path differs between an incremental fold and a full replay",
             )
         }
+    }
+
+    private fun stateFile(): File = File(Files.createTempDirectory("drive-state").toFile(), "vault-index.drive.json")
+
+    private fun persistentEngine(
+        folder: VaultFolder,
+        blobs: VaultBlobStore,
+        space: VaultSpace,
+        file: File,
+        index: SyncIndexStore = InMemorySyncIndexStore(),
+    ) = persistentEngineAt("http://x", folder, blobs, space, file, index)
+
+    @Suppress("LongParameterList") // a test factory: each argument is one seam of the engine
+    private fun persistentEngineAt(
+        controller: String,
+        folder: VaultFolder,
+        blobs: VaultBlobStore,
+        space: VaultSpace,
+        file: File,
+        index: SyncIndexStore = InMemorySyncIndexStore(),
+    ) =
+        VaultSyncEngine(
+            folder,
+            blobs,
+            space,
+            index,
+            controller,
+            Credential.Guest,
+            "space-1",
+            key,
+            FileDriveStateStore(file),
+        )
+
+    /**
+     * The restart contract (#73). A daemon that restarts with its state file resumes from the
+     * cursor it saved and pulls NOTHING it already folded. Before, every restart re-pulled the
+     * whole log, which on a throttled link was tens of minutes.
+     *
+     * SABOTAGE: drop the stateStore.load call in buildDrive. The restarted engine then starts
+     * from 0 and `served` climbs by the whole log.
+     */
+    @Test
+    fun aRestartedEngineResumesFromItsSavedCursor() {
+        val blobs = MemBlobStore()
+        val space = MemSpace()
+        val writer = MemFolder(
+            mutableMapOf("a.txt" to "one".encodeToByteArray(), "b.txt" to "two".encodeToByteArray()),
+            mutableMapOf("a.txt" to 1L, "b.txt" to 2L),
+        )
+        val writerEngine = engine(writer, blobs, space)
+        writerEngine.syncOnce()
+
+        val file = stateFile()
+        val folder = MemFolder()
+        val index = InMemorySyncIndexStore() // on disk too, in real life: it survives the restart
+        assertEquals(2, persistentEngine(folder, blobs, space, file, index = index).syncOnce().downloaded)
+        assertTrue(file.exists(), "the fold was saved")
+
+        // A NEW engine instance over the same state file: the restart.
+        val served = space.served
+        val restarted = persistentEngine(folder, blobs, space, file, index = index)
+        restarted.syncOnce()
+        assertEquals(served, space.served, "a restart re-pulled changes it had already folded")
+
+        // And it still sees the drive: a change after the restart folds onto the restored state.
+        writer.files["c.txt"] = "three".encodeToByteArray()
+        writer.mtimes["c.txt"] = 3L
+        writerEngine.syncOnce()
+        assertEquals(1, restarted.syncOnce().downloaded)
+        assertEquals(setOf("a.txt", "b.txt", "c.txt"), folder.files.keys)
+    }
+
+    /** The cursor is one controller's arrival position; against another it means nothing. */
+    @Test
+    fun aRepointedEngineIgnoresTheSavedState() {
+        val blobs = MemBlobStore()
+        val space = MemSpace()
+        engine(MemFolder(mutableMapOf("a.txt" to "one".encodeToByteArray()), mutableMapOf("a.txt" to 1L)), blobs, space)
+            .syncOnce()
+        val file = stateFile()
+        persistentEngine(MemFolder(), blobs, space, file).syncOnce()
+
+        val served = space.served
+        persistentEngineAt("http://elsewhere", MemFolder(), blobs, space, file).syncOnce()
+        assertEquals(served + space.changes.size, space.served, "a repointed engine must start from 0")
+    }
+
+    /**
+     * A push that throws leaves a local write in the in-memory drive that the server never got.
+     * It must not reach the state file, or the next restart would treat it as remote.
+     */
+    @Test
+    fun aFailedPassDoesNotPersistAWriteTheServerNeverGot() {
+        val blobs = MemBlobStore()
+        val space = MemSpace()
+        engine(MemFolder(mutableMapOf("a.txt" to "one".encodeToByteArray()), mutableMapOf("a.txt" to 1L)), blobs, space)
+            .syncOnce()
+
+        val file = stateFile()
+        val folder = MemFolder()
+        val eng = persistentEngine(folder, blobs, space, file)
+        eng.syncOnce() // folds a.txt, saves
+        folder.files["b.txt"] = "local".encodeToByteArray()
+        folder.mtimes["b.txt"] = 5L
+        space.failNextPush = true
+        assertFailsWith<IllegalStateException> { eng.syncOnce() }
+
+        // Another change lands, so the next pass folds (and saves) again.
+        engine(MemFolder(mutableMapOf("c.txt" to "c".encodeToByteArray()), mutableMapOf("c.txt" to 6L)), blobs, space)
+            .syncOnce()
+        val stats = eng.syncOnce()
+        assertEquals(1, stats.uploaded, "b.txt was retried as a local upload, not mistaken for remote")
+        val saved = assertNotNull(FileDriveStateStore(file).load("http://x", "space-1"))
+        assertNull(saved.drive.get("b.txt"), "the saved fold predates b.txt's (successful) push")
     }
 }

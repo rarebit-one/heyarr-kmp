@@ -142,10 +142,6 @@
         <error line="95" column="121" source="standard:max-line-length" />
         <error line="189" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/vault/VaultSyncEngine.kt">
-        <error line="215" column="121" source="standard:max-line-length" />
-        <error line="218" column="121" source="standard:max-line-length" />
-    </file>
     <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/ArchiveExperienceTest.kt">
         <error line="5" column="1" source="standard:no-wildcard-imports" />
         <error line="6" column="1" source="standard:no-wildcard-imports" />

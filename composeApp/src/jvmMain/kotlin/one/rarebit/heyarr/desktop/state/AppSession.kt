@@ -47,6 +47,7 @@ import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
+import one.rarebit.heyarr.desktop.vault.FileDriveStateStore
 import one.rarebit.heyarr.desktop.vault.FileSyncIndexStore
 import one.rarebit.heyarr.desktop.vault.JdkVaultBlobStore
 import one.rarebit.heyarr.desktop.vault.RealVaultFolder
@@ -203,6 +204,9 @@ class AppSession(
                     credential = credential,
                     spaceId = opened.spaceId,
                     spaceKey = opened.spaceKey,
+                    stateStore = FileDriveStateStore(
+                        FileDriveStateStore.besideIndex(FileSyncIndexStore.defaultIndexFile()),
+                    ),
                 )
             },
             watchFor = { folder -> WatchedFolder(java.nio.file.Path.of(folder)) },
