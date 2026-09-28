@@ -87,23 +87,37 @@ internal object PsJson {
         return out
     }
 
+    /**
+     * The fixed escapes Go's `encoding/json` emits (HTML-escaping default). A table
+     * rather than a `when` so adding one does not push [goJsonString] past detekt's
+     * complexity threshold.
+     */
+    private val GO_JSON_ESCAPES: Map<Char, String> = mapOf(
+        '"' to "\\\"",
+        '\\' to "\\\\",
+        '\n' to "\\n",
+        '\r' to "\\r",
+        '\t' to "\\t",
+        // Go 1.22+ marshals backspace and form feed as the short escapes, not \u0008 / \u000c.
+        '\b' to "\\b",
+        '\u000c' to "\\f",
+        '<' to "\\u003c",
+        '>' to "\\u003e",
+        '&' to "\\u0026",
+        '\u2028' to "\\u2028",
+        '\u2029' to "\\u2029",
+    )
+
     /** Escape [s] exactly like Go's `encoding/json` (HTML-escaping default). */
     fun goJsonString(s: String): String {
         val sb = StringBuilder(s.length + 2)
         sb.append('"')
         for (ch in s) {
-            when (ch) {
-                '"' -> sb.append("\\\"")
-                '\\' -> sb.append("\\\\")
-                '\n' -> sb.append("\\n")
-                '\r' -> sb.append("\\r")
-                '\t' -> sb.append("\\t")
-                '<' -> sb.append("\\u003c")
-                '>' -> sb.append("\\u003e")
-                '&' -> sb.append("\\u0026")
-                '\u2028' -> sb.append("\\u2028")
-                '\u2029' -> sb.append("\\u2029")
-                else -> if (ch.code < 0x20) sb.append("\\u00").append(hex2(ch.code)) else sb.append(ch)
+            val escape = GO_JSON_ESCAPES[ch]
+            when {
+                escape != null -> sb.append(escape)
+                ch.code < 0x20 -> sb.append("\\u00").append(hex2(ch.code))
+                else -> sb.append(ch)
             }
         }
         sb.append('"')

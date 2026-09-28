@@ -92,4 +92,11 @@ class SnapshotTrustTest {
         f.server.putSnapshot(snapshot(f.spaceId, listOf(change.changeId), change.ciphertext))
         assertThrows(IllegalStateException::class.java) { f.session.playlist(f.spaceId) }
     }
+
+    @Test
+    fun stringsEscapeLikeGo122SoLegacySnapshotsStayCanonical() {
+        // Go 1.22+ `json.Marshal("a\bc\fd\x01")` is "a\bc\fd\u0001". A mismatch would make a
+        // Go-written legacy snapshot fail the canonical check and lock the phone out of the space.
+        assertEquals("\"a\\bc\\fd\\u0001\"", PsJson.goJsonString("a\bc\u000cd\u0001"))
+    }
 }
