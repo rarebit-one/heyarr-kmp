@@ -16,6 +16,7 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
     private class Space(val kind: String) {
         val keys = LinkedHashMap<String, ByteArray>() // recipient -> wrapped
         val changes = ArrayList<EncryptedChange>()
+        var snapshot: EncryptedSnapshot? = null
     }
 
     private val spaces = LinkedHashMap<String, Space>()
@@ -47,9 +48,14 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
                 )
             }
 
-            path.endsWith("/snapshot") -> notFound()
+            path.endsWith("/snapshot") -> {
+                val snap = spaces[spaceId(path)]?.snapshot ?: return notFound()
+                ok(
+                    "{\"space_id\":${q(snap.spaceId)},\"snapshot_id\":${q(snap.snapshotId)},\"frontier\":[" +
+                        snap.frontier.joinToString(",") { q(it) } + "],\"ciphertext\":${q(b64(snap.ciphertext))}}",
+                )
+            }
 
-            // no snapshots in the fake
             else -> notFound()
         }
     }
@@ -87,6 +93,22 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
 
     /** The recipient ids a space is wrapped for (test assertion helper). */
     fun recipients(spaceId: String): Set<String> = spaces[spaceId]?.keys?.keys?.toSet() ?: emptySet()
+
+    /**
+     * Store [snap] as the space's latest snapshot, as `POST /snapshots` would. Like the node, the fake
+     * checks only the content-addressed id — it cannot decrypt, so it cannot see a relabel.
+     */
+    fun putSnapshot(snap: EncryptedSnapshot) {
+        require(snap.validate()) { "snapshot id does not match its content" }
+        spaces.getValue(snap.spaceId).snapshot = snap
+    }
+
+    /** Drop every change the space holds, as compaction under a snapshot would. */
+    fun compact(spaceId: String) {
+        spaces.getValue(spaceId).changes.clear()
+    }
+
+    fun changes(spaceId: String): List<EncryptedChange> = spaces[spaceId]?.changes?.toList() ?: emptyList()
 
     fun changeCount(spaceId: String): Int = spaces[spaceId]?.changes?.size ?: 0
 
