@@ -31,9 +31,12 @@ dependencyResolutionManagement {
         // and :androidApp all get it transitively), and :composeApp and :androidApp also
         // depend on it directly for device enrolment and pairing. Its version is pinned
         // once, in gradle/libs.versions.toml.
+        // The owner-wide `rarebit-one/*` path resolves packages from any repo in the org,
+        // so a rename of the publishing repo cannot break resolution (the per-repo
+        // Packages URL is not redirected after a GitHub repo rename).
         maven {
             name = "GitHubPackagesVoidbindKmp"
-            url = uri("https://maven.pkg.github.com/rarebit-one/voidbind-kmp")
+            url = uri("https://maven.pkg.github.com/rarebit-one/*")
             credentials {
                 username = providers.gradleProperty("gpr.user").orNull
                     ?: System.getenv("GITHUB_ACTOR")
