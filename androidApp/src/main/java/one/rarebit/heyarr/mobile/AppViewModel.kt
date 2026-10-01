@@ -107,7 +107,7 @@ class AppViewModel internal constructor(
     /**
      * The app's transport: every `/api/v1` request an enrolled device makes goes through
      * [DeviceAuthTransport], which keeps the `Device` credential fresh, presents the
-     * membership ops this device knows (`Voidbind-Membership`, ADR-0005) and re-mints +
+     * membership ops this device knows (`Void-Which-Binds-Membership`, ADR-0005) and re-mints +
      * retries once on a 401 (mobile-client constraint 2) — after [refreshMembership]
      * has had its say: a device that learns it was removed does not retry.
      */

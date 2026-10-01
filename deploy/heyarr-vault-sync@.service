@@ -1,7 +1,7 @@
 [Unit]
 Description=heyarr headless vault-sync daemon (W4) — vault "%i" (one folder <-> one vault space)
 Documentation=https://github.com/rarebit-one/heyarr-kmp/blob/main/docs/vault-sync-daemon.md
-# Needs the network up to reach the controller + relay, and the voidbind CLI on PATH.
+# Needs the network up to reach the controller + relay, and the void-which-binds CLI on PATH.
 After=network-online.target
 Wants=network-online.target
 
@@ -33,14 +33,14 @@ ExecStart=%h/.local/share/mise/shims/java -cp %h/.local/lib/heyarr-vault-sync/* 
 # per-vault config or here. (Custody — unwrapping the space key from the Go device
 # store — is separate and always on.)
 #
-# The daemon may shell out to `voidbind` (no-token fallback); keep it on the PATH:
+# The daemon may shell out to `void-which-binds` (no-token fallback); keep it on the PATH:
 Environment=PATH=%h/.local/bin:%h/.local/share/mise/shims:/usr/local/bin:/usr/bin:/bin
 
 Restart=on-failure
 RestartSec=5
 # The status file + control socket live under ~/.cache (per-vault paths from the
 # config); nothing else is written outside the synced folder, that vault's sync
-# index, and the voidbind store.
+# index, and the void-which-binds store.
 
 [Install]
 WantedBy=default.target

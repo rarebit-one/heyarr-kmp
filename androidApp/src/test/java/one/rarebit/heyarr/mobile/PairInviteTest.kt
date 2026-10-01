@@ -16,7 +16,7 @@ class PairInviteTest {
     private val session = "s3ss10n"
     private val salt = ByteArray(16) { it.toByte() }
 
-    /** The identity (genesis key) a v3 invite names — what the responder judges membership under. */
+    /** The identity (genesis key) a v3+ invite names — what the responder judges membership under. */
     private val usr = "ed25519:" + "ab".repeat(32)
     private val invite = Invite.encode(relay, session, salt, usr)
 
@@ -46,8 +46,8 @@ class PairInviteTest {
 
     @Test
     fun `key order does not matter - a Go-rendered invite parses too`() {
-        val goStyle = "voidbind:pair?relay=http%3A%2F%2Fmac.local%3A8788&salt=" +
-            "000102030405060708090a0b0c0d0e0f&session=abc&usr=ed25519%3A" + "cd".repeat(32) + "&v=3"
+        val goStyle = "void-which-binds:pair?relay=http%3A%2F%2Fmac.local%3A8788&salt=" +
+            "000102030405060708090a0b0c0d0e0f&session=abc&usr=ed25519%3A" + "cd".repeat(32) + "&v=4"
         val r = PairInvite.check(goStyle)
         assertTrue("$r", r is PairInvite.Valid)
         assertEquals("http://mac.local:8788", (r as PairInvite.Valid).relay)
@@ -62,18 +62,28 @@ class PairInviteTest {
     }
 
     @Test
-    fun `a Voidbind LOGIN tuple is named as the wrong kind of code`() {
-        val msg = invalid("voidbind:login?id=abc&rp=https%3A%2F%2Fheyarr")
+    fun `a Void-Which-Binds LOGIN tuple is named as the wrong kind of code`() {
+        val msg = invalid("void-which-binds:login?id=abc&rp=https%3A%2F%2Fheyarr")
         assertTrue(msg, msg.contains("LOGIN"))
         assertTrue(msg, msg.contains("pair-initiate"))
     }
 
     @Test
+    fun `a gen1 voidbind invite is not an invite this gen2 build can join`() {
+        // ADR-0022: no legacy handling. A gen1 tuple (the `voidbind:` scheme, v=3) is a
+        // foreign payload here, refused before the parser, and the message names gen2's shape.
+        val gen1 = "voidbind:pair?relay=http%3A%2F%2Fr&salt=000102030405060708090a0b0c0d0e0f&session=a&usr=$usr&v=3"
+        val msg = invalid(gen1)
+        assertTrue(msg, msg.contains("Not a Void-Which-Binds pairing invite"))
+        assertTrue(msg, msg.contains("void-which-binds:pair?v=4"))
+    }
+
+    @Test
     fun `an arbitrary QR payload is refused and briefly echoed`() {
         val msg = invalid("https://example.com/menu")
-        assertTrue(msg, msg.contains("Not a Voidbind pairing invite"))
+        assertTrue(msg, msg.contains("Not a Void-Which-Binds pairing invite"))
         assertTrue(msg, msg.contains("https://example.com/menu"))
-        assertTrue(msg, msg.contains("voidbind:pair?v=3"))
+        assertTrue(msg, msg.contains("void-which-binds:pair?v=4"))
         assertTrue(msg, msg.contains("usr="))
     }
 
@@ -87,23 +97,23 @@ class PairInviteTest {
 
     @Test
     fun `wrong version, short salt, missing session and missing usr are the parser's refusals`() {
-        val v2 = invite.replace("v=3", "v=2") // a pre-ADR-0005 invite names no identity
-        assertTrue(invalid(v2).contains("version"))
+        val v3 = invite.replace("v=4", "v=3") // a gen1 (voidbind) version: gen2 decodes only v=4
+        assertTrue(invalid(v3).contains("version"))
 
         val shortSalt = invite.replace("salt=000102030405060708090a0b0c0d0e0f", "salt=0001")
         assertTrue(invalid(shortSalt).contains("salt"))
 
-        val noSession = "voidbind:pair?v=3&relay=http%3A%2F%2Fr&salt=000102030405060708090a0b0c0d0e0f&usr=$usr"
+        val noSession = "void-which-binds:pair?v=4&relay=http%3A%2F%2Fr&salt=000102030405060708090a0b0c0d0e0f&usr=$usr"
         assertTrue(invalid(noSession).contains("session"))
 
-        val noUser = "voidbind:pair?v=3&relay=http%3A%2F%2Fr&salt=000102030405060708090a0b0c0d0e0f&session=a"
+        val noUser = "void-which-binds:pair?v=4&relay=http%3A%2F%2Fr&salt=000102030405060708090a0b0c0d0e0f&session=a"
         assertTrue(invalid(noUser).contains("user"))
     }
 
     @Test
     fun `a truncated or garbled tuple is a malformed invite, not a crash`() {
-        val msg = invalid("voidbind:pair?v=3&relay=http%3A%2F%2Fr&session=a&salt=zz&usr=$usr")
+        val msg = invalid("void-which-binds:pair?v=4&relay=http%3A%2F%2Fr&session=a&salt=zz&usr=$usr")
         assertTrue(msg, msg.startsWith("Malformed pairing invite"))
-        invalid("voidbind:pair?v=3&relay=%2")
+        invalid("void-which-binds:pair?v=4&relay=%2")
     }
 }

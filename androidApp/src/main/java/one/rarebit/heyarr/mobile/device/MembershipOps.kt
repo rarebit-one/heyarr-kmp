@@ -6,7 +6,7 @@ import one.rarebit.voidwhichbinds.auth.DeviceCredential
 
 /**
  * Which of the membership ops this device knows it **presents** beside its `Device`
- * credential — the `Voidbind-Membership` header on every request, and `ops` in the
+ * credential — the `Void-Which-Binds-Membership` header on every request, and `ops` in the
  * `POST /enrol` body (voidbind-kmp ADR-0005 / heyarr-core ADR-0068).
  *
  * A relying party merges what a device presents with its own log before evaluating,
@@ -33,7 +33,7 @@ object MembershipOps {
         return (must + rest).take(max)
     }
 
-    /** The `Voidbind-Membership` value for what [presentable] returns; empty when there is nothing. */
+    /** The `Void-Which-Binds-Membership` value for what [presentable] returns; empty when there is nothing. */
     fun headerValue(known: List<String>, admittingOp: String?): String =
         presentable(known, admittingOp).joinToString(",")
 

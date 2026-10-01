@@ -52,7 +52,7 @@ enum class PairingFailure {
      */
     REFUSED,
 
-    /** The pasted text was not a joinable `voidbind:pair?` v3 invite. */
+    /** The pasted text was not a joinable `void-which-binds:pair?` v4 (gen2) invite. */
     INVALID,
 }
 

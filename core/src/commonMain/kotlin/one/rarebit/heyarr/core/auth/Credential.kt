@@ -76,7 +76,7 @@ sealed interface Credential {
      * daemon) makes many requests over a pass that can outlast one proof — so it
      * needs to re-mint per call rather than hold a stale header. [headers] is
      * invoked for each request and returns the full header map to send
-     * (`Authorization` plus, on first contact, `Voidbind-Membership`). It is the
+     * (`Authorization` plus, on first contact, `Void-Which-Binds-Membership`). It is the
      * seam by which the daemon injects `Authorization: Device …` freshly obtained
      * from its device store, without this module owning the proof-minting.
      */

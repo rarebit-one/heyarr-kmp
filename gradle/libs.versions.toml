@@ -9,7 +9,7 @@ compose-multiplatform = "1.9.3"
 # void-which-binds-kmp's published client (GitHub Packages — see settings.gradle.kts). ONE
 # version for every module: :core puts it on each consumer's runtime classpath anyway, so a lower pin in a
 # module only compiles against an API the app does not run with.
-void-which-binds-client = "0.10.0"
+void-which-binds-client = "0.11.0"
 cryptography = "0.6.0"
 coroutines = "1.10.2"
 serialization = "1.7.3"

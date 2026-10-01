@@ -18,9 +18,12 @@ import java.util.Base64
  * being able to open a peer-stored space (Invariant 6, ADR-0049) and not. If a
  * library bump ever drifted the wrap/AEAD wire format, these fail.
  *
- * Regenerate the vectors from voidbind-go (a white-box generator in package
- * `encryption`, using `NewPrivateKey` + a fixed `SpaceKey{key:…}`, `Seal`,
- * `EncryptChange`): the recorded (recipient_seed, wrapped, space_key) and
+ * Gen2 (client 0.11.0, void-which-binds-go v0.19.0, ADR-0022): the wrap label is
+ * `void-which-binds/space-key-wrap/v1`, so the `wraps` were re-sealed with v0.19.0's public
+ * `encryption.NewPrivateKey` + `SpaceKeyFromBytes` + `Seal` for the same recipient seeds and
+ * space keys (a fresh ephemeral per wrap; the gen1 blobs no longer open). The `contents`
+ * are unchanged — change encryption has no label — and v0.19.0's `DecryptChange` still
+ * opens them. The recorded (recipient_seed, wrapped, space_key) and
  * (space_key, content, plaintext) tuples are Go-consistent, so any correct
  * X25519+HKDF+XChaCha20 implementation unwraps/decrypts them. See ADR-0049.
  *

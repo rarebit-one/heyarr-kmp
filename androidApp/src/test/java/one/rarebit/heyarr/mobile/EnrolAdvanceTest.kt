@@ -27,7 +27,8 @@ class EnrolAdvanceTest {
     @Test
     fun anInviteIsParkedWhileThePhoneIsBusyAndRefusedOnceEnrolled() {
         assertEquals(OnInvite.PARK, EnrolAdvance.onInvite(EnrolUiState.Loading))
-        assertEquals(OnInvite.PARK, EnrolAdvance.onInvite(EnrolUiState.Joining(unenrolled, "voidbind:pair?v=3")))
+        val joining = EnrolUiState.Joining(unenrolled, "void-which-binds:pair?v=4")
+        assertEquals(OnInvite.PARK, EnrolAdvance.onInvite(joining))
         assertEquals(OnInvite.PARK, EnrolAdvance.onInvite(EnrolUiState.CompareSas(unenrolled, "482 7316")))
         assertEquals(OnInvite.PARK, EnrolAdvance.onInvite(EnrolUiState.Registering(unenrolled)))
         assertEquals(OnInvite.PARK, EnrolAdvance.onInvite(EnrolUiState.Removed(enrolled, "removed by another member")))

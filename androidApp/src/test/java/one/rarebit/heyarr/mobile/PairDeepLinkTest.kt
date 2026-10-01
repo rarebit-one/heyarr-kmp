@@ -66,7 +66,7 @@ class PairDeepLinkTest {
         assertNull(PairDeepLink.route(PairDeepLink.ACTION_VIEW, null))
         assertNull(PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://login"))
         assertNull(PairDeepLink.route(PairDeepLink.ACTION_VIEW, "heyarr-mobile://pairing?invite=x"))
-        assertNull(PairDeepLink.route(PairDeepLink.ACTION_VIEW, "voidbind:pair?v=3"))
+        assertNull(PairDeepLink.route(PairDeepLink.ACTION_VIEW, "void-which-binds:pair?v=4"))
         assertNull(PairDeepLink.route(PairDeepLink.ACTION_VIEW, "https://heyarr-mobile/pair?invite=x"))
     }
 
@@ -77,22 +77,22 @@ class PairDeepLinkTest {
         assertTrue(empty.message, empty.message.contains("scan", ignoreCase = true))
         val truncated = PairDeepLink.route(
             PairDeepLink.ACTION_VIEW,
-            "heyarr-mobile://pair?invite=voidbind%3Apair%3Fv%3D3%2",
+            "heyarr-mobile://pair?invite=void-which-binds%3Apair%3Fv%3D4%2",
         ) as PairDeepLink.Invalid
         assertTrue(truncated.message, truncated.message.contains("garbled"))
     }
 
-    @Test fun `a login tuple or a v2 invite through this door is refused by the library parser`() {
+    @Test fun `a login tuple or a gen1 v3 invite through this door is refused by the library parser`() {
         val login = PairDeepLink.route(
             PairDeepLink.ACTION_VIEW,
-            "heyarr-mobile://pair?invite=${encode("voidbind:login?id=a&rp=http%3A%2F%2Fh")}",
+            "heyarr-mobile://pair?invite=${encode("void-which-binds:login?id=a&rp=http%3A%2F%2Fh")}",
         ) as PairDeepLink.Invalid
         assertTrue(login.message, login.message.contains("LOGIN"))
-        val v2 = PairDeepLink.route(
+        val v3 = PairDeepLink.route(
             PairDeepLink.ACTION_VIEW,
-            "heyarr-mobile://pair?invite=${encode(invite.replace("v=3", "v=2"))}",
+            "heyarr-mobile://pair?invite=${encode(invite.replace("v=4", "v=3"))}",
         ) as PairDeepLink.Invalid
-        assertTrue(v2.message, v2.message.contains("version"))
+        assertTrue(v3.message, v3.message.contains("version"))
     }
 
     @Test fun `percent decoding keeps a plus literal and refuses non-ASCII`() {

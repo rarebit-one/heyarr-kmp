@@ -9,7 +9,7 @@ import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 
 /**
- * Renders the `voidbind:login?rp=&id=` tuple as a scannable QR code. The ZXing
+ * Renders the `void-which-binds:login?rp=&id=` tuple as a scannable QR code. The ZXing
  * [BitMatrix] half is pure JVM (unit-tested by round-trip decoding); only [bitmap]
  * touches Android's [Bitmap].
  */

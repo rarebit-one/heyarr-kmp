@@ -49,7 +49,7 @@ class PairingCoordinator(
             _state.value = PairingState.Failed(
                 invite,
                 PairingFailure.INVALID,
-                checked.exceptionOrNull()?.message ?: "That is not a voidbind pairing invite.",
+                checked.exceptionOrNull()?.message ?: "That is not a void-which-binds pairing invite.",
             )
             return
         }

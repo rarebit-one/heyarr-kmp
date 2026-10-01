@@ -2,10 +2,10 @@ package one.rarebit.heyarr.mobile.device
 
 /**
  * The **same-phone pairing handoff** the Cruciform authenticator fires at us
- * (voidbind-kmp ADR-0006): after its "Add a device" mints a v3 invite it cannot show
+ * (voidbind-kmp ADR-0006): after its "Add a device" mints a v4 invite it cannot show
  * us as a QR — we share the screen — so it opens our own pair-callback URI instead:
  *
- *     heyarr-mobile://pair?invite=<percent-encoded voidbind:pair?v=3&relay=…&session=…&salt=…&usr=… tuple>
+ *     heyarr-mobile://pair?invite=<percent-encoded void-which-binds:pair?v=4&relay=…&session=…&salt=…&usr=… tuple>
  *
  * The invite is the byte-identical QR tuple, so once decoded it goes through
  * [PairInvite.check] — the library's `Invite.decode` — exactly as a scan or paste

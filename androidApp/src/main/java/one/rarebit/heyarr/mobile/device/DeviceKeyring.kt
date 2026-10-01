@@ -69,7 +69,10 @@ class DeviceKeyring(context: Context, private val gate: BiometricGate, private v
     private fun recoveryFile() = File(dir(), "recovery.$alias.pub")
 
     /** True once the sealed signing key exists on this phone (no prompt to check). */
-    fun isProvisioned(): Boolean = File(File(app.filesDir, "voidbind"), "$alias.key").exists()
+    // The library's sealed-key dir: `filesDir/void-which-binds/` since client 0.11.0 (gen2,
+    // ADR-0022; it was `voidbind/`). A gen1 key left under the old dir is NOT provisioned —
+    // gen2 is a fresh identity, so the phone re-enrols.
+    fun isProvisioned(): Boolean = File(File(app.filesDir, "void-which-binds"), "$alias.key").exists()
 
     /**
      * The device info WITHOUT provisioning: null on a fresh install. Loading existing

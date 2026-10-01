@@ -123,7 +123,7 @@ class DeviceSessionTest {
         DeviceAuthTransport(inner, { s }, membership = { "" }).get("u", Credential.Device(cert, "x").asHeader())
         assertFalse(inner.seen[0].containsKey(DeviceAuthTransport.MEMBERSHIP_HEADER))
         assertFalse(inner.seen[1].containsKey(DeviceAuthTransport.MEMBERSHIP_HEADER))
-        assertEquals("Voidbind-Membership", DeviceAuthTransport.MEMBERSHIP_HEADER)
+        assertEquals("Void-Which-Binds-Membership", DeviceAuthTransport.MEMBERSHIP_HEADER)
     }
 
     /**

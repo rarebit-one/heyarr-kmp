@@ -28,7 +28,7 @@ class PairingCoordinatorTest {
 
     @AfterTest fun tearDown() = scope.cancel()
 
-    /** A valid `voidbind:pair?v=3…` invite the FAKE steps ignore — it only has to decode. */
+    /** A valid `void-which-binds:pair?v=4…` invite the FAKE steps ignore — it only has to decode. */
     private fun validInvite(): String {
         val usr = KeyRef.ed25519(ByteArray(32) { (it + 1).toByte() }).render()
         return Invite.encode(
