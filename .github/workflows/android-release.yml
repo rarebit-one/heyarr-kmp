@@ -18,7 +18,7 @@ on:
         required: true
 
 # `contents: write` publishes the Release; `packages: read` resolves the private
-# `one.rarebit.voidbind:voidbind-client` artifact (settings.gradle.kts).
+# `one.rarebit.voidwhichbinds:void-which-binds-client` artifact (settings.gradle.kts).
 permissions:
   contents: write
   packages: read

@@ -1,12 +1,12 @@
 package one.rarebit.heyarr.desktop.device
 
-import one.rarebit.voidbind.DeviceIdentity
-import one.rarebit.voidbind.KeyRef
-import one.rarebit.voidbind.Membership
-import one.rarebit.voidbind.MembershipOp
-import one.rarebit.voidbind.auth.DeviceCredential
-import one.rarebit.voidbind.crypto.MiniJson
-import one.rarebit.voidbind.net.Admission
+import one.rarebit.voidwhichbinds.DeviceIdentity
+import one.rarebit.voidwhichbinds.KeyRef
+import one.rarebit.voidwhichbinds.Membership
+import one.rarebit.voidwhichbinds.MembershipOp
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.crypto.MiniJson
+import one.rarebit.voidwhichbinds.net.Admission
 import java.io.File
 
 /**
@@ -44,7 +44,7 @@ data class DeviceKeyInfo(
  *
  *  - the **Ed25519 signing key** — seed sealed at rest by [DesktopSecretStore], its
  *    public half stored plain. Generated once on first use; reconstructed into an
- *    [one.rarebit.voidbind.Ed25519Signer] via [DesktopEd25519] each launch. (No secure
+ *    [one.rarebit.voidwhichbinds.Ed25519Signer] via [DesktopEd25519] each launch. (No secure
  *    element on desktop — see [DesktopSecretStore] for the threat model.)
  *  - the **X25519 encryption key** — private half sealed, public half plain. Unseals the
  *    admission delivered over the pairing relay.

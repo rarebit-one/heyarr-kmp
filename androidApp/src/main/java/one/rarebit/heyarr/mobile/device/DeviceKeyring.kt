@@ -1,14 +1,14 @@
 package one.rarebit.heyarr.mobile.device
 
 import android.content.Context
-import one.rarebit.voidbind.DeviceIdentity
-import one.rarebit.voidbind.DeviceKeyStore
-import one.rarebit.voidbind.KeyRef
-import one.rarebit.voidbind.Membership
-import one.rarebit.voidbind.MembershipOp
-import one.rarebit.voidbind.VoidbindAndroid
-import one.rarebit.voidbind.crypto.MiniJson
-import one.rarebit.voidbind.net.Admission
+import one.rarebit.voidwhichbinds.DeviceIdentity
+import one.rarebit.voidwhichbinds.DeviceKeyStore
+import one.rarebit.voidwhichbinds.KeyRef
+import one.rarebit.voidwhichbinds.Membership
+import one.rarebit.voidwhichbinds.MembershipOp
+import one.rarebit.voidwhichbinds.VoidbindAndroid
+import one.rarebit.voidwhichbinds.crypto.MiniJson
+import one.rarebit.voidwhichbinds.net.Admission
 import java.io.File
 
 /** The honest hardware tier of the device signing key's wrapping key (never over-stated). */

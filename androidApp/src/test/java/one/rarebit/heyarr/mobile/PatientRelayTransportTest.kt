@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.mobile.device.PatientRelayTransport
-import one.rarebit.voidbind.net.HttpResponse
-import one.rarebit.voidbind.net.HttpTransport
-import one.rarebit.voidbind.net.RelayTimeout
+import one.rarebit.voidwhichbinds.net.HttpResponse
+import one.rarebit.voidwhichbinds.net.HttpTransport
+import one.rarebit.voidwhichbinds.net.RelayTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue

@@ -5,9 +5,9 @@ import one.rarebit.heyarr.desktop.device.DesktopEd25519
 import one.rarebit.heyarr.desktop.device.DesktopSecretStore
 import one.rarebit.heyarr.desktop.device.KeyTier
 import one.rarebit.heyarr.desktop.device.KeychainSecretStore
-import one.rarebit.voidbind.Ed25519Verifier
-import one.rarebit.voidbind.auth.DeviceCredential
-import one.rarebit.voidbind.auth.PossessionProof
+import one.rarebit.voidwhichbinds.Ed25519Verifier
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.auth.PossessionProof
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.AfterTest

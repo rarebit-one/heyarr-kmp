@@ -3,7 +3,7 @@ package one.rarebit.heyarr.mobile.personalstate
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.device.DeviceKeyring
-import one.rarebit.voidbind.Membership
+import one.rarebit.voidwhichbinds.Membership
 
 /**
  * Builds this device's [PersonalStateCoordinator] for a node + credential, and works out

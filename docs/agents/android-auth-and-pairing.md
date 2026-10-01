@@ -5,7 +5,7 @@ Moved verbatim from the former `androidApp/CLAUDE.md`; the router is `androidApp
 ## Two credential shapes (mobile-client contract, ADR-0048)
 
 - **Primary — `Authorization: Device <cert>~<proof>`** (`auth/Credential.Device`, rendered
-  through voidbind-client's `one.rarebit.voidbind.auth.DeviceCredential`): an enrolled
+  through void-which-binds-client's `one.rarebit.voidwhichbinds.auth.DeviceCredential`): an enrolled
   device's user-signed cert + a fresh **possession proof**, joined by `~`. Since
   voidbind-client **0.4.0** the proof, the `~` join and the re-mint policy are the
   **library's** (`auth/{PossessionProof, DeviceCredential, DeviceAuthPolicy}`) — the
@@ -97,7 +97,7 @@ instead of re-joining a dead session; re-firing the same link while live is a no
 
 ## voidbind-kmp is consumed as the published `voidbind-client` artifact
 
-`one.rarebit.voidbind:voidbind-client` (currently **0.9.0**, pinned once for every module in
+`one.rarebit.voidwhichbinds:void-which-binds-client` (currently **0.10.0**, pinned once for every module in
 `gradle/libs.versions.toml`) from GitHub Packages (private; needs a
 `read:packages` token — `settings.gradle.kts` reads `gpr.user`/`gpr.token` gradle
 properties or `GITHUB_ACTOR`/`GITHUB_TOKEN`; CI passes its own token). The library's

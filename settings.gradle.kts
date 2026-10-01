@@ -18,7 +18,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 
-        // ── voidbind-kmp's published `voidbind-client` (GitHub Packages, private) ──
+        // ── `void-which-binds-client` from void-which-binds-kmp (GitHub Packages, private) ──
         // The shared Voidbind identity/net/flow brain (WebLoginClient, LoginQr,
         // DeviceIdentity, DevicePairing …). Consumed by :androidApp (heyarr-mobile).
         // GitHub Packages requires a token with `read:packages` even for a same-org read:
@@ -26,16 +26,16 @@ dependencyResolutionManagement {
         //     `packages: read` — see .github/workflows/android.yml).
         //   - Locally: `gpr.user` / `gpr.token` in ~/.gradle/gradle.properties, or the env
         //     vars, e.g. `GITHUB_ACTOR=<login> GITHUB_TOKEN=$(gh auth token) ./gradlew …`.
-        // Scoped to the voidbind group so no other dependency ever probes this repo. EVERY
-        // module needs it: :core consumes voidbind-client in commonMain (so :ui, :composeApp
-        // and :androidApp all get it transitively), and :composeApp and :androidApp also
+        // Scoped to the void-which-binds group so no other dependency ever probes this repo. EVERY
+        // module needs it: :core consumes void-which-binds-client in commonMain (so :ui,
+        // :composeApp and :androidApp all get it transitively), and :composeApp and :androidApp also
         // depend on it directly for device enrolment and pairing. Its version is pinned
         // once, in gradle/libs.versions.toml.
         // The owner-wide `rarebit-one/*` path resolves packages from any repo in the org,
         // so a rename of the publishing repo cannot break resolution (the per-repo
         // Packages URL is not redirected after a GitHub repo rename).
         maven {
-            name = "GitHubPackagesVoidbindKmp"
+            name = "GitHubPackagesVoidWhichBindsKmp"
             url = uri("https://maven.pkg.github.com/rarebit-one/*")
             credentials {
                 username = providers.gradleProperty("gpr.user").orNull
@@ -44,7 +44,7 @@ dependencyResolutionManagement {
                     ?: providers.gradleProperty("gpr.key").orNull // allthing-android's spelling
                     ?: System.getenv("GITHUB_TOKEN")
             }
-            content { includeGroup("one.rarebit.voidbind") }
+            content { includeGroup("one.rarebit.voidwhichbinds") }
         }
     }
 }

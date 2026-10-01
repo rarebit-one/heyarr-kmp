@@ -3,7 +3,7 @@ package one.rarebit.heyarr.core.vault
 import one.rarebit.heyarr.core.crypto.Blake3
 import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.JsonScan
-import one.rarebit.voidbind.crypto.VoidbindEncryption
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 
 /**
  * The vault content codec (W4.1) — the Kotlin twin of heyarr-core's

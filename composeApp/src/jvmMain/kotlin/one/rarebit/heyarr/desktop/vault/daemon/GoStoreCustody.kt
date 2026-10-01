@@ -2,7 +2,7 @@ package one.rarebit.heyarr.desktop.vault.daemon
 
 import one.rarebit.heyarr.desktop.vault.OpenedVault
 import one.rarebit.heyarr.desktop.vault.VaultKeys
-import one.rarebit.voidbind.crypto.VoidbindEncryption
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 
 /**
  * Opens a CLI-created vault space for the headless daemon by reusing the voidbind-go device store

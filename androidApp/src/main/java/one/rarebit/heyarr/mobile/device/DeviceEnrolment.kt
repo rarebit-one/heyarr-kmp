@@ -10,9 +10,9 @@ import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.login.LoginUiState
-import one.rarebit.voidbind.Membership
-import one.rarebit.voidbind.MembershipOp
-import one.rarebit.voidbind.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.Membership
+import one.rarebit.voidwhichbinds.MembershipOp
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
 
 /**
  * Device enrolment for the app's ViewModel: this phone's keys (voidbind-client

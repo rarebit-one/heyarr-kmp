@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.mobile.device
 
-import one.rarebit.voidbind.Membership
-import one.rarebit.voidbind.MembershipOp
-import one.rarebit.voidbind.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.Membership
+import one.rarebit.voidwhichbinds.MembershipOp
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
 
 /**
  * Which of the membership ops this device knows it **presents** beside its `Device`

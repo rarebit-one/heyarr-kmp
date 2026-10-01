@@ -2,8 +2,8 @@ package one.rarebit.heyarr.mobile.net
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.voidbind.auth.DeviceAuthPolicy
-import one.rarebit.voidbind.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.auth.DeviceAuthPolicy
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
 
 /**
  * Wraps the app's [HttpTransport] so an enrolled device's requests always carry a

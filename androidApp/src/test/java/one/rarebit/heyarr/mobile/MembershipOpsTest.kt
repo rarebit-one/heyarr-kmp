@@ -1,11 +1,11 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.mobile.device.MembershipOps
-import one.rarebit.voidbind.Ed25519Signer
-import one.rarebit.voidbind.KeyRef
-import one.rarebit.voidbind.Membership
-import one.rarebit.voidbind.MembershipOp
-import one.rarebit.voidbind.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.Ed25519Signer
+import one.rarebit.voidwhichbinds.KeyRef
+import one.rarebit.voidwhichbinds.Membership
+import one.rarebit.voidwhichbinds.MembershipOp
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

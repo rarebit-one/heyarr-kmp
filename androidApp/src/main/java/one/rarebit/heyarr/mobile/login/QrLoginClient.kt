@@ -2,8 +2,8 @@ package one.rarebit.heyarr.mobile.login
 
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.net.VoidbindTransportAdapter
-import one.rarebit.voidbind.net.WebLoginClient
-import one.rarebit.voidbind.net.HttpTransport as VoidbindHttpTransport
+import one.rarebit.voidwhichbinds.net.WebLoginClient
+import one.rarebit.voidwhichbinds.net.HttpTransport as VoidbindHttpTransport
 
 /**
  * The initiator (RP) half of a QR web-login against heyarr's weblogin broker, driven

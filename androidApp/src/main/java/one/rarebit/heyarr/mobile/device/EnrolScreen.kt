@@ -126,6 +126,7 @@ internal fun failureTitle(kind: PairingFailure?): String = when (kind) {
     PairingFailure.REJECTED -> "The relay refused this invite"
     PairingFailure.PROTOCOL -> "The pairing didn't check out"
     PairingFailure.MISMATCH -> "Codes differed — aborted"
+    PairingFailure.REFUSED -> "Cruciform cancelled the pairing"
     PairingFailure.INTERRUPTED -> "The pairing was interrupted"
     PairingFailure.EXPIRED -> "The pairing expired"
     PairingFailure.INVALID -> "Not a pairing invite"

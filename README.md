@@ -18,7 +18,7 @@ New shared logic belongs in `:core` (or `:ui` if it is Compose-typed), not in ei
 
 JDK 21 is required (the JVM targets declare a JDK 21 toolchain). Android variants
 keep Java/Kotlin bytecode at 17 for device compatibility. Everything resolves
-`one.rarebit.voidbind:voidbind-client` from the org's GitHub Packages, so every build
+`one.rarebit.voidwhichbinds:void-which-binds-client` from the org's GitHub Packages, so every build
 needs a token with `read:packages`. Set `gpr.user` / `gpr.token` in
 `~/.gradle/gradle.properties`, or pass `GITHUB_ACTOR` / `GITHUB_TOKEN`
 (e.g. `GITHUB_TOKEN=$(gh auth token)`).
@@ -59,7 +59,7 @@ host, runs the command there, and syncs reports and screenshots back.
 | AGP | 8.7.3 (compileSdk 35, minSdk 33) |
 | Compose Multiplatform | 1.9.3 (desktop, `:ui`) |
 | Compose compiler | bundled with Kotlin (`org.jetbrains.kotlin.plugin.compose`) |
-| voidbind-client | 0.9.0 (GitHub Packages, private) |
+| void-which-binds-client | 0.10.0 (GitHub Packages, private) |
 
 ---
 

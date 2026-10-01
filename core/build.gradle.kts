@@ -63,7 +63,7 @@ kotlin {
                 // variants and resolve per target. This puts voidbind on :core's classpath,
                 // so :composeApp (desktop) now pulls it transitively too → desktop CI needs a
                 // read:packages token (see .github/workflows/desktop.yml).
-                implementation(libs.voidbind.client)
+                implementation(libs.void.which.binds.client)
             }
         }
         val commonTest by getting {

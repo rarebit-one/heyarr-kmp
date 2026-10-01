@@ -8,7 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import one.rarebit.voidbind.AuthenticationRequiredException
+import one.rarebit.voidwhichbinds.AuthenticationRequiredException
 import kotlin.coroutines.resume
 
 /**

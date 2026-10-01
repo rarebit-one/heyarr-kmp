@@ -37,9 +37,9 @@ import one.rarebit.heyarr.mobile.search.SessionAuthority
 import one.rarebit.heyarr.mobile.search.SessionClient
 import one.rarebit.heyarr.mobile.settings.InMemorySettingsStore
 import one.rarebit.heyarr.mobile.settings.SettingsStore
-import one.rarebit.voidbind.auth.DeviceCredential
-import one.rarebit.voidbind.flow.PairingFailureKind
-import one.rarebit.voidbind.flow.PairingOutcome
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.flow.PairingFailureKind
+import one.rarebit.voidwhichbinds.flow.PairingOutcome
 
 /** The steps of a ViewModel built without the app's holder (tests): every pairing fails honestly. */
 private object UnavailablePairingSteps : PairingSteps {
