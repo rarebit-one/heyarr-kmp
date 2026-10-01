@@ -45,9 +45,10 @@ enum class PairingFailure {
     MISMATCH,
 
     /**
-     * Cruciform REFUSED the pairing: its human said the numbers did not match, or cancelled
-     * (void-which-binds-go ADR-0012). The refusal is signed by the key the SAS bound, so it
-     * really came from that device. Nothing was admitted; retry with a fresh invite.
+     * The peer device (Cruciform, or another computer) REFUSED the pairing: its human
+     * said the numbers did not match, or cancelled (void-which-binds-go ADR-0012). The
+     * refusal is signed by the key the SAS bound, so it really came from that device.
+     * Nothing was admitted; retry with a fresh invite.
      */
     REFUSED,
 
