@@ -10,11 +10,15 @@ Moved verbatim from the former `androidApp/CLAUDE.md`; the router is `androidApp
   voidbind-client **0.4.0** the proof, the `~` join and the re-mint policy are the
   **library's** (`auth/{PossessionProof, DeviceCredential, DeviceAuthPolicy}`) — the
   app's own port was deleted, and **nothing under `auth/` here mints or joins anything**.
-  The proof is a byte-exact port of voidbind-go v0.5.0 `enrolment.SignPossession` (what
-  heyarr-core vendors): `base64url({"v":2,"crt":b64url(sha256(cert)),"iat","exp"}) + "." +
-  base64url(ed25519 sig)`, no padding, no domain label — still pinned **in this repo** by
-  the two Go-minted golden vectors in `PossessionProofTest`, so a library bump that drifts
-  the wire fails our CI. The signature comes from the phone's **hardware-sealed** Ed25519
+  The proof is a byte-exact port of void-which-binds-go `enrolment.SignPossession`:
+  `base64url({"v":2,"typ":"voidbind.possession","crt":b64url(sha256(cert)),"iat","exp"}) +
+  "." + base64url(ed25519 sig)`, no padding. Since void-which-binds-client **0.10.0** the
+  minter always emits `typ` (ADR-0009 phase 2: the typed token kind is the domain
+  separation; before 0.10.0 the proof carried no `typ` and no domain label). Verifiers
+  still accept a legacy untyped proof. The wire stays pinned **in this repo** by
+  `PossessionProofTest`: vector B is Go's typed device-scheme vector (exact mint parity) and
+  vector A the legacy untyped proof (verify-only), so a library bump that drifts the wire
+  fails our CI. The signature comes from the phone's **hardware-sealed** Ed25519
   key (`DeviceIdentity.asSigner()` over voidbind-client `DeviceKeyStore`, voidbind-kmp
   ADR-0001: software seed sealed by a non-extractable, user-presence-gated AES key —
   StrongBox where present, **TEE on the Nothing Phone**; `device/DeviceKeyring` reports
