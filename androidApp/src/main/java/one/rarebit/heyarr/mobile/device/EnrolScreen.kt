@@ -126,6 +126,7 @@ internal fun failureTitle(kind: PairingFailure?): String = when (kind) {
     PairingFailure.REJECTED -> "The relay refused this invite"
     PairingFailure.PROTOCOL -> "The pairing didn't check out"
     PairingFailure.MISMATCH -> "Codes differed — aborted"
+    PairingFailure.REFUSED -> "The other device cancelled the pairing"
     PairingFailure.INTERRUPTED -> "The pairing was interrupted"
     PairingFailure.EXPIRED -> "The pairing expired"
     PairingFailure.INVALID -> "Not a pairing invite"
@@ -361,7 +362,11 @@ fun EnrolScreen(
                     Text(
                         state.registration,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (state.needsAdmin) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (state.needsAdmin) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
                     if (state.needsAdmin && info?.certToken != null) {
                         Text("Admitting op to register:", style = MaterialTheme.typography.labelSmall)
@@ -376,7 +381,8 @@ fun EnrolScreen(
                     if (settled) {
                         Text(
                             "This device signs in with its own admission (${info?.knownOps?.size ?: 0} membership " +
-                                "op(s) known). Whether it can also manage follows depends on the grant an admin gives its key.",
+                                "op(s) known). Whether it can also manage follows depends on the grant an " +
+                                "admin gives its key.",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }

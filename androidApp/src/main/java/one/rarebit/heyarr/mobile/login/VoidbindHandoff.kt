@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.mobile.login
 
-import one.rarebit.voidbind.VoidbindDeepLink
+import one.rarebit.voidwhichbinds.VoidbindDeepLink
 
 /**
  * Same-phone hand-off to the Cruciform authenticator app: instead of a second phone

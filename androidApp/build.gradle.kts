@@ -166,7 +166,7 @@ dependencies {
     // `DeviceIdentity` + the hardware-sealed `DeviceKeyStore` (ADR-0001), `Cert`,
     // and the `DevicePairing` relay flow that enrols this device. Resolved from
     // GitHub Packages (settings.gradle.kts).
-    implementation(libs.voidbind.client)
+    implementation(libs.void.which.binds.client)
     // The device key's hardware wrapping key is user-auth-gated: BiometricPrompt
     // needs a FragmentActivity, and a modern fragment so it still extends the
     // ComponentActivity that activity-compose's setContent requires.

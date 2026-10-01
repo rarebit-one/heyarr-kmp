@@ -8,8 +8,8 @@ import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.BuildConfig
 import java.util.concurrent.TimeUnit
-import one.rarebit.voidbind.net.HttpResponse as VoidbindResponse
-import one.rarebit.voidbind.net.HttpTransport as VoidbindHttpTransport
+import one.rarebit.voidwhichbinds.net.HttpResponse as VoidbindResponse
+import one.rarebit.voidwhichbinds.net.HttpTransport as VoidbindHttpTransport
 
 /**
  * The app's actual of voidbind-client's blocking [VoidbindHttpTransport] seam — OkHttp,

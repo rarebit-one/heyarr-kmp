@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.mobile.device
 
-import one.rarebit.voidbind.Invite
+import one.rarebit.voidwhichbinds.Invite
 
 /**
  * The outcome of checking something the user **scanned or pasted** as a pairing invite

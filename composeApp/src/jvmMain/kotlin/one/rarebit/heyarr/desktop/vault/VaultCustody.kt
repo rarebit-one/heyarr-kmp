@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
-import one.rarebit.voidbind.KeyRef
-import one.rarebit.voidbind.crypto.VoidbindEncryption
+import one.rarebit.voidwhichbinds.KeyRef
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 import java.util.UUID
 
 /** An opened vault: the space id and the space key unwrapped for THIS device. */

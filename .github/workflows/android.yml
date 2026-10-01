@@ -37,7 +37,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Gradle resolves `one.rarebit.voidbind:voidbind-client` from GitHub Packages
+    # Gradle resolves `one.rarebit.voidwhichbinds:void-which-binds-client` from GitHub Packages
     # (settings.gradle.kts) with these credentials.
     env:
       GITHUB_ACTOR: ${{ github.actor }}

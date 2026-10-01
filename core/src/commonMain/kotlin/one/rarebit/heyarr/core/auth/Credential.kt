@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.core.auth
 
-import one.rarebit.voidbind.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
 
 /**
  * The credential a first-party client presents to heyarr on every `/api/v1` call.

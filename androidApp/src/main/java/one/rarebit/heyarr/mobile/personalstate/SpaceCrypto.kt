@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.mobile.personalstate
 
-import one.rarebit.voidbind.crypto.VoidbindEncryption
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 
 /**
  * The space-key crypto the personal-state plane needs, as a seam so tests can

@@ -4,7 +4,7 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.mobile.net.ProblemDetail
-import one.rarebit.voidbind.crypto.MiniJson
+import one.rarebit.voidwhichbinds.crypto.MiniJson
 
 /**
  * Registers a freshly paired device's admission with the heyarr node. An op verifies

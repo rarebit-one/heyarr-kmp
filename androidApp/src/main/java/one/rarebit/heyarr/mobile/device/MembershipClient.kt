@@ -1,7 +1,7 @@
 package one.rarebit.heyarr.mobile.device
 
 import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.voidbind.crypto.MiniJson
+import one.rarebit.voidwhichbinds.crypto.MiniJson
 
 /**
  * Reads the membership ops a heyarr node holds for an identity —

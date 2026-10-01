@@ -84,7 +84,7 @@ if [[ -t 0 && -t 1 ]]; then EXEC_CMD+=(-it); elif [[ -t 0 ]]; then EXEC_CMD+=(-i
 [[ -n "${HEYARR_URL:-}" ]] && EXEC_CMD+=(-e "HEYARR_URL=${HEYARR_URL}")
 [[ -n "${HEYARR_TOKEN:-}" ]] && EXEC_CMD+=(-e "HEYARR_TOKEN=${HEYARR_TOKEN}")
 # GitHub Packages creds so Gradle inside the container can resolve the private
-# one.rarebit.voidbind:voidbind-client (pulled in transitively via :core since the
+# one.rarebit.voidwhichbinds:void-which-binds-client (pulled in transitively via :core since the
 # device-auth work). settings.gradle.kts reads GITHUB_ACTOR/GITHUB_TOKEN as a fallback
 # to gpr.user/gpr.token, so source them from the container host's gradle.properties —
 # nothing is committed or shipped over the wire. Env already present wins.

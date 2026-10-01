@@ -11,7 +11,7 @@ import one.rarebit.heyarr.desktop.login.DeviceEnroller
  * falls through to a pasted bearer token, else guest.
  *
  * `enrolled()` is read on the composition thread each time the client rebuilds its API
- * (`AppSession.credential`); the underlying [one.rarebit.voidbind.auth.DeviceCredential]
+ * (`AppSession.credential`); the underlying [one.rarebit.voidwhichbinds.auth.DeviceCredential]
  * reuses one short proof across its reuse window, so this signs only every couple of
  * minutes, not per call.
  */

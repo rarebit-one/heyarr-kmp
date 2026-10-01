@@ -15,9 +15,9 @@ import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DevicePairingSteps
 import one.rarebit.heyarr.desktop.device.PairingCoordinator
 import one.rarebit.heyarr.desktop.device.PairingState
-import one.rarebit.voidbind.Ed25519Verifier
-import one.rarebit.voidbind.MembershipOp
-import one.rarebit.voidbind.auth.PossessionProof
+import one.rarebit.voidwhichbinds.Ed25519Verifier
+import one.rarebit.voidwhichbinds.MembershipOp
+import one.rarebit.voidwhichbinds.auth.PossessionProof
 import java.io.File
 import java.security.KeyFactory
 import java.security.Signature

@@ -1,7 +1,7 @@
 package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.mobile.device.PairDeepLink
-import one.rarebit.voidbind.Invite
+import one.rarebit.voidwhichbinds.Invite
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

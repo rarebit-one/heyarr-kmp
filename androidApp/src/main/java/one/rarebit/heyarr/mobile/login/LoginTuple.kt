@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.mobile.login
 
-import one.rarebit.voidbind.LoginQr
+import one.rarebit.voidwhichbinds.LoginQr
 
 /**
  * The Voidbind web-login tuple `voidbind:login?rp=<origin>&id=<login-id>`, delegated

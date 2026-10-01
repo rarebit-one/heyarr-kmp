@@ -35,10 +35,10 @@ class VoidbindHandoffTest {
     @Test fun loginUriIsVoidbindClientsDeepLinkShape() {
         // voidbind-client 0.2.0 is the source of truth for the handoff URI (ADR-0003).
         assertEquals(
-            one.rarebit.voidbind.VoidbindDeepLink.loginUriFromTuple(tuple, VoidbindHandoff.CALLBACK_URI),
+            one.rarebit.voidwhichbinds.VoidbindDeepLink.loginUriFromTuple(tuple, VoidbindHandoff.CALLBACK_URI),
             VoidbindHandoff.loginUri(tuple),
         )
-        val parsed = one.rarebit.voidbind.VoidbindDeepLink.parse(VoidbindHandoff.loginUri(tuple))
+        val parsed = one.rarebit.voidwhichbinds.VoidbindDeepLink.parse(VoidbindHandoff.loginUri(tuple))
         assertEquals(VoidbindHandoff.CALLBACK_URI, parsed.callback)
     }
 }

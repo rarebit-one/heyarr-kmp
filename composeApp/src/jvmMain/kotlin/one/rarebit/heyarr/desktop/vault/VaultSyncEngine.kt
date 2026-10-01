@@ -11,7 +11,7 @@ import one.rarebit.heyarr.core.vault.SyncIndexEntry
 import one.rarebit.heyarr.core.vault.VaultFrame
 import one.rarebit.heyarr.core.vault.encodeDriveChange
 import one.rarebit.heyarr.core.vault.reconcile
-import one.rarebit.voidbind.crypto.VoidbindEncryption
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption

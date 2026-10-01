@@ -2,7 +2,7 @@ package one.rarebit.heyarr.desktop.device
 
 import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.algorithms.EdDSA
-import one.rarebit.voidbind.Ed25519Signer
+import one.rarebit.voidwhichbinds.Ed25519Signer
 
 /**
  * Software Ed25519 for the desktop device signing key — a deliberate mirror of
@@ -13,7 +13,7 @@ import one.rarebit.voidbind.Ed25519Signer
  * and heyarr-core — this is not a re-implementation of the curve, only a second caller
  * of the vetted library.
  *
- * Why heyarr holds this at all: voidbind's JVM [one.rarebit.voidbind.DeviceKeyStore]
+ * Why heyarr holds this at all: voidbind's JVM [one.rarebit.voidwhichbinds.DeviceKeyStore]
  * actual is a non-persisted, process-lifetime key that never exposes its seed, so a
  * desktop enrolment that must survive a relaunch cannot be backed by it. The desktop
  * keyring instead generates a seed here, seals it at rest ([DesktopSecretStore]) and

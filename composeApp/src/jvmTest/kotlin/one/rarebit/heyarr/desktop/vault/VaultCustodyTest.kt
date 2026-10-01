@@ -2,9 +2,9 @@ package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DesktopSecretStore
-import one.rarebit.voidbind.DeviceIdentity
-import one.rarebit.voidbind.KeyRef
-import one.rarebit.voidbind.crypto.VoidbindEncryption
+import one.rarebit.voidwhichbinds.DeviceIdentity
+import one.rarebit.voidwhichbinds.KeyRef
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.AfterTest
