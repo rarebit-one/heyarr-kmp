@@ -89,7 +89,8 @@ class MembershipOpsTest {
             Membership.merge(listOf(addA, addB, addC)),
             MembershipOps.presentable(listOf(addC, addA, addB), addB),
         )
-        assertEquals(Membership.merge(listOf(addA, addB, addC)), MembershipOps.presentable(listOf(addC, addA), addB)) // own op always rides
+        // own op always rides
+        assertEquals(Membership.merge(listOf(addA, addB, addC)), MembershipOps.presentable(listOf(addC, addA), addB))
         assertEquals(emptyList<String>(), MembershipOps.presentable(emptyList(), null))
     }
 
