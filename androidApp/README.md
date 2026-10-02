@@ -54,7 +54,7 @@ ones this phone decrypts itself (`personalstate/`), and they say so.
 ### voidbind-kmp consumption
 
 This app depends on the **published** shared client,
-`one.rarebit.voidwhichbinds:void-which-binds-client` (currently 0.10.0, pinned in `gradle/libs.versions.toml`;
+`one.rarebit.voidwhichbinds:void-which-binds-client` (currently 0.11.0, pinned in `gradle/libs.versions.toml`;
 GitHub Packages, private — a token with
 `read:packages` is required even for a same-org read). `settings.gradle.kts` reads
 `gpr.user` / `gpr.token` from `~/.gradle/gradle.properties`, or `GITHUB_ACTOR` /
@@ -72,7 +72,7 @@ hardware-sealed key (`device/DeviceKeyring` → voidbind-client `DeviceKeyStore`
 app reuses one proof for ~1 h (`reuseForSeconds`) and re-mints + retries once on a 401.
 Since 0.5.0 (voidbind-kmp ADR-0005) the credential token is this device's **admitting
 op** and the app also holds the identity's membership **ops** (its replica): they ride
-every Device request as `Voidbind-Membership` (`device/MembershipOps` picks ≤ 64) and
+every Device request as `Void-Which-Binds-Membership` (`device/MembershipOps` picks ≤ 64) and
 `POST /enrol {…, ops}`, and after a 401 the app re-reads `GET /membership/{usr}` so a
 device another member removed shows an honest "removed" state instead of looping.
 
@@ -120,8 +120,8 @@ These need real hardware / a live server and can't be proven in CI:
   a device/emulator. The `POST /api/v1/playback` transcode/remux negotiation is wired
   (`PlaybackClient.plan`) but keyed on an enrolled `device_id`, so it goes live with device auth.
 - **Device-cert login** — now **ships**: the sealed-key possession proof, the pairing
-  handshake (`device/`, this phone = the NEW device joining a v3 invite that Cruciform
-  or `voidbind pair-initiate` rendered) and re-mint-on-401. What is still gated on the
+  handshake (`device/`, this phone = the NEW device joining a v4 invite that Cruciform
+  or `void-which-binds pair-initiate` rendered) and re-mint-on-401. What is still gated on the
   *server*: `POST /enrol` taking `ops` and `GET /membership/{usr}` (heyarr-core ADR-0068,
   PR #426 — until it lands the app retries `/enrol` without `ops` and treats a 404 on
   `/membership` as "nothing learned"), or an admin registering the op

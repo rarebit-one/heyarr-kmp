@@ -62,6 +62,7 @@ import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.voidwhichbinds.LoginQr
 
 /**
  * A pairing invite that arrived by deep link (`heyarr-mobile://pair?invite=…`) — from
@@ -152,7 +153,7 @@ class MainActivity : FragmentActivity() {
         val app = application as HeyarrApp
         app.deviceKeyring = keyring
         app.deviceName = "heyarr-mobile on ${android.os.Build.MODEL}"
-        val voidbindInstalled = HandoffLauncher.canOpen(this, "voidbind:login?id=probe&rp=probe")
+        val voidbindInstalled = HandoffLauncher.canOpen(this, "${LoginQr.SCHEME}:login?id=probe&rp=probe")
         setContent {
             HeyarrTheme {
                 val vm: AppViewModel = viewModel(

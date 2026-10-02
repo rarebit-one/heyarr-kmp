@@ -6,6 +6,7 @@ import one.rarebit.heyarr.desktop.device.DesktopSecretStore
 import one.rarebit.heyarr.desktop.device.KeyTier
 import one.rarebit.heyarr.desktop.device.KeychainSecretStore
 import one.rarebit.voidwhichbinds.Ed25519Verifier
+import one.rarebit.voidwhichbinds.KeyRef
 import one.rarebit.voidwhichbinds.auth.DeviceCredential
 import one.rarebit.voidwhichbinds.auth.PossessionProof
 import java.io.File
@@ -31,7 +32,8 @@ class DesktopDeviceStoreTest {
 
     /** A hermetic sealed-file store on the same paths the keyring's default would use — so
      *  these tests never touch a real OS keychain on a dev/build machine that has one. */
-    private fun sealedStore(dataDir: File = dataDir()) = DesktopSecretStore(File(dataDir, "sealed"), keyFile())
+    private fun sealedStore(dataDir: File = dataDir()) =
+        DesktopSecretStore(File(File(dataDir, DesktopDeviceKeyring.GEN2_DIR), "sealed"), keyFile())
 
     // ── DesktopSecretStore: seal/unseal round-trips, survives a fresh instance ──────
 
@@ -77,6 +79,47 @@ class DesktopDeviceStoreTest {
         val reloaded = DesktopDeviceKeyring(dataDir(), keyFile(), secrets = sealedStore())
         assertEquals(info.deviceKey, reloaded.info().deviceKey)
         assertEquals(info.deviceEncKey, reloaded.info().deviceEncKey)
+    }
+
+    // ── Gen2 namespace (ADR-0022): gen1 leftovers are never read, no migration ──────────
+
+    /** What a gen1 build left: keys + admission directly under `device/`, secrets named `sign`/`enc`. */
+    private fun plantGen1(): ByteArray {
+        val gen1 = DesktopEd25519.generate()
+        val dir = dataDir().apply { mkdirs() }
+        File(dir, "sign.pub").writeBytes(gen1.publicKey)
+        File(dir, "enc.pub").writeBytes(ByteArray(32) { 7 })
+        File(dir, "cert.token").writeText("gen1.admitting.op")
+        File(dir, "ops.json").writeText("""{"ops":["gen1.admitting.op","gen1.other.op"]}""")
+        File(dir, "recovery.pub").writeText("x25519:" + "00".repeat(32))
+        // The gen1 sealed dir (device/sealed) AND the gen1 names inside the store the keyring uses.
+        DesktopSecretStore(File(dir, "sealed"), keyFile()).seal("sign", gen1.seed)
+        sealedStore().seal("sign", gen1.seed)
+        sealedStore().seal("enc", ByteArray(32) { 9 })
+        return gen1.publicKey
+    }
+
+    @Test fun gen1_leftovers_are_ignored_and_the_desktop_reports_unenrolled() {
+        val gen1Pub = plantGen1()
+        val ring = DesktopDeviceKeyring(dataDir(), keyFile(), secrets = sealedStore())
+
+        assertTrue(!ring.isProvisioned(), "a gen1 key is not a gen2 key")
+        assertNull(ring.peek())
+        assertNull(ring.certToken(), "no gen1 admission is read")
+        assertTrue(ring.knownOps().isEmpty(), "no gen1 replica is read")
+        assertNull(ring.recoveryRecipient())
+        assertNull(ring.deviceCredential(), "no gen1 credential is presented")
+
+        val info = ring.info() // provisions a FRESH gen2 key
+        assertTrue(!info.isEnrolled)
+        assertTrue(info.knownOps.isEmpty())
+        assertTrue(
+            info.deviceKey != KeyRef.ed25519(gen1Pub).render(),
+            "gen2 provisions a new device key, never the gen1 one",
+        )
+        assertTrue(File(dataDir(), "${DesktopDeviceKeyring.GEN2_DIR}/sign.pub").exists())
+        // The gen1 files are left inert, untouched.
+        assertEquals("gen1.admitting.op", File(dataDir(), "cert.token").readText())
     }
 
     @Test fun no_admission_means_no_device_credential() {

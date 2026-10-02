@@ -28,7 +28,7 @@ import one.rarebit.heyarr.ui.theme.Tokens
 /**
  * The desktop "Sign in to save" enrol panel — the device-credential upgrade over the
  * guest default (issue #32). It drives the [one.rarebit.heyarr.desktop.device.PairingCoordinator]:
- * paste the `voidbind:pair?…` invite Cruciform shows under "Add a device", join the relay,
+ * paste the `void-which-binds:pair?…` invite Cruciform shows under "Add a device", join the relay,
  * compare the security code shown on both screens, confirm, and the desktop receives its
  * sealed admission and registers it with the node — after which it presents a real
  * `Credential.Device` on every call, saved across launches.
@@ -92,7 +92,11 @@ fun EnrolPanel(session: AppSession) {
 
         when (val s = state) {
             is PairingState.Idle -> {
-                Field("Pairing invite (voidbind:pair?…)", invite, placeholder = "voidbind:pair?v=3&relay=…") {
+                Field(
+                    "Pairing invite (void-which-binds:pair?…)",
+                    invite,
+                    placeholder = "void-which-binds:pair?v=4&relay=…",
+                ) {
                     invite =
                         it
                 }

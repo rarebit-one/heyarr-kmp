@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 sealed interface LoginUiState {
     data object Idle : LoginUiState
 
-    /** A login has started; [qrTuple] is the `voidbind:login?…` string to render as a QR. */
+    /** A login has started; [qrTuple] is the `void-which-binds:login?…` string to render as a QR. */
     data class AwaitingScan(val qrTuple: String) : LoginUiState
     data class Approved(val user: String?) : LoginUiState
     data class Error(val message: String) : LoginUiState
@@ -36,7 +36,7 @@ sealed interface LoginUiState {
 
 /**
  * The Voidbind QR login screen. Tapping "Sign in" begins a login against heyarr's
- * weblogin broker; the app shows the `voidbind:login?…` tuple for the user's
+ * weblogin broker; the app shows the `void-which-binds:login?…` tuple for the user's
  * authenticator (voidbind-kmp) to scan; on approval the app holds a Bearer session
  * token and shows the library.
  *

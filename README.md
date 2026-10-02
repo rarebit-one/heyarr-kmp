@@ -59,7 +59,7 @@ host, runs the command there, and syncs reports and screenshots back.
 | AGP | 8.7.3 (compileSdk 35, minSdk 33) |
 | Compose Multiplatform | 1.9.3 (desktop, `:ui`) |
 | Compose compiler | bundled with Kotlin (`org.jetbrains.kotlin.plugin.compose`) |
-| void-which-binds-client | 0.10.0 (GitHub Packages, private) |
+| void-which-binds-client | 0.11.0 (GitHub Packages, private; gen2-only, ADR-0022) |
 
 ---
 

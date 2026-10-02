@@ -30,10 +30,12 @@ These are the exact paths + shapes the homelab-ops MCP + Omarchy plugin already 
 
 Custody and API auth are **two different keys**:
 
-- **Custody (unwrap the space key):** the Go voidbind device store this box was enrolled with
-  (`voidbind pair-join`). The daemon reads the plaintext-hex enc seed in `~/.config/voidbind/device/`
-  and unwraps the space's wrapped key — no phone, no second identity. `device_dir` configurable
-  (default `~/.config/voidbind/device`). Unconditional.
+- **Custody (unwrap the space key):** the Go void-which-binds device store this box was enrolled with
+  (`void-which-binds pair-join`, v0.19.0+). The daemon reads the plaintext-hex enc seed in
+  `~/.config/void-which-binds/device/` and unwraps the space's wrapped key — no phone, no second
+  identity. `device_dir` configurable (default `~/.config/void-which-binds/device`). Unconditional.
+  Gen2 only (ADR-0022): a gen1 `~/.config/voidbind/device` store, or a `voidbind-device-…` seed file,
+  is not read; re-enrol the box with the v0.19.0 CLI.
 - **API auth (read/write the encrypted state):** a **write-scoped bearer token**. A headless
   **writer needs one** — an enrolled device credential authenticates only at the READ FLOOR
   (ADR-0067), so its first `POST …/changes` returns **403**. Give the daemon a token (same shape as
@@ -42,8 +44,8 @@ Custody and API auth are **two different keys**:
   - `token` (config.json) / `HEYARR_VAULT_TOKEN` / `--token`, else
   - `token_file` (config.json) / `HEYARR_VAULT_TOKEN_FILE` / `--token-file`, else
   - the default `~/.config/heyarr/cli.token` **if it exists** (auto-used).
-  - With **no** token the daemon falls back to the read-only device credential (`voidbind identity
-    credential -header`): reads/custody work but writes 403. For a real two-way sync, set a token.
+  - With **no** token the daemon falls back to the read-only device credential (`void-which-binds identity
+    credential -header`, v0.19.0 or later): reads/custody work but writes 403. For a real two-way sync, set a token.
 
 ## Build / obtain the fat JAR
 
@@ -85,7 +87,7 @@ wins). Only `folder` has no default. Example config file:
   "folder": "/home/alarm/Vault",
   "space_id": "01a0ae3b-ca68-7165-9dbb-527425e2f380",
   "controller": "https://heyarr.br.thesim.family:7777",
-  "device_dir": "/home/alarm/.config/voidbind/device",
+  "device_dir": "/home/alarm/.config/void-which-binds/device",
   "token_file": "/home/alarm/.config/heyarr/cli.token",
   "poll_ms": 30000
 }
@@ -96,7 +98,7 @@ token out of `config.json` (use `token_file`/`HEYARR_VAULT_TOKEN`) so a shared c
 secret.
 
 Env vars: `HEYARR_VAULT_FOLDER`, `HEYARR_VAULT_SPACE_ID`, `HEYARR_VAULT_CONTROLLER`,
-`HEYARR_VOIDBIND_DEVICE_DIR`, `HEYARR_VAULT_TOKEN`, `HEYARR_VAULT_TOKEN_FILE`, `HEYARR_VAULT_POLL_MS`,
+`HEYARR_VOID_WHICH_BINDS_DEVICE_DIR`, `HEYARR_VAULT_TOKEN`, `HEYARR_VAULT_TOKEN_FILE`, `HEYARR_VAULT_POLL_MS`,
 `HEYARR_VAULT_RETRY_MS`, `HEYARR_VAULT_STATUS_FILE`, `HEYARR_VAULT_SOCKET`, `HEYARR_VAULT_INDEX`,
 `HEYARR_VAULT_SYNC_CONFIG`.
 CLI: `--folder`, `--space-id`, `--controller`, `--device-dir`, `--token`, `--token-file`,

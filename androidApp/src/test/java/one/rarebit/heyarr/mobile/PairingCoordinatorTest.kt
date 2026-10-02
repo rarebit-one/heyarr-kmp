@@ -312,7 +312,7 @@ class PairingCoordinatorTest {
         StandardTestDispatcher(),
     ) {
         val h = Harness(this, { now })
-        h.coordinator.start("voidbind:login?id=x&rp=http%3A%2F%2Fh", true)
+        h.coordinator.start("void-which-binds:login?id=x&rp=http%3A%2F%2Fh", true)
         advanceUntilIdle()
         val f = h.state as PairingState.Failed
         assertEquals(PairingFailure.INVALID, f.kind)

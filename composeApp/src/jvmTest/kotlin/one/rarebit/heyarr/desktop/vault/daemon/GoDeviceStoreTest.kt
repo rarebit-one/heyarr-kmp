@@ -8,7 +8,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 /**
- * The Go device-store parsing (the one place the daemon touches the voidbind-go store's on-disk
+ * The Go device-store parsing (the one place the daemon touches the void-which-binds-go store's on-disk
  * format). Uses a synthetic store dir — never the real secret seed — so the framing + hex decode are
  * proven without a live enrolment.
  */
@@ -18,7 +18,7 @@ class GoDeviceStoreTest {
     private val fakeSeedHex = "00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff"
 
     private fun store(): Pair<GoDeviceStore, File> {
-        val dir = Files.createTempDirectory("voidbind-store").toFile()
+        val dir = Files.createTempDirectory("vwb-store").toFile()
         File(dir, "device.json").writeText(
             """
             {
@@ -28,8 +28,8 @@ class GoDeviceStoreTest {
             }
             """.trimIndent(),
         )
-        File(dir, "device_x25519.key").writeText("voidbind-device-x25519-seed:$fakeSeedHex\n")
-        File(dir, "device_ed25519.key").writeText("voidbind-device-ed25519-seed:$fakeSeedHex\n")
+        File(dir, "device_x25519.key").writeText("void-which-binds-device-x25519-seed:$fakeSeedHex\n")
+        File(dir, "device_ed25519.key").writeText("void-which-binds-device-ed25519-seed:$fakeSeedHex\n")
         return GoDeviceStore(dir) to dir
     }
 
@@ -60,7 +60,7 @@ class GoDeviceStoreTest {
 
     @Test
     fun rejectsAWrongPrefix() {
-        val dir = Files.createTempDirectory("voidbind-store").toFile()
+        val dir = Files.createTempDirectory("vwb-store").toFile()
         try {
             File(dir, "device_x25519.key").writeText("some-other-format:$fakeSeedHex\n")
             assertFailsWith<IllegalArgumentException> { GoDeviceStore(dir).encSeed() }
@@ -70,10 +70,22 @@ class GoDeviceStoreTest {
     }
 
     @Test
-    fun rejectsATruncatedSeed() {
-        val dir = Files.createTempDirectory("voidbind-store").toFile()
+    fun rejectsAGen1SeedFile() {
+        // Go v0.19.0 accepts only the gen2 `void-which-binds-device-` marker (ADR-0022); so does the daemon.
+        val dir = Files.createTempDirectory("vwb-store").toFile()
         try {
-            File(dir, "device_x25519.key").writeText("voidbind-device-x25519-seed:00112233\n")
+            File(dir, "device_x25519.key").writeText("voidbind-device-x25519-seed:$fakeSeedHex\n")
+            assertFailsWith<IllegalArgumentException> { GoDeviceStore(dir).encSeed() }
+        } finally {
+            dir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun rejectsATruncatedSeed() {
+        val dir = Files.createTempDirectory("vwb-store").toFile()
+        try {
+            File(dir, "device_x25519.key").writeText("void-which-binds-device-x25519-seed:00112233\n")
             assertFailsWith<IllegalArgumentException> { GoDeviceStore(dir).encSeed() }
         } finally {
             dir.deleteRecursively()
@@ -82,7 +94,7 @@ class GoDeviceStoreTest {
 
     @Test
     fun missingStoreFailsWithAClearMessage() {
-        val dir = Files.createTempDirectory("voidbind-store").toFile()
+        val dir = Files.createTempDirectory("vwb-store").toFile()
         dir.deleteRecursively() // now absent
         val ex = assertFailsWith<IllegalArgumentException> { GoDeviceStore(dir).encKeyRef() }
         assertTrue(ex.message!!.contains("device store not found"), ex.message)

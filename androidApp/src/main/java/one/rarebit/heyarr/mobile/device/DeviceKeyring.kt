@@ -4,12 +4,9 @@ import android.content.Context
 import one.rarebit.voidwhichbinds.DeviceIdentity
 import one.rarebit.voidwhichbinds.DeviceKeyStore
 import one.rarebit.voidwhichbinds.KeyRef
-import one.rarebit.voidwhichbinds.Membership
 import one.rarebit.voidwhichbinds.MembershipOp
 import one.rarebit.voidwhichbinds.VoidbindAndroid
-import one.rarebit.voidwhichbinds.crypto.MiniJson
 import one.rarebit.voidwhichbinds.net.Admission
-import java.io.File
 
 /** The honest hardware tier of the device signing key's wrapping key (never over-stated). */
 enum class KeyTier { STRONGBOX, TEE, SOFTWARE }
@@ -62,14 +59,16 @@ class DeviceKeyring(context: Context, private val gate: BiometricGate, private v
         VoidbindAndroid.init(app)
     }
 
-    private fun dir(): File = File(app.filesDir, "heyarr-device").apply { mkdirs() }
-    private fun encPubFile() = File(dir(), "enc.$alias.pub")
-    private fun certFile() = File(dir(), "cert.$alias.token")
-    private fun opsFile() = File(dir(), "ops.$alias.json")
-    private fun recoveryFile() = File(dir(), "recovery.$alias.pub")
+    // The on-disk layout, gen2 namespace only (ADR-0022): see [DeviceStateFiles]. Gen1
+    // state (`heyarr-device/`, `voidbind/`) is never read, so an upgraded phone re-enrols.
+    private val files = DeviceStateFiles(app.filesDir, alias)
+    private fun encPubFile() = files.encPubFile()
+    private fun certFile() = files.certFile()
+    private fun recoveryFile() = files.recoveryFile()
+    private fun opsFile() = files.opsFile()
 
     /** True once the sealed signing key exists on this phone (no prompt to check). */
-    fun isProvisioned(): Boolean = File(File(app.filesDir, "voidbind"), "$alias.key").exists()
+    fun isProvisioned(): Boolean = files.isProvisioned()
 
     /**
      * The device info WITHOUT provisioning: null on a fresh install. Loading existing
@@ -130,7 +129,7 @@ class DeviceKeyring(context: Context, private val gate: BiometricGate, private v
     }
 
     /** This device's admitting op (the credential token), once paired in. */
-    fun certToken(): String? = certFile().takeIf { it.exists() }?.readText()?.trim()?.ifEmpty { null }
+    fun certToken(): String? = files.certToken()
 
     /** The identity the admitting op claims (`ed25519:<hex>`), or null before enrolment. */
     fun userId(): String? = certToken()?.let { runCatching { MembershipOp.user(it) }.getOrNull() }
@@ -139,21 +138,10 @@ class DeviceKeyring(context: Context, private val gate: BiometricGate, private v
      * The membership ops this device knows, in hash order. Always includes the admitting
      * op itself, so a replica written by an older build (cert only) still presents.
      */
-    fun knownOps(): List<String> {
-        val stored = opsFile().takeIf { it.exists() }?.let { f ->
-            runCatching {
-                (MiniJson.parseObject(f.readText())[OPS_KEY] as? List<*>)?.map { it as String }
-            }.getOrNull()
-        } ?: emptyList()
-        val own = certToken()?.let { listOf(it) } ?: emptyList()
-        return Membership.merge(stored, own)
-    }
+    fun knownOps(): List<String> = files.knownOps()
 
     /** Replace the replica (merged with the admitting op so it can never be dropped). */
-    fun saveOps(ops: List<String>) {
-        val own = certToken()?.let { listOf(it) } ?: emptyList()
-        opsFile().writeText(MiniJson.encodeObject(listOf(OPS_KEY to Membership.merge(ops, own))))
-    }
+    fun saveOps(ops: List<String>) = files.saveOps(ops)
 
     /**
      * Persist a delivered [Admission] after checking its op names THIS device's keys —
@@ -225,6 +213,5 @@ class DeviceKeyring(context: Context, private val gate: BiometricGate, private v
         const val USER_AUTH_VALIDITY_SECONDS = 60 * 60
 
         private const val ENC_SECRET = "enc"
-        private const val OPS_KEY = "ops"
     }
 }

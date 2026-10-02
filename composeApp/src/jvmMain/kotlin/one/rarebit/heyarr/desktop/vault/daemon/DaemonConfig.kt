@@ -30,9 +30,10 @@ data class DaemonConfig(
     /** The heyarr controller (node) base URL the encrypted state-sync pipe talks to. */
     val controller: String = DEFAULT_CONTROLLER,
     /**
-     * The voidbind-go device store this daemon reuses for custody (OPTION 1, no phone gate): the
-     * dir `voidbind pair-join` wrote (plaintext-hex X25519 seed + `device.json` + the enrolment
-     * cert). The daemon deliberately couples to this Go store + the `voidbind` CLI on the host.
+     * The void-which-binds-go device store this daemon reuses for custody (OPTION 1, no phone gate):
+     * the dir `void-which-binds pair-join` wrote (plaintext-hex X25519 seed + `device.json` + the
+     * enrolment cert). The daemon deliberately couples to this Go store + the `void-which-binds` CLI
+     * on the host (v0.19.0+, gen2-only: ADR-0022).
      */
     val deviceDir: String = DEFAULT_DEVICE_DIR,
     /**
@@ -85,8 +86,12 @@ data class DaemonConfig(
 
         private fun home() = System.getProperty("user.home") ?: "."
 
-        /** `~/.config/voidbind/device` — where the Go `voidbind pair-join` CLI writes its store. */
-        val DEFAULT_DEVICE_DIR: String get() = File(File(home(), ".config"), "voidbind/device").path
+        /**
+         * `~/.config/void-which-binds/device` — where the Go `void-which-binds pair-join` CLI (v0.19.0+,
+         * `device.DefaultDir` on Linux) writes its store. The gen1 `~/.config/voidbind/device` store is
+         * not read: gen2 enrols this box fresh (ADR-0022).
+         */
+        val DEFAULT_DEVICE_DIR: String get() = File(File(home(), ".config"), "void-which-binds/device").path
 
         /** `~/.config/heyarr/cli.token` — the heyarr CLI's write token; used only if it exists. */
         val DEFAULT_TOKEN_FILE: String get() = File(File(home(), ".config"), "heyarr/cli.token").path
@@ -118,7 +123,9 @@ data class DaemonConfig(
             env("HEYARR_VAULT_FOLDER")?.let { cfg = cfg.copy(folder = it.ifBlank { null }) }
             env("HEYARR_VAULT_SPACE_ID")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(spaceId = it) }
             env("HEYARR_VAULT_CONTROLLER")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(controller = it) }
-            env("HEYARR_VOIDBIND_DEVICE_DIR")?.takeIf { it.isNotBlank() }?.let { cfg = cfg.copy(deviceDir = it) }
+            env("HEYARR_VOID_WHICH_BINDS_DEVICE_DIR")?.takeIf { it.isNotBlank() }?.let {
+                cfg = cfg.copy(deviceDir = it)
+            }
             env("HEYARR_VAULT_POLL_MS")?.toLongOrNull()?.let { cfg = cfg.copy(pollMs = it) }
             env("HEYARR_VAULT_RETRY_MS")?.toLongOrNull()?.let { cfg = cfg.copy(retryMs = it) }
             env("HEYARR_VAULT_STATUS_FILE")?.takeIf { it.isNotBlank() }?.let {

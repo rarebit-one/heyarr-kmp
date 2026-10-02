@@ -3,7 +3,7 @@ package one.rarebit.heyarr.mobile.login
 import one.rarebit.voidwhichbinds.LoginQr
 
 /**
- * The Voidbind web-login tuple `voidbind:login?rp=<origin>&id=<login-id>`, delegated
+ * The Voidbind web-login tuple `void-which-binds:login?rp=<origin>&id=<login-id>`, delegated
  * to voidbind-client's [LoginQr] — the canonical Kotlin port of voidbind-go's
  * `weblogin.EncodeLogin`/`DecodeLogin` (keys sorted, `id` before `rp`; decode
  * tolerant of key order and percent/plus encoding).

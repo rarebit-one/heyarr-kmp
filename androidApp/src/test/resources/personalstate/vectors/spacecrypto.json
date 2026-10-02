@@ -1,6 +1,6 @@
 {
-  "note": "Cross-language golden vectors: Go voidbind-go/encryption sealed/encrypted these; Kotlin voidbind-client VoidbindEncryption must unwrap/decrypt to the recorded space_key/plaintext. Regenerate with: go test ./encryption -run TestGenerateMobileVectors -mobilevectors=\u003cpath\u003e",
-  "wrap_info": "heyarr/space-key-wrap/v1",
+  "note": "Cross-language golden vectors (gen2, ADR-0022): void-which-binds-go v0.19.0 encryption sealed the wraps (public encryption.Seal, a fresh ephemeral per wrap, under the gen2 wrap label) and encrypted the contents (unchanged from gen1: change encryption has no label); Kotlin void-which-binds-client VoidbindEncryption must unwrap/decrypt to the recorded space_key/plaintext.",
+  "wrap_info": "void-which-binds/space-key-wrap/v1",
   "wraps": [
     {
       "name": "device-a",
@@ -8,7 +8,7 @@
       "recipient_pub": "x25519:c1e0c8f5681ecdbdfeed4aaa5499ce9754d0f4719a9e0c1781cd78fed23da714",
       "recipient_pub_hex": "c1e0c8f5681ecdbdfeed4aaa5499ce9754d0f4719a9e0c1781cd78fed23da714",
       "space_key_hex": "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf",
-      "wrapped_b64": "Z4rXRZI5IQKg4cKEuI786uCZ179kgH/1Siiar5TCRy0uwycz7f1X50PmR5QZU4MvC/2tULHMf1PYuUnsIKtXoM29Z6a/2MGJfL11KwER3dLSYqjG3bJKagHk9T4nUGx6eEEKhTe/6b0="
+      "wrapped_b64": "zWXHNJ2/0qr6q411lBQhYXuEM4aaACoF0qCUXZouESxNzZaXWT707tgKI9P9fzMSokWYitR0MC8xJ8pA7rckeW4tHDtuYyNeRGp/xCEeri298e3FdWrYnSjMj0qMlqH5HhZC7KXS4qs="
     },
     {
       "name": "device-b",
@@ -16,7 +16,7 @@
       "recipient_pub": "x25519:a542ecaede9d96396c95569a7c6b7a4b7f6583235ca583743dc506c2376e6674",
       "recipient_pub_hex": "a542ecaede9d96396c95569a7c6b7a4b7f6583235ca583743dc506c2376e6674",
       "space_key_hex": "0000000000000000000000000000000000000000000000000000000000000001",
-      "wrapped_b64": "yMczDTFlJCREl+7rW5F+NKvFnWJhDDNB/eu48oEiJhVr0VuqGR9Eag2fbabb6Ybk2TlX45jcm7OVwvSJ9DFQZs9aca/qCb4N5MaMfK6qPJ2D2IZRnWgLgatDqeKzjEmHUgpaCzwqXS8="
+      "wrapped_b64": "917RX1Z6qbxGxLuO3pfCQEzJkZzgpVEMhtkZI3KFMQhi5vr5xyLnDjUzegGmjdEV2cPc8lQB8imnU8ypCr++gz6qG4YEMByXdUutEu2lz9bMZbG0v+ObtbrEUnbdXKVVWbHmkcG6ftU="
     },
     {
       "name": "recovery-key",
@@ -24,7 +24,7 @@
       "recipient_pub": "x25519:e22ac1910a42a8e6120f161cb1fc96433d5e2daf609d72823a3858cc92301f7c",
       "recipient_pub_hex": "e22ac1910a42a8e6120f161cb1fc96433d5e2daf609d72823a3858cc92301f7c",
       "space_key_hex": "fffefdfcfbfaf9f8f7f6f5f4f3f2f1f0efeeedecebeae9e8e7e6e5e4e3e2e1e0",
-      "wrapped_b64": "P/+GuBoQbJxvPWJbgopJAjvw3WWDjllDKHULgD+a9TO9RuFeVkJX2KpF8+YkbkHuO2YCnW8sVFdL9dw9WSZTOGIAg05T7yrpOwZ+2bM2WNCmga4BSXjhME70PBhbtXZGS2up39/UmOc="
+      "wrapped_b64": "MO64HjuiS8W6lNtL+7dpUfPL9RQ+H2bqXhansdw/GxrQCd0cel+U2ilEjEGOf7vwEFuhXmOPP7wr3fRXx1+VGb8PRQGukYYJ9EGx01uK7mBOSqn084UxaLDiFT69Olf+fW3RruzmWm8="
     }
   ],
   "contents": [

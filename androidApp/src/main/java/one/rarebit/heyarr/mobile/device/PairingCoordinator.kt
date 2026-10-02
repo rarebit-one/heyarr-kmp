@@ -22,7 +22,7 @@ import one.rarebit.voidwhichbinds.flow.PairingOutcome
 data class PendingPairing(
     /** The relay session id — the key every pairing is identified by. */
     val session: String,
-    /** The `voidbind:pair?…` invite tuple, byte-identical to what was joined. */
+    /** The `void-which-binds:pair?…` invite tuple, byte-identical to what was joined. */
     val inviteQr: String,
     /** The invite came from Cruciform on THIS phone (the deep link), not another device. */
     val sameDevice: Boolean,
@@ -105,7 +105,7 @@ enum class PairingFailure {
     /** A pairing found on restart whose relay session TTL has already passed. */
     EXPIRED,
 
-    /** The invite was not a joinable `voidbind:pair?` v3 tuple. */
+    /** The invite was not a joinable `void-which-binds:pair?` v4 (gen2) tuple. */
     INVALID,
 }
 

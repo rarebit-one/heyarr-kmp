@@ -330,8 +330,8 @@ internal class DeviceEnrolment(
     }
 
     /**
-     * Join a pairing a member device started — the v3 `voidbind:pair?…` invite Cruciform
-     * or the Mac's `voidbind pair-initiate` rendered, scanned with the camera or pasted.
+     * Join a pairing a member device started — the v4 `void-which-binds:pair?…` invite Cruciform
+     * or the Mac's `void-which-binds pair-initiate` rendered, scanned with the camera or pasted.
      * (Under ADR-0005 only a member can mint an invite — it names the identity — so
      * this phone, the NEW device, never opens the session itself.) Re-checked here
      * through the library's parser ([PairInvite]) even though the screen already did,

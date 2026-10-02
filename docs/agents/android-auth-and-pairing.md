@@ -31,7 +31,7 @@ Moved verbatim from the former `androidApp/CLAUDE.md`; the router is `androidApp
   so this is a **new alias** and the phone re-enrols once (Path A, see below);
   `net/DeviceAuthTransport` drives `DeviceAuthPolicy.execute` — refresh + retry **once**
   on a 401 (heyarr's Device refusals are all an undifferentiated 401) — and owns the
-  `Voidbind-Membership` header (`MEMBERSHIP_HEADER`): since voidbind-client **0.5.0**
+  `Void-Which-Binds-Membership` header (`MEMBERSHIP_HEADER`; gen1 spelled it `Voidbind-Membership`): since voidbind-client **0.5.0**
   (ADR-0005 / heyarr-core ADR-0068) the credential token is this device's **admitting
   op** (a v3 membership op; a v1/v2 cert IS a genesis add and still works) and the
   header carries the membership **ops** the device knows — `device/MembershipOps`
@@ -47,7 +47,7 @@ Moved verbatim from the former `androidApp/CLAUDE.md`; the router is `androidApp
 ## Login is QR (heyarr's channel) — plus the same-phone hand-off
 
 Per the plan's DECISIONS LOG: **heyarr login channel = QR**. The app is the RP/initiator
-(`POST /login` → render the `voidbind:login?rp=&id=` tuple as a QR → poll `GET /login/{id}`
+(`POST /login` → render the `void-which-binds:login?rp=&id=` tuple as a QR → poll `GET /login/{id}`
 → Bearer token), driven through voidbind-client's `WebLoginClient` (`login/QrLoginClient`
 is the app's state machine over it). When Cruciform (the Voidbind authenticator app) is installed on the
 **same phone**, an "Approve on this phone" button fires the identical tuple as an
@@ -56,7 +56,7 @@ so it can foreground us) — no second-phone QR dance; the RP is still polled. (
 `allthing-android`, whose channel is push-approve — do **not** copy FCM/ntfy wiring.)
 
 The **reverse** handoff exists too (voidbind-kmp ADR-0006): Cruciform's "Add a device"
-on the same phone fires **`heyarr-mobile://pair?invite=<percent-encoded voidbind:pair
+on the same phone fires **`heyarr-mobile://pair?invite=<percent-encoded void-which-binds:pair
 tuple>`** (manifest filter; `device/PairDeepLink` routes it — pure Kotlin, unit-tested)
 into the SAME join path a scan takes (`PairInvite.check` → `AppViewModel.receiveInviteLink`
 → `DevicePairing.begin`). An unprovisioned phone **parks** the invite (`parkedInvite`)
@@ -121,12 +121,18 @@ from the original `heyarr-device` so a phone with the old key **re-enrols** once
 biometric-gated via `device/BiometricGate` — hence `MainActivity` is a
 `FragmentActivity`), the X25519 enc key sealed at rest by `device/SealedSecretStore`, and
 the stored **admission** — `cert.<alias>.token` (the admitting op = credential token) plus
-`ops.<alias>.json` (the replica; `knownOps()` always folds the own op back in). Under
-voidbind-client 0.5.0 (ADR-0005) a pairing invite is **v3** — `voidbind:pair?v=3&…&usr=` —
+`ops.<alias>.json` (the replica; `knownOps()` always folds the own op back in). Since the
+gen2 client 0.11.0 (ADR-0022) all of this lives in a fresh namespace (`device/DeviceStateFiles`):
+app state under `filesDir/heyarr-device.vwb/` (sealed-secret wrap keys `heyarr.device.vwb.wrap.*`),
+the library's sealed key under `filesDir/void-which-binds/`. The gen1 `heyarr-device/` and
+`voidbind/` files are never read — no migration — so an upgraded phone starts unprovisioned
+and re-enrols; at the cutover (ADR-0022 C2 step 8) the phones are reset anyway. Under
+voidbind-client 0.5.0 (ADR-0005) a pairing invite names the identity — since the gen2 client
+0.11.0 (ADR-0022) it is **v4**, `void-which-binds:pair?v=4&…&usr=`, and a gen1 `voidbind:` v3 one is refused —
 and only a *member* device can mint one (the responder judges the initiator's membership
 under `usr` before any SAS exists), so this phone never opens the relay session itself:
 `device/EnrolScreen` + `AppViewModel.joinPairing` **join** the invite Cruciform's "Add a
-device" (another phone) or the Mac's `voidbind pair-initiate` rendered — **scanned with the
+device" (another phone) or the Mac's `void-which-binds pair-initiate` rendered — **scanned with the
 camera** (`device/QrScanner`: CameraX + ML Kit, the same stack as voidbind-kmp's
 androidApp; CAMERA runtime permission) or pasted — gated by `device/PairInvite` (the
 library's `Invite.decode`, never a re-derived parser; non-invites are refused with a reason
