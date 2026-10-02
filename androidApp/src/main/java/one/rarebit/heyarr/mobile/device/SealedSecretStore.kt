@@ -79,10 +79,9 @@ class SealedSecretStore(private val context: Context) {
         return ks.getKey(wrapAlias(name), null) as? SecretKey
     }
 
-    private fun file(name: String): File {
-        val dir = File(context.filesDir, "heyarr-device").apply { mkdirs() }
-        return File(dir, "secret.$name")
-    }
+    // The gen2 state dir ([DeviceStateFiles.STATE_DIR], ADR-0022): a gen1 `heyarr-device/`
+    // secret is never read. The alias is irrelevant to the secret's path.
+    private fun file(name: String): File = DeviceStateFiles(context.filesDir, alias = "").secretFile(name)
 
     private fun writeFramed(f: File, iv: ByteArray, ct: ByteArray) {
         val out = java.io.ByteArrayOutputStream()
@@ -120,6 +119,8 @@ class SealedSecretStore(private val context: Context) {
         const val TRANSFORMATION = "AES/GCM/NoPadding"
         const val GCM_TAG_BITS = 128
         const val WRAP_KEY_BITS = 256
-        fun wrapAlias(name: String) = "heyarr.device.wrap.$name"
+
+        // Gen2 namespace (ADR-0022): gen1's `heyarr.device.wrap.<name>` key is never loaded.
+        fun wrapAlias(name: String) = "heyarr.device.vwb.wrap.$name"
     }
 }

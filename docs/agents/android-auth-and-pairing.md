@@ -121,7 +121,12 @@ from the original `heyarr-device` so a phone with the old key **re-enrols** once
 biometric-gated via `device/BiometricGate` — hence `MainActivity` is a
 `FragmentActivity`), the X25519 enc key sealed at rest by `device/SealedSecretStore`, and
 the stored **admission** — `cert.<alias>.token` (the admitting op = credential token) plus
-`ops.<alias>.json` (the replica; `knownOps()` always folds the own op back in). Under
+`ops.<alias>.json` (the replica; `knownOps()` always folds the own op back in). Since the
+gen2 client 0.11.0 (ADR-0022) all of this lives in a fresh namespace (`device/DeviceStateFiles`):
+app state under `filesDir/heyarr-device.vwb/` (sealed-secret wrap keys `heyarr.device.vwb.wrap.*`),
+the library's sealed key under `filesDir/void-which-binds/`. The gen1 `heyarr-device/` and
+`voidbind/` files are never read — no migration — so an upgraded phone starts unprovisioned
+and re-enrols; at the cutover (ADR-0022 C2 step 8) the phones are reset anyway. Under
 voidbind-client 0.5.0 (ADR-0005) a pairing invite names the identity — since the gen2 client
 0.11.0 (ADR-0022) it is **v4**, `void-which-binds:pair?v=4&…&usr=`, and a gen1 `voidbind:` v3 one is refused —
 and only a *member* device can mint one (the responder judges the initiator's membership
