@@ -44,8 +44,8 @@ Custody and API auth are **two different keys**:
   - `token` (config.json) / `HEYARR_VAULT_TOKEN` / `--token`, else
   - `token_file` (config.json) / `HEYARR_VAULT_TOKEN_FILE` / `--token-file`, else
   - the default `~/.config/heyarr/cli.token` **if it exists** (auto-used).
-  - With **no** token the daemon falls back to the read-only device credential (`voidbind identity
-    credential -header`): reads/custody work but writes 403. For a real two-way sync, set a token.
+  - With **no** token the daemon falls back to the read-only device credential (`void-which-binds identity
+    credential -header`, v0.19.0 or later): reads/custody work but writes 403. For a real two-way sync, set a token.
 
 ## Build / obtain the fat JAR
 

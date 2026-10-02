@@ -120,8 +120,8 @@ These need real hardware / a live server and can't be proven in CI:
   a device/emulator. The `POST /api/v1/playback` transcode/remux negotiation is wired
   (`PlaybackClient.plan`) but keyed on an enrolled `device_id`, so it goes live with device auth.
 - **Device-cert login** — now **ships**: the sealed-key possession proof, the pairing
-  handshake (`device/`, this phone = the NEW device joining a v3 invite that Cruciform
-  or `voidbind pair-initiate` rendered) and re-mint-on-401. What is still gated on the
+  handshake (`device/`, this phone = the NEW device joining a v4 invite that Cruciform
+  or `void-which-binds pair-initiate` rendered) and re-mint-on-401. What is still gated on the
   *server*: `POST /enrol` taking `ops` and `GET /membership/{usr}` (heyarr-core ADR-0068,
   PR #426 — until it lands the app retries `/enrol` without `ops` and treats a 404 on
   `/membership` as "nothing learned"), or an admin registering the op
