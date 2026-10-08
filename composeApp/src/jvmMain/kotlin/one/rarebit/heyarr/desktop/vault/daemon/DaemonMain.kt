@@ -16,6 +16,8 @@ import one.rarebit.heyarr.desktop.vault.SyncChanges
 import one.rarebit.heyarr.desktop.vault.VaultSyncEngine
 import one.rarebit.heyarr.desktop.vault.WatchedFolder
 import one.rarebit.heyarr.vault.VaultSpaceClient
+import one.rarebit.heyarr.vault.gostore.GoDeviceStore
+import one.rarebit.heyarr.vault.gostore.VoidbindCliCredential
 import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.CountDownLatch

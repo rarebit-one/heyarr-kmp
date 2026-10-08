@@ -1,4 +1,4 @@
-package one.rarebit.heyarr.desktop.vault.daemon
+package one.rarebit.heyarr.vault.gostore
 
 import one.rarebit.heyarr.core.auth.Credential
 import java.util.concurrent.TimeUnit
@@ -59,8 +59,8 @@ class VoidbindCliCredential(
             val out = LinkedHashMap<String, String>()
             for (raw in output.lineSequence()) {
                 val line = raw.trim()
-                if (line.isEmpty()) continue
                 val colon = line.indexOf(':')
+                // A blank line, or one with no name before its colon, carries no header.
                 if (colon <= 0) continue
                 val name = line.substring(0, colon).trim()
                 val value = line.substring(colon + 1).trim()
@@ -69,11 +69,14 @@ class VoidbindCliCredential(
             return out
         }
 
+        /** The CLI only signs a short proof; a hung one must not stall every request. */
+        private const val CLI_TIMEOUT_SECONDS = 10L
+
         private fun runProcess(cmd: List<String>): String {
             val process = ProcessBuilder(cmd).redirectErrorStream(false).start()
             // Read stdout to EOF before waiting, so the small output never blocks on a full pipe.
             val stdout = process.inputStream.readBytes().decodeToString()
-            if (!process.waitFor(10, TimeUnit.SECONDS)) {
+            if (!process.waitFor(CLI_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 process.destroyForcibly()
                 error("`${cmd.first()} identity credential` timed out")
             }

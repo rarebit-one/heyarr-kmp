@@ -1,8 +1,11 @@
-package one.rarebit.heyarr.desktop.vault.daemon
+package one.rarebit.heyarr.vault.gostore
 
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 import java.io.File
 import java.nio.file.Files
+import java.security.KeyPairGenerator
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -108,5 +111,29 @@ class GoDeviceStoreTest {
         assertEquals(0xef.toByte(), bytes[3])
         assertFailsWith<IllegalArgumentException> { GoDeviceStore.hexToBytes("zz") }
         assertFailsWith<IllegalArgumentException> { GoDeviceStore.hexToBytes("abc") } // odd length
+    }
+
+    @Test
+    fun recipientUnwrapsACopySealedForItsEncKey() {
+        // A real X25519 pair from the JDK: the raw seed is the PKCS#8 encoding's last 32 bytes,
+        // the raw public key the X.509 encoding's.
+        val pair = KeyPairGenerator.getInstance("X25519").generateKeyPair()
+        val seed = pair.private.encoded.takeLast(32).toByteArray()
+        val pub = pair.public.encoded.takeLast(32).toByteArray()
+        val hex = { b: ByteArray -> b.joinToString("") { "%02x".format(it) } }
+        val dir = Files.createTempDirectory("vwb-store").toFile()
+        try {
+            File(
+                dir,
+                "device.json",
+            ).writeText("""{"id":"d","public_key":"ed25519:00","encryption_key":"x25519:${hex(pub)}"}""")
+            File(dir, "device_x25519.key").writeText("void-which-binds-device-x25519-seed:${hex(seed)}\n")
+            val recipient = GoDeviceStore(dir).recipient()
+            assertEquals("x25519:${hex(pub)}", recipient.id)
+            val spaceKey = VoidbindEncryption.newSpaceKey()
+            assertContentEquals(spaceKey, recipient.unwrap(VoidbindEncryption.seal(spaceKey, pub)))
+        } finally {
+            dir.deleteRecursively()
+        }
     }
 }

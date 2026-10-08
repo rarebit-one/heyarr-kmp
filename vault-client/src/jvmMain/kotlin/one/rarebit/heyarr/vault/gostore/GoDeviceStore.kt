@@ -1,6 +1,8 @@
-package one.rarebit.heyarr.desktop.vault.daemon
+package one.rarebit.heyarr.vault.gostore
 
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.vault.VaultRecipient
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 import java.io.File
 
 /**
@@ -41,6 +43,20 @@ class GoDeviceStore(private val dir: File) {
     /** This device's id (a UUIDv7 the CLI assigned). */
     fun deviceId(): String = metaField("id")
 
+    /**
+     * This device as a [VaultRecipient] for [one.rarebit.heyarr.vault.VaultObjects]: named by its
+     * enc key ref, unwrapping with the enc seed — read from disk only when a copy is unwrapped,
+     * and zeroed straight after.
+     */
+    fun recipient(): VaultRecipient = VaultRecipient(encKeyRef()) { wrapped ->
+        val seed = encSeed()
+        try {
+            VoidbindEncryption.unwrap(wrapped, seed)
+        } finally {
+            seed.fill(0)
+        }
+    }
+
     private fun metaField(key: String): String {
         val meta = File(dir, META_FILE)
         require(meta.exists()) {
@@ -57,13 +73,19 @@ class GoDeviceStore(private val dir: File) {
         val marker = "$prefix:"
         require(line.startsWith(marker)) { "unexpected format in ${file.name}: missing '$marker' prefix" }
         val hex = line.removePrefix(marker).trim()
-        require(hex.length == 64) { "expected a 32-byte (64 hex) seed in ${file.name}, got ${hex.length} chars" }
+        require(hex.length == SEED_HEX_CHARS) {
+            "expected a $SEED_BYTES-byte ($SEED_HEX_CHARS hex) seed in ${file.name}, got ${hex.length} chars"
+        }
         return hexToBytes(hex)
     }
 
     companion object {
         private const val META_FILE = "device.json"
         private const val ENC_KEY_FILE = "device_x25519.key"
+        private const val SEED_BYTES = 32
+        private const val SEED_HEX_CHARS = SEED_BYTES * 2
+        private const val HEX_RADIX = 16
+        private const val NIBBLE_BITS = 4
 
         // Go v0.19.0's `device.encKeyFilePrefix`. Only the gen2 marker is accepted, as in Go: a gen1
         // `voidbind-device-…` seed file is refused as malformed (ADR-0022; gen2 enrols fresh).
@@ -74,10 +96,10 @@ class GoDeviceStore(private val dir: File) {
             require(hex.length % 2 == 0) { "hex string has odd length" }
             val out = ByteArray(hex.length / 2)
             for (i in out.indices) {
-                val hi = Character.digit(hex[i * 2], 16)
-                val lo = Character.digit(hex[i * 2 + 1], 16)
+                val hi = Character.digit(hex[i * 2], HEX_RADIX)
+                val lo = Character.digit(hex[i * 2 + 1], HEX_RADIX)
                 require(hi >= 0 && lo >= 0) { "non-hex character in seed" }
-                out[i] = ((hi shl 4) or lo).toByte()
+                out[i] = ((hi shl NIBBLE_BITS) or lo).toByte()
             }
             return out
         }

@@ -3,6 +3,7 @@ package one.rarebit.heyarr.desktop.vault.daemon
 import one.rarebit.heyarr.desktop.vault.OpenedVault
 import one.rarebit.heyarr.vault.SpaceOpen
 import one.rarebit.heyarr.vault.VaultKeys
+import one.rarebit.heyarr.vault.gostore.GoDeviceStore
 import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 
 /**

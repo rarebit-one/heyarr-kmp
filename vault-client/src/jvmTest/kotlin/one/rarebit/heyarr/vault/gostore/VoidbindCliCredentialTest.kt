@@ -1,4 +1,4 @@
-package one.rarebit.heyarr.desktop.vault.daemon
+package one.rarebit.heyarr.vault.gostore
 
 import one.rarebit.heyarr.core.auth.Credential
 import java.util.concurrent.atomic.AtomicInteger

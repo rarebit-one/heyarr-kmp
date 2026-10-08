@@ -249,7 +249,6 @@
     <ID>LoopWithTooManyJumpStatements:MembershipOps.kt$MembershipOps$while</ID>
     <ID>LoopWithTooManyJumpStatements:SyncChanges.kt$WatchedFolder$for</ID>
     <ID>LoopWithTooManyJumpStatements:SyncIndex.kt$FileSyncIndexStore$for</ID>
-    <ID>LoopWithTooManyJumpStatements:VoidbindCliCredential.kt$VoidbindCliCredential.Companion$for</ID>
     <ID>MagicNumber:App.kt$4</ID>
     <ID>MagicNumber:AppSession.kt$AppSession$1000</ID>
     <ID>MagicNumber:AppSession.kt$AppSession$1_000_000</ID>
@@ -360,9 +359,6 @@
     <ID>MagicNumber:Fixtures.kt$Fixtures$4</ID>
     <ID>MagicNumber:Fixtures.kt$Fixtures$412_000_000L</ID>
     <ID>MagicNumber:Fixtures.kt$Fixtures$5</ID>
-    <ID>MagicNumber:GoDeviceStore.kt$GoDeviceStore$64</ID>
-    <ID>MagicNumber:GoDeviceStore.kt$GoDeviceStore.Companion$16</ID>
-    <ID>MagicNumber:GoDeviceStore.kt$GoDeviceStore.Companion$4</ID>
     <ID>MagicNumber:HeyarrApi.kt$HeyarrApi$200</ID>
     <ID>MagicNumber:HeyarrApi.kt$HeyarrApi$201</ID>
     <ID>MagicNumber:HeyarrApi.kt$HeyarrApi$202</ID>
@@ -461,7 +457,6 @@
     <ID>MagicNumber:VaultCustody.kt$VaultCustody$32</ID>
     <ID>MagicNumber:VaultSyncDaemon.kt$VaultSyncDaemon$1_000</ID>
     <ID>MagicNumber:VaultSyncEngine.kt$VaultSyncEngine$16</ID>
-    <ID>MagicNumber:VoidbindCliCredential.kt$VoidbindCliCredential.Companion$10</ID>
     <ID>MagicNumber:WantSheet.kt$4</ID>
     <ID>MagicNumber:WorkDetail.kt$PrimaryAsset.Companion$100</ID>
     <ID>MagicNumber:WorkDetail.kt$PrimaryAsset.Companion$1024</ID>
