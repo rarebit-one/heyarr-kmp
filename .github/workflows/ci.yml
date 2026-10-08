@@ -9,7 +9,7 @@ name: ci
 # Keep each path list below in sync with the `push.paths` of the workflow it gates.
 on:
   pull_request:
-    branches: [main]
+    branches: [main, "release/**"]
 
 concurrency:
   group: ci-${{ github.event.pull_request.number }}
