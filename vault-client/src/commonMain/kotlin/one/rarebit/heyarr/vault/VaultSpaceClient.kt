@@ -12,7 +12,19 @@ import kotlin.io.encoding.Base64
  * "this credential may not see the space" (heyarr ADR-0104), which [VaultObjects] maps to
  * [VaultRefException.Forbidden]; anything else is a failure to retry or report.
  */
-class VaultHttpException(val status: Int, message: String) : Exception(message)
+class VaultHttpException(val status: Int, message: String, val code: String? = null) : Exception(message) {
+    /**
+     * The node refused a change sealed at a key epoch that is not the space's current one
+     * (heyarr-core #712): re-open the space and seal again under the current key.
+     */
+    val isChangeKeyEpochMismatch: Boolean get() = status == HTTP_CONFLICT && code == CHANGE_KEY_EPOCH_MISMATCH
+
+    companion object {
+        /** The problem `code` of that refusal. */
+        const val CHANGE_KEY_EPOCH_MISMATCH = "change_key_epoch_mismatch"
+        private const val HTTP_CONFLICT = 409
+    }
+}
 
 /** One opaque encrypted CRDT change as it rides the wire (§72, ADR-0049). */
 data class EncryptedChange(
@@ -61,7 +73,13 @@ interface VaultSpace {
      */
     fun pullChangesSince(spaceId: String, since: Long): ChangePage
 
-    fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String
+    /**
+     * Push one encrypted change. With [keyEpoch] — the epoch whose key sealed it — the node stores
+     * it only while that is still the space's current epoch (heyarr-core #712), and refuses it
+     * otherwise with a [VaultHttpException] whose [VaultHttpException.isChangeKeyEpochMismatch] is
+     * true. A node that predates the check ignores it.
+     */
+    fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray, keyEpoch: Int? = null): String
 
     /**
      * The space's CURRENT key epoch (`key_epoch` of `GET /spaces/{id}/keys`, ADR-0103), checked
@@ -156,7 +174,7 @@ class VaultSpaceClient(
      * the same canonical (sorted/deduped) form they were hashed in, so the peer's re-derivation
      * agrees.
      */
-    override fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String {
+    override fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray, keyEpoch: Int?): String {
         val canonicalParents = PersonalStateId.canonical(parents)
         val changeId = PersonalStateId.changeId(spaceId, canonicalParents, ciphertext)
         val body = JsonWrite.obj(
@@ -167,8 +185,17 @@ class VaultSpaceClient(
                 "ciphertext" to b64(ciphertext),
             ),
         )
-        val resp = http.post(changesUrl(baseUrl, spaceId), body, "application/json", credential.asHeader())
-        expectStatus(resp, 201) { "vault: POST change failed: HTTP ${resp.status}" }
+        // A query parameter, not a body field: a node that predates it ignores it rather than
+        // refusing the body for an unknown field.
+        val url = changesUrl(baseUrl, spaceId) + (keyEpoch?.let { "?key_epoch=$it" } ?: "")
+        val resp = http.post(url, body, "application/json", credential.asHeader())
+        if (resp.status != 201) {
+            throw VaultHttpException(
+                resp.status,
+                "vault: POST change failed: HTTP ${resp.status}",
+                code = runCatching { JsonScan.stringField(resp.body, "code") }.getOrNull(),
+            )
+        }
         val acked = JsonScan.stringField(resp.body, "change_id")
         require(acked == changeId) { "vault: server acked change id $acked, expected $changeId" }
         return changeId

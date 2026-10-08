@@ -75,7 +75,11 @@ class VaultSyncEngineTest {
         /** When set, the next push throws — a network that dropped mid-pass. */
         var failNextPush = false
 
-        override fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String {
+        /** The `key_epoch` each push named (heyarr-core #712). */
+        val pushedEpochs = ArrayList<Int?>()
+
+        override fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray, keyEpoch: Int?): String {
+            pushedEpochs.add(keyEpoch)
             if (failNextPush) {
                 failNextPush = false
                 error("push failed")
@@ -228,6 +232,7 @@ class VaultSyncEngineTest {
         assertEquals(1, eng.syncOnce().uploaded)
         assertEquals(1, reopens)
         assertEquals(1, space.epochChecks - checks, "one epoch check per writing pass, not per blob")
+        assertEquals(listOf<Int?>(0, 1), space.pushedEpochs, "each push names the epoch that sealed it")
 
         // The new drive change and the new manifest open under k1 only.
         val change = space.changes.last().ciphertext
