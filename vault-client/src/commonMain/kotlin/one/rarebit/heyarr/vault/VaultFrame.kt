@@ -222,6 +222,7 @@ object VaultFrame {
      * fetched. Numbers are read as longs and range-checked, never truncated to an int.
      */
     fun parseManifest(json: String): Manifest {
+        checkManifestKeys(json)
         val obj = JsonScan.rootObject(json) ?: throw FrameException("manifest is not an object")
         val m = Manifest(
             version = intIn(obj, "version"),
@@ -262,6 +263,27 @@ object VaultFrame {
             )
         }
     }
+
+    /**
+     * Refuse a manifest that Go's `encoding/json` and [JsonScan] could read differently: anything
+     * but one strictly valid JSON object, or a key repeated (Go takes the LAST occurrence, the
+     * scanner the first) or spelt in another case than a writer uses (Go matches field names
+     * case-insensitively, the scanner exactly). A writer emits each field once, in lower case.
+     */
+    @Suppress("ThrowsCount") // not an object, a repeat and a case variant are three different lies
+    private fun checkManifestKeys(json: String) {
+        val keys = StrictJson.topLevelKeys(json) ?: throw FrameException("manifest is not a valid JSON object")
+        val seen = HashSet<String>()
+        for (key in keys) {
+            val folded = key.lowercase()
+            if (!seen.add(folded)) throw FrameException("manifest: key \"$folded\" appears more than once")
+            if (folded in MANIFEST_FIELDS && key != folded) {
+                throw FrameException("manifest: key \"$key\" is not spelt as a writer spells it")
+            }
+        }
+    }
+
+    private val MANIFEST_FIELDS = setOf("version", "file_id", "frame_size", "frame_count", "plaintext_size", "content")
 
     private val FILE_ID_HEX = Regex("^[0-9a-f]{${FILE_ID_LEN * 2}}$")
     private val CONTENT_ID = Regex("^blake3:[0-9a-f]{64}$")

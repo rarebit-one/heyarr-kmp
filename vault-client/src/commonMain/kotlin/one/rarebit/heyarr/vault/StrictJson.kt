@@ -36,8 +36,20 @@ internal object StrictJson {
      */
     fun envelope(json: String): Envelope? = runCatching { Parser(json).document() }.getOrNull()
 
+    /**
+     * The keys of [json]'s top-level object in order, duplicates kept, or null when it is not
+     * exactly one valid JSON object. Lets a caller refuse what a tolerant first-match scanner and
+     * Go's last-match, case-insensitive `encoding/json` would read differently.
+     */
+    fun topLevelKeys(json: String): List<String>? = runCatching {
+        val p = Parser(json)
+        p.document() ?: return null
+        p.topKeys.toList()
+    }.getOrNull()
+
     @Suppress("TooManyFunctions") // one small function per production of the grammar
     private class Parser(private val s: String) {
+        val topKeys = ArrayList<String>()
         private var i = 0
         private var v: Long? = null
         private var type: String? = null
@@ -78,6 +90,7 @@ internal object StrictJson {
                 ws()
                 if (peek() != '"') fail("expected a key")
                 val key = string()
+                if (top) topKeys.add(key)
                 ws()
                 expect(':')
                 ws()
