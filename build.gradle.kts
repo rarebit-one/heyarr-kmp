@@ -87,7 +87,8 @@ allprojects {
 // an implementer drop the epoch silently, i.e. fail open.
 // 0.3.0: the void-which-binds-go device store reader (`gostore.GoDeviceStore`, with `recipient()`
 // for VaultObjects) and the CLI-minted Device credential (`gostore.VoidbindCliCredential`) move
-// from the desktop app into jvmMain, so another desktop client can open the same vault objects.
+// from the desktop app into jvmAndAndroidMain (JVM-API code; the tests also run on Android), so
+// another desktop client can open the same vault objects.
 val publishedLibraryVersion = "0.3.0"
 
 listOf(":core", ":vault-client").forEach { path ->
