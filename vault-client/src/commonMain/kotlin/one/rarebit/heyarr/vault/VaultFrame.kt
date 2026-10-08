@@ -265,32 +265,23 @@ object VaultFrame {
     }
 
     /**
-     * Refuse a manifest that Go's `encoding/json` and [JsonScan] could read differently: anything
-     * but one strictly valid JSON object, or a key repeated (Go takes the LAST occurrence, the
-     * scanner the first) or spelt in another case than a writer uses (Go matches field names
-     * case-insensitively, the scanner exactly). A writer emits each field once, in lower case.
+     * Refuse a manifest that Go's `encoding/json` and [JsonScan] could read differently
+     * ([StrictJson.goReadConflict]): a writer emits each field once, in lower case, integers as
+     * integer literals.
      */
-    @Suppress("ThrowsCount") // not an object, a non-integer, a repeat and a case variant are four lies
     private fun checkManifestKeys(json: String) {
-        val entries = StrictJson.topLevelEntries(json) ?: throw FrameException("manifest is not a valid JSON object")
-        val seen = HashSet<String>()
-        for ((key, raw) in entries) {
-            val folded = key.lowercase()
-            // Go unmarshals these into integer fields: 1.5 or 1e3 is an error there, not a 1.
-            if (folded in MANIFEST_INT_FIELDS && !INTEGER_LITERAL.matches(raw)) {
-                throw FrameException("manifest: $folded is not an integer")
-            }
-            if (!seen.add(folded)) throw FrameException("manifest: key \"$folded\" appears more than once")
-            if (folded in MANIFEST_FIELDS && key != folded) {
-                throw FrameException("manifest: key \"$key\" is not spelt as a writer spells it")
-            }
-        }
+        StrictJson.goReadConflict(json, MANIFEST_FIELDS)?.let { throw FrameException("manifest: $it") }
     }
 
-    private val MANIFEST_INT_FIELDS = setOf("version", "frame_size", "frame_count", "plaintext_size")
-    private val INTEGER_LITERAL = Regex("^-?(0|[1-9][0-9]*)$")
-
-    private val MANIFEST_FIELDS = setOf("version", "file_id", "frame_size", "frame_count", "plaintext_size", "content")
+    /** Each manifest field as a writer spells it, and whether Go decodes it as an integer. */
+    private val MANIFEST_FIELDS = mapOf(
+        "version" to true,
+        "file_id" to false,
+        "frame_size" to true,
+        "frame_count" to true,
+        "plaintext_size" to true,
+        "content" to false,
+    )
 
     private val FILE_ID_HEX = Regex("^[0-9a-f]{${FILE_ID_LEN * 2}}$")
     private val CONTENT_ID = Regex("^blake3:[0-9a-f]{64}$")

@@ -53,6 +53,33 @@ internal object StrictJson {
         p.topEntries.toList()
     }.getOrNull()
 
+    /**
+     * Why Go's `encoding/json` and the tolerant first-match, exact-case [JsonScan] could read
+     * [json]'s top-level object differently — or null when they cannot. [fields] maps each field
+     * a writer emits, spelt exactly as it emits it, to whether Go decodes it as an integer. Refused:
+     * anything but one strictly valid object; a key repeated case-insensitively (Go takes the
+     * LAST, the scanner the first); a known field in another case (Go matches it, the scanner
+     * does not); a known integer field whose value is not an integer literal (Go cannot decode
+     * 1.5 or 1e3 into an int; the scanner reads the prefix).
+     */
+    fun goReadConflict(json: String, fields: Map<String, Boolean>): String? {
+        val entries = topLevelEntries(json) ?: return "not a valid JSON object"
+        val byFolded = fields.keys.associateBy { it.lowercase() }
+        val seen = HashSet<String>()
+        return entries.firstNotNullOfOrNull { (key, raw) ->
+            val folded = key.lowercase()
+            val known = byFolded[folded]
+            when {
+                !seen.add(folded) -> "key \"$folded\" appears more than once"
+                known != null && key != known -> "key \"$key\" is not spelt as a writer spells it"
+                known != null && fields.getValue(known) && !INTEGER_LITERAL.matches(raw) -> "$known is not an integer"
+                else -> null
+            }
+        }
+    }
+
+    private val INTEGER_LITERAL = Regex("^-?(0|[1-9][0-9]*)$")
+
     @Suppress("TooManyFunctions") // one small function per production of the grammar
     private class Parser(private val s: String) {
         val topEntries = ArrayList<Pair<String, String>>()

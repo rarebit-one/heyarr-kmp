@@ -395,6 +395,28 @@ class Drive {
         }
 
         /**
+         * Why Go and [parseChange] could read this change's JSON differently, or null — the change
+         * and its `base` held to [StrictJson.goReadConflict] with the fields [encodeDriveChange]
+         * writes.
+         */
+        fun goReadConflict(json: String): String? = StrictJson.goReadConflict(json, CHANGE_FIELDS)
+            ?: StrictJson.topLevelEntries(json)
+                ?.firstOrNull { it.first == "base" && it.second != "null" }
+                ?.let { (_, base) -> StrictJson.goReadConflict(base, BASE_FIELDS)?.let { "base: $it" } }
+
+        private val CHANGE_FIELDS = mapOf(
+            "op" to true,
+            "path" to false,
+            "blob" to false,
+            "size" to true,
+            "mtime" to true,
+            "at" to true,
+            "writer" to false,
+            "base" to false,
+        )
+        private val BASE_FIELDS = mapOf("At" to true, "Writer" to false)
+
+        /**
          * Parse a Go-marshalled [DriveChange] object slice, or null when its op is one this
          * client does not know — the caller skips it, as Go's fold does (#111). An absent op is
          * 0 (PUT), Go's zero value.

@@ -137,11 +137,12 @@ class VaultObjects(
                 "vault: refusing change ${c.changeId}: its id does not match its bytes"
             }
             val plaintext = ring.decryptChange(c.ciphertext).decodeToString()
-            // Go's DecodeAllChanges fails the whole load on a change that is not valid JSON; the
-            // tolerant scanner would apply one (`{"op":0 "path":…}`), so the two clients would see
-            // different drives. Refuse it the same way.
-            if (!StrictJson.isValid(plaintext)) {
-                throw VaultRefException.Integrity("vault: change ${c.changeId} of space $spaceId is not valid JSON")
+            // Go's DecodeAllChanges fails the whole load on a change it cannot decode; the tolerant
+            // scanner would apply one Go refuses or reads differently (a missing comma, a repeated
+            // or case-varied key, a fractional integer), so the two clients would see different
+            // drives. Refuse it the same way.
+            Drive.goReadConflict(plaintext)?.let {
+                throw VaultRefException.Integrity("vault: change ${c.changeId} of space $spaceId: $it")
             }
             // An unknown op parses to null and is skipped, as Go's fold skips it (#111).
             Drive.parseChange(plaintext)?.let { drive.apply(it) }

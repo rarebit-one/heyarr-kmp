@@ -405,6 +405,29 @@ class VaultObjectsTest {
     }
 
     @Test
+    fun aChangeGoWouldReadDifferentlyFailsTheRead() {
+        val q = "\""
+        val p = "${q}path$q:$q.jumpdrive/objects/x.json$q"
+        val bad = listOf(
+            "{${q}op$q:0,$p,${q}path$q:${q}other$q,${q}at$q:1,${q}writer$q:${q}w$q}", // repeated key
+            "{${q}op$q:0,${q}PATH$q:${q}x$q,${q}at$q:1,${q}writer$q:${q}w$q}", // case-varied known key
+            "{${q}op$q:0,$p,${q}size$q:1.5,${q}at$q:1,${q}writer$q:${q}w$q}", // fractional integer
+            "{${q}op$q:0,$p,${q}at$q:1,${q}writer$q:${q}w$q,${q}base$q:{${q}At$q:1,${q}at$q:2}}", // base repeat
+        )
+        for (json in bad) {
+            val key = VoidbindEncryption.newSpaceKey()
+            val n = node(key)
+            val put = client(n).put(spaceId, envelope)
+            n.pushChange(
+                spaceId,
+                listOf(n.changes.single().changeId),
+                VoidbindEncryption.encryptChange(key, json.encodeToByteArray()),
+            )
+            assertFailsWith<VaultRefException.Integrity>(json) { client(n).get(put.ref) }
+        }
+    }
+
+    @Test
     fun putRefusesAnythingButAVersionedTypedEnvelopeAndUploadsNothing() {
         val n = node(VoidbindEncryption.newSpaceKey())
         listOf(
