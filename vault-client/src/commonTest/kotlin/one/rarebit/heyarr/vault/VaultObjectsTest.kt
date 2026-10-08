@@ -168,6 +168,20 @@ class VaultObjectsTest {
         assertTrue(n.blobs.isEmpty() && n.changes.isEmpty(), "nothing is sealed under the retired key")
     }
 
+    @Test
+    fun anOutageWhileReopeningARotatedSpaceIsNotReportedAsStale() {
+        val n = node(VoidbindEncryption.newSpaceKey())
+        // The epoch moves (call 2), then re-opening the space hits a 5xx (call 3): retriable, not a
+        // rotation this device cannot follow.
+        n.beforeKeys = { call ->
+            if (call == 2) n.keyEpoch = 1
+            if (call == 3) n.keysStatus = 503
+        }
+        val e = assertFailsWith<VaultHttpException> { client(n).put(spaceId, envelope) }
+        assertEquals(503, e.status)
+        assertTrue(n.blobs.isEmpty() && n.changes.isEmpty(), "nothing is sealed under the retired key")
+    }
+
     private fun FakeNode.rotate(from: ByteArray, to: ByteArray, recipient: String? = me) {
         keyEpoch++
         history.add(KeyHistoryEntry(keyEpoch, VoidbindEncryption.sealSpaceKey(to, from)))

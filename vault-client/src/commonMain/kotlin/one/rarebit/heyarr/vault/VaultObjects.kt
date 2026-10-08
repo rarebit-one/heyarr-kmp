@@ -273,7 +273,17 @@ class VaultObjects(
 
     /** [SpaceOpen.currentForWrite], with "cannot follow the rotation" as [VaultRefException.StaleEpoch]. */
     private fun writeRing(spaceId: String, ring: SpaceKeyring, epoch: Int): SpaceKeyring = try {
-        SpaceOpen.currentForWrite(epoch, ring, spaceId) { openSpace(spaceId) }
+        SpaceOpen.currentForWrite(epoch, ring, spaceId) {
+            // Only "no key of this device opens it" is a rotation it cannot follow; an access
+            // refusal or transport failure from openSpace propagates as itself.
+            try {
+                openSpace(spaceId)
+            } catch (
+                @Suppress("SwallowedException") e: VaultRefException.Unwrap, // reported as StaleEpoch below
+            ) {
+                null
+            }
+        }
     } catch (e: SpaceOpen.StaleKeyException) {
         throw VaultRefException.StaleEpoch(e.message ?: "the space rotated", e)
     }

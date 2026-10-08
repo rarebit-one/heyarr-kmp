@@ -41,8 +41,9 @@ object SpaceOpen {
      * node: [ring] when it is still current, else a fresh one from [reopen]. A rotation brings no
      * blob a writer would fail to decrypt, so without this a write after a rotation would go out
      * under the retired key — readable by every recipient that rotation revoked. When the space
-     * cannot be reopened at (or past) [currentEpoch], [StaleKeyException]: never write under a
-     * superseded key. A null [currentEpoch] (a peer that cannot tell) keeps [ring].
+     * cannot be reopened at (or past) [currentEpoch] — [reopen] returns null or an older ring —
+     * [StaleKeyException]: never write under a superseded key. An exception [reopen] throws
+     * propagates unchanged. A null [currentEpoch] (a peer that cannot tell) keeps [ring].
      *
      * The one rule every writer follows: [VaultObjects.put], the desktop sync engine and the
      * android `SpaceSession`.
@@ -54,7 +55,10 @@ object SpaceOpen {
         reopen: () -> SpaceKeyring?,
     ): SpaceKeyring {
         if (currentEpoch == null || currentEpoch == ring.epoch) return ring
-        val fresh = runCatching { reopen() }.getOrNull()
+        // null is "this device cannot open the new key" — stale. Anything [reopen] THROWS (a
+        // timeout, a 5xx, a custody failure) is not a verdict on the rotation and propagates, so
+        // a caller can retry an outage instead of treating it as a revocation.
+        val fresh = reopen()
         if (fresh == null || fresh.epoch < currentEpoch) {
             throw StaleKeyException(
                 "space $spaceId rotated to key epoch $currentEpoch but this device could not open it " +
