@@ -76,6 +76,7 @@ class OpenApiContractTest {
                 "GET /api/v1/spaces",
                 "POST /api/v1/spaces",
                 "GET /api/v1/spaces/{id}/keys",
+                "GET /api/v1/spaces/{id}/key-history",
                 "GET /api/v1/spaces/{id}/changes",
                 "POST /api/v1/spaces/{id}/changes",
                 "GET /api/v1/spaces/{id}/snapshot",

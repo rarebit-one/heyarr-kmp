@@ -115,9 +115,11 @@ private fun resolveCustody(
         baseUrl = config.controller,
         credential = credential,
         spaceId = opened.spaceId,
-        spaceKey = opened.spaceKey,
+        keyring = opened.keyring,
         // The folded drive + cursor, beside the index, so a restart pulls only the tail (#73).
         stateStore = FileDriveStateStore(FileDriveStateStore.besideIndex(indexFile)),
+        // No held key opened a blob: the space may have rotated since (ADR-0103). Re-open it.
+        reopen = { runCatching { GoStoreCustody(store, custodyClient).open(config.spaceId).keyring }.getOrNull() },
     )
 
     // A real filesystem watch when we can get one; degrade to the controller's periodic-only tick

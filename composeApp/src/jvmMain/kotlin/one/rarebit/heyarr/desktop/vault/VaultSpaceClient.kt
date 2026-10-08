@@ -4,6 +4,7 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.vault.KeyHistoryEntry
 import one.rarebit.heyarr.core.vault.PersonalStateId
 import java.net.URLEncoder
 import java.util.Base64
@@ -24,8 +25,17 @@ data class EncryptedSnapshot(
     val ciphertext: ByteArray,
 )
 
-/** A space key sealed to one recipient (X25519), as the peer stores it (§79). */
-data class WrappedKey(val recipient: String, val wrapped: ByteArray)
+/**
+ * A space key sealed to one recipient (X25519), as the peer stores it (§79). [epoch] is the key
+ * epoch the copy seals (ADR-0103; 0 for a space never rotated, and for every copy sent at create).
+ */
+data class WrappedKey(val recipient: String, val wrapped: ByteArray, val epoch: Int = 0)
+
+/**
+ * A space's wrapped copies with its CURRENT key epoch (`GET /spaces/{id}/keys`, ADR-0103): a
+ * device opens the space with its copy at [keyEpoch] and the key history back to epoch 0.
+ */
+data class SpaceKeyList(val keyEpoch: Int, val wrapped: List<WrappedKey>)
 
 /**
  * One incremental pull: the changes that arrived after the cursor asked for, and the cursor to
@@ -47,6 +57,13 @@ interface VaultSpace {
     fun pullChangesSince(spaceId: String, since: Long): ChangePage
 
     fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String
+
+    /**
+     * The space's CURRENT key epoch (`key_epoch` of `GET /spaces/{id}/keys`, ADR-0103), checked
+     * before a pass seals anything, so a rotation that brought no new blob is still noticed. Null
+     * = this pipe cannot tell (the default: a fake or a peer without epochs), and no check is made.
+     */
+    fun keyEpoch(spaceId: String): Int? = null
 }
 
 /**
@@ -57,6 +74,18 @@ interface VaultSpace {
 interface VaultKeys {
     /** The space keys sealed for each recipient — the caller picks its own to unwrap. */
     fun listKeys(spaceId: String): List<WrappedKey>
+
+    /**
+     * [listKeys] with the space's current key epoch (ADR-0103). The default is a peer that
+     * predates key epochs: every space is at epoch 0.
+     */
+    fun spaceKeys(spaceId: String): SpaceKeyList = SpaceKeyList(0, listKeys(spaceId))
+
+    /**
+     * The space's key chain (`GET /spaces/{id}/key-history`): one opaque row per rotation, each
+     * sealing the previous key under the next. Never asked for a space at epoch 0.
+     */
+    fun keyHistory(spaceId: String): List<KeyHistoryEntry> = emptyList()
 
     /**
      * Mint a space of [kind] with its key wrapped for each recipient in [wrapped]; returns the
@@ -84,6 +113,8 @@ class VaultSpaceClient(
     private val credential: Credential,
 ) : VaultSpace,
     VaultKeys {
+    override fun keyEpoch(spaceId: String): Int = spaceKeys(spaceId).keyEpoch
+
     /** Pull every opaque change the server holds for [spaceId]. */
     override fun pullChanges(spaceId: String): List<EncryptedChange> = pullChangesSince(spaceId, 0).changes
 
@@ -140,12 +171,40 @@ class VaultSpaceClient(
     }
 
     /** The space keys sealed for each recipient — the caller picks its own to unwrap. */
-    override fun listKeys(spaceId: String): List<WrappedKey> {
+    override fun listKeys(spaceId: String): List<WrappedKey> = spaceKeys(spaceId).wrapped
+
+    /**
+     * The wrapped copies with the space's current `key_epoch` and each copy's `epoch` (ADR-0103).
+     * A peer that predates epochs sends neither, which reads back as epoch 0 — exactly a space
+     * never rotated.
+     */
+    override fun spaceKeys(spaceId: String): SpaceKeyList {
         val resp = http.get(keysUrl(baseUrl, spaceId), credential.asHeader())
         require(resp.status == 200) { "vault: GET keys failed: HTTP ${resp.status}" }
-        val array = JsonScan.arrayOf(resp.body, listOf("wrapped_keys")) ?: return emptyList()
+        val keyEpoch = JsonScan.intField(resp.body, "key_epoch") ?: 0
+        val array = JsonScan.arrayOf(resp.body, listOf("wrapped_keys")) ?: return SpaceKeyList(keyEpoch, emptyList())
+        return SpaceKeyList(
+            keyEpoch,
+            JsonScan.objectsOf(array, emptyList()).map {
+                WrappedKey(
+                    JsonScan.stringField(it, "recipient") ?: "",
+                    b64d(JsonScan.stringField(it, "wrapped") ?: ""),
+                    JsonScan.intField(it, "epoch") ?: 0,
+                )
+            },
+        )
+    }
+
+    /** The space's opaque key chain, oldest epoch first as the peer serves it (ADR-0103). */
+    override fun keyHistory(spaceId: String): List<KeyHistoryEntry> {
+        val resp = http.get(keyHistoryUrl(baseUrl, spaceId), credential.asHeader())
+        require(resp.status == 200) { "vault: GET key-history failed: HTTP ${resp.status}" }
+        val array = JsonScan.arrayOf(resp.body, listOf("entries")) ?: return emptyList()
         return JsonScan.objectsOf(array, emptyList()).map {
-            WrappedKey(JsonScan.stringField(it, "recipient") ?: "", b64d(JsonScan.stringField(it, "wrapped") ?: ""))
+            KeyHistoryEntry(
+                JsonScan.intField(it, "epoch") ?: 0,
+                b64d(JsonScan.stringField(it, "sealed_prev") ?: ""),
+            )
         }
     }
 
@@ -228,6 +287,7 @@ class VaultSpaceClient(
         fun changesUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/changes"
         fun snapshotUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/snapshot"
         fun keysUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/keys"
+        fun keyHistoryUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/key-history"
         fun placementsUrl(baseUrl: String) = base(baseUrl) + "/vault/placements"
     }
 }
