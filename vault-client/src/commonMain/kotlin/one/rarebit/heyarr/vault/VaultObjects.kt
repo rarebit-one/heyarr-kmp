@@ -226,9 +226,10 @@ class VaultObjects(
             // The epoch is checked AGAIN immediately before the push: a rotation that committed
             // while this write sealed, uploaded and folded the drive is caught here, and the write
             // re-seals under the new key once. The blobs already uploaded under the retired key
-            // stay unreferenced — only a drive change names a blob id, and blob ids are
+            // stay on the node — only a drive change names a blob id, and blob ids are
             // unguessable digests of fresh-nonce ciphertext — so nothing readable by the revoked
-            // recipient is published. The push itself names the ring's epoch, so a rotation
+            // recipient is published. Their upload self-pins them, so nothing reclaims the
+            // storage yet (heyarr-core#714). The push itself names the ring's epoch, so a rotation
             // committing in the round trip between this read and the push is refused by the node
             // and handled the same way (heyarr-core #712).
             var epoch = currentEpoch(spaceId)
