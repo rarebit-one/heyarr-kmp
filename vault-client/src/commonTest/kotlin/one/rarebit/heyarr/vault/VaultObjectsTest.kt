@@ -50,7 +50,19 @@ class VaultObjectsTest {
 
         override fun pullChangesSince(spaceId: String, since: Long) = ChangePage(changes.drop(since.toInt()), 0)
 
-        override fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray): String {
+        /** Runs as a push arrives, before the epoch check — a rotation landing in the last round trip. */
+        var beforePush: () -> Unit = {}
+
+        /** The `key_epoch` each push named. */
+        val pushedEpochs = ArrayList<Int?>()
+
+        override fun pushChange(spaceId: String, parents: List<String>, ciphertext: ByteArray, keyEpoch: Int?): String {
+            beforePush()
+            pushedEpochs.add(keyEpoch)
+            // heyarr-core #712: a push naming an epoch the space is not at is refused, nothing stored.
+            if (keyEpoch != null && keyEpoch != this.keyEpoch) {
+                throw VaultHttpException(409, "change: HTTP 409", VaultHttpException.CHANGE_KEY_EPOCH_MISMATCH)
+            }
             val canonical = PersonalStateId.canonical(parents)
             val id = PersonalStateId.changeId(spaceId, canonical, ciphertext)
             pushedParents.add(canonical)
@@ -169,14 +181,53 @@ class VaultObjectsTest {
             history.add(KeyHistoryEntry(1, VoidbindEncryption.sealSpaceKey(k1, k0)))
             wrapped.add(WrappedKey(me, k1, epoch = 1))
         }
-        // The space opens at epoch 1; every later epoch read comes from a node lagging at 0.
+        // The space opens at epoch 1; every later epoch read comes from a node lagging at 0, which
+        // refuses a change sealed at an epoch it has not reached.
         n.beforeKeys = { call -> if (call >= 2) n.keyEpoch = 0 }
+        assertFailsWith<VaultRefException.StaleEpoch> { client(n).put(spaceId, envelope) }
+
+        assertTrue(n.changes.isEmpty(), "nothing is published to the lagging node")
+        assertEquals(listOf<Int?>(1, 1), n.pushedEpochs, "both seals stayed on the newer key's epoch")
+        n.blobs.values.forEach { blob ->
+            // Every sealed manifest opens under the newer key, never the retired one.
+            if (runCatching { VaultFrame.openManifest(k1, blob) }.isSuccess) {
+                assertFailsWith<Exception> { VaultFrame.openManifest(k0, blob) }
+            }
+        }
+    }
+
+    @Test
+    fun aRotationLandingBetweenTheLastCheckAndThePushIsRefusedByTheNodeAndResealed() {
+        val k0 = VoidbindEncryption.newSpaceKey()
+        val k1 = VoidbindEncryption.newSpaceKey()
+        val n = node(k0)
+        var pushes = 0
+        // Every epoch read before the push says 0; the rotation commits as the first push arrives.
+        n.beforePush = { if (++pushes == 1) n.rotate(k0, k1) }
         val put = client(n).put(spaceId, envelope)
 
-        val sealedManifest = n.blobs.getValue(put.manifestBlob)
-        VaultFrame.openManifest(k1, sealedManifest) // still the newer key …
-        assertFailsWith<Exception> { VaultFrame.openManifest(k0, sealedManifest) } // … never the retired one
-        VoidbindEncryption.decryptChange(k1, n.changes.single().ciphertext)
+        assertEquals(listOf<Int?>(0, 1), n.pushedEpochs)
+        val change = n.changes.single().ciphertext
+        VoidbindEncryption.decryptChange(k1, change)
+        assertFailsWith<Exception> { VoidbindEncryption.decryptChange(k0, change) }
+        assertEquals(envelope, client(n).get(put.ref).json)
+    }
+
+    @Test
+    fun aNodeRefusingTheEpochTwiceRefusesTheWriteAndRecordsNothing() {
+        val k0 = VoidbindEncryption.newSpaceKey()
+        val k1 = VoidbindEncryption.newSpaceKey()
+        val k2 = VoidbindEncryption.newSpaceKey()
+        val n = node(k0)
+        var pushes = 0
+        n.beforePush = {
+            when (++pushes) {
+                1 -> n.rotate(k0, k1)
+                2 -> n.rotate(k1, k2)
+            }
+        }
+        assertFailsWith<VaultRefException.StaleEpoch> { client(n).put(spaceId, envelope) }
+        assertTrue(n.changes.isEmpty(), "no drive change under a retired key")
     }
 
     @Test

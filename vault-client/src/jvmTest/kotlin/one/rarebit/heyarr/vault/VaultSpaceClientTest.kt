@@ -6,6 +6,7 @@ import one.rarebit.heyarr.core.net.HttpTransport
 import java.util.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -113,6 +114,33 @@ class VaultSpaceClientTest {
         assertTrue(body.contains(""""space_id":"space-1""""), "body has space_id: $body")
         assertTrue(body.contains(""""change_id":"$id""""), "body has content-addressed id: $body")
         assertTrue(body.contains(""""ciphertext":"${b64(ct)}""""), "body has base64 ciphertext: $body")
+    }
+
+    @Test
+    fun pushChangeAtAnEpochNamesItAndReadsTheRefusalCode() {
+        val ct = byteArrayOf(1, 2, 3)
+        val id = PersonalStateId.changeId("s", emptyList(), ct)
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.changesUrl(base, "s") + "?key_epoch=2"
+        fake.responses["POST $url"] = HttpResponse(201, """{"change_id":"$id"}""")
+        val client = VaultSpaceClient(fake, base, cred)
+        assertEquals(id, client.pushChange("s", emptyList(), ct, keyEpoch = 2))
+        assertEquals(url, fake.requests.single().url)
+
+        // heyarr-core #712's refusal: a problem document carrying the code.
+        fake.responses["POST $url"] = HttpResponse(
+            409,
+            """{"type":"about:blank","title":"Conflict","status":409,""" +
+                """"detail":"the space key has been rotated","code":"change_key_epoch_mismatch"}""",
+        )
+        val refused = assertFailsWith<VaultHttpException> { client.pushChange("s", emptyList(), ct, keyEpoch = 2) }
+        assertTrue(refused.isChangeKeyEpochMismatch)
+
+        // Any other 409, or a body that is not a problem document, is not that refusal.
+        fake.responses["POST $url"] = HttpResponse(409, "<html>busy</html>")
+        val other = assertFailsWith<VaultHttpException> { client.pushChange("s", emptyList(), ct, keyEpoch = 2) }
+        assertEquals(409, other.status)
+        assertTrue(!other.isChangeKeyEpochMismatch)
     }
 
     @Test

@@ -351,6 +351,9 @@ class VaultSyncEngine(
 
     private fun push(change: DriveChange) {
         val ciphertext = keyring.encryptChange(encodeDriveChange(change).encodeToByteArray())
-        space.pushChange(spaceId, emptyList(), ciphertext) // TODO: causal parents = the applied frontier
+        // Conditional on the epoch that sealed it (heyarr-core #712): a rotation committing since
+        // the pass's ensureCurrentKey fails this pass, and the next one re-opens onto the new key.
+        // TODO: causal parents = the applied frontier
+        space.pushChange(spaceId, emptyList(), ciphertext, keyEpoch = keyring.epoch)
     }
 }

@@ -193,10 +193,10 @@ class VaultObjects(
      * [MAX_OBJECT_BYTES]. The plaintext is sealed on this device; only ciphertext is uploaded.
      *
      * The space's key epoch is read before sealing AND again just before the drive change is
-     * pushed; a rotation in between re-seals once under the new key, a second one (or one this
-     * device cannot follow) is [VaultRefException.StaleEpoch]. The node does not yet make the push
-     * conditional on the epoch, so a rotation committing within that last round trip still lands
-     * this one write under the retired key.
+     * pushed, and the push names the epoch it was sealed at, so the node refuses it if a rotation
+     * committed in the last round trip (heyarr-core #712). A rotation caught either way re-seals
+     * once under the new key; a second one (or one this device cannot follow) is
+     * [VaultRefException.StaleEpoch], with nothing recorded.
      */
     fun put(space: String, json: String): PutRefResult {
         val spaceId = VaultRef.parseSpace(space)
@@ -223,33 +223,42 @@ class VaultObjects(
         var attempt = 1
         while (true) {
             val sealed = sealAndRecord(spaceId, path, bytes, ring)
-            // The node takes no expected epoch with a change (heyarr-core `putChange`), so the
-            // epoch is checked AGAIN immediately before the push: a rotation that committed
-            // while this write sealed, uploaded and folded the drive is caught here, and the
-            // write re-seals under the new key once. The blobs already uploaded under the
-            // retired key stay unreferenced — only a drive change names a blob id, and blob
-            // ids are unguessable digests of fresh-nonce ciphertext — so nothing readable by
-            // the revoked recipient is published. What remains is the one round trip between
-            // this read and the push; closing it needs the node to refuse the push itself.
-            val epoch = currentEpoch(spaceId)
+            // The epoch is checked AGAIN immediately before the push: a rotation that committed
+            // while this write sealed, uploaded and folded the drive is caught here, and the write
+            // re-seals under the new key once. The blobs already uploaded under the retired key
+            // stay on the node — only a drive change names a blob id, and blob ids are
+            // unguessable digests of fresh-nonce ciphertext — so nothing readable by the revoked
+            // recipient is published. Their upload self-pins them, so nothing reclaims the
+            // storage yet (heyarr-core#714). The push itself names the ring's epoch, so a rotation
+            // committing in the round trip between this read and the push is refused by the node
+            // and handled the same way (heyarr-core #712).
+            var epoch = currentEpoch(spaceId)
             // At or below the ring's epoch is a node lagging behind a rotation this device has
-            // already followed, not a new one: publish under the newer key, never downgrade.
+            // already followed, not a new one: never downgrade. A node still lagging at the push
+            // refuses the newer epoch, and the write fails closed below.
             if (epoch <= ring.epoch) {
-                val changeId = try {
-                    this.space.pushChange(spaceId, sealed.heads, sealed.change)
-                } catch (e: VaultHttpException) {
-                    throw classifyAccess(e)
-                }
-                return PutRefResult(ref, path, sealed.manifestId, sealed.size, changeId)
+                val changeId = pushAtEpoch(spaceId, sealed, ring.epoch)
+                if (changeId != null) return PutRefResult(ref, path, sealed.manifestId, sealed.size, changeId)
+                epoch = currentEpoch(spaceId)
             }
             if (attempt++ >= MAX_SEAL_ATTEMPTS) {
                 throw VaultRefException.StaleEpoch(
-                    "space $spaceId rotated again (to key epoch $epoch) while the write was sealed; " +
-                        "nothing was recorded",
+                    "space $spaceId is at key epoch $epoch, not the epoch ${ring.epoch} this write was " +
+                        "sealed at, after a re-seal; nothing was recorded",
                 )
             }
             ring = writeRing(spaceId, ring, epoch)
         }
+    }
+
+    /**
+     * Push [sealed]'s drive change on condition the space is still at [epoch]; null when the node
+     * refuses that epoch.
+     */
+    private fun pushAtEpoch(spaceId: String, sealed: SealedWrite, epoch: Int): String? = try {
+        this.space.pushChange(spaceId, sealed.heads, sealed.change, keyEpoch = epoch)
+    } catch (e: VaultHttpException) {
+        if (e.isChangeKeyEpochMismatch) null else throw classifyAccess(e)
     }
 
     /** A write sealed and its blobs stored, with the drive change that would publish it — not yet pushed. */

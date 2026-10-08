@@ -80,7 +80,12 @@ allprojects {
 // 0.1.0: first cut (heyarr-kmp M1): SpaceOpen/SpaceKeyring (ADR-0103), the drive CRDT in
 // commonMain, VaultFrame, VaultSpaceClient, and ref-addressed objects (VaultRef/VaultObjects,
 // ADR-0104).
-val publishedLibraryVersion = "0.1.0"
+// 0.2.0 (breaking): VaultSpace.pushChange takes the sealing key epoch (heyarr-core#712), which
+// changes the interface's JVM signature — a 0.1.x consumer must recompile and pass it.
+// VaultObjects.put and the sync engine push conditionally and re-seal once on
+// change_key_epoch_mismatch. Not kept as an overload: a delegating 3-argument default would let
+// an implementer drop the epoch silently, i.e. fail open.
+val publishedLibraryVersion = "0.2.0"
 
 listOf(":core", ":vault-client").forEach { path ->
     project(path) {
