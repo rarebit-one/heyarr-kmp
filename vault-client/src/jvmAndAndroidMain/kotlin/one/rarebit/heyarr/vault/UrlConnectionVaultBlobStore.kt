@@ -36,7 +36,7 @@ class UrlConnectionVaultBlobStore(
                     size = JsonScan.longField(body, "size") ?: bytes.size.toLong(),
                 )
             } else {
-                PutResult.Failed("upload failed: HTTP $code")
+                PutResult.Failed("upload failed: HTTP $code", status = code)
             }
         } catch (e: IOException) {
             PutResult.Failed("upload failed: ${e.message}")

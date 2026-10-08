@@ -35,6 +35,9 @@ class VaultObjectsTest {
         val blobs = HashMap<String, ByteArray>()
         val pushedParents = ArrayList<List<String>>()
 
+        /** When set, every blob PUT is refused with this HTTP status. */
+        var putStatus: Int? = null
+
         override fun spaceKeys(spaceId: String): SpaceKeyList {
             beforeKeys(++keysCalls)
             if (keysStatus != 200) throw VaultHttpException(keysStatus, "keys: HTTP $keysStatus")
@@ -56,6 +59,7 @@ class VaultObjectsTest {
         }
 
         override fun putBlob(baseUrl: String, hash: String, bytes: ByteArray, credential: Credential): PutResult {
+            putStatus?.let { return PutResult.Failed("upload failed: HTTP $it", status = it) }
             blobs[hash] = bytes
             return PutResult.Stored(hash, bytes.size.toLong())
         }
@@ -175,6 +179,18 @@ class VaultObjectsTest {
         }
         n.keysStatus = 500
         assertFailsWith<VaultHttpException> { client(n).get(ref) } // a failure, not a refusal
+    }
+
+    @Test
+    fun anUploadRefusedAfterTheSpaceOpenedIsForbidden() {
+        val n = node(VoidbindEncryption.newSpaceKey())
+        for (status in listOf(401, 403)) {
+            n.putStatus = status
+            val e = assertFailsWith<VaultRefException.Forbidden> { client(n).put(spaceId, envelope) }
+            assertEquals(status, e.status)
+        }
+        n.putStatus = 500
+        assertFailsWith<IllegalStateException> { client(n).put(spaceId, envelope) } // a failure, not a refusal
     }
 
     @Test

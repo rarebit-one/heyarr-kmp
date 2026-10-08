@@ -52,7 +52,7 @@ class JdkVaultBlobStore(
                     size = JsonScan.longField(resp.body(), "size") ?: bytes.size.toLong(),
                 )
             } else {
-                PutResult.Failed("upload failed: HTTP ${resp.statusCode()}")
+                PutResult.Failed("upload failed: HTTP ${resp.statusCode()}", status = resp.statusCode())
             }
         } catch (e: Exception) {
             PutResult.Failed("upload failed: ${e.message}")
@@ -76,7 +76,7 @@ class JdkVaultBlobStore(
                     size = JsonScan.longField(resp.body(), "size") ?: Files.size(file),
                 )
             } else {
-                PutResult.Failed("upload failed: HTTP ${resp.statusCode()}")
+                PutResult.Failed("upload failed: HTTP ${resp.statusCode()}", status = resp.statusCode())
             }
         } catch (e: Exception) {
             PutResult.Failed("upload failed: ${e.message}")

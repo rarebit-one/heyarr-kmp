@@ -50,6 +50,9 @@ sealed interface PutResult {
     /** Stored; the server confirms [hash] and the stored ciphertext [size]. */
     data class Stored(val hash: String, val size: Long) : PutResult
 
-    /** Rejected; [message] is a UI-safe reason (carries no token). */
-    data class Failed(val message: String) : PutResult
+    /**
+     * Rejected; [message] is a UI-safe reason (carries no token), and [status] the HTTP status when
+     * the node answered (null for a transport failure), so a 401/403 reads as access gone.
+     */
+    data class Failed(val message: String, val status: Int? = null) : PutResult
 }

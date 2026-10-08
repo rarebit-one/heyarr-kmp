@@ -233,7 +233,15 @@ class VaultObjects(
             // The node re-derives the id; one that answers with another id did not store these bytes.
             is PutResult.Stored -> check(r.hash == hash) { "vault: node stored $hash as ${r.hash}" }
 
-            is PutResult.Failed -> error("vault: storing $hash: ${r.message}")
+            // Access that went away after the space opened is the documented refusal, not a failure.
+            is PutResult.Failed -> if (r.status == HTTP_UNAUTHORIZED || r.status == HTTP_FORBIDDEN) {
+                throw VaultRefException.Forbidden(
+                    r.status ?: HTTP_FORBIDDEN,
+                    "vault: storing $hash refused: ${r.message}",
+                )
+            } else {
+                error("vault: storing $hash: ${r.message}")
+            }
         }
     }
 
