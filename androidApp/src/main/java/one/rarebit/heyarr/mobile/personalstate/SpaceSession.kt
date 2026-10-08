@@ -1,7 +1,9 @@
 package one.rarebit.heyarr.mobile.personalstate
 
-import one.rarebit.heyarr.core.vault.SnapshotEnvelope
-import one.rarebit.heyarr.core.vault.SpaceKeyring
+import one.rarebit.heyarr.vault.SnapshotEnvelope
+import one.rarebit.heyarr.vault.SpaceKeyring
+import one.rarebit.heyarr.vault.SpaceOpen
+import one.rarebit.heyarr.vault.WrappedKey
 import java.util.UUID
 
 /**
@@ -83,20 +85,15 @@ internal class SpaceSession(
     }
 
     /**
-     * The space's keyring for this device (heyarr-core `spaceopen.Open`): its copy at the
-     * current key epoch, unwrapped, and the key history unrolled to epoch 0.
+     * The space's keyring for this device (heyarr-core `spaceopen.Open`, through `:vault-client`'s
+     * [SpaceOpen] — the one opener the desktop shares): its copy at the current key epoch,
+     * unwrapped, and the key history unrolled to epoch 0.
      */
     private fun openOnce(spaceId: String): Opening = runCatching {
-        val keys = client.spaceKeys(spaceId)
-        val own = keys.wrapped.firstOrNull { it.recipient == device.recipientId() }
-        if (own == null) {
-            Opening.NoCopy
-        } else {
-            val current = crypto.unwrap(own.wrapped, device.seed())
-            // A space at epoch 0 has no history and is not asked.
-            val history = if (keys.keyEpoch == 0) emptyList() else client.keyHistory(spaceId)
-            Opening.Open(SpaceKeyring.open(current, own.epoch, keys.keyEpoch, history, crypto::openSpaceKey))
+        val ring = SpaceOpen.open(client, spaceId, device.recipientId(), crypto::openSpaceKey) {
+            crypto.unwrap(it, device.seed())
         }
+        if (ring == null) Opening.NoCopy else Opening.Open(ring)
     }.getOrElse { Opening.Unreadable(it) }
 
     /** The keyring, or null when this device cannot read the space (either kind of "not"). */
@@ -111,13 +108,7 @@ internal class SpaceSession(
      */
     private fun writeKey(spaceId: String, ring: SpaceKeyring): ByteArray {
         val epoch = client.spaceKeys(spaceId).keyEpoch
-        if (epoch == ring.epoch) return ring.current
-        val fresh = openRing(spaceId)
-        check(fresh != null && fresh.epoch >= epoch) {
-            "space $spaceId rotated to key epoch $epoch but this device could not open it " +
-                "(holding epoch ${ring.epoch}); refusing to write under a superseded key"
-        }
-        return fresh.current
+        return SpaceOpen.currentForWrite(epoch, ring, spaceId) { openRing(spaceId) }.current
     }
 
     /**
@@ -256,10 +247,10 @@ internal class SpaceSession(
     fun createSpace(kind: String): String {
         val id = newSpaceId()
         val key = crypto.newSpaceKey()
-        val recipients = ArrayList<WrappedKeyEntry>()
-        recipients.add(WrappedKeyEntry(device.recipientId(), crypto.seal(key, device.publicKey())))
+        val recipients = ArrayList<WrappedKey>()
+        recipients.add(WrappedKey(device.recipientId(), crypto.seal(key, device.publicKey())))
         for (pub in additionalRecipients()) {
-            recipients.add(WrappedKeyEntry("x25519:" + Hex.encode(pub), crypto.seal(key, pub)))
+            recipients.add(WrappedKey("x25519:" + Hex.encode(pub), crypto.seal(key, pub)))
         }
         client.createSpace(id, kind, recipients)
         return id

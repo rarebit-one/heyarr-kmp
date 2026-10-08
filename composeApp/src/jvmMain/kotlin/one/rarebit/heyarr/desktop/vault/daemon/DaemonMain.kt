@@ -13,9 +13,9 @@ import one.rarebit.heyarr.desktop.vault.JdkVaultBlobStore
 import one.rarebit.heyarr.desktop.vault.PeriodicOnlyChanges
 import one.rarebit.heyarr.desktop.vault.RealVaultFolder
 import one.rarebit.heyarr.desktop.vault.SyncChanges
-import one.rarebit.heyarr.desktop.vault.VaultSpaceClient
 import one.rarebit.heyarr.desktop.vault.VaultSyncEngine
 import one.rarebit.heyarr.desktop.vault.WatchedFolder
+import one.rarebit.heyarr.vault.VaultSpaceClient
 import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.CountDownLatch

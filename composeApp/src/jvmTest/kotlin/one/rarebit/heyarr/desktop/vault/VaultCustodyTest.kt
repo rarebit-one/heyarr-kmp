@@ -1,8 +1,11 @@
 package one.rarebit.heyarr.desktop.vault
 
-import one.rarebit.heyarr.core.vault.KeyHistoryEntry
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DesktopSecretStore
+import one.rarebit.heyarr.vault.KeyHistoryEntry
+import one.rarebit.heyarr.vault.SpaceKeyList
+import one.rarebit.heyarr.vault.VaultKeys
+import one.rarebit.heyarr.vault.WrappedKey
 import one.rarebit.voidwhichbinds.DeviceIdentity
 import one.rarebit.voidwhichbinds.KeyRef
 import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption

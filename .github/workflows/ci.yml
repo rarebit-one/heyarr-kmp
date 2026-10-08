@@ -49,7 +49,7 @@ jobs:
           while IFS= read -r f; do
             # Shared modules, the Gradle build itself, and this workflow: everything.
             case "$f" in
-              core/*|ui/*|build.gradle.kts|settings.gradle.kts|gradle.properties|gradle/*|gradlew|gradlew.bat|.github/workflows/ci.yml)
+              core/*|ui/*|vault-client/*|build.gradle.kts|settings.gradle.kts|gradle.properties|gradle/*|gradlew|gradlew.bat|.github/workflows/ci.yml)
                 android=true desktop=true instrumented=true ;;
             esac
             case "$f" in
@@ -62,7 +62,7 @@ jobs:
               androidApp/*|.github/workflows/instrumented.yml) instrumented=true ;;
             esac
             case "$f" in
-              core/*|composeApp/*|androidApp/*|ui/*|scripts/refresh-openapi-spec.sh|.github/workflows/openapi-contract.yml|.github/workflows/ci.yml)
+              core/*|composeApp/*|androidApp/*|ui/*|vault-client/*|scripts/refresh-openapi-spec.sh|.github/workflows/openapi-contract.yml|.github/workflows/ci.yml)
                 openapi=true ;;
             esac
           done <"$RUNNER_TEMP/changed.txt"

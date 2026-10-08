@@ -52,10 +52,10 @@ import one.rarebit.heyarr.desktop.vault.FileSyncIndexStore
 import one.rarebit.heyarr.desktop.vault.JdkVaultBlobStore
 import one.rarebit.heyarr.desktop.vault.RealVaultFolder
 import one.rarebit.heyarr.desktop.vault.VaultCustody
-import one.rarebit.heyarr.desktop.vault.VaultSpaceClient
 import one.rarebit.heyarr.desktop.vault.VaultSyncEngine
 import one.rarebit.heyarr.desktop.vault.WatchedFolder
 import one.rarebit.heyarr.ui.theme.Appearance
+import one.rarebit.heyarr.vault.VaultSpaceClient
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
 enum class Connection {

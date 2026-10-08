@@ -69,6 +69,8 @@ class OpenApiContractTest {
             "EncryptedChange" to listOf("#EncryptedChange"),
             "EncryptedSnapshot" to listOf("#EncryptedSnapshot"),
             "JdkVaultBlobStore" to listOf("PUT /api/v1/vault/blobs/{hash}"),
+            // :vault-client.
+            "UrlConnectionVaultBlobStore" to listOf("PUT /api/v1/vault/blobs/{hash}"),
         )
 
         val SPACES
