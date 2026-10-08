@@ -405,16 +405,16 @@ class Drive {
                 ?.let { (_, base) -> StrictJson.goReadConflict(base, BASE_FIELDS)?.let { "base: $it" } }
 
         private val CHANGE_FIELDS = mapOf(
-            "op" to true,
-            "path" to false,
-            "blob" to false,
-            "size" to true,
-            "mtime" to true,
-            "at" to true,
-            "writer" to false,
-            "base" to false,
+            "op" to StrictJson.Kind.INT,
+            "path" to StrictJson.Kind.STRING,
+            "blob" to StrictJson.Kind.STRING,
+            "size" to StrictJson.Kind.INT,
+            "mtime" to StrictJson.Kind.INT,
+            "at" to StrictJson.Kind.INT,
+            "writer" to StrictJson.Kind.STRING,
+            "base" to StrictJson.Kind.OBJECT,
         )
-        private val BASE_FIELDS = mapOf("At" to true, "Writer" to false)
+        private val BASE_FIELDS = mapOf("At" to StrictJson.Kind.INT, "Writer" to StrictJson.Kind.STRING)
 
         /**
          * Parse a Go-marshalled [DriveChange] object slice, or null when its op is one this

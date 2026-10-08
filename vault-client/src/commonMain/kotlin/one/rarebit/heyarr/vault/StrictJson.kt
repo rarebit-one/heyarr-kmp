@@ -53,16 +53,20 @@ internal object StrictJson {
         p.topEntries.toList()
     }.getOrNull()
 
+    /** The Go type a known field decodes into — what its JSON value must be (or `null`, Go's zero). */
+    enum class Kind { INT, STRING, OBJECT }
+
     /**
      * Why Go's `encoding/json` and the tolerant first-match, exact-case [JsonScan] could read
      * [json]'s top-level object differently — or null when they cannot. [fields] maps each field
-     * a writer emits, spelt exactly as it emits it, to whether Go decodes it as an integer. Refused:
+     * a writer emits, spelt exactly as it emits it, to the [Kind] Go decodes it as. Refused:
      * anything but one strictly valid object; a key repeated case-insensitively (Go takes the
      * LAST, the scanner the first); a known field in another case (Go matches it, the scanner
-     * does not); a known integer field whose value is not an integer literal (Go cannot decode
-     * 1.5 or 1e3 into an int; the scanner reads the prefix).
+     * does not); a known field whose value is not its kind or null — an INT that is not an
+     * integer literal within a 64-bit signed range (Go fails 1.5, 1e3 or 2^63; the scanner reads
+     * a prefix or overflows), a STRING that is not a string, an OBJECT that is not an object.
      */
-    fun goReadConflict(json: String, fields: Map<String, Boolean>): String? {
+    fun goReadConflict(json: String, fields: Map<String, Kind>): String? {
         val entries = topLevelEntries(json) ?: return "not a valid JSON object"
         val byFolded = fields.keys.associateBy { it.lowercase() }
         val seen = HashSet<String>()
@@ -71,11 +75,32 @@ internal object StrictJson {
             val known = byFolded[folded]
             when {
                 !seen.add(folded) -> "key \"$folded\" appears more than once"
-                known != null && key != known -> "key \"$key\" is not spelt as a writer spells it"
-                known != null && fields.getValue(known) && !INTEGER_LITERAL.matches(raw) -> "$known is not an integer"
+
+                known == null -> null
+
+                key != known -> "key \"$key\" is not spelt as a writer spells it"
+
+                !fits(
+                    raw,
+                    fields.getValue(known),
+                ) -> "$known is not a${if (fields.getValue(
+                        known,
+                    ) == Kind.INT
+                ) {
+                    "n"
+                } else {
+                    ""
+                }} ${fields.getValue(known).name.lowercase()}"
+
                 else -> null
             }
         }
+    }
+
+    private fun fits(raw: String, kind: Kind): Boolean = raw == "null" || when (kind) {
+        Kind.INT -> INTEGER_LITERAL.matches(raw) && raw.toLongOrNull() != null
+        Kind.STRING -> raw.startsWith('"')
+        Kind.OBJECT -> raw.startsWith('{')
     }
 
     private val INTEGER_LITERAL = Regex("^-?(0|[1-9][0-9]*)$")

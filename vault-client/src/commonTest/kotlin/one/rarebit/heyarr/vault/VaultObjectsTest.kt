@@ -413,6 +413,9 @@ class VaultObjectsTest {
             "{${q}op$q:0,${q}PATH$q:${q}x$q,${q}at$q:1,${q}writer$q:${q}w$q}", // case-varied known key
             "{${q}op$q:0,$p,${q}size$q:1.5,${q}at$q:1,${q}writer$q:${q}w$q}", // fractional integer
             "{${q}op$q:0,$p,${q}at$q:1,${q}writer$q:${q}w$q,${q}base$q:{${q}At$q:1,${q}at$q:2}}", // base repeat
+            "{${q}op$q:0,${q}path$q:7,${q}at$q:1,${q}writer$q:${q}w$q}", // a string field that is not a string
+            "{${q}op$q:0,$p,${q}size$q:9223372036854775808,${q}at$q:1,${q}writer$q:${q}w$q}", // past int64
+            "{${q}op$q:0,$p,${q}at$q:1,${q}writer$q:${q}w$q,${q}base$q:[1]}", // base not an object
         )
         for (json in bad) {
             val key = VoidbindEncryption.newSpaceKey()

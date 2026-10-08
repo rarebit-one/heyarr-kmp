@@ -266,21 +266,20 @@ object VaultFrame {
 
     /**
      * Refuse a manifest that Go's `encoding/json` and [JsonScan] could read differently
-     * ([StrictJson.goReadConflict]): a writer emits each field once, in lower case, integers as
-     * integer literals.
+     * ([StrictJson.goReadConflict]): a writer emits each field once, in lower case, as its type.
      */
     private fun checkManifestKeys(json: String) {
         StrictJson.goReadConflict(json, MANIFEST_FIELDS)?.let { throw FrameException("manifest: $it") }
     }
 
-    /** Each manifest field as a writer spells it, and whether Go decodes it as an integer. */
+    /** Each manifest field as a writer spells it, and the type Go decodes it as. */
     private val MANIFEST_FIELDS = mapOf(
-        "version" to true,
-        "file_id" to false,
-        "frame_size" to true,
-        "frame_count" to true,
-        "plaintext_size" to true,
-        "content" to false,
+        "version" to StrictJson.Kind.INT,
+        "file_id" to StrictJson.Kind.STRING,
+        "frame_size" to StrictJson.Kind.INT,
+        "frame_count" to StrictJson.Kind.INT,
+        "plaintext_size" to StrictJson.Kind.INT,
+        "content" to StrictJson.Kind.STRING,
     )
 
     private val FILE_ID_HEX = Regex("^[0-9a-f]{${FILE_ID_LEN * 2}}$")
