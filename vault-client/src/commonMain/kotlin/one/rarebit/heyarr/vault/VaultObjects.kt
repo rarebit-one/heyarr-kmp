@@ -232,7 +232,9 @@ class VaultObjects(
             // the revoked recipient is published. What remains is the one round trip between
             // this read and the push; closing it needs the node to refuse the push itself.
             val epoch = currentEpoch(spaceId)
-            if (epoch == ring.epoch) {
+            // At or below the ring's epoch is a node lagging behind a rotation this device has
+            // already followed, not a new one: publish under the newer key, never downgrade.
+            if (epoch <= ring.epoch) {
                 val changeId = try {
                     this.space.pushChange(spaceId, sealed.heads, sealed.change)
                 } catch (e: VaultHttpException) {

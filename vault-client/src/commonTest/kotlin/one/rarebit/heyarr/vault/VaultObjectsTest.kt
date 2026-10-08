@@ -161,6 +161,25 @@ class VaultObjectsTest {
     }
 
     @Test
+    fun aNodeReportingAnOlderEpochNeverDowngradesTheWriteKey() {
+        val k0 = VoidbindEncryption.newSpaceKey()
+        val k1 = VoidbindEncryption.newSpaceKey()
+        val n = FakeNode(spaceId).apply {
+            keyEpoch = 1
+            history.add(KeyHistoryEntry(1, VoidbindEncryption.sealSpaceKey(k1, k0)))
+            wrapped.add(WrappedKey(me, k1, epoch = 1))
+        }
+        // The space opens at epoch 1; every later epoch read comes from a node lagging at 0.
+        n.beforeKeys = { call -> if (call >= 2) n.keyEpoch = 0 }
+        val put = client(n).put(spaceId, envelope)
+
+        val sealedManifest = n.blobs.getValue(put.manifestBlob)
+        VaultFrame.openManifest(k1, sealedManifest) // still the newer key …
+        assertFailsWith<Exception> { VaultFrame.openManifest(k0, sealedManifest) } // … never the retired one
+        VoidbindEncryption.decryptChange(k1, n.changes.single().ciphertext)
+    }
+
+    @Test
     fun aRotationThisDeviceCannotFollowRefusesTheWrite() {
         val n = node(VoidbindEncryption.newSpaceKey())
         n.beforeKeys = { call -> if (call == 2) n.keyEpoch = 1 } // rotated, but no copy for this device

@@ -54,12 +54,15 @@ object SpaceOpen {
         spaceId: String,
         reopen: () -> SpaceKeyring?,
     ): SpaceKeyring {
-        if (currentEpoch == null || currentEpoch == ring.epoch) return ring
+        // Never downgrade: a node reporting an epoch at or BELOW the one this ring holds is
+        // lagging (or replaying), not a rotation; re-opening on its word could swap the current
+        // key for a retired one. Keep the newer ring.
+        if (currentEpoch == null || currentEpoch <= ring.epoch) return ring
         // null is "this device cannot open the new key" — stale. Anything [reopen] THROWS (a
         // timeout, a 5xx, a custody failure) is not a verdict on the rotation and propagates, so
         // a caller can retry an outage instead of treating it as a revocation.
         val fresh = reopen()
-        if (fresh == null || fresh.epoch < currentEpoch) {
+        if (fresh == null || fresh.epoch < currentEpoch || fresh.epoch < ring.epoch) {
             throw StaleKeyException(
                 "space $spaceId rotated to key epoch $currentEpoch but this device could not open it " +
                     "(holding epoch ${ring.epoch}); refusing to write under a superseded key",
