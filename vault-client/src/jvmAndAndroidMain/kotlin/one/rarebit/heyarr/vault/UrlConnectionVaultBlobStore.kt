@@ -76,7 +76,7 @@ class UrlConnectionVaultBlobStore(
             if (code != HttpURLConnection.HTTP_OK) {
                 throw VaultHttpException(code, "vault: GET of $hash failed: HTTP $code")
             }
-            conn.inputStream.use { it.readBytes() }
+            conn.inputStream.use { readBounded(it, VaultBlobStore.MAX_WHOLE_BLOB_BYTES, hash) }
         } finally {
             conn.disconnect()
         }
@@ -95,6 +95,7 @@ class UrlConnectionVaultBlobStore(
     private companion object {
         const val HTTP_CREATED = 201
         const val HTTP_PARTIAL = 206
+        const val READ_CHUNK = 8192
 
         fun skipFully(input: InputStream, n: Long, hash: String) {
             var left = n
@@ -106,6 +107,22 @@ class UrlConnectionVaultBlobStore(
                 } else {
                     left -= skipped
                 }
+            }
+        }
+
+        /** All of [input], refused once it passes [max] bytes — never buffered beyond that. */
+        fun readBounded(input: InputStream, max: Int, hash: String): ByteArray {
+            val out = java.io.ByteArrayOutputStream()
+            val buf = ByteArray(READ_CHUNK)
+            while (true) {
+                val r = input.read(buf)
+                if (r < 0) return out.toByteArray()
+                if (out.size() + r > max) {
+                    throw VaultFrame.IntegrityException(
+                        "vault: $hash is larger than the $max bytes a whole-blob read takes",
+                    )
+                }
+                out.write(buf, 0, r)
             }
         }
 

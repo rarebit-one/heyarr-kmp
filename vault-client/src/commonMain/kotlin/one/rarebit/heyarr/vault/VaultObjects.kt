@@ -157,7 +157,7 @@ class VaultObjects(
             val entry = loadDrive(ref.space, ring).drive.get(path)
                 ?: throw VaultRefException.Absent("$ref: no object at that ref")
             if (entry.conflicted) throw VaultRefException.Absent("$ref: the object has conflicting versions")
-            val manifestBlob = blob(ref) { blobs.fetchAll(baseUrl, entry.blob, credential) }
+            val manifestBlob = blob(ref) { integrity(ref) { blobs.fetchAll(baseUrl, entry.blob, credential) } }
             // Content addressing first: the manifest must be the one the drive entry names, or a
             // node could substitute another validly sealed manifest of this space. Then the manifest
             // picks the key (the object may predate a rotation); its frames are under it, and the

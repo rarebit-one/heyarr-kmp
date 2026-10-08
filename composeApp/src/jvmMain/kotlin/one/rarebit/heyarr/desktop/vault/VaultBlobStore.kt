@@ -4,6 +4,7 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.vault.PutResult
 import one.rarebit.heyarr.vault.VaultBlobStore
+import one.rarebit.heyarr.vault.VaultFrame
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -100,8 +101,18 @@ class JdkVaultBlobStore(
             .timeout(requestTimeout)
             .GET()
         for ((k, v) in credential.asHeader()) builder.header(k, v)
-        val resp = client.send(builder.build(), BodyHandlers.ofByteArray())
-        require(resp.statusCode() == 200) { "vault: GET of $hash failed: HTTP ${resp.statusCode()}" }
-        return resp.body()
+        val resp = client.send(builder.build(), BodyHandlers.ofInputStream())
+        return resp.body().use { body ->
+            require(resp.statusCode() == 200) { "vault: GET of $hash failed: HTTP ${resp.statusCode()}" }
+            // Bounded like UrlConnectionVaultBlobStore: never buffer more than a whole-blob read takes.
+            val max = VaultBlobStore.MAX_WHOLE_BLOB_BYTES
+            val bytes = body.readNBytes(max + 1)
+            if (bytes.size > max) {
+                throw VaultFrame.IntegrityException(
+                    "vault: $hash is larger than the $max bytes a whole-blob read takes",
+                )
+            }
+            bytes
+        }
     }
 }

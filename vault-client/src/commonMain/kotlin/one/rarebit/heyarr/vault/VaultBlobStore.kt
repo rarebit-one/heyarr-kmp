@@ -18,7 +18,12 @@ interface VaultBlobStore {
     /** GET ciphertext bytes `[start, end)` of blob [hash] — the codec's per-frame fetch. */
     fun fetchRange(baseUrl: String, hash: String, start: Long, end: Long, credential: Credential): ByteArray
 
-    /** GET the whole blob [hash] (small blobs like the sealed manifest). */
+    /**
+     * GET the whole blob [hash] (small blobs like the sealed manifest), refusing one larger than
+     * [MAX_WHOLE_BLOB_BYTES] with [VaultFrame.IntegrityException] before buffering past that limit:
+     * a node answering with more is not serving the blob the caller asked for, and must not be
+     * able to exhaust the heap first.
+     */
     fun fetchAll(baseUrl: String, hash: String, credential: Credential): ByteArray
 
     /** A [VaultFrame.Fetch] bound to one blob, so [VaultFrame.openAll]/openRange can read it. */
@@ -26,6 +31,12 @@ interface VaultBlobStore {
         VaultFrame.Fetch { start, end -> fetchRange(baseUrl, hash, start, end, credential) }
 
     companion object {
+        /**
+         * The most a whole-blob GET reads. A sealed manifest is a few hundred bytes; content is
+         * read frame by frame ([fetchRange]), never whole.
+         */
+        const val MAX_WHOLE_BLOB_BYTES = 64 shl 10
+
         /** Half-open `[start, end)` → an inclusive HTTP byte range `start-(end-1)`. */
         fun rangeHeader(start: Long, end: Long): String {
             require(end > start) { "empty range [$start,$end)" }
