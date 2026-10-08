@@ -72,7 +72,10 @@ class LoadedDrive(val drive: Drive, val changes: List<EncryptedChange>) {
  *
  * Blocking, like every client here: call it off the UI thread.
  */
-@Suppress("LongParameterList") // each argument is one injected seam (node reads, blobs, custody, crypto, clock)
+@Suppress(
+    "LongParameterList", // each argument is one injected seam (node reads, blobs, custody, crypto, clock)
+    "TooManyFunctions", // the get/put pipeline, one private step per outcome it classifies
+)
 class VaultObjects(
     private val keys: SpaceKeySource,
     private val space: VaultSpace,
@@ -159,7 +162,14 @@ class VaultObjects(
             // node could substitute another validly sealed manifest of this space. Then the manifest
             // picks the key (the object may predate a rotation); its frames are under it, and the
             // whole content blob is held to the id the manifest names.
+            // Opening also validates the manifest's geometry (VaultFrame.validateManifest), before
+            // any of it sizes a fetch or an allocation.
             val opened = integrity(ref) { VaultFrame.openManifestVerified(ring, manifestBlob, entry.blob) }
+            // put-ref never seals more than MAX_OBJECT_BYTES; a manifest claiming more is not an
+            // object this client reads into memory.
+            if (opened.manifest.plaintextSize > MAX_OBJECT_BYTES) {
+                throw VaultRefException.InvalidObject("$ref is larger than $MAX_OBJECT_BYTES bytes")
+            }
             val content = blobs.fetchFor(baseUrl, opened.manifest.content, credential)
             blob(ref) { integrity(ref) { VaultFrame.openAllVerified(opened.key, opened.manifest, content) } }
         }
@@ -173,47 +183,99 @@ class VaultObjects(
      * random object id and record it in the space's drive — heyarr-core `vault put-ref`. The object
      * must be a versioned, typed envelope (`"v": 1` and a non-empty `"type"`) of at most
      * [MAX_OBJECT_BYTES]. The plaintext is sealed on this device; only ciphertext is uploaded.
+     *
+     * The space's key epoch is read before sealing AND again just before the drive change is
+     * pushed; a rotation in between re-seals once under the new key, a second one (or one this
+     * device cannot follow) is [VaultRefException.StaleEpoch]. The node does not yet make the push
+     * conditional on the epoch, so a rotation committing within that last round trip still lands
+     * this one write under the retired key.
      */
-    @Suppress("ThrowsCount") // one per outcome the CLI's exit codes distinguish, plus the stale-epoch refusal
     fun put(space: String, json: String): PutRefResult {
         val spaceId = VaultRef.parseSpace(space)
         val bytes = json.encodeToByteArray()
         checkEnvelope(json, bytes.size)
         val ref = VaultRef.newObject(spaceId)
         val path = requireNotNull(ref.path)
-        return withRing(spaceId) { opened ->
-            // The ring may already be stale: a rotation that landed after it was opened brings no
-            // blob this write would fail to open, so nothing else would notice — and sealing under
-            // the retired key would let a recipient that rotation revoked read the new object. Ask
-            // for the current epoch now, right before sealing, and move onto it or refuse.
-            val epoch = try {
-                keys.spaceKeys(spaceId).keyEpoch
-            } catch (e: VaultHttpException) {
-                throw classifyAccess(e)
+        return withRing(spaceId) { opened -> sealAndPush(spaceId, ref, path, bytes, opened) }
+    }
+
+    /** [put] on an opened ring: seal, re-check the epoch, push — re-sealing once if the space rotated meanwhile. */
+    private fun sealAndPush(
+        spaceId: String,
+        ref: VaultRef,
+        path: String,
+        bytes: ByteArray,
+        opened: SpaceKeyring,
+    ): PutRefResult {
+        // The ring may already be stale: a rotation that landed after it was opened brings no
+        // blob this write would fail to open, so nothing else would notice — and sealing under
+        // the retired key would let a recipient that rotation revoked read the new object. Ask
+        // for the current epoch now, right before sealing, and move onto it or refuse.
+        var ring = writeRing(spaceId, opened, currentEpoch(spaceId))
+        var attempt = 1
+        while (true) {
+            val sealed = sealAndRecord(spaceId, path, bytes, ring)
+            // The node takes no expected epoch with a change (heyarr-core `putChange`), so the
+            // epoch is checked AGAIN immediately before the push: a rotation that committed
+            // while this write sealed, uploaded and folded the drive is caught here, and the
+            // write re-seals under the new key once. The blobs already uploaded under the
+            // retired key stay unreferenced — only a drive change names a blob id, and blob
+            // ids are unguessable digests of fresh-nonce ciphertext — so nothing readable by
+            // the revoked recipient is published. What remains is the one round trip between
+            // this read and the push; closing it needs the node to refuse the push itself.
+            val epoch = currentEpoch(spaceId)
+            if (epoch == ring.epoch) {
+                val changeId = try {
+                    this.space.pushChange(spaceId, sealed.heads, sealed.change)
+                } catch (e: VaultHttpException) {
+                    throw classifyAccess(e)
+                }
+                return PutRefResult(ref, path, sealed.manifestId, sealed.size, changeId)
             }
-            val ring = try {
-                SpaceOpen.currentForWrite(epoch, opened, spaceId) { openSpace(spaceId) }
-            } catch (e: SpaceOpen.StaleKeyException) {
-                throw VaultRefException.StaleEpoch(e.message ?: "the space rotated", e)
+            if (attempt++ >= MAX_SEAL_ATTEMPTS) {
+                throw VaultRefException.StaleEpoch(
+                    "space $spaceId rotated again (to key epoch $epoch) while the write was sealed; " +
+                        "nothing was recorded",
+                )
             }
-            // One key for the content frames, the manifest AND the drive change: a reader finds the
-            // frames' key by the manifest it opens (ADR-0103).
-            val key = ring.current
-            val (content, manifest) = VaultFrame.seal(key, bytes, newFileId())
-            store(manifest.content, content)
-            val sealedManifest = VaultFrame.sealManifest(key, manifest)
-            val manifestId = VaultFrame.BLAKE3.hash(sealedManifest)
-            store(manifestId, sealedManifest)
-            val loaded = loadDrive(spaceId, ring)
-            val change = loaded.drive.put(path, manifestId, manifest.plaintextSize, now())
-            val ciphertext = ring.encryptChange(encodeDriveChange(change).encodeToByteArray())
-            val changeId = try {
-                this.space.pushChange(spaceId, loaded.heads(), ciphertext)
-            } catch (e: VaultHttpException) {
-                throw classifyAccess(e)
-            }
-            PutRefResult(ref, path, manifestId, manifest.plaintextSize, changeId)
+            ring = writeRing(spaceId, ring, epoch)
         }
+    }
+
+    /** A write sealed and its blobs stored, with the drive change that would publish it — not yet pushed. */
+    private class SealedWrite(val manifestId: String, val size: Long, val heads: List<String>, val change: ByteArray)
+
+    /**
+     * Seal [bytes] under [ring]'s current key, upload the content and manifest blobs, and encrypt
+     * the drive change recording the manifest at [path], parented on the current heads.
+     */
+    private fun sealAndRecord(spaceId: String, path: String, bytes: ByteArray, ring: SpaceKeyring): SealedWrite {
+        // One key for the content frames, the manifest AND the drive change: a reader finds the
+        // frames' key by the manifest it opens (ADR-0103).
+        val key = ring.current
+        val (content, manifest) = VaultFrame.seal(key, bytes, newFileId())
+        store(manifest.content, content)
+        val sealedManifest = VaultFrame.sealManifest(key, manifest)
+        val manifestId = VaultFrame.BLAKE3.hash(sealedManifest)
+        store(manifestId, sealedManifest)
+        val loaded = loadDrive(spaceId, ring)
+        val change = loaded.drive.put(path, manifestId, manifest.plaintextSize, now())
+        val ciphertext = ring.encryptChange(encodeDriveChange(change).encodeToByteArray())
+        return SealedWrite(manifestId, manifest.plaintextSize, loaded.heads(), ciphertext)
+    }
+
+    /** The space's current key epoch as the node reports it now. */
+    private fun currentEpoch(spaceId: String): Int = try {
+        keys.spaceKeys(spaceId).keyEpoch
+    } catch (e: VaultHttpException) {
+        throw classifyAccess(e)
+    }
+
+    /** [SpaceOpen.currentForWrite], with "cannot follow the rotation" as [VaultRefException.StaleEpoch]. */
+    private fun writeRing(spaceId: String, ring: SpaceKeyring, epoch: Int): SpaceKeyring = try {
+        SpaceOpen.currentForWrite(epoch, ring, spaceId) { openSpace(spaceId) }
+    } catch (e: SpaceOpen.StaleKeyException) {
+        throw VaultRefException.StaleEpoch(e.message ?: "the space rotated", e)
     }
 
     /** Run [op] on the space's ring; when no held key opens a blob it read, re-open once and run again. */
@@ -287,6 +349,9 @@ class VaultObjects(
          * (Go `maxVaultObject`).
          */
         const val MAX_OBJECT_BYTES = 8 shl 20
+
+        /** A write re-seals at most once when the space rotates under it, then refuses. */
+        private const val MAX_SEAL_ATTEMPTS = 2
 
         private const val HTTP_UNAUTHORIZED = 401
         private const val HTTP_FORBIDDEN = 403

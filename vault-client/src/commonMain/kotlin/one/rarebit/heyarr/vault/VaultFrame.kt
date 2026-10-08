@@ -154,7 +154,8 @@ object VaultFrame {
      * heyarr-core's `vaultread` relies on for every read: each frame's AEAD under the space key,
      * with the manifest's random file id and the frame index inside the sealed header (a frame
      * from another object, or another position, fails), and the manifest's own check
-     * ([openManifestVerified]) pinning that file id and geometry.
+     * ([openManifestVerified], whose [parseManifest] also holds its geometry to [validateManifest])
+     * pinning that file id and geometry.
      */
     @Suppress("ThrowsCount") // a gap, a short read and a wrong hash are three different lies
     fun openAllVerified(spaceKey: ByteArray, m: Manifest, fetch: Fetch): ByteArray {
@@ -213,17 +214,63 @@ object VaultFrame {
         return openManifest(keyring, sealed)
     }
 
+    /**
+     * Parse a manifest's JSON and hold its geometry to what a writer ([seal], [sealStreaming], Go
+     * `vaultframe.Seal`) can produce — [validateManifest]. A manifest is AEAD-sealed under the
+     * space key, so a bad one comes from a buggy or hostile key holder, not the node; either way
+     * its numbers drive range arithmetic and allocation, so they are checked before any frame is
+     * fetched. Numbers are read as longs and range-checked, never truncated to an int.
+     */
     fun parseManifest(json: String): Manifest {
         val obj = JsonScan.rootObject(json) ?: throw FrameException("manifest is not an object")
-        return Manifest(
-            version = JsonScan.intField(obj, "version") ?: throw FrameException("manifest: no version"),
+        val m = Manifest(
+            version = intIn(obj, "version"),
             fileId = JsonScan.stringField(obj, "file_id") ?: throw FrameException("manifest: no file_id"),
-            frameSize = JsonScan.intField(obj, "frame_size") ?: throw FrameException("manifest: no frame_size"),
-            frameCount = JsonScan.intField(obj, "frame_count") ?: throw FrameException("manifest: no frame_count"),
+            frameSize = intIn(obj, "frame_size"),
+            frameCount = intIn(obj, "frame_count"),
             plaintextSize =
             JsonScan.longField(obj, "plaintext_size") ?: throw FrameException("manifest: no plaintext_size"),
             content = JsonScan.stringField(obj, "content") ?: throw FrameException("manifest: no content"),
         )
+        validateManifest(m)
+        return m
+    }
+
+    /**
+     * Refuse a manifest no writer produces ([FrameException]): another wire [Manifest.version], a
+     * file id that is not [FILE_ID_LEN] lowercase-hex bytes, a content id that is not
+     * `blake3:<64 lowercase hex>`, a frame size outside `1..`[FRAME_SIZE], a negative plaintext
+     * size, or a frame count other than `ceil(plaintext_size / frame_size)`. Together these keep
+     * [openRange] from dividing by zero and [Manifest.frameByteRange] inside the content blob, and
+     * bound the plaintext a reader allocates to what the frames can actually carry.
+     *
+     * heyarr-core's `vaultread.readAll` checks only that the counts are non-negative (and then
+     * that the frames do not decrypt past `plaintext_size`); this is the strict superset.
+     */
+    @Suppress("ThrowsCount") // one refusal per field
+    fun validateManifest(m: Manifest) {
+        if (m.version != VERSION) throw FrameException("manifest: version ${m.version}, want $VERSION")
+        if (!FILE_ID_HEX.matches(m.fileId)) throw FrameException("manifest: file_id is not $FILE_ID_LEN hex bytes")
+        if (!CONTENT_ID.matches(m.content)) throw FrameException("manifest: content is not a blake3 blob id")
+        if (m.frameSize !in 1..FRAME_SIZE) throw FrameException("manifest: frame_size ${m.frameSize} out of range")
+        if (m.plaintextSize < 0) throw FrameException("manifest: negative plaintext_size ${m.plaintextSize}")
+        val want = (m.plaintextSize + m.frameSize - 1) / m.frameSize
+        if (m.frameCount.toLong() != want) {
+            throw FrameException(
+                "manifest: frame_count ${m.frameCount} does not cover ${m.plaintextSize} bytes in " +
+                    "${m.frameSize}-byte frames (want $want)",
+            )
+        }
+    }
+
+    private val FILE_ID_HEX = Regex("^[0-9a-f]{${FILE_ID_LEN * 2}}$")
+    private val CONTENT_ID = Regex("^blake3:[0-9a-f]{64}$")
+
+    /** A manifest integer field, refused when absent or outside the int range rather than truncated. */
+    private fun intIn(obj: String, key: String): Int {
+        val v = JsonScan.longField(obj, key) ?: throw FrameException("manifest: no $key")
+        if (v !in Int.MIN_VALUE..Int.MAX_VALUE) throw FrameException("manifest: $key $v out of range")
+        return v.toInt()
     }
 
     // ---- writing (upload path; the content hash arrives with BLAKE3 in W4.0) ----

@@ -168,6 +168,128 @@ class VaultObjectsTest {
         assertTrue(n.blobs.isEmpty() && n.changes.isEmpty(), "nothing is sealed under the retired key")
     }
 
+    private fun FakeNode.rotate(from: ByteArray, to: ByteArray, recipient: String? = me) {
+        keyEpoch++
+        history.add(KeyHistoryEntry(keyEpoch, VoidbindEncryption.sealSpaceKey(to, from)))
+        wrapped.clear()
+        if (recipient != null) wrapped.add(WrappedKey(recipient, to, epoch = keyEpoch))
+    }
+
+    @Test
+    fun aRotationWhileTheWriteSealsIsCaughtBeforeThePushAndResealedUnderTheNewKey() {
+        val k0 = VoidbindEncryption.newSpaceKey()
+        val k1 = VoidbindEncryption.newSpaceKey()
+        val n = node(k0)
+        // GET /keys: 1 opens, 2 is the pre-seal check (epoch 0), 3 the pre-push check — by which
+        // time the rotation has committed, after the epoch-0 blobs went up.
+        n.beforeKeys = { call -> if (call == 3) n.rotate(k0, k1) }
+        val put = client(n).put(spaceId, envelope)
+
+        val change = n.changes.single().ciphertext // only ONE change was pushed, under the new key
+        VoidbindEncryption.decryptChange(k1, change)
+        assertFailsWith<Exception> { VoidbindEncryption.decryptChange(k0, change) }
+        VaultFrame.openManifest(k1, n.blobs.getValue(put.manifestBlob))
+        assertEquals(envelope, client(n).get(put.ref).json)
+        // The epoch-0 blobs stay on the node, but no change names them.
+        val orphans =
+            n.blobs.keys - put.manifestBlob - VaultFrame.openManifest(k1, n.blobs.getValue(put.manifestBlob)).content
+        assertEquals(2, orphans.size)
+    }
+
+    @Test
+    fun aSecondRotationDuringTheResealRefusesTheWriteAndPushesNothing() {
+        val k0 = VoidbindEncryption.newSpaceKey()
+        val k1 = VoidbindEncryption.newSpaceKey()
+        val k2 = VoidbindEncryption.newSpaceKey()
+        val n = node(k0)
+        // 3 = first pre-push check (rotated), 4 = the reopen, 5 = the re-seal's pre-push check (rotated again).
+        n.beforeKeys = { call ->
+            if (call == 3) n.rotate(k0, k1)
+            if (call == 5) n.rotate(k1, k2)
+        }
+        assertFailsWith<VaultRefException.StaleEpoch> { client(n).put(spaceId, envelope) }
+        assertTrue(n.changes.isEmpty(), "no drive change under a retired key")
+    }
+
+    @Test
+    fun aRotationBeforeThePushThatThisDeviceCannotFollowRefusesIt() {
+        val k0 = VoidbindEncryption.newSpaceKey()
+        val n = node(k0)
+        n.beforeKeys = { call -> if (call == 3) n.rotate(k0, VoidbindEncryption.newSpaceKey(), recipient = null) }
+        assertFailsWith<VaultRefException.StaleEpoch> { client(n).put(spaceId, envelope) }
+        assertTrue(n.changes.isEmpty(), "this device was revoked: nothing it sealed is published")
+    }
+
+    /** Seal a well-formed object, then replace its manifest with [json] sealed under the same key. */
+    private fun withManifest(json: (VaultFrame.Manifest) -> String): Pair<VaultObjects, VaultRef> {
+        val key = VoidbindEncryption.newSpaceKey()
+        val n = node(key)
+        val vault = client(n)
+        val put = vault.put(spaceId, envelope)
+        val m = VaultFrame.openManifest(key, n.blobs.getValue(put.manifestBlob))
+        // The drive entry names the blob by id, so a bad manifest gets its own id and drive entry.
+        val bad = VoidbindEncryption.encryptChange(key, json(m).encodeToByteArray())
+        val badId = VaultFrame.BLAKE3.hash(bad)
+        n.blobs[badId] = bad
+        val ref = VaultRef.newObject(spaceId)
+        val loaded = vault.loadDrive(spaceId, SpaceKeyring.single(key))
+        val change = loaded.drive.put(requireNotNull(ref.path), badId, m.plaintextSize, 1L)
+        n.pushChange(
+            spaceId,
+            loaded.heads(),
+            VoidbindEncryption.encryptChange(key, encodeDriveChange(change).encodeToByteArray()),
+        )
+        return vault to ref
+    }
+
+    private fun manifestJson(m: VaultFrame.Manifest, vararg overrides: Pair<String, Any>): String {
+        val fields = linkedMapOf<String, Any>(
+            "version" to m.version,
+            "file_id" to "\"${m.fileId}\"",
+            "frame_size" to m.frameSize,
+            "frame_count" to m.frameCount,
+            "plaintext_size" to m.plaintextSize,
+            "content" to "\"${m.content}\"",
+        )
+        overrides.forEach { (k, v) -> fields[k] = v }
+        return fields.entries.joinToString(",", "{", "}") { (k, v) -> "\"$k\":$v" }
+    }
+
+    @Test
+    fun aManifestWithImpossibleGeometryIsAnIntegrityFailureBeforeAnyContentIsRead() {
+        listOf(
+            arrayOf("frame_size" to 0), // would divide by zero
+            arrayOf("frame_size" to -1),
+            arrayOf("frame_size" to VaultFrame.FRAME_SIZE + 1),
+            arrayOf("frame_size" to 4_294_967_312L), // 2^32 + 16: truncated to an int it would read as 16
+            arrayOf("frame_count" to 0),
+            arrayOf("frame_count" to 2),
+            arrayOf("frame_count" to -1),
+            arrayOf("plaintext_size" to -1),
+            arrayOf("plaintext_size" to 10_000_000_000L, "frame_count" to 1),
+            arrayOf("version" to 2),
+            arrayOf("file_id" to "\"zz\""),
+            arrayOf("file_id" to "\"${"AB".repeat(16)}\""),
+            arrayOf("content" to "\"sha256:${"00".repeat(32)}\""),
+        ).forEach { overrides ->
+            val (vault, ref) = withManifest { manifestJson(it, *overrides) }
+            assertFailsWith<VaultRefException.Integrity>(overrides.joinToString()) { vault.get(ref) }
+        }
+        // Control: the untouched manifest re-sealed under a new id reads fine.
+        val (vault, ref) = withManifest { manifestJson(it) }
+        assertEquals(envelope, vault.get(ref).json)
+    }
+
+    @Test
+    fun aConsistentManifestLargerThanAnyObjectIsRefusedBeforeItsContentIsFetched() {
+        val size = VaultObjects.MAX_OBJECT_BYTES.toLong() + 1
+        val frames = (size + VaultFrame.FRAME_SIZE - 1) / VaultFrame.FRAME_SIZE
+        val (vault, ref) = withManifest {
+            manifestJson(it, "frame_size" to VaultFrame.FRAME_SIZE, "frame_count" to frames, "plaintext_size" to size)
+        }
+        assertFailsWith<VaultRefException.InvalidObject> { vault.get(ref) }
+    }
+
     @Test
     fun aSpaceTheNodeWillNotShowIsForbidden() {
         val n = node(VoidbindEncryption.newSpaceKey())
