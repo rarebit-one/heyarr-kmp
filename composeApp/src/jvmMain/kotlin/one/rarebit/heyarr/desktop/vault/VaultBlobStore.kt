@@ -2,52 +2,33 @@ package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.JsonScan
-import one.rarebit.heyarr.core.vault.VaultFrame
+import one.rarebit.heyarr.vault.PutResult
+import one.rarebit.heyarr.vault.VaultBlobStore
+import one.rarebit.heyarr.vault.VaultFrame
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpRequest.BodyPublishers
 import java.net.http.HttpResponse.BodyHandlers
+import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Duration
 
 /**
- * The vault's BINARY blob transport — a SEPARATE seam from the String-bodied
- * [one.rarebit.heyarr.core.net.HttpTransport] because ciphertext blobs are raw bytes that
- * decoding as UTF-8 would corrupt (same reason as `open/BlobDownloader`). Uploads a
- * ciphertext blob (PUT, content-addressed) and range-reads one for the frame codec.
+ * PUT a ciphertext blob STREAMING from [file] at [hash] — for large content blobs whose bytes must
+ * not sit in memory (the streaming seal writes them to a temp file first). [JdkVaultBlobStore]
+ * streams the body off disk; any other store (a test fake) reads the file into memory and
+ * delegates to [VaultBlobStore.putBlob]. Idempotent (content-addressed).
+ *
+ * An extension rather than a member because [VaultBlobStore] is common code (`:vault-client`) and
+ * java.nio.file is not.
  */
-interface VaultBlobStore {
-    /** PUT the ciphertext [bytes] at [hash] (`blake3:<hex>`). Idempotent (content-addressed). */
-    fun putBlob(baseUrl: String, hash: String, bytes: ByteArray, credential: Credential): PutResult
-
-    /**
-     * PUT a ciphertext blob STREAMING from [file] at [hash] — for large content blobs whose bytes
-     * must not sit in memory (the streaming seal writes them to a temp file first). The default
-     * reads the file into memory and delegates to [putBlob], so a fake needn't implement it; the
-     * real store overrides it with a streaming body publisher. Idempotent (content-addressed).
-     */
-    fun putBlobFile(baseUrl: String, hash: String, file: java.nio.file.Path, credential: Credential): PutResult =
-        putBlob(baseUrl, hash, java.nio.file.Files.readAllBytes(file), credential)
-
-    /** GET ciphertext bytes `[start, end)` of blob [hash] — the codec's per-frame fetch. */
-    fun fetchRange(baseUrl: String, hash: String, start: Long, end: Long, credential: Credential): ByteArray
-
-    /** GET the whole blob [hash] (small blobs like the sealed manifest). */
-    fun fetchAll(baseUrl: String, hash: String, credential: Credential): ByteArray
-
-    /** A [VaultFrame.Fetch] bound to one blob, so [VaultFrame.openAll]/openRange can read it. */
-    fun fetchFor(baseUrl: String, hash: String, credential: Credential): VaultFrame.Fetch =
-        VaultFrame.Fetch { start, end -> fetchRange(baseUrl, hash, start, end, credential) }
-}
-
-/** The outcome of [VaultBlobStore.putBlob]. */
-sealed interface PutResult {
-    /** Stored; the server confirms [hash] and the stored ciphertext [size]. */
-    data class Stored(val hash: String, val size: Long) : PutResult
-
-    /** Rejected; [message] is a UI-safe reason (carries no token). */
-    data class Failed(val message: String) : PutResult
-}
+fun VaultBlobStore.putBlobFile(baseUrl: String, hash: String, file: Path, credential: Credential): PutResult =
+    if (this is JdkVaultBlobStore) {
+        putFile(baseUrl, hash, file, credential)
+    } else {
+        putBlob(baseUrl, hash, Files.readAllBytes(file), credential)
+    }
 
 /** The desktop actual on JDK 17's `java.net.http`, mirroring `JdkBlobDownloader`. */
 class JdkVaultBlobStore(
@@ -59,7 +40,7 @@ class JdkVaultBlobStore(
 ) : VaultBlobStore {
 
     override fun putBlob(baseUrl: String, hash: String, bytes: ByteArray, credential: Credential): PutResult {
-        val builder = HttpRequest.newBuilder(URI.create(uploadUrl(baseUrl, hash)))
+        val builder = HttpRequest.newBuilder(URI.create(VaultBlobStore.uploadUrl(baseUrl, hash)))
             .timeout(requestTimeout)
             .header("Content-Type", "application/octet-stream")
             .PUT(BodyPublishers.ofByteArray(bytes))
@@ -72,23 +53,19 @@ class JdkVaultBlobStore(
                     size = JsonScan.longField(resp.body(), "size") ?: bytes.size.toLong(),
                 )
             } else {
-                PutResult.Failed("upload failed: HTTP ${resp.statusCode()}")
+                PutResult.Failed("upload failed: HTTP ${resp.statusCode()}", status = resp.statusCode())
             }
         } catch (e: Exception) {
             PutResult.Failed("upload failed: ${e.message}")
         }
     }
 
-    override fun putBlobFile(
-        baseUrl: String,
-        hash: String,
-        file: java.nio.file.Path,
-        credential: Credential,
-    ): PutResult {
+    /** The streaming upload behind [putBlobFile]. */
+    internal fun putFile(baseUrl: String, hash: String, file: Path, credential: Credential): PutResult {
         // Stream the ciphertext straight off disk — the bytes never sit in memory. Deliberately
         // NO request timeout: a multi-GB blob over a slow link would blow the 120s cap; the
         // connect timeout still bounds establishing the connection.
-        val builder = HttpRequest.newBuilder(URI.create(uploadUrl(baseUrl, hash)))
+        val builder = HttpRequest.newBuilder(URI.create(VaultBlobStore.uploadUrl(baseUrl, hash)))
             .header("Content-Type", "application/octet-stream")
             .PUT(BodyPublishers.ofFile(file))
         for ((k, v) in credential.asHeader()) builder.header(k, v)
@@ -97,10 +74,10 @@ class JdkVaultBlobStore(
             if (resp.statusCode() == 201) {
                 PutResult.Stored(
                     hash = JsonScan.stringField(resp.body(), "hash") ?: hash,
-                    size = JsonScan.longField(resp.body(), "size") ?: java.nio.file.Files.size(file),
+                    size = JsonScan.longField(resp.body(), "size") ?: Files.size(file),
                 )
             } else {
-                PutResult.Failed("upload failed: HTTP ${resp.statusCode()}")
+                PutResult.Failed("upload failed: HTTP ${resp.statusCode()}", status = resp.statusCode())
             }
         } catch (e: Exception) {
             PutResult.Failed("upload failed: ${e.message}")
@@ -108,9 +85,9 @@ class JdkVaultBlobStore(
     }
 
     override fun fetchRange(baseUrl: String, hash: String, start: Long, end: Long, credential: Credential): ByteArray {
-        val builder = HttpRequest.newBuilder(URI.create(contentUrl(baseUrl, hash)))
+        val builder = HttpRequest.newBuilder(URI.create(VaultBlobStore.contentUrl(baseUrl, hash)))
             .timeout(requestTimeout)
-            .header("Range", rangeHeader(start, end))
+            .header("Range", VaultBlobStore.rangeHeader(start, end))
             .GET()
         for ((k, v) in credential.asHeader()) builder.header(k, v)
         val resp = client.send(builder.build(), BodyHandlers.ofByteArray())
@@ -120,29 +97,22 @@ class JdkVaultBlobStore(
     }
 
     override fun fetchAll(baseUrl: String, hash: String, credential: Credential): ByteArray {
-        val builder = HttpRequest.newBuilder(URI.create(contentUrl(baseUrl, hash))).timeout(requestTimeout).GET()
+        val builder = HttpRequest.newBuilder(URI.create(VaultBlobStore.contentUrl(baseUrl, hash)))
+            .timeout(requestTimeout)
+            .GET()
         for ((k, v) in credential.asHeader()) builder.header(k, v)
-        val resp = client.send(builder.build(), BodyHandlers.ofByteArray())
-        require(resp.statusCode() == 200) { "vault: GET of $hash failed: HTTP ${resp.statusCode()}" }
-        return resp.body()
-    }
-
-    companion object {
-        /** Half-open `[start, end)` → an inclusive HTTP byte range `start-(end-1)`. */
-        fun rangeHeader(start: Long, end: Long): String {
-            require(end > start) { "empty range [$start,$end)" }
-            return "bytes=$start-${end - 1}"
+        val resp = client.send(builder.build(), BodyHandlers.ofInputStream())
+        return resp.body().use { body ->
+            require(resp.statusCode() == 200) { "vault: GET of $hash failed: HTTP ${resp.statusCode()}" }
+            // Bounded like UrlConnectionVaultBlobStore: never buffer more than a whole-blob read takes.
+            val max = VaultBlobStore.MAX_WHOLE_BLOB_BYTES
+            val bytes = body.readNBytes(max + 1)
+            if (bytes.size > max) {
+                throw VaultFrame.IntegrityException(
+                    "vault: $hash is larger than the $max bytes a whole-blob read takes",
+                )
+            }
+            bytes
         }
-
-        // The blob id `blake3:<64 lowercase hex>` goes into the path VERBATIM — not URL-encoded.
-        // Its only non-alphanumeric byte is the ':', which is a legal path-segment char (RFC 3986
-        // pchar). URLEncoder would percent-encode it to %3A, and the Go server (go-chi) routes on the
-        // RAW path, so `chi.URLParam` would hand `hashing.Parse` a colon-less `blake3%3A…` and it
-        // would 400 the upload as a malformed id. The Go CLI sends the literal id (`hash.String()`);
-        // we match it byte-for-byte.
-        fun uploadUrl(baseUrl: String, hash: String): String = baseUrl.trimEnd('/') + "/api/v1/vault/blobs/" + hash
-
-        fun contentUrl(baseUrl: String, hash: String): String =
-            baseUrl.trimEnd('/') + "/api/v1/blobs/" + hash + "/content"
     }
 }

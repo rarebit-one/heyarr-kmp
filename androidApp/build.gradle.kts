@@ -124,6 +124,9 @@ dependencies {
     // Credential, transports — see Gate A/B); only the drift-free leaves are shared.
     implementation(project(":core"))
     implementation(project(":ui"))
+    // The vault client: SpaceKeyring + SpaceOpen (opening a space over its key history), the
+    // snapshot envelope and change-id framing, the drive CRDT and ref-addressed objects.
+    implementation(project(":vault-client"))
 
     // ── Compose UI ───────────────────────────────────────────────────────────────
     val composeBom = platform(libs.androidx.compose.bom)

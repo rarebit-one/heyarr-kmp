@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.desktop.vault
 
-import one.rarebit.heyarr.core.vault.SyncIndexEntry
+import one.rarebit.heyarr.vault.SyncIndexEntry
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test

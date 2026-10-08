@@ -27,6 +27,10 @@ kotlin {
                 // JdkHttpTransport / HeyarrApi (this module) implement/orchestrate over them.
                 implementation(project(":core"))
                 implementation(project(":ui"))
+                // The trusted vault client (space open, drive CRDT, frame codec, ref-addressed
+                // objects) — shared with the android app and published for other first-party
+                // clients. The sync engine, custody and daemon on top of it stay desktop-only.
+                implementation(project(":vault-client"))
                 implementation(compose.desktop.currentOs)
                 implementation(compose.runtime)
                 implementation(compose.foundation)

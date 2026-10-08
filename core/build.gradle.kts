@@ -3,6 +3,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
+    // Published with :vault-client, whose API exposes it (root build.gradle.kts).
+    `maven-publish`
 }
 
 // Register the android target only when an SDK is actually available (CI, or a dev box
@@ -32,6 +34,8 @@ kotlin {
         androidTarget {
             // Android artifacts retain the bytecode level supported by the app's minSdk.
             compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
+            // Publish only the release variant (what a consuming app resolves).
+            publishLibraryVariants("release")
         }
     }
 
@@ -101,7 +105,7 @@ if (hasAndroidSdk) {
 // another module.
 tasks.named<Test>("jvmTest") {
     inputs.files(
-        listOf("core", "ui", "composeApp", "androidApp").map { module ->
+        listOf("core", "ui", "vault-client", "composeApp", "androidApp").map { module ->
             rootProject.fileTree(rootDir.resolve("$module/src")) {
                 include("**/*.kt")
                 exclude("*[Tt]est*/**")

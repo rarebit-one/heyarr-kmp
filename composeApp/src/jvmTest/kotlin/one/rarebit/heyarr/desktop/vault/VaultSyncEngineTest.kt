@@ -2,10 +2,15 @@ package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.crypto.Blake3
-import one.rarebit.heyarr.core.vault.KeyHistoryEntry
-import one.rarebit.heyarr.core.vault.LocalFile
-import one.rarebit.heyarr.core.vault.SpaceKeyring
-import one.rarebit.heyarr.core.vault.SyncIndexEntry
+import one.rarebit.heyarr.vault.ChangePage
+import one.rarebit.heyarr.vault.EncryptedChange
+import one.rarebit.heyarr.vault.KeyHistoryEntry
+import one.rarebit.heyarr.vault.LocalFile
+import one.rarebit.heyarr.vault.PutResult
+import one.rarebit.heyarr.vault.SpaceKeyring
+import one.rarebit.heyarr.vault.SyncIndexEntry
+import one.rarebit.heyarr.vault.VaultBlobStore
+import one.rarebit.heyarr.vault.VaultSpace
 import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 import java.io.File
 import java.nio.file.Files

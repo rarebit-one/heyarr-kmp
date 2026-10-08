@@ -459,10 +459,6 @@
     <ID>MagicNumber:VaultBlobStore.kt$JdkVaultBlobStore$201</ID>
     <ID>MagicNumber:VaultBlobStore.kt$JdkVaultBlobStore$206</ID>
     <ID>MagicNumber:VaultCustody.kt$VaultCustody$32</ID>
-    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$200</ID>
-    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$201</ID>
-    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$204</ID>
-    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$404</ID>
     <ID>MagicNumber:VaultSyncDaemon.kt$VaultSyncDaemon$1_000</ID>
     <ID>MagicNumber:VaultSyncEngine.kt$VaultSyncEngine$16</ID>
     <ID>MagicNumber:VoidbindCliCredential.kt$VoidbindCliCredential.Companion$10</ID>
@@ -581,7 +577,6 @@
     <ID>MayBeConst:Fixtures.kt$Fixtures$val renderers = """{"renderers":[{"udn":"uuid:1e055177","name":"Phantom II 95 dB-a98d","manufacturer":"Devialet","model":"Phantom II 95 dB","location":"http://192.168.16.69:45317/x.xml"},{"udn":"uuid:tv","name":"Living room TV","manufacturer":"Samsung","model":"QN85BA 55"}]}"""</ID>
     <ID>NestedBlockDepth:EmbeddedPlayer.kt$EmbeddedPlayer$private fun readLoop(ch: SocketChannel)</ID>
     <ID>NestedBlockDepth:Screenshots.kt$private fun verifyShelfSwitch()</ID>
-    <ID>NestedBlockDepth:VaultSpaceClient.kt$VaultSpaceClient$private fun stringArray(array: String?): List&lt;String&gt;</ID>
     <ID>ReturnCount:ArtworkLoader.kt$ArtworkLoader$suspend fun load(contentPath: String): ImageBitmap?</ID>
     <ID>ReturnCount:DaemonConfig.kt$DaemonConfig.Companion$fun fromFile(file: File): DaemonConfig</ID>
     <ID>ReturnCount:DesktopDeviceEnroller.kt$DesktopDeviceEnroller$override fun enrolled(): Credential.Device?</ID>
@@ -634,7 +629,6 @@
     <ID>TooManyFunctions:HeyarrApi.kt$HeyarrApi</ID>
     <ID>TooManyFunctions:Libmpv.kt$MpvLib : Library</ID>
     <ID>TooManyFunctions:PairingCoordinator.kt$PairingCoordinator</ID>
-    <ID>TooManyFunctions:VaultSpaceClient.kt$VaultSpaceClient : VaultSpaceVaultKeys</ID>
     <ID>UnusedParameter:DetailCurate.kt$session: AppSession</ID>
     <ID>UnusedParameter:DetailCurate.kt$wants: List&lt;DesiredItem&gt;</ID>
     <ID>UnusedParameter:DetailEpisodes.kt$state: DetailState</ID>

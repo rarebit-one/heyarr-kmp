@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.mobile.personalstate
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.core.vault.PersonalStateId
-import one.rarebit.heyarr.core.vault.SnapshotEnvelope
+import one.rarebit.heyarr.vault.PersonalStateId
+import one.rarebit.heyarr.vault.SnapshotEnvelope
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test

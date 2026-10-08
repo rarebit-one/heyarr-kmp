@@ -1,7 +1,7 @@
 package one.rarebit.heyarr.mobile.personalstate
 
 import one.rarebit.heyarr.core.net.JsonScan
-import one.rarebit.heyarr.core.vault.PersonalStateId
+import one.rarebit.heyarr.vault.PersonalStateId
 import java.util.Base64
 
 /**
@@ -12,11 +12,8 @@ import java.util.Base64
  */
 internal data class SpaceInfo(val id: String, val kind: String, val createdAt: String)
 
-/** A space key wrapped for one recipient; [epoch] is the key epoch the copy seals (ADR-0103). */
-internal data class WrappedKeyEntry(val recipient: String, val wrapped: ByteArray, val epoch: Int = 0)
-
-/** A space's wrapped copies with its current key epoch (`GET /spaces/{id}/keys`, ADR-0103). */
-internal data class SpaceKeys(val keyEpoch: Int, val wrapped: List<WrappedKeyEntry>)
+// A space's wrapped copies (`GET /spaces/{id}/keys`, ADR-0103) are `:vault-client`'s
+// `SpaceKeyList` / `WrappedKey`, so this app opens a space exactly as the desktop does (`SpaceOpen`).
 
 /**
  * One encrypted change as it crosses the peer surface. The id is content-addressed

@@ -1,9 +1,9 @@
 package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.crypto.Blake3
-import one.rarebit.heyarr.core.vault.LocalFile
-import one.rarebit.heyarr.core.vault.SyncIndexEntry
-import one.rarebit.heyarr.core.vault.normalisePath
+import one.rarebit.heyarr.vault.LocalFile
+import one.rarebit.heyarr.vault.SyncIndexEntry
+import one.rarebit.heyarr.vault.normalisePath
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.isRegularFile

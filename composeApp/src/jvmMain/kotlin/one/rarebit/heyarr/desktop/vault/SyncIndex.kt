@@ -2,7 +2,7 @@ package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.JsonScan
-import one.rarebit.heyarr.core.vault.SyncIndexEntry
+import one.rarebit.heyarr.vault.SyncIndexEntry
 import java.io.File
 
 /**

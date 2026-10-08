@@ -2,7 +2,7 @@ package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.JsonScan
-import one.rarebit.heyarr.core.vault.Drive
+import one.rarebit.heyarr.vault.Drive
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption

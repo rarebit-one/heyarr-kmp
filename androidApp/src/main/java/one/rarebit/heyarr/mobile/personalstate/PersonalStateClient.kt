@@ -3,8 +3,11 @@ package one.rarebit.heyarr.mobile.personalstate
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
-import one.rarebit.heyarr.core.vault.KeyHistoryEntry
 import one.rarebit.heyarr.mobile.net.ProblemDetail
+import one.rarebit.heyarr.vault.KeyHistoryEntry
+import one.rarebit.heyarr.vault.SpaceKeyList
+import one.rarebit.heyarr.vault.SpaceKeySource
+import one.rarebit.heyarr.vault.WrappedKey
 import java.net.URLEncoder
 import java.util.Base64
 
@@ -31,7 +34,7 @@ class PersonalStateClient(
     private val http: HttpTransport,
     private val baseUrl: String,
     private val credential: Credential,
-) {
+) : SpaceKeySource {
     internal fun listSpaces(): List<SpaceInfo> {
         val resp = http.get(spacesUrl(baseUrl), credential.asHeader())
         require(resp.status == 200) { fail("GET /spaces", resp.status, resp.body) }
@@ -44,20 +47,20 @@ class PersonalStateClient(
         }
     }
 
-    internal fun wrappedKeys(spaceId: String): List<WrappedKeyEntry> = spaceKeys(spaceId).wrapped
+    internal fun wrappedKeys(spaceId: String): List<WrappedKey> = spaceKeys(spaceId).wrapped
 
     /**
      * The wrapped copies with the space's current `key_epoch` and each copy's `epoch` (ADR-0103).
      * A peer that predates epochs sends neither, which reads back as epoch 0 — a space never rotated.
      */
-    internal fun spaceKeys(spaceId: String): SpaceKeys {
+    override fun spaceKeys(spaceId: String): SpaceKeyList {
         val resp = http.get(keysUrl(baseUrl, spaceId), credential.asHeader())
-        if (resp.status == 404) return SpaceKeys(0, emptyList())
+        if (resp.status == 404) return SpaceKeyList(0, emptyList())
         require(resp.status == 200) { fail("GET /keys", resp.status, resp.body) }
-        return SpaceKeys(
+        return SpaceKeyList(
             JsonScan.intField(resp.body, "key_epoch") ?: 0,
             JsonScan.objectsOf(resp.body, listOf("wrapped_keys")).map {
-                WrappedKeyEntry(
+                WrappedKey(
                     JsonScan.stringField(it, "recipient") ?: "",
                     b64(JsonScan.stringField(it, "wrapped")),
                     JsonScan.intField(it, "epoch") ?: 0,
@@ -67,7 +70,7 @@ class PersonalStateClient(
     }
 
     /** The space's opaque key chain, one row per rotation (ADR-0103). Empty for a space never rotated. */
-    internal fun keyHistory(spaceId: String): List<KeyHistoryEntry> {
+    override fun keyHistory(spaceId: String): List<KeyHistoryEntry> {
         val resp = http.get(keyHistoryUrl(baseUrl, spaceId), credential.asHeader())
         require(resp.status == 200) { fail("GET /key-history", resp.status, resp.body) }
         return JsonScan.objectsOf(resp.body, listOf("entries")).map {
@@ -89,7 +92,7 @@ class PersonalStateClient(
         return EncryptedSnapshot.parse(resp.body)
     }
 
-    internal fun createSpace(id: String, kind: String, wrapped: List<WrappedKeyEntry>): SpaceInfo {
+    internal fun createSpace(id: String, kind: String, wrapped: List<WrappedKey>): SpaceInfo {
         val body = buildString {
             append("{\"id\":").append(PsJson.goJsonString(id))
             append(",\"kind\":").append(PsJson.goJsonString(kind))

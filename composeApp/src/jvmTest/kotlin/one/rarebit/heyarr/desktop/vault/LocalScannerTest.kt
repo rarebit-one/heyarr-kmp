@@ -1,7 +1,7 @@
 package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.crypto.Blake3
-import one.rarebit.heyarr.core.vault.SyncIndexEntry
+import one.rarebit.heyarr.vault.SyncIndexEntry
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals

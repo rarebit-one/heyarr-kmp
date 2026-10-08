@@ -1,7 +1,10 @@
 package one.rarebit.heyarr.desktop.vault
 
-import one.rarebit.heyarr.core.vault.SpaceKeyring
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
+import one.rarebit.heyarr.vault.SpaceKeyring
+import one.rarebit.heyarr.vault.SpaceOpen
+import one.rarebit.heyarr.vault.VaultKeys
+import one.rarebit.heyarr.vault.WrappedKey
 import one.rarebit.voidwhichbinds.KeyRef
 import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 import java.util.UUID

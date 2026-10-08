@@ -69,3 +69,52 @@ allprojects {
         }
     }
 }
+
+// ── Published client libraries: one.rarebit.heyarr:{core,vault-client} ───────────
+// :vault-client is the trusted vault client other first-party apps consume (the Jumpdrive KMP
+// client renders private blocks with it); :core publishes alongside because vault-client's API
+// exposes it (HttpTransport, Credential, JsonScan). Both go to this repo's GitHub Packages
+// registry at ONE version, cut by a `lib-v<version>` tag (.github/workflows/publish.yml checks the
+// tag against the line below; a plain `v*` tag is an android app release, android-release.yml).
+// Bump on any API- or wire-affecting change to either module.
+// 0.1.0: first cut (heyarr-kmp M1): SpaceOpen/SpaceKeyring (ADR-0103), the drive CRDT in
+// commonMain, VaultFrame, VaultSpaceClient, and ref-addressed objects (VaultRef/VaultObjects,
+// ADR-0104).
+val publishedLibraryVersion = "0.1.0"
+
+listOf(":core", ":vault-client").forEach { path ->
+    project(path) {
+        group = "one.rarebit.heyarr"
+        version = publishedLibraryVersion
+        plugins.withId("maven-publish") {
+            configure<PublishingExtension> {
+                publications.withType<MavenPublication>().configureEach {
+                    pom {
+                        name.set(project.name)
+                        description.set(
+                            if (project.name == "vault-client") {
+                                "heyarr's trusted vault client: open an encrypted space, fold its drive, and read or " +
+                                    "write sealed objects by vault ref, decrypting only on the device."
+                            } else {
+                                "heyarr's shared client layer (wire JSON, HTTP seam, credentials, BLAKE3)."
+                            },
+                        )
+                        url.set("https://github.com/rarebit-one/heyarr-kmp")
+                    }
+                }
+                repositories {
+                    maven {
+                        name = "GitHubPackages"
+                        url = uri("https://maven.pkg.github.com/rarebit-one/heyarr-kmp")
+                        credentials {
+                            // CI: the publish workflow's GITHUB_TOKEN (packages: write). Locally:
+                            // gpr.user / gpr.token, as for resolving void-which-binds-client.
+                            username = System.getenv("GITHUB_ACTOR") ?: findProperty("gpr.user") as String?
+                            password = System.getenv("GITHUB_TOKEN") ?: findProperty("gpr.token") as String?
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

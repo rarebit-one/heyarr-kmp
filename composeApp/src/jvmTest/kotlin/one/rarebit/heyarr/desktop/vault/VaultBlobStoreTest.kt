@@ -1,7 +1,9 @@
 package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.auth.Credential
-import one.rarebit.heyarr.core.vault.VaultFrame
+import one.rarebit.heyarr.vault.PutResult
+import one.rarebit.heyarr.vault.VaultBlobStore
+import one.rarebit.heyarr.vault.VaultFrame
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -11,8 +13,8 @@ class VaultBlobStoreTest {
     @Test
     fun rangeHeaderIsInclusive() {
         // Half-open [0,77) → inclusive bytes=0-76.
-        assertEquals("bytes=0-76", JdkVaultBlobStore.rangeHeader(0, 77))
-        assertEquals("bytes=77-153", JdkVaultBlobStore.rangeHeader(77, 154))
+        assertEquals("bytes=0-76", VaultBlobStore.rangeHeader(0, 77))
+        assertEquals("bytes=77-153", VaultBlobStore.rangeHeader(77, 154))
     }
 
     /** In-memory store so a seal→store→openAll round trip proves the codec/store wiring. */

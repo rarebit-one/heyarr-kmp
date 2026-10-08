@@ -2,16 +2,19 @@ package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.crypto.Blake3
-import one.rarebit.heyarr.core.vault.Drive
-import one.rarebit.heyarr.core.vault.DriveChange
-import one.rarebit.heyarr.core.vault.DriveEntry
-import one.rarebit.heyarr.core.vault.LocalFile
-import one.rarebit.heyarr.core.vault.SpaceKeyring
-import one.rarebit.heyarr.core.vault.SyncAction
-import one.rarebit.heyarr.core.vault.SyncIndexEntry
-import one.rarebit.heyarr.core.vault.VaultFrame
-import one.rarebit.heyarr.core.vault.encodeDriveChange
-import one.rarebit.heyarr.core.vault.reconcile
+import one.rarebit.heyarr.vault.Drive
+import one.rarebit.heyarr.vault.DriveChange
+import one.rarebit.heyarr.vault.DriveEntry
+import one.rarebit.heyarr.vault.LocalFile
+import one.rarebit.heyarr.vault.SpaceKeyring
+import one.rarebit.heyarr.vault.SpaceOpen
+import one.rarebit.heyarr.vault.SyncAction
+import one.rarebit.heyarr.vault.SyncIndexEntry
+import one.rarebit.heyarr.vault.VaultBlobStore
+import one.rarebit.heyarr.vault.VaultFrame
+import one.rarebit.heyarr.vault.VaultSpace
+import one.rarebit.heyarr.vault.encodeDriveChange
+import one.rarebit.heyarr.vault.reconcile
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -311,10 +314,14 @@ class VaultSyncEngine(
         newIndex: MutableMap<String, SyncIndexEntry>,
     ) {
         val manifestBlob = blobs.fetchAll(baseUrl, manifestHash, credential)
-        // The manifest picks the key (the file may predate a rotation); its frames are under it.
-        val opened = withKeyring { VaultFrame.openManifest(it, manifestBlob) }
+        // Content addressing before anything is decrypted: the manifest must be the one the drive
+        // entry names (else a node could hand back another file's manifest of this space), and the
+        // content blob must hash to the id the manifest names. The manifest picks the key (the file
+        // may predate a rotation); its frames are under it.
+        val opened = withKeyring { VaultFrame.openManifestVerified(it, manifestBlob, manifestHash) }
         val manifest = opened.manifest
-        val plaintext = VaultFrame.openAll(opened.key, manifest, blobs.fetchFor(baseUrl, manifest.content, credential))
+        val plaintext =
+            VaultFrame.openAllVerified(opened.key, manifest, blobs.fetchFor(baseUrl, manifest.content, credential))
         folder.write(path, plaintext, entry.mtime)
         newIndex[path] = SyncIndexEntry(Blake3.hashHex(plaintext), manifestHash, plaintext.size.toLong(), entry.mtime)
     }
@@ -325,14 +332,7 @@ class VaultSyncEngine(
      * to write at all — never seal under a key a rotation retired.
      */
     private fun ensureCurrentKey() {
-        val epoch = space.keyEpoch(spaceId) ?: return
-        if (epoch == keyring.epoch) return
-        val fresh = reopen()
-        check(fresh != null && fresh.epoch >= epoch) {
-            "vault: space $spaceId rotated to key epoch $epoch but this device could not open it " +
-                "(holding epoch ${keyring.epoch}); refusing to write under a superseded key"
-        }
-        keyring = fresh
+        keyring = SpaceOpen.currentForWrite(space.keyEpoch(spaceId), keyring, spaceId, reopen)
     }
 
     /**

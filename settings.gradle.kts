@@ -51,6 +51,9 @@ dependencyResolutionManagement {
 
 include(":core")
 include(":ui")
+// The trusted vault client, published to GitHub Packages as one.rarebit.heyarr:vault-client
+// (with :core, which it exposes) for other first-party clients. See vault-client/build.gradle.kts.
+include(":vault-client")
 include(":composeApp")
 
 // :androidApp (heyarr-mobile) applies `com.android.application`, which — unlike the
