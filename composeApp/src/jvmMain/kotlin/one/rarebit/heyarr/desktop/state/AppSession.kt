@@ -203,10 +203,15 @@ class AppSession(
                     baseUrl = config.baseUrl,
                     credential = credential,
                     spaceId = opened.spaceId,
-                    spaceKey = opened.spaceKey,
+                    keyring = opened.keyring,
                     stateStore = FileDriveStateStore(
                         FileDriveStateStore.besideIndex(FileSyncIndexStore.defaultIndexFile()),
                     ),
+                    // No held key opened a blob: the space may have rotated (ADR-0103). Re-open it.
+                    reopen = {
+                        VaultCustody(ring, VaultSpaceClient(transport, config.baseUrl, credential))
+                            .open(opened.spaceId)?.keyring
+                    },
                 )
             },
             watchFor = { folder -> WatchedFolder(java.nio.file.Path.of(folder)) },

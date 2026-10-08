@@ -1196,7 +1196,7 @@
     ],
     "operationId": "listSpaceWrappedKeys",
     "summary": "The wrapped copies of a space's key — a device finds the one sealed for it.",
-    "description": "Each entry names the recipient key the copy was sealed for and the\nopaque wrapped bytes. The peer holds these and no private key, so it\ncannot open any of them (Invariant 6).\n",
+    "description": "Each entry names the recipient key the copy was sealed for, the\nopaque wrapped bytes and the key epoch the copy seals. The peer holds\nthese and no private key, so it cannot open any of them (Invariant 6).\n`key_epoch` is the space's current key epoch (ADR-0103) — what a device\nwraps at to add a recipient, and what a rotation names as its\n`expected_epoch`.\n",
     "parameters": [
      {
       "$ref": "#/components/parameters/id"
@@ -1211,11 +1211,17 @@
          "type": "object",
          "required": [
           "space_id",
+          "key_epoch",
           "wrapped_keys"
          ],
          "properties": {
           "space_id": {
            "type": "string"
+          },
+          "key_epoch": {
+           "type": "integer",
+           "minimum": 0,
+           "description": "The space's current key epoch; 0 until its first rotation."
           },
           "wrapped_keys": {
            "type": "array",
@@ -1244,8 +1250,8 @@
      "personal-state"
     ],
     "operationId": "rewrapSpaceKeys",
-    "summary": "Re-wrap a space's key for the remaining recipients after a rotation. Requires `write`.",
-    "description": "Replaces the wrapped copies of a space's key — the remaining recipients'\ncopies now seal the NEW key minted by a rotation (§41, #361). Each copy is\nopaque; the peer upserts it and opens none. The revoked recipient's copy is\ndeleted separately via DELETE /spaces/{id}/keys/{recipient}.\n",
+    "summary": "Store wrapped copies of a space's current key (add a recipient). Requires `write`.",
+    "description": "Upserts wrapped copies of a space's key, one per recipient — how a\nrecipient is added (§41, #361). Each copy is opaque; the peer upserts it\nand opens none. Each copy names the key epoch it seals (`epoch`, absent\n= 0); a copy that is not at the space's current epoch is a `409` with\ncode `key_epoch_stale` (the key was rotated since) or `key_epoch_ahead`,\nso a device holding a superseded key cannot hand it out (ADR-0103).\n",
     "parameters": [
      {
       "$ref": "#/components/parameters/id"
@@ -1303,6 +1309,171 @@
      },
      "404": {
       "$ref": "#/components/responses/NotFound"
+     },
+     "409": {
+      "$ref": "#/components/responses/Conflict"
+     }
+    }
+   }
+  },
+  "/api/v1/spaces/{id}/key-history": {
+   "get": {
+    "tags": [
+     "personal-state"
+    ],
+    "operationId": "listSpaceKeyHistory",
+    "summary": "A space's opaque key chain — earlier keys sealed under later ones (ADR-0103).",
+    "description": "One entry per rotation, oldest epoch first: entry `epoch` N holds the key\nof epoch N-1 sealed under the key of epoch N, by the client that rotated.\nA current recipient unwraps the current key and unrolls the chain to\nread content sealed before a rotation. The peer cannot open any entry\n(Invariant 6). A space never rotated has none.\n",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/id"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The key chain (possibly empty).",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "space_id",
+          "entries"
+         ],
+         "properties": {
+          "space_id": {
+           "type": "string"
+          },
+          "entries": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "required": [
+             "epoch",
+             "sealed_prev",
+             "created_at"
+            ],
+            "additionalProperties": false,
+            "properties": {
+             "epoch": {
+              "type": "integer",
+              "minimum": 1
+             },
+             "sealed_prev": {
+              "type": "string",
+              "format": "byte",
+              "description": "The key of epoch-1 sealed under the key of epoch (base64, opaque)."
+             },
+             "created_at": {
+              "type": "string",
+              "format": "date-time"
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     }
+    }
+   }
+  },
+  "/api/v1/spaces/{id}/rotate": {
+   "post": {
+    "tags": [
+     "personal-state"
+    ],
+    "operationId": "rotateSpaceKey",
+    "summary": "Move a space to its next key epoch. Requires `admin`.",
+    "description": "A pure re-key (ADR-0103): the device mints a new key, seals the current\nkey under it (`sealed_prev`) and wraps the new key for every recipient\nthat keeps access. The peer stores the history row, upserts the wraps at\nthe new epoch and deletes every older wrap — a recipient left out loses\nits copy, which is how revocation lands. It is a compare-and-swap on\n`expected_epoch`: a rotation that lost a race is a `409` with code\n`key_epoch_conflict`. Wraps carry no `epoch`; the rotation assigns it.\nEvery recipient must be enrolled (enrol-before-wrap, ADR-0049), and\nevery recovery key holding a copy of the current key must be among the\nwraps — the history seals backwards only, so a recovery key left out\nwould lose the space for good — or it is a `409` with code\n`rotation_drops_recovery_key` (ADR-0022).\n",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/id"
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "expected_epoch",
+         "sealed_prev",
+         "wrapped_keys"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "expected_epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The epoch the device rotated from — the space's current one."
+         },
+         "sealed_prev": {
+          "type": "string",
+          "format": "byte",
+          "description": "The current key sealed under the new one (base64, opaque)."
+         },
+         "wrapped_keys": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+           "$ref": "#/components/schemas/WrappedKeyInput"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "The space's new key epoch.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "space_id",
+          "key_epoch"
+         ],
+         "properties": {
+          "space_id": {
+           "type": "string"
+          },
+          "key_epoch": {
+           "type": "integer",
+           "minimum": 1
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     },
+     "409": {
+      "$ref": "#/components/responses/Conflict"
      }
     }
    }
@@ -2454,7 +2625,7 @@
     "operationId": "selfEnrolDevice",
     "security": [],
     "summary": "A paired device enrols itself at this peer (ADR-0067, ADR-0068).",
-    "description": "The step after pairing. A device that holds its admitting membership op — a cert the user's genesis key signed for its key, or (ADR-0068) an `add` signed by any current member of the identity — presents that op and a fresh possession proof over it — the exact two halves of the `Device` credential — and is recorded under its pinned user, with no admin call to `/api/v1/identities/devices` in between.\n\nIt is public because the device may not yet be known here and so cannot authenticate; it grants nothing because the op, evaluated with the identity's op log (voidbind-go ADR-0007), already proves a member vouched for the device and the proof proves the caller holds the key. Verification is the same code the `Device` scheme runs on every request: the op's user must be PINNED here (ADR-0032's gate holds — an unknown user's op is refused), the possession proof must be signed by the op's device key over this op and be fresh, and the membership evaluated over the ops this node holds plus `ops` must admit the device. A device admitted by a member this node has never met MUST send that member's admission in `ops` (or the `Voidbind-Membership` header), or its own admission cites a past the node cannot judge. The enrolled device authenticates at the READ floor; write remains an admin authorisation of the device key (ADR-0065).\n\nUnder ADR-0068 the evaluation itself materialises the device's row (a member authenticates on first contact); what this route adds is the NAME and the created/existing answer. Idempotent on the device key: a re-submission returns the existing device with a 200. A REVOKED device is not re-enrolled, and an op naming a different user than the row holds is refused. Every refusal is the same opaque 401 the `Device` scheme returns; the reason is logged, not disclosed.",
+    "description": "The step after pairing. A device that holds its admitting membership op — a cert the user's genesis key signed for its key, or (ADR-0068) an `add` signed by any current member of the identity — presents that op and a fresh possession proof over it — the exact two halves of the `Device` credential — and is recorded under its pinned user, with no admin call to `/api/v1/identities/devices` in between.\n\nIt is public because the device may not yet be known here and so cannot authenticate; it grants nothing because the op, evaluated with the identity's op log (void-which-binds-go ADR-0007), already proves a member vouched for the device and the proof proves the caller holds the key. Verification is the same code the `Device` scheme runs on every request: the op's user must be PINNED here (ADR-0032's gate holds — an unknown user's op is refused), the possession proof must be signed by the op's device key over this op and be fresh, and the membership evaluated over the ops this node holds plus `ops` must admit the device. A device admitted by a member this node has never met MUST send that member's admission in `ops` (or the `Void-Which-Binds-Membership` header), or its own admission cites a past the node cannot judge. The enrolled device authenticates at the READ floor; write remains an admin authorisation of the device key (ADR-0065).\n\nUnder ADR-0068 the evaluation itself materialises the device's row (a member authenticates on first contact); what this route adds is the NAME and the created/existing answer. Idempotent on the device key: a re-submission returns the existing device with a 200. A REVOKED device is not re-enrolled, and an op naming a different user than the row holds is refused. Every refusal is the same opaque 401 the `Device` scheme returns; the reason is logged, not disclosed.",
     "requestBody": {
      "required": true,
      "content": {
@@ -2487,7 +2658,7 @@
            "type": "string"
           },
           "maxItems": 64,
-          "description": "Membership op tokens the device knows (ADR-0068), merged into the evaluation exactly as the `Voidbind-Membership` header is on an authenticated request. At most 64 in total across body and header."
+          "description": "Membership op tokens the device knows (ADR-0068), merged into the evaluation exactly as the `Void-Which-Binds-Membership` header is on an authenticated request. At most 64 in total across body and header."
          }
         }
        }
@@ -2551,7 +2722,7 @@
     "operationId": "getMembership",
     "security": [],
     "summary": "The membership ops this node holds for an identity (ADR-0068).",
-    "description": "Every membership op token (voidbind-go ADR-0007: `add` / `remove`, signed by a member or by the genesis key) this node has recorded for the identity, oldest issued first. A device merges them with its own and evaluates; the node does not pre-chew a view, because a view is a function of the ops and the reader's clock. This is how a device learns that a member removed it, or another device, while it was offline. Public: an op carries its own authority and the node adds none by serving it; the identity's genesis key is not guessable, so there is nothing to enumerate.",
+    "description": "Every membership op token (void-which-binds-go ADR-0007: `add` / `remove`, signed by a member or by the genesis key) this node has recorded for the identity, oldest issued first. A device merges them with its own and evaluates; the node does not pre-chew a view, because a view is a function of the ops and the reader's clock. This is how a device learns that a member removed it, or another device, while it was offline. Public: an op carries its own authority and the node adds none by serving it; the identity's genesis key is not guessable, so there is nothing to enumerate.",
     "responses": {
      "200": {
       "description": "The recorded ops.",
@@ -2631,10 +2802,10 @@
     "tags": [
      "pairing"
     ],
-    "operationId": "createVoidbindPairSession",
+    "operationId": "createVoidWhichBindsPairSession",
     "security": [],
-    "summary": "Open a Voidbind pairing session (ADR-0066).",
-    "description": "The device-pairing relay (§40, ADR-0022, ADR-0038) — voidbind-go's `relay` protocol, which `heyarr pair`, the `voidbind` CLI (`pair-initiate` / `pair-join`) and the phone client speak — so this node can be the rendezvous for its own devices. A client is pointed at `<node>/pair` as its relay BASE (the client appends `/v1/...` itself, exactly as against a standalone `voidbind relay`) and lands here. It replaced the legacy `/pair/sessions/{session}/slots/{slot}` relay, which is retired (ADR-0066).\n\nWith `render` it is one of Heyarr's unauthenticated surfaces, and it grants nothing: a new device has no credential to present yet, and the relay is an in-memory, write-once, opaque blob store addressed by (session, role, type) that never parses a payload and holds no key. What crosses it is either public (two commitments, two revealed public keys) or ciphertext it cannot open (the admission, sealed to the new device's X25519 key). The initiator — the user identity, or a device that is already a member — opens the session and shares its id and a salt with the new device out of band (the invite QR).",
+    "summary": "Open a Void-Which-Binds pairing session (ADR-0066).",
+    "description": "The device-pairing relay (§40, ADR-0022, ADR-0038) — void-which-binds-go's `relay` protocol, which `heyarr pair`, the `void-which-binds` CLI (`pair-initiate` / `pair-join`) and the phone client speak — so this node can be the rendezvous for its own devices. A client is pointed at `<node>/pair` as its relay BASE (the client appends `/v1/...` itself, exactly as against a standalone `void-which-binds relay`) and lands here. It replaced the legacy `/pair/sessions/{session}/slots/{slot}` relay, which is retired (ADR-0066).\n\nWith `render` it is one of Heyarr's unauthenticated surfaces, and it grants nothing: a new device has no credential to present yet, and the relay is an in-memory, write-once, opaque blob store addressed by (session, role, type) that never parses a payload and holds no key. What crosses it is either public (two commitments, two revealed public keys) or ciphertext it cannot open (the admission, sealed to the new device's X25519 key). The initiator — the user identity, or a device that is already a member — opens the session and shares its id and a salt with the new device out of band (the invite QR).",
     "responses": {
      "200": {
       "description": "The session was opened.",
@@ -2704,9 +2875,9 @@
     "tags": [
      "pairing"
     ],
-    "operationId": "putVoidbindPairSlot",
+    "operationId": "putVoidWhichBindsPairSlot",
     "security": [],
-    "summary": "Store one role's message in a Voidbind pairing session (ADR-0066).",
+    "summary": "Store one role's message in a Void-Which-Binds pairing session (ADR-0066).",
     "description": "Write-once: a second PUT of a slot is a 409 whatever the value, so a confused or hostile participant cannot replace its own commitment after the peer has read it. A per-message byte cap, a live-session cap and a ten-minute TTL bound the abuse surface.",
     "requestBody": {
      "required": true,
@@ -2738,9 +2909,9 @@
     "tags": [
      "pairing"
     ],
-    "operationId": "getVoidbindPairSlot",
+    "operationId": "getVoidWhichBindsPairSlot",
     "security": [],
-    "summary": "Read one role's message from a Voidbind pairing session.",
+    "summary": "Read one role's message from a Void-Which-Binds pairing session.",
     "description": "The peer polls the slot it is waiting on until it appears. Returns the opaque bytes the named role stored, or a 404 while the slot is still empty (the ordinary \"keep waiting\") or once the session has expired.",
     "responses": {
      "200": {
@@ -2899,6 +3070,23 @@
       "description": "No or bad credential; carries an HTTP Basic authentication challenge."
      }
     }
+   },
+   "head": {
+    "tags": [
+     "compat"
+    ],
+    "operationId": "opdsRootHead",
+    "security": [],
+    "summary": "Headers for the OPDS catalog root.",
+    "description": "The HEAD counterpart, used by a reader probing the catalogue before fetching it (#606). Same status and headers as the GET, no body.",
+    "responses": {
+     "200": {
+      "description": "Headers only, no body."
+     },
+     "401": {
+      "description": "No or bad credential; carries an HTTP Basic authentication challenge."
+     }
+    }
    }
   },
   "/opds/publications": {
@@ -2920,6 +3108,23 @@
         }
        }
       }
+     },
+     "401": {
+      "description": "No or bad credential; carries an HTTP Basic authentication challenge."
+     }
+    }
+   },
+   "head": {
+    "tags": [
+     "compat"
+    ],
+    "operationId": "opdsPublicationsHead",
+    "security": [],
+    "summary": "Headers for the OPDS acquisition feed.",
+    "description": "The HEAD counterpart, used by a reader probing the feed before fetching it (#606). Same status and headers as the GET, no body.",
+    "responses": {
+     "200": {
+      "description": "Headers only, no body."
      },
      "401": {
       "description": "No or bad credential; carries an HTTP Basic authentication challenge."
@@ -7467,7 +7672,7 @@
     ],
     "operationId": "peerStatePutWrappedKey",
     "summary": "Replicate a wrapped copy of a space's key to a Full Peer (§41, §45).",
-    "description": "A replicating sibling pushes one recipient's sealed copy of a space's key.\nThe bytes are opaque — the peer holds them and cannot open them.\nIdempotent per (space, recipient); a re-push replaces the copy.\n",
+    "description": "A replicating sibling pushes one recipient's sealed copy of a space's key.\nThe bytes are opaque — the peer holds them and cannot open them.\nIdempotent per (space, recipient); a re-push replaces the copy. The copy\nmust be at the space's current key epoch here (ADR-0103): an older one\nis a `409` with code `key_epoch_superseded`, which the sibling skips —\na stale copy is never resurrected — and a newer one a `409` with code\n`key_epoch_ahead` (its history row has not landed).\n",
     "security": [
      {
       "peerCertificate": []
@@ -7493,6 +7698,11 @@
           "type": "string",
           "format": "byte",
           "description": "The opaque sealed bytes (base64)."
+         },
+         "epoch": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The key epoch the copy seals; absent means 0."
          }
         }
        }
@@ -7508,6 +7718,78 @@
      },
      "404": {
       "description": "This peer does not hold that encrypted space."
+     },
+     "409": {
+      "description": "The copy's key epoch is superseded or not yet reached here."
+     },
+     "503": {
+      "description": "This node keeps no encrypted personal state to sync."
+     }
+    }
+   }
+  },
+  "/peer/v1/state/{space}/key-history": {
+   "parameters": [
+    {
+     "name": "space",
+     "in": "path",
+     "required": true,
+     "description": "The opaque space id (a UUIDv7).",
+     "schema": {
+      "type": "string"
+     }
+    }
+   ],
+   "post": {
+    "tags": [
+     "peer"
+    ],
+    "operationId": "peerStatePutKeyHistory",
+    "summary": "Replicate one link of a space's key chain to a Full Peer (ADR-0103).",
+    "description": "A replicating sibling pushes one opaque history row — the key of\nepoch-1 sealed under the key of epoch — before the wraps of that epoch.\nIdempotent on identical bytes. A row that becomes the newest epoch here\ndeletes every older wrap, so a rotation's revocation replicates too. A\ndifferent row for an epoch already held is a `409` with code\n`key_history_conflict`: a fork is surfaced, never overwritten.\n",
+    "security": [
+     {
+      "peerCertificate": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "epoch",
+         "sealed_prev"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "epoch": {
+          "type": "integer",
+          "minimum": 1
+         },
+         "sealed_prev": {
+          "type": "string",
+          "format": "byte",
+          "description": "The key of epoch-1 sealed under the key of epoch (base64, opaque)."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "The row is stored (or was already held)."
+     },
+     "400": {
+      "description": "The epoch is below 1 or the bytes are empty."
+     },
+     "404": {
+      "description": "This peer does not hold that encrypted space."
+     },
+     "409": {
+      "description": "A different row is held for that epoch."
      },
      "503": {
       "description": "This node keeps no encrypted personal state to sync."
@@ -9231,6 +9513,11 @@
       "type": "string",
       "format": "byte",
       "description": "The opaque sealed bytes (base64). The peer cannot open them."
+     },
+     "epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The key epoch the copy seals (ADR-0103); absent means 0. Must be the space's current epoch. Not sent on a rotation, which assigns it."
      }
     }
    },
@@ -9260,6 +9547,7 @@
     "required": [
      "recipient",
      "wrapped",
+     "epoch",
      "created_at"
     ],
     "additionalProperties": false,
@@ -9270,6 +9558,11 @@
      "wrapped": {
       "type": "string",
       "format": "byte"
+     },
+     "epoch": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The key epoch this copy seals (ADR-0103)."
      },
      "created_at": {
       "type": "string",

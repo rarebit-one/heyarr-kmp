@@ -49,6 +49,50 @@ class VaultSpaceClientTest {
     private fun b64(b: ByteArray) = Base64.getEncoder().encodeToString(b)
 
     @Test
+    fun spaceKeysReadsTheKeyEpochAndEachCopysEpoch() {
+        // The shape of heyarr-core's internal/api/personalstate/testdata/keys_after_rotation.json.
+        val fake = FakeTransport()
+        fake.responses["GET ${VaultSpaceClient.keysUrl(base, "s")}"] = HttpResponse(
+            200,
+            """{"space_id":"s","key_epoch":1,"wrapped_keys":[{"recipient":"x25519:11",""" +
+                """"wrapped":"${b64(byteArrayOf(9, 8))}","epoch":1,"created_at":"2026-10-08T09:30:00Z"}]}""",
+        )
+        val list = VaultSpaceClient(fake, base, cred).spaceKeys("s")
+        assertEquals(1, list.keyEpoch)
+        assertEquals(1, list.wrapped.single().epoch)
+        assertEquals("x25519:11", list.wrapped.single().recipient)
+    }
+
+    @Test
+    fun spaceKeysFromAPeerWithoutEpochsIsEpochZero() {
+        val fake = FakeTransport()
+        fake.responses["GET ${VaultSpaceClient.keysUrl(base, "s")}"] = HttpResponse(
+            200,
+            """{"space_id":"s","wrapped_keys":[{"recipient":"x25519:11","wrapped":"${b64(byteArrayOf(9))}"}]}""",
+        )
+        val list = VaultSpaceClient(fake, base, cred).spaceKeys("s")
+        assertEquals(0, list.keyEpoch)
+        assertEquals(0, list.wrapped.single().epoch)
+    }
+
+    @Test
+    fun keyHistoryReadsEveryRow() {
+        // The shape of heyarr-core's internal/api/personalstate/testdata/key_history.json.
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.keyHistoryUrl(base, "s")
+        assertEquals("$base/api/v1/spaces/s/key-history", url)
+        fake.responses["GET $url"] = HttpResponse(
+            200,
+            """{"space_id":"s","entries":[""" +
+                """{"epoch":1,"sealed_prev":"${b64(byteArrayOf(1, 2))}","created_at":"2026-10-08T09:30:00Z"},""" +
+                """{"epoch":2,"sealed_prev":"${b64(byteArrayOf(3))}","created_at":"2026-10-08T10:00:00Z"}]}""",
+        )
+        val rows = VaultSpaceClient(fake, base, cred).keyHistory("s")
+        assertEquals(listOf(1, 2), rows.map { it.epoch })
+        assertEquals(listOf<Byte>(1, 2), rows[0].sealedPrev.toList())
+    }
+
+    @Test
     fun pushChangeContentAddressesAndPosts() {
         val ct = byteArrayOf(1, 2, 3, 4, 5)
         // The id is the FRAMED change id (domain ‖ space ‖ parents ‖ ciphertext), not blake3(ct) —

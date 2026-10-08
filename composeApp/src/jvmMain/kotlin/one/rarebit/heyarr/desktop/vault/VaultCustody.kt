@@ -1,12 +1,23 @@
 package one.rarebit.heyarr.desktop.vault
 
+import one.rarebit.heyarr.core.vault.SpaceKeyring
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.voidwhichbinds.KeyRef
 import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 import java.util.UUID
 
-/** An opened vault: the space id and the space key unwrapped for THIS device. */
-class OpenedVault(val spaceId: String, val spaceKey: ByteArray)
+/**
+ * An opened vault: the space id and its [keyring] — the current key unwrapped for THIS device plus
+ * every earlier key unrolled from the space's key history (ADR-0103), so files pushed before a
+ * rotation stay readable. Writes use [spaceKey], the current key.
+ */
+class OpenedVault(val spaceId: String, val keyring: SpaceKeyring) {
+    /** A space at epoch 0 with [spaceKey] as its only key (a freshly minted space). */
+    constructor(spaceId: String, spaceKey: ByteArray) : this(spaceId, SpaceKeyring.single(spaceKey))
+
+    /** The current key: the only one anything new is sealed under. */
+    val spaceKey: ByteArray get() = keyring.current
+}
 
 /**
  * Space-key custody for the desktop vault (W4.3), software tier: the space key is unwrapped with
@@ -28,19 +39,21 @@ class VaultCustody(
     private val kind: String = DEFAULT_KIND,
 ) {
     /**
-     * Open [spaceId] by finding this device's wrapped copy and unwrapping it with the sealed
-     * device X25519 key. Null when this device has no readable copy — not (yet) a recipient, or
-     * the list/unwrap failed — which the caller treats as "not ready", never as a reason to mint
-     * a second space.
+     * Open [spaceId] by finding this device's wrapped copy, unwrapping it with the sealed device
+     * X25519 key and unrolling the space's key history ([SpaceOpen], ADR-0103). Null when this
+     * device has no readable copy — not (yet) a recipient, a superseded copy, an incomplete
+     * history, or the list/unwrap failed — which the caller treats as "not ready", never as a
+     * reason to mint a second space. Also the re-fetch a sync pass makes when no held key opens a
+     * blob (the space may have rotated since it was opened).
      */
     fun open(spaceId: String): OpenedVault? {
         val identity = keyring.identity()
-        val mine = identity.deviceEncId.render()
-        val wrapped = runCatching { keys.listKeys(spaceId) }.getOrNull()
-            ?.firstOrNull { it.recipient == mine } ?: return null
-        val key = runCatching { VoidbindEncryption.unwrap(wrapped.wrapped, identity.encPrivateKey) }.getOrNull()
-            ?: return null
-        return OpenedVault(spaceId, key)
+        val ring = runCatching {
+            SpaceOpen.open(keys, spaceId, identity.deviceEncId.render()) {
+                VoidbindEncryption.unwrap(it, identity.encPrivateKey)
+            }
+        }.getOrNull() ?: return null
+        return OpenedVault(spaceId, ring)
     }
 
     /**

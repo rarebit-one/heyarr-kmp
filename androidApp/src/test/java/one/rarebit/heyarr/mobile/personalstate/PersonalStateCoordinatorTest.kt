@@ -3,6 +3,7 @@ package one.rarebit.heyarr.mobile.personalstate
 import one.rarebit.heyarr.core.auth.Credential
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -68,5 +69,27 @@ class PersonalStateCoordinatorTest {
         coordinator.setReadingPosition("book-1", "epubcfi(/6/4)")
         coordinator.setReadingPosition("book-1", "epubcfi(/6/8)")
         assertEquals("epubcfi(/6/8)", coordinator.readingPosition("book-1"))
+    }
+
+    @Test
+    fun anExistingRoleSpaceThatWillNotOpenIsNeverReplaced() {
+        coordinator.setStarred("m1", true)
+        val starred = registry.starredSpace()!!
+        val crypto = IdentityCrypto()
+        val device = FakeDeviceKey(1)
+        // A rotation whose history row went missing: this device has a copy but cannot unroll.
+        val prev = crypto.unwrap(server.wrapped(starred, device.recipientId()), device.seed())
+        val next = crypto.newSpaceKey()
+        server.rotate(
+            starred,
+            mapOf(device.recipientId() to crypto.seal(next, device.publicKey())),
+            IdentityCrypto.sealSpaceKey(next, prev),
+        )
+        server.dropHistory(starred)
+        val spaces = server.spaceCount()
+
+        assertThrows(SpaceUnreadableException::class.java) { coordinator.setStarred("m2", true) }
+        assertEquals("no replacement space minted", spaces, server.spaceCount())
+        assertEquals(starred, registry.starredSpace())
     }
 }

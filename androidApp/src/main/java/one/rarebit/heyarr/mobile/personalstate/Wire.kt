@@ -12,7 +12,11 @@ import java.util.Base64
  */
 internal data class SpaceInfo(val id: String, val kind: String, val createdAt: String)
 
-internal data class WrappedKeyEntry(val recipient: String, val wrapped: ByteArray)
+/** A space key wrapped for one recipient; [epoch] is the key epoch the copy seals (ADR-0103). */
+internal data class WrappedKeyEntry(val recipient: String, val wrapped: ByteArray, val epoch: Int = 0)
+
+/** A space's wrapped copies with its current key epoch (`GET /spaces/{id}/keys`, ADR-0103). */
+internal data class SpaceKeys(val keyEpoch: Int, val wrapped: List<WrappedKeyEntry>)
 
 /**
  * One encrypted change as it crosses the peer surface. The id is content-addressed

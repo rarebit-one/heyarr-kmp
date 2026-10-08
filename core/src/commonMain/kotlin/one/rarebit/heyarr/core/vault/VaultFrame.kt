@@ -133,6 +133,26 @@ object VaultFrame {
         return parseManifest(json)
     }
 
+    /** A manifest opened by [openManifest] over a keyring, with the key that opened it. */
+    class OpenedManifest(val manifest: Manifest, val key: ByteArray)
+
+    /**
+     * [openManifest] over a space's whole [keyring], newest key first (heyarr-core
+     * `vaultread.OpenManifestWithKeys`, ADR-0103). A space's key can rotate and nothing is
+     * re-encrypted, so a file pushed before a rotation stays under the key of its epoch; the
+     * manifest records nothing about the key, so each is tried. The key that opens the manifest is
+     * the one the file's frames are sealed under (a push seals both under one key), so the caller
+     * reads the frames with [OpenedManifest.key].
+     *
+     * No key opening it is [SpaceKeyring.NoKeyOpensException] (the caller may re-fetch a stale
+     * ring). A key that DECRYPTS the manifest but whose plaintext does not parse is a
+     * [FrameException] at once: the key was right and the manifest is bad, so no other key is tried.
+     */
+    fun openManifest(keyring: SpaceKeyring, sealed: ByteArray): OpenedManifest {
+        val opened = keyring.open(sealed)
+        return OpenedManifest(parseManifest(opened.plaintext.decodeToString()), opened.key)
+    }
+
     fun parseManifest(json: String): Manifest {
         val obj = JsonScan.rootObject(json) ?: throw FrameException("manifest is not an object")
         return Manifest(

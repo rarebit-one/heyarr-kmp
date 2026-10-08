@@ -2,8 +2,11 @@ package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.crypto.Blake3
+import one.rarebit.heyarr.core.vault.KeyHistoryEntry
 import one.rarebit.heyarr.core.vault.LocalFile
+import one.rarebit.heyarr.core.vault.SpaceKeyring
 import one.rarebit.heyarr.core.vault.SyncIndexEntry
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.Test
@@ -54,6 +57,16 @@ class VaultSyncEngineTest {
             return ChangePage(tail, changes.size.toLong())
         }
 
+        /** The key epoch the fake peer reports (null = a peer that cannot tell). */
+        var epoch: Int? = null
+        var epochChecks = 0
+            private set
+
+        override fun keyEpoch(spaceId: String): Int? {
+            epochChecks++
+            return epoch
+        }
+
         /** When set, the next push throws — a network that dropped mid-pass. */
         var failNextPush = false
 
@@ -85,7 +98,7 @@ class VaultSyncEngineTest {
         }
     }
 
-    private val key = ByteArray(32) { it.toByte() }
+    private val key = SpaceKeyring.single(ByteArray(32) { it.toByte() })
 
     private fun engine(folder: VaultFolder, blobs: VaultBlobStore, space: VaultSpace) =
         VaultSyncEngine(folder, blobs, space, InMemorySyncIndexStore(), "http://x", Credential.Guest, "space-1", key)
@@ -113,6 +126,140 @@ class VaultSyncEngineTest {
         // Idempotent: B synced again does nothing (its index now records the file).
         val bs2 = b.syncOnce()
         assertEquals(0, bs2.uploaded + bs2.downloaded + bs2.deletedLocal + bs2.deletedRemote)
+    }
+
+    // --- key rotation (ADR-0103) ----------------------------------------------------
+
+    /** A space rotated once: k0 → k1, with the history row sealing k0 under k1. */
+    private val k0 = ByteArray(32) { (it + 1).toByte() }
+    private val k1 = ByteArray(32) { (it + 101).toByte() }
+    private val rotated =
+        SpaceKeyring.unroll(k1, 1, listOf(KeyHistoryEntry(1, VoidbindEncryption.sealSpaceKey(k1, k0))))
+
+    private fun engineWith(
+        folder: VaultFolder,
+        blobs: VaultBlobStore,
+        space: VaultSpace,
+        ring: SpaceKeyring,
+        reopen: () -> SpaceKeyring? = { null },
+    ) = VaultSyncEngine(
+        folder,
+        blobs,
+        space,
+        InMemorySyncIndexStore(),
+        "http://x",
+        Credential.Guest,
+        "space-1",
+        ring,
+        reopen = reopen,
+    )
+
+    @Test
+    fun aFileWrittenBeforeARotationStaysReadableAndNewWritesUseTheCurrentKey() {
+        val blobs = MemBlobStore()
+        val space = MemSpace()
+        val old = "written at epoch 0".encodeToByteArray()
+        // Device A wrote at epoch 0: change, manifest and frames all under k0.
+        val folderA = MemFolder(mutableMapOf("old.txt" to old), mutableMapOf("old.txt" to 1L))
+        engineWith(folderA, blobs, space, SpaceKeyring.single(k0)).syncOnce()
+
+        // Device B opens after the rotation, holding the unrolled ring [k1, k0], and adds a file.
+        val fresh = "written at epoch 1".encodeToByteArray()
+        val folderB = MemFolder(mutableMapOf("new.txt" to fresh), mutableMapOf("new.txt" to 2L))
+        val b = engineWith(folderB, blobs, space, rotated).syncOnce()
+        assertEquals(1, b.downloaded)
+        assertTrue(old.contentEquals(folderB.files["old.txt"]), "the epoch-0 file opened through the ring")
+
+        // B's own change is sealed under k1 only: k1 opens it, k0 does not.
+        val bChange = space.changes.last().ciphertext
+        assertTrue(VoidbindEncryption.decryptChange(k1, bChange).isNotEmpty())
+        assertFailsWith<Exception> { VoidbindEncryption.decryptChange(k0, bChange) }
+    }
+
+    @Test
+    fun aRingStaleAfterARotationIsReFetchedOnceAndTheReadRetried() {
+        val blobs = MemBlobStore()
+        val space = MemSpace()
+        val body = "written after the rotation".encodeToByteArray()
+        // A writer already on epoch 1.
+        val folderA = MemFolder(mutableMapOf("a.txt" to body), mutableMapOf("a.txt" to 1L))
+        engineWith(folderA, blobs, space, rotated).syncOnce()
+
+        // B still holds the epoch-0 ring it opened before the rotation landed.
+        var reopens = 0
+        val folderB = MemFolder()
+        val b = engineWith(folderB, blobs, space, SpaceKeyring.single(k0)) {
+            reopens++
+            rotated
+        }
+        assertEquals(1, b.syncOnce().downloaded)
+        assertEquals(1, reopens, "one re-fetch, then the read succeeded")
+        assertTrue(body.contentEquals(folderB.files["a.txt"]))
+        // The fresh ring is kept: the next pass needs no re-fetch.
+        folderA.files["a2.txt"] = "more".encodeToByteArray()
+        engineWith(folderA, blobs, space, rotated).syncOnce()
+        b.syncOnce()
+        assertEquals(1, reopens)
+    }
+
+    @Test
+    fun aRotationWithNoInboundBlobStillMovesLocalWritesToTheNewKey() {
+        val blobs = MemBlobStore()
+        val space = MemSpace().apply { epoch = 0 }
+        val folder = MemFolder(mutableMapOf("a.txt" to "v1".encodeToByteArray()), mutableMapOf("a.txt" to 1L))
+        var reopens = 0
+        val eng = engineWith(folder, blobs, space, SpaceKeyring.single(k0)) {
+            reopens++
+            rotated
+        }
+        eng.syncOnce()
+        assertEquals(0, reopens, "epoch unchanged: no re-open")
+
+        // The space rotates to k1; nothing new arrives, so no decrypt ever misses.
+        space.epoch = 1
+        folder.files["a.txt"] = "v2 after the rotation".encodeToByteArray()
+        folder.mtimes["a.txt"] = 2L
+        val checks = space.epochChecks
+        assertEquals(1, eng.syncOnce().uploaded)
+        assertEquals(1, reopens)
+        assertEquals(1, space.epochChecks - checks, "one epoch check per writing pass, not per blob")
+
+        // The new drive change and the new manifest open under k1 only.
+        val change = space.changes.last().ciphertext
+        assertFailsWith<Exception> { VoidbindEncryption.decryptChange(k0, change) }
+        // The drive change names the manifest blob it points at.
+        val json = VoidbindEncryption.decryptChange(k1, change).decodeToString()
+        val manifestHash = blobs.blobs.keys.single { it in json }
+        val manifest = blobs.blobs.getValue(manifestHash)
+        assertFailsWith<Exception> { VoidbindEncryption.decryptChange(k0, manifest) }
+        assertTrue(VoidbindEncryption.decryptChange(k1, manifest).isNotEmpty())
+    }
+
+    @Test
+    fun aPassThatCannotReachTheCurrentKeyWritesNothing() {
+        val blobs = MemBlobStore()
+        val space = MemSpace().apply { epoch = 1 }
+        val folder = MemFolder(mutableMapOf("a.txt" to "x".encodeToByteArray()), mutableMapOf("a.txt" to 1L))
+        val eng = engineWith(folder, blobs, space, SpaceKeyring.single(k0)) { null }
+        assertFailsWith<IllegalStateException> { eng.syncOnce() }
+        assertTrue(space.changes.isEmpty(), "nothing pushed under the superseded key")
+        assertTrue(blobs.blobs.isEmpty(), "nothing uploaded under the superseded key")
+    }
+
+    @Test
+    fun aBlobNoKeyOpensFailsThePassAfterOneReFetch() {
+        val blobs = MemBlobStore()
+        val space = MemSpace()
+        val folderA = MemFolder(mutableMapOf("a.txt" to "x".encodeToByteArray()), mutableMapOf("a.txt" to 1L))
+        engineWith(folderA, blobs, space, rotated).syncOnce()
+
+        var reopens = 0
+        val b = engineWith(MemFolder(), blobs, space, SpaceKeyring.single(k0)) {
+            reopens++
+            SpaceKeyring.single(k0) // the re-fetch still yields no key that opens it
+        }
+        assertFailsWith<SpaceKeyring.NoKeyOpensException> { b.syncOnce() }
+        assertEquals(1, reopens, "at most one re-fetch per pass")
     }
 
     @Test
