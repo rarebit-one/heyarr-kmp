@@ -64,7 +64,8 @@ class OpenApiContractTest {
             "PlaybackJson" to listOf("POST /api/v1/playback/plan", "POST /api/v1/playback"),
             "ConsumptionClient" to listOf("POST /api/v1/consumption/sessions", "POST /api/v1/devices"),
             "EnrolClient" to listOf("POST /enrol", "#Problem"),
-            "VaultSpaceClient" to SPACES,
+            // + #Problem: pushChange reads a refusal's `code` (change_key_epoch_mismatch, heyarr-core#712).
+            "VaultSpaceClient" to SPACES + "#Problem",
             "PersonalStateClient" to SPACES,
             "EncryptedChange" to listOf("#EncryptedChange"),
             "EncryptedSnapshot" to listOf("#EncryptedSnapshot"),
