@@ -44,4 +44,13 @@ class ManifestKeysTest {
         assertFailsWith<VaultFrame.FrameException> { VaultFrame.parseManifest("$json trailing") }
         assertFailsWith<VaultFrame.FrameException> { VaultFrame.parseManifest("[$json]") }
     }
+
+    @Test
+    fun aFractionalOrExponentIntegerFieldIsRefused() {
+        for (bad in listOf("5.0", "5e0", "5.5")) {
+            val m = json.replace("\"plaintext_size\":5", "\"plaintext_size\":$bad")
+            check(m != json) { "fixture did not contain plaintext_size:5" }
+            assertFailsWith<VaultFrame.FrameException> { VaultFrame.parseManifest(m) }
+        }
+    }
 }

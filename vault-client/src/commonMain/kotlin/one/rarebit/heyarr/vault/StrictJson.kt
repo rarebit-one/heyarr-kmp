@@ -41,15 +41,21 @@ internal object StrictJson {
      * exactly one valid JSON object. Lets a caller refuse what a tolerant first-match scanner and
      * Go's last-match, case-insensitive `encoding/json` would read differently.
      */
-    fun topLevelKeys(json: String): List<String>? = runCatching {
+    fun topLevelKeys(json: String): List<String>? = topLevelEntries(json)?.map { it.first }
+
+    /**
+     * [topLevelKeys] with each key's value as its raw JSON text (whitespace trimmed), so a caller
+     * can hold a field to a narrower grammar than RFC 8259 — an integer literal, say.
+     */
+    fun topLevelEntries(json: String): List<Pair<String, String>>? = runCatching {
         val p = Parser(json)
         p.document() ?: return null
-        p.topKeys.toList()
+        p.topEntries.toList()
     }.getOrNull()
 
     @Suppress("TooManyFunctions") // one small function per production of the grammar
     private class Parser(private val s: String) {
-        val topKeys = ArrayList<String>()
+        val topEntries = ArrayList<Pair<String, String>>()
         private var i = 0
         private var v: Long? = null
         private var type: String? = null
@@ -90,10 +96,10 @@ internal object StrictJson {
                 ws()
                 if (peek() != '"') fail("expected a key")
                 val key = string()
-                if (top) topKeys.add(key)
                 ws()
                 expect(':')
                 ws()
+                val start = i
                 if (top && key.equals("v", ignoreCase = true)) {
                     topV()
                 } else if (top && key.equals("type", ignoreCase = true)) {
@@ -101,6 +107,7 @@ internal object StrictJson {
                 } else {
                     value(depth + 1)
                 }
+                if (top) topEntries.add(key to s.substring(start, i))
                 ws()
                 when (next()) {
                     ',' -> continue

@@ -270,18 +270,25 @@ object VaultFrame {
      * scanner the first) or spelt in another case than a writer uses (Go matches field names
      * case-insensitively, the scanner exactly). A writer emits each field once, in lower case.
      */
-    @Suppress("ThrowsCount") // not an object, a repeat and a case variant are three different lies
+    @Suppress("ThrowsCount") // not an object, a non-integer, a repeat and a case variant are four lies
     private fun checkManifestKeys(json: String) {
-        val keys = StrictJson.topLevelKeys(json) ?: throw FrameException("manifest is not a valid JSON object")
+        val entries = StrictJson.topLevelEntries(json) ?: throw FrameException("manifest is not a valid JSON object")
         val seen = HashSet<String>()
-        for (key in keys) {
+        for ((key, raw) in entries) {
             val folded = key.lowercase()
+            // Go unmarshals these into integer fields: 1.5 or 1e3 is an error there, not a 1.
+            if (folded in MANIFEST_INT_FIELDS && !INTEGER_LITERAL.matches(raw)) {
+                throw FrameException("manifest: $folded is not an integer")
+            }
             if (!seen.add(folded)) throw FrameException("manifest: key \"$folded\" appears more than once")
             if (folded in MANIFEST_FIELDS && key != folded) {
                 throw FrameException("manifest: key \"$key\" is not spelt as a writer spells it")
             }
         }
     }
+
+    private val MANIFEST_INT_FIELDS = setOf("version", "frame_size", "frame_count", "plaintext_size")
+    private val INTEGER_LITERAL = Regex("^-?(0|[1-9][0-9]*)$")
 
     private val MANIFEST_FIELDS = setOf("version", "file_id", "frame_size", "frame_count", "plaintext_size", "content")
 

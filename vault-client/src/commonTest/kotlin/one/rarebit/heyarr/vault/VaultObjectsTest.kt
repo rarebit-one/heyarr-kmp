@@ -394,6 +394,17 @@ class VaultObjectsTest {
     }
 
     @Test
+    fun aChangeThatIsNotValidJsonFailsTheReadAsGoFailsItsDecode() {
+        val key = VoidbindEncryption.newSpaceKey()
+        val n = node(key)
+        val put = client(n).put(spaceId, envelope)
+        // A comma short: the tolerant scanner would still find "op" and "path"; Go refuses it.
+        val malformed = "{\"op\":0 \"path\":\".jumpdrive/objects/x.json\"}".encodeToByteArray()
+        n.pushChange(spaceId, listOf(n.changes.single().changeId), VoidbindEncryption.encryptChange(key, malformed))
+        assertFailsWith<VaultRefException.Integrity> { client(n).get(put.ref) }
+    }
+
+    @Test
     fun putRefusesAnythingButAVersionedTypedEnvelopeAndUploadsNothing() {
         val n = node(VoidbindEncryption.newSpaceKey())
         listOf(

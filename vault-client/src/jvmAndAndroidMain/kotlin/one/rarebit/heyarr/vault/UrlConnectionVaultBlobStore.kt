@@ -30,7 +30,11 @@ class UrlConnectionVaultBlobStore(
             conn.outputStream.use { it.write(bytes) }
             val code = conn.responseCode
             if (code == HTTP_CREATED) {
-                val body = conn.inputStream.use { it.readBytes() }.decodeToString()
+                // A {hash,size} acknowledgement; bounded like a whole-blob read so a hostile node
+                // cannot exhaust the heap with an endless 201 body.
+                val body = conn.inputStream.use {
+                    readBounded(it, VaultBlobStore.MAX_WHOLE_BLOB_BYTES, hash)
+                }.decodeToString()
                 PutResult.Stored(
                     hash = JsonScan.stringField(body, "hash") ?: hash,
                     size = JsonScan.longField(body, "size") ?: bytes.size.toLong(),
@@ -39,6 +43,8 @@ class UrlConnectionVaultBlobStore(
                 PutResult.Failed("upload failed: HTTP $code", status = code)
             }
         } catch (e: IOException) {
+            PutResult.Failed("upload failed: ${e.message}")
+        } catch (e: VaultFrame.IntegrityException) {
             PutResult.Failed("upload failed: ${e.message}")
         } finally {
             conn.disconnect()
