@@ -216,7 +216,13 @@ class VaultSyncEngine(
         return RepairReport(entries.size, missing.map { it.path }, repairable, repaired, changed, unrecoverable)
     }
 
-    /** Re-seal and upload [paths] as new versions, saving the index even if a later one fails. */
+    /**
+     * Re-seal and upload [paths] as new versions. The index is saved every [REPAIR_SAVE_EVERY]
+     * uploads as well as at the end, because a large repair can be killed outright (the OOM killer,
+     * a reboot) and a `finally` does not run then. Each upload's change is already on the node by
+     * the time it is counted, so an index that lags would only make the next pass re-download
+     * files that are already correct.
+     */
     private fun reupload(
         paths: List<String>,
         local: Map<String, LocalFile>,
@@ -230,6 +236,7 @@ class VaultSyncEngine(
             for (path in paths) {
                 upload(path, local.getValue(path), drive, newIndex)
                 done += path
+                if (done.size % REPAIR_SAVE_EVERY == 0) indexStore.save(newIndex)
             }
         } finally {
             // Record whatever made it up, so an interrupted repair resumes rather than redoes.
@@ -454,6 +461,9 @@ class VaultSyncEngine(
         space.pushChange(spaceId, emptyList(), ciphertext, keyEpoch = keyring.epoch)
     }
 }
+
+/** How many re-uploads [VaultSyncEngine.repair] makes between index saves. */
+private const val REPAIR_SAVE_EVERY = 100
 
 /**
  * Sort the entries whose blobs are missing by what this device can do about each:
