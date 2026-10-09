@@ -22,6 +22,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
+import one.rarebit.heyarr.core.playback.SeekCoalescer
 
 /** One episode the player can move on to after the current one (the work's other playable files). */
 data class QueueEntry(
@@ -128,6 +129,8 @@ class VideoSession(
     private var resumed = true
     private var startSeconds = 0.0
     private var ticker: Job? = null
+
+    private val seekCoalescer = SeekCoalescer(scope) { restartStream(it) }
 
     /** Where playback reached, for the consumption reporter — set by the shell. */
     var onProgress: (PlaybackProgress) -> Unit = {}
@@ -386,7 +389,7 @@ class VideoSession(
     fun seekTo(positionMs: Long) {
         val t = target ?: return
         if (t.restartSeekable) {
-            restartStream(positionMs / 1000.0)
+            seekCoalescer.seekTo(positionMs / 1000.0)
             return
         }
         if (!t.seekable) return
@@ -407,7 +410,7 @@ class VideoSession(
     fun seekBy(seconds: Double) {
         val t = target ?: return
         if (t.restartSeekable) {
-            restartStream(sourceSeconds() + seconds)
+            seekCoalescer.seekBy(sourceSeconds(), seconds)
             return
         }
         if (!t.seekable) return
@@ -461,6 +464,7 @@ class VideoSession(
     }
 
     private fun release() {
+        seekCoalescer.cancel()
         ticker?.cancel()
         ticker = null
         player?.let {
