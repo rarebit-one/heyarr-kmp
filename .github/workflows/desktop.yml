@@ -11,6 +11,7 @@ on:
       - "deploy/**"
       - "scripts/**"
       - "core/**"
+      - "vault-client/**"
       - "ui/**"
       - "build.gradle.kts"
       - "settings.gradle.kts"
@@ -80,10 +81,11 @@ jobs:
       - name: Lint (ktlint + detekt)
         run: >-
           ./gradlew :ktlintCheck :core:ktlintCheck :core:detekt :ui:ktlintCheck :ui:detekt
+          :vault-client:ktlintCheck :vault-client:detekt
           :composeApp:ktlintCheck :composeApp:detekt --no-daemon --stacktrace
 
       - name: Build + JVM unit tests
-        run: ./gradlew :core:build :ui:build :composeApp:build --no-daemon --stacktrace
+        run: ./gradlew :core:build :ui:build :vault-client:build :composeApp:build --no-daemon --stacktrace
 
       # The runnable fat JAR for the HEADLESS vault-sync daemon: Compose's supported uber-jar
       # task bundles the whole runtime classpath (incl. voidbind-client) with service files

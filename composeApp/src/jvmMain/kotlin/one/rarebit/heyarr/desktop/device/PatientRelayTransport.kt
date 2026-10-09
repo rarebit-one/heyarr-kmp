@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.desktop.device
 
-import one.rarebit.voidbind.net.HttpResponse
-import one.rarebit.voidbind.net.HttpTransport
-import one.rarebit.voidbind.net.RelayTimeout
+import one.rarebit.voidwhichbinds.net.HttpResponse
+import one.rarebit.voidwhichbinds.net.HttpTransport
+import one.rarebit.voidwhichbinds.net.RelayTimeout
 
 /**
  * Stretches voidbind-client's relay poll to the relay session's TTL — the desktop copy of

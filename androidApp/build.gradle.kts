@@ -124,6 +124,9 @@ dependencies {
     // Credential, transports — see Gate A/B); only the drift-free leaves are shared.
     implementation(project(":core"))
     implementation(project(":ui"))
+    // The vault client: SpaceKeyring + SpaceOpen (opening a space over its key history), the
+    // snapshot envelope and change-id framing, the drive CRDT and ref-addressed objects.
+    implementation(project(":vault-client"))
 
     // ── Compose UI ───────────────────────────────────────────────────────────────
     val composeBom = platform(libs.androidx.compose.bom)
@@ -157,7 +160,7 @@ dependencies {
     // credential through net/AuthInterceptor without ever seeing it.
     implementation(libs.coil.compose)
 
-    // QR encoding for the `voidbind:login?…` tuple (pure Java — the BitMatrix half is
+    // QR encoding for the `void-which-binds:login?…` tuple (pure Java — the BitMatrix half is
     // JVM-unit-tested; only the Bitmap conversion touches Android).
     implementation(libs.zxing.core)
 
@@ -166,14 +169,14 @@ dependencies {
     // `DeviceIdentity` + the hardware-sealed `DeviceKeyStore` (ADR-0001), `Cert`,
     // and the `DevicePairing` relay flow that enrols this device. Resolved from
     // GitHub Packages (settings.gradle.kts).
-    implementation(libs.voidbind.client)
+    implementation(libs.void.which.binds.client)
     // The device key's hardware wrapping key is user-auth-gated: BiometricPrompt
     // needs a FragmentActivity, and a modern fragment so it still extends the
     // ComponentActivity that activity-compose's setContent requires.
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.fragment)
 
-    // ── Invite QR scanning (Enrol → scan the Mac's `voidbind:pair?…` QR) ───────
+    // ── Invite QR scanning (Enrol → scan the Mac's `void-which-binds:pair?…` QR) ───────
     // CameraX preview + analysis with ML Kit barcode decoding — the same stack and
     // versions as the Voidbind authenticator (voidbind-kmp androidApp), so both apps
     // scan alike on the same phone. Validation of what was scanned is the library's

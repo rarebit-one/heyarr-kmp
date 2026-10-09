@@ -5,25 +5,25 @@ import java.util.concurrent.TimeUnit
 
 /**
  * The controller credential for the headless daemon, minted by shelling out to the installed
- * `voidbind` CLI — the least-new-crypto path (OPTION 1). The Go `voidbind identity credential
- * -header` emits the exact header lines the node's `Device` auth scheme expects:
+ * `void-which-binds` CLI (v0.19.0+) — the least-new-crypto path (OPTION 1). The Go
+ * `void-which-binds identity credential -header` emits the exact header lines the node's `Device` auth scheme expects:
  *
  * ```
  * Authorization: Device <cert>~<proof>
- * Voidbind-Membership: <ops>
+ * Void-Which-Binds-Membership: <ops>
  * ```
  *
  * The possession proof in `Authorization` is short-lived (~2 min), and one sync pass makes many
  * requests, so this hands the client a [Credential.Dynamic] whose headers are re-derived per
  * request — with a short in-process cache (default 60 s, well inside the proof's life) so a pass of
  * many blob PUT/GETs does not spawn a process per call. This deliberately couples the daemon to the
- * `voidbind` CLI + its Go device store on the host (see [GoDeviceStore]).
+ * `void-which-binds` CLI + its Go device store on the host (see [GoDeviceStore]).
  *
  * The [runner] is a seam so the parsing + caching is unit-tested without spawning a process.
  */
 class VoidbindCliCredential(
     private val deviceDir: String,
-    private val binary: String = "voidbind",
+    private val binary: String = "void-which-binds",
     private val ttlMs: Long = 60_000,
     private val clock: () -> Long = { System.currentTimeMillis() },
     private val runner: (List<String>) -> String = ::runProcess,
@@ -52,7 +52,7 @@ class VoidbindCliCredential(
     companion object {
         /**
          * Parse `Name: value` header lines (split on the FIRST colon; blank lines ignored). The CLI
-         * emits `Authorization` and `Voidbind-Membership`; both are returned so the membership rides
+         * emits `Authorization` and `Void-Which-Binds-Membership`; both are returned so the membership rides
          * along on first contact.
          */
         fun parseHeaders(output: String): Map<String, String> {

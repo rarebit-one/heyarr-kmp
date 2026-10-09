@@ -47,14 +47,15 @@ import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
+import one.rarebit.heyarr.desktop.vault.FileDriveStateStore
 import one.rarebit.heyarr.desktop.vault.FileSyncIndexStore
 import one.rarebit.heyarr.desktop.vault.JdkVaultBlobStore
 import one.rarebit.heyarr.desktop.vault.RealVaultFolder
 import one.rarebit.heyarr.desktop.vault.VaultCustody
-import one.rarebit.heyarr.desktop.vault.VaultSpaceClient
 import one.rarebit.heyarr.desktop.vault.VaultSyncEngine
 import one.rarebit.heyarr.desktop.vault.WatchedFolder
 import one.rarebit.heyarr.ui.theme.Appearance
+import one.rarebit.heyarr.vault.VaultSpaceClient
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
 enum class Connection {
@@ -202,7 +203,15 @@ class AppSession(
                     baseUrl = config.baseUrl,
                     credential = credential,
                     spaceId = opened.spaceId,
-                    spaceKey = opened.spaceKey,
+                    keyring = opened.keyring,
+                    stateStore = FileDriveStateStore(
+                        FileDriveStateStore.besideIndex(FileSyncIndexStore.defaultIndexFile()),
+                    ),
+                    // No held key opened a blob: the space may have rotated (ADR-0103). Re-open it.
+                    reopen = {
+                        VaultCustody(ring, VaultSpaceClient(transport, config.baseUrl, credential))
+                            .open(opened.spaceId)?.keyring
+                    },
                 )
             },
             watchFor = { folder -> WatchedFolder(java.nio.file.Path.of(folder)) },

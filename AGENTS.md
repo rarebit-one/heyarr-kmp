@@ -12,7 +12,8 @@ commit messages or PR bodies.
 
 | Module | Plugin | What belongs here |
 |--------|--------|-------------------|
-| `:core` | `kotlin.multiplatform` (jvm + android when an SDK is present) | The pure client layer: `net/` (`HttpTransport`, `JsonScan`, `JsonEscapes`, `JsonArrays`), `mcp/` (`McpClient`, `JsonWrite`, `McpModels`), `heyarr/` (REST + telemetry models), `auth/` (`Credential`, `ClientMode`, `GuestGate`), `state/` (library status, search grouping and the shared `SearchController` behind its `SearchBackend` seam, toasts), `library/` (`Series` episode grouping and `Variants`, over the `EpisodeFile` / `CatalogWork` seams each app's models implement), `theme/MediaType`, `crypto/Blake3`, `jvmAndAndroidMain` (JVM-API code both apps share: `state/ExternalMetadata`, the public cover/synopsis cache, behind each app's fetcher), `vault/`, `feeds/`, `discovery/`. |
+| `:core` | `kotlin.multiplatform` (jvm + android when an SDK is present) | The pure client layer: `net/` (`HttpTransport`, `JsonScan`, `JsonEscapes`, `JsonArrays`), `mcp/` (`McpClient`, `JsonWrite`, `McpModels`), `heyarr/` (REST + telemetry models), `auth/` (`Credential`, `ClientMode`, `GuestGate`), `state/` (library status, search grouping and the shared `SearchController` behind its `SearchBackend` seam, toasts), `library/` (`Series` episode grouping and `Variants`, over the `EpisodeFile` / `CatalogWork` seams each app's models implement), `theme/MediaType`, `crypto/Blake3`, `jvmAndAndroidMain` (JVM-API code both apps share: `state/ExternalMetadata`, the public cover/synopsis cache, behind each app's fetcher), `feeds/`, `discovery/`. Published alongside `:vault-client`, which exposes it. |
+| `:vault-client` | `kotlin.multiplatform` (jvm + android when an SDK is present) + `maven-publish` | The trusted vault client (package `one.rarebit.heyarr.vault`), **published** as `one.rarebit.heyarr:vault-client`: `SpaceOpen` / `SpaceKeyring` (ADR-0103), the drive CRDT, `VaultFrame`, `SnapshotEnvelope`, `PersonalStateId`, `VaultSpaceClient`, the `VaultBlobStore` seam, and ref-addressed objects (`VaultRef`, `VaultObjects`, ADR-0104). commonMain; `jvmAndAndroidMain` holds the java.* actuals (NFC, `UrlConnectionVaultBlobStore`). Its golden-vector tests live in `jvmTest` and also run as Android unit tests. Its public API is a contract with other repos: bump `publishedLibraryVersion` (root `build.gradle.kts`) on any API or wire change. |
 | `:ui` | `kotlin.multiplatform` + Compose MP | Compose-typed but platform-free design layer: `theme/Tokens`, `theme/MediaThemes` (the media → accent table), `theme/HeyarrFonts` (the self-hosted fonts, shipped once as Compose resources), `theme/HeyarrTheme` (Material mapping, `MediaScope`, `HeyarrPlatform`), `components/` (Primitives, Table, Reasons, card parts) and shared glyphs. `api(project(":core"))`. |
 | `:composeApp` | `kotlin.multiplatform` (jvm only) + Compose MP desktop | The desktop app and the headless vault-sync daemon. JVM-only code (`JdkHttpTransport`, jmdns, JNA/libmpv, OS keychains) lives here. |
 | `:androidApp` | `com.android.application` + `kotlin.android` | The Android app. Only included when an Android SDK is detected. |
@@ -28,8 +29,9 @@ Rules:
   (hover vs press, touch targets, TalkBack live regions), a component reads
   `LocalHeyarrPlatform` — each app passes its own `HeyarrPlatform` to `HeyarrTheme` — rather
   than forking.
-- Dependency direction: apps → `:ui` → `:core`. Never the reverse, and the two apps never
-  depend on each other.
+- Dependency direction: apps → `:ui` → `:core`, and apps → `:vault-client` → `:core`. Never
+  the reverse, and the two apps never depend on each other. `:vault-client` holds no app state
+  and no UI; the desktop's sync engine, custody and daemon stay in `:composeApp`.
 - **Shared logic goes in `:core`, not into an app.** `:androidApp` still carries copies of code
   that has not converged yet (its own `HeyarrApi`, `search/FollowedSource` — mapped to `:core`'s
   at the search boundary by `asFeedSource()`, …). When you touch one, prefer moving
@@ -37,7 +39,7 @@ Rules:
 
 ## Build & test
 
-JDK 21. Every module resolves the private `one.rarebit.voidbind:voidbind-client` from
+JDK 21. Every module resolves the private `one.rarebit.voidwhichbinds:void-which-binds-client` from
 GitHub Packages, so builds need `gpr.user`/`gpr.token` in `~/.gradle/gradle.properties` or
 `GITHUB_ACTOR`/`GITHUB_TOKEN` (e.g. `GITHUB_TOKEN=$(gh auth token)`).
 
@@ -45,7 +47,7 @@ GitHub Packages, so builds need `gpr.user`/`gpr.token` in `~/.gradle/gradle.prop
 ./gradlew :core:jvmTest                          # shared layer (fast, pure JVM)
 ./gradlew :ui:jvmTest
 ./gradlew :composeApp:jvmTest                    # desktop unit tests
-./gradlew :core:build :ui:build :composeApp:build   # exactly what desktop CI runs
+./gradlew :core:build :ui:build :vault-client:build :composeApp:build   # exactly what desktop CI runs
 ./gradlew :composeApp:run                        # desktop app (display + libmpv)
 ./gradlew :composeApp:screenshots                # off-screen render of every screen
 ./gradlew :androidApp:testDebugUnitTest :androidApp:assembleDebug   # what android CI runs
@@ -53,7 +55,7 @@ GitHub Packages, so builds need `gpr.user`/`gpr.token` in `~/.gradle/gradle.prop
 ```
 
 - **Lint:** ktlint (`intellij_idea` style, see `.editorconfig`) and detekt run on every module,
-  in CI via `desktop.yml` (root, `:core`, `:ui`, `:composeApp`) and `android.yml` (`:androidApp`).
+  in CI via `desktop.yml` (root, `:core`, `:ui`, `:vault-client`, `:composeApp`) and `android.yml` (`:androidApp`).
   Findings that predate the linters are frozen in each module's `config/ktlint/baseline.xml` and
   `config/detekt/baseline.xml`, so only NEW violations fail. Fix new findings instead of
   regenerating a baseline. ktlint's baseline is keyed by line, so shifting lines above a
@@ -70,12 +72,13 @@ GitHub Packages, so builds need `gpr.user`/`gpr.token` in `~/.gradle/gradle.prop
 - On a memory-constrained machine: `--no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx1536m`.
 
 CI: `desktop.yml` (desktop + shared modules), `android.yml` (unit tests + debug APK),
-`instrumented.yml` (emulator smoke test), `android-release.yml` (signed APK on `v*` tags).
+`instrumented.yml` (emulator smoke test), `android-release.yml` (signed APK on `v*` tags),
+`publish.yml` (`:core` + `:vault-client` to GitHub Packages on `lib-v*` tags; see README).
 
 ## Versions
 
 Plugin and library versions live in `gradle/libs.versions.toml`. Build scripts reference
-`libs.*` and never hard-code a version. `voidbind-client` has a single version for every
+`libs.*` and never hard-code a version. `void-which-binds-client` has a single version for every
 module; bump it there, once. Toolchain: Kotlin 2.3.20, Gradle 8.9, AGP 8.7.3, Compose MP
 1.9.3, compileSdk 35 / minSdk 33, JDK 21. Android bytecode remains at Java 17.
 

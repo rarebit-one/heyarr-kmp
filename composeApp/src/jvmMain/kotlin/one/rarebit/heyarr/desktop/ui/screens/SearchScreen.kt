@@ -217,15 +217,19 @@ private fun ResultRow(
 
         is SearchRow.SourceRow -> {
             val cover by rememberCover(session, row.type, row.source.title, null, feedRef = row.source.feedRef)
+            // A followed series carries its provider id as feed_ref: say whose id it is, and
+            // read the counters and health as words — a bare "157239 · tv_series · 16/8
+            // archived · unknown" is the wire, not a row.
+            val isTv = row.source.type?.contains("tv", ignoreCase = true) == true
             MediaRow(
                 title = row.source.title,
                 type = row.type,
                 onOpen = onOpen,
-                subtitle = row.source.feedRef,
-                meta = listOf(
-                    row.source.type,
-                    "${row.source.itemsArchived}/${row.source.itemsKnown} archived",
-                    row.source.health,
+                subtitle = row.source.feedRef?.let { if (isTv) "TVDB $it" else it },
+                meta = listOfNotNull(
+                    row.source.type?.replace('_', ' '),
+                    "${row.source.itemsArchived} archived of ${row.source.itemsKnown} known",
+                    row.source.health?.let { "health $it" },
                 ),
                 artwork = cover.bitmap,
                 status = LibraryStatus.IN_LIBRARY,

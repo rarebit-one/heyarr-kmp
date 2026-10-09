@@ -44,7 +44,17 @@ data class Episode<A : EpisodeFile>(
     val thumbnail: A? = null,
     /** Subtitle sidecars that share this episode's stem. */
     val subtitles: List<A> = emptyList(),
+    /**
+     * Other held files of the SAME numbered episode (a second release the node kept —
+     * an upgrade that did not replace, two editions, a re-encode). They fold under this
+     * row instead of listing as episodes of their own, so a season reads as episodes
+     * held, not files held: a live node showed "18 of 10 held" for a 10-episode season.
+     */
+    val copies: List<A> = emptyList(),
 ) {
+    /** How many files back this episode: this one plus every folded copy. */
+    val fileCount: Int get() = 1 + copies.size
+
     /**
      * `S04E01` when both numbers are known, `E05` with only the number; null with no
      * number at all — under a season heading a bare `S03` would say nothing.
@@ -62,6 +72,15 @@ data class Episode<A : EpisodeFile>(
     /** The one line the episode list shows: code + title, else the filename. */
     val label: String
         get() = listOfNotNull(code, title).joinToString(" ").ifBlank { asset.filename ?: asset.id }
+
+    /**
+     * What a row calls the episode next to its code chip: the title the filename carried,
+     * else a public calendar's name, else "Episode N" — never the raw scene name, which the
+     * code and the quality tags already account for. A file with no number at all keeps
+     * its filename, because that is all that tells it apart.
+     */
+    fun displayTitle(externalName: String? = null): String =
+        title ?: externalName ?: number?.let { "Episode $it" } ?: asset.filename ?: asset.id
 
     val isPlayable: Boolean get() = asset.isPlayable
 
@@ -81,7 +100,11 @@ data class Season<A : EpisodeFile>(val number: Int?, val episodes: List<Episode<
             return (1..max).filter { it !in nums }
         }
 
+    /** Distinct episodes that can play — a folded copy does not count twice. */
     val held: Int get() = episodes.count { it.isPlayable }
+
+    /** Every playable file in the season, folded copies included. */
+    val filesHeld: Int get() = episodes.filter { it.isPlayable }.sumOf { it.fileCount }
 }
 
 object Series {
@@ -106,17 +129,21 @@ object Series {
      * episode files take part as rows; sidecars attach to them. Numbered seasons come
      * first in order, then Specials, then whatever named no season; within a season the
      * episodes order by number, the unnumbered last, ties by filename.
+     *
+     * Several files that name the same numbered episode fold into ONE row ([fold]): the
+     * node keeps every copy it holds, but a person counts episodes.
      */
     fun <A : EpisodeFile> seasons(assets: List<A>): List<Season<A>> {
         val thumbs = assets.filter { isThumbnail(it) }.associateBy { stemKey(it, stripThumb = true) }
         val subs = assets.filter { isSubtitle(it) }.groupBy { stemKey(it, stripThumb = false, stripLang = true) }
-        val episodes = assets.mapNotNull { a ->
+        val files = assets.mapNotNull { a ->
             episode(a)?.let { e ->
                 val key = stemKey(a, stripThumb = false)
                 e.copy(thumbnail = thumbs[key], subtitles = subs[key].orEmpty())
             }
         }
-        if (episodes.isEmpty()) return emptyList()
+        if (files.isEmpty()) return emptyList()
+        val episodes = fold(files)
         return episodes.groupBy { it.season }
             .map { (season, eps) ->
                 Season(
@@ -132,6 +159,48 @@ object Series {
                 )
             }
             .sortedWith(compareBy<Season<A>> { seasonRank(it.number) }.thenBy { it.number ?: 0 })
+    }
+
+    /**
+     * One row per numbered episode. Files that share a (season, number) fold under the
+     * one that reads best: a playable file over a missing one, a file whose name carries
+     * the episode's title over a bare scene name, then filename order so the choice is
+     * stable. The others become [Episode.copies]; their sidecars and thumbnail join the
+     * row so nothing a copy brought is lost. Unnumbered files cannot be told apart and
+     * stay as they are.
+     */
+    private fun <A : EpisodeFile> fold(files: List<Episode<A>>): List<Episode<A>> {
+        val byEpisode = LinkedHashMap<Pair<Int?, Int>, MutableList<Episode<A>>>()
+        val out = ArrayList<Episode<A>>(files.size)
+        for (f in files) {
+            val number = f.number
+            if (number == null) {
+                out.add(f)
+            } else {
+                byEpisode.getOrPut(f.season to number) { ArrayList() }.add(f)
+            }
+        }
+        for (group in byEpisode.values) {
+            if (group.size == 1) {
+                out.add(group[0])
+                continue
+            }
+            val ordered = group.sortedWith(
+                compareBy<Episode<A>> { !it.isPlayable }
+                    .thenBy { it.title == null }
+                    .thenBy { it.asset.filename ?: it.asset.id },
+            )
+            val lead = ordered[0]
+            val rest = ordered.drop(1)
+            out.add(
+                lead.copy(
+                    thumbnail = lead.thumbnail ?: rest.firstNotNullOfOrNull { it.thumbnail },
+                    subtitles = (lead.subtitles + rest.flatMap { it.subtitles }).distinctBy { it.id },
+                    copies = rest.map { it.asset },
+                ),
+            )
+        }
+        return out
     }
 
     /** The first episode that can play, in season order — what the header's Play means for a series. */

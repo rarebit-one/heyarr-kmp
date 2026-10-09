@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.mobile.personalstate
 
-import one.rarebit.voidbind.crypto.VoidbindEncryption
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 
 /**
  * The space-key crypto the personal-state plane needs, as a seam so tests can
@@ -16,6 +16,9 @@ internal interface SpaceCrypto {
     fun unwrap(wrapped: ByteArray, recipientSeed: ByteArray): ByteArray
     fun encryptChange(spaceKey: ByteArray, plaintext: ByteArray): ByteArray
     fun decryptChange(spaceKey: ByteArray, blob: ByteArray): ByteArray
+
+    /** Open one key-history row: the previous epoch's key sealed under [sealing] (ADR-0103). */
+    fun openSpaceKey(sealing: ByteArray, sealed: ByteArray): ByteArray
 }
 
 internal object VoidbindSpaceCrypto : SpaceCrypto {
@@ -28,6 +31,8 @@ internal object VoidbindSpaceCrypto : SpaceCrypto {
         VoidbindEncryption.encryptChange(spaceKey, plaintext)
     override fun decryptChange(spaceKey: ByteArray, blob: ByteArray): ByteArray =
         VoidbindEncryption.decryptChange(spaceKey, blob)
+    override fun openSpaceKey(sealing: ByteArray, sealed: ByteArray): ByteArray =
+        VoidbindEncryption.openSpaceKey(sealing, sealed)
 }
 
 /**

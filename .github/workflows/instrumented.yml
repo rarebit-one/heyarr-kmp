@@ -14,6 +14,7 @@ on:
     paths:
       - "androidApp/**"
       - "core/**"
+      - "vault-client/**"
       - "ui/**"
       - "build.gradle.kts"
       - "settings.gradle.kts"

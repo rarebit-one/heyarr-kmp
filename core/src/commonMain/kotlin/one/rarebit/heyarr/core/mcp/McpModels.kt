@@ -50,12 +50,29 @@ object ReasonJson {
 data class Want(
     val desiredItemId: String,
     val workId: String?,
+    /** The WORK's title, whatever the scope — what the detail route opens. */
     val title: String,
     val qualityProfile: String?,
     val state: String,
     val monitor: Boolean,
     val reason: String?,
-)
+    /** `work`, `edition` or `item`; null from a node that predates the field. */
+    val scope: String? = null,
+    /** At item scope, the item's own name (an article, an episode); else null. */
+    val item: String? = null,
+    /** At edition scope, the edition's label (`Season 04`); else null. */
+    val edition: String? = null,
+) {
+    /**
+     * What a list row calls this want: the item or edition it is for when it is narrower
+     * than its work, else the work. A followed feed yields one want per article; under
+     * the work's title alone forty of them read as forty copies of one want.
+     */
+    val subject: String get() = item?.takeIf { it.isNotBlank() } ?: edition?.takeIf { it.isNotBlank() } ?: title
+
+    /** The work's title when [subject] is something narrower, so the row can still say whose it is. */
+    val context: String? get() = title.takeIf { subject != it }
+}
 
 object WantJson {
     fun list(body: String): List<Want> = JsonScan.objectsOf(body, listOf("wants", "items")).mapNotNull { parse(it) }
@@ -70,6 +87,9 @@ object WantJson {
             state = JsonScan.stringField(obj, "state") ?: "UNKNOWN",
             monitor = JsonScan.boolField(obj, "monitor") ?: true,
             reason = JsonScan.stringField(obj, "reason"),
+            scope = JsonScan.stringField(obj, "scope"),
+            item = JsonScan.stringField(obj, "item"),
+            edition = JsonScan.stringField(obj, "edition"),
         )
     }
 

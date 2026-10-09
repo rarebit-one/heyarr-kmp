@@ -64,11 +64,14 @@ class OpenApiContractTest {
             "PlaybackJson" to listOf("POST /api/v1/playback/plan", "POST /api/v1/playback"),
             "ConsumptionClient" to listOf("POST /api/v1/consumption/sessions", "POST /api/v1/devices"),
             "EnrolClient" to listOf("POST /enrol", "#Problem"),
-            "VaultSpaceClient" to SPACES,
+            // + #Problem: pushChange reads a refusal's `code` (change_key_epoch_mismatch, heyarr-core#712).
+            "VaultSpaceClient" to SPACES + "#Problem",
             "PersonalStateClient" to SPACES,
             "EncryptedChange" to listOf("#EncryptedChange"),
             "EncryptedSnapshot" to listOf("#EncryptedSnapshot"),
             "JdkVaultBlobStore" to listOf("PUT /api/v1/vault/blobs/{hash}"),
+            // :vault-client.
+            "UrlConnectionVaultBlobStore" to listOf("PUT /api/v1/vault/blobs/{hash}"),
         )
 
         val SPACES
@@ -76,6 +79,7 @@ class OpenApiContractTest {
                 "GET /api/v1/spaces",
                 "POST /api/v1/spaces",
                 "GET /api/v1/spaces/{id}/keys",
+                "GET /api/v1/spaces/{id}/key-history",
                 "GET /api/v1/spaces/{id}/changes",
                 "POST /api/v1/spaces/{id}/changes",
                 "GET /api/v1/spaces/{id}/snapshot",
@@ -97,6 +101,7 @@ class OpenApiContractTest {
             val local = "a file this app writes and reads itself"
             listOf("DaemonConfig", "FileSettingsStore", "FileSyncIndexStore", "RecentSearches", "ReaderPosition")
                 .forEach { put(it, local) }
+            put("FileDriveStateStore", local)
             put("ExternalMetadata", "its own on-disk cache of third-party metadata")
             put("VaultSyncDaemon", "requests on its own local control socket")
             put("ExternalParsers", "third-party public metadata APIs, not heyarr")

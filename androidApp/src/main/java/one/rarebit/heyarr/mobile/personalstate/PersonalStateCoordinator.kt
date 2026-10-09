@@ -83,11 +83,27 @@ internal class PersonalStateCoordinator(private val session: SpaceSession, priva
     fun starredSpaceId(): String? = registry.starredSpace()
     fun historySpaceId(): String? = registry.historySpace()
 
+    /**
+     * The role space, created on first use. Only a space this device holds NO copy of is replaced
+     * (never shared with it, or gone). One it has a copy of but cannot open right now — a key
+     * history inconsistent even after a retry, a node failure — is an error, not a reason to mint
+     * an empty replacement: that would orphan the user's state behind a fresh space (ADR-0103).
+     */
     private fun ensure(get: () -> String?, set: (String) -> Unit): String {
         val existing = get()
-        if (existing != null && session.canOpen(existing)) return existing
+        if (existing != null) {
+            when (session.openState(existing)) {
+                SpaceSession.OpenState.OPEN -> return existing
+                SpaceSession.OpenState.UNREADABLE -> throw SpaceUnreadableException(existing)
+                SpaceSession.OpenState.NO_COPY -> Unit // mint a replacement below
+            }
+        }
         val id = session.createSpace("personal")
         set(id)
         return id
     }
 }
+
+/** An existing space this device holds a copy of but cannot open now; it is never replaced. */
+internal class SpaceUnreadableException(spaceId: String) :
+    IllegalStateException("space $spaceId exists but this device cannot open it; not replacing it")

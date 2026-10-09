@@ -4,6 +4,10 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.mobile.net.ProblemDetail
+import one.rarebit.heyarr.vault.KeyHistoryEntry
+import one.rarebit.heyarr.vault.SpaceKeyList
+import one.rarebit.heyarr.vault.SpaceKeySource
+import one.rarebit.heyarr.vault.WrappedKey
 import java.net.URLEncoder
 import java.util.Base64
 
@@ -13,7 +17,8 @@ import java.util.Base64
  *
  * ```
  * GET  /api/v1/spaces                 -> the spaces this device can see
- * GET  /api/v1/spaces/{id}/keys       -> wrapped space keys (opaque)
+ * GET  /api/v1/spaces/{id}/keys       -> wrapped space keys (opaque) + the key epoch
+ * GET  /api/v1/spaces/{id}/key-history -> the key chain: earlier keys sealed under later (opaque)
  * GET  /api/v1/spaces/{id}/changes    -> opaque CRDT changes (incremental)
  * GET  /api/v1/spaces/{id}/snapshot   -> a snapshot (404 when none)
  * POST /api/v1/spaces                 -> mint a space (client id + wrapped keys)
@@ -29,7 +34,7 @@ class PersonalStateClient(
     private val http: HttpTransport,
     private val baseUrl: String,
     private val credential: Credential,
-) {
+) : SpaceKeySource {
     internal fun listSpaces(): List<SpaceInfo> {
         val resp = http.get(spacesUrl(baseUrl), credential.asHeader())
         require(resp.status == 200) { fail("GET /spaces", resp.status, resp.body) }
@@ -42,15 +47,34 @@ class PersonalStateClient(
         }
     }
 
-    internal fun wrappedKeys(spaceId: String): List<WrappedKeyEntry> {
+    internal fun wrappedKeys(spaceId: String): List<WrappedKey> = spaceKeys(spaceId).wrapped
+
+    /**
+     * The wrapped copies with the space's current `key_epoch` and each copy's `epoch` (ADR-0103).
+     * A peer that predates epochs sends neither, which reads back as epoch 0 — a space never rotated.
+     */
+    override fun spaceKeys(spaceId: String): SpaceKeyList {
         val resp = http.get(keysUrl(baseUrl, spaceId), credential.asHeader())
-        if (resp.status == 404) return emptyList()
+        if (resp.status == 404) return SpaceKeyList(0, emptyList())
         require(resp.status == 200) { fail("GET /keys", resp.status, resp.body) }
-        return JsonScan.objectsOf(resp.body, listOf("wrapped_keys")).map {
-            WrappedKeyEntry(
-                JsonScan.stringField(it, "recipient") ?: "",
-                b64(JsonScan.stringField(it, "wrapped")),
-            )
+        return SpaceKeyList(
+            JsonScan.intField(resp.body, "key_epoch") ?: 0,
+            JsonScan.objectsOf(resp.body, listOf("wrapped_keys")).map {
+                WrappedKey(
+                    JsonScan.stringField(it, "recipient") ?: "",
+                    b64(JsonScan.stringField(it, "wrapped")),
+                    JsonScan.intField(it, "epoch") ?: 0,
+                )
+            },
+        )
+    }
+
+    /** The space's opaque key chain, one row per rotation (ADR-0103). Empty for a space never rotated. */
+    override fun keyHistory(spaceId: String): List<KeyHistoryEntry> {
+        val resp = http.get(keyHistoryUrl(baseUrl, spaceId), credential.asHeader())
+        require(resp.status == 200) { fail("GET /key-history", resp.status, resp.body) }
+        return JsonScan.objectsOf(resp.body, listOf("entries")).map {
+            KeyHistoryEntry(JsonScan.intField(it, "epoch") ?: 0, b64(JsonScan.stringField(it, "sealed_prev")))
         }
     }
 
@@ -68,7 +92,7 @@ class PersonalStateClient(
         return EncryptedSnapshot.parse(resp.body)
     }
 
-    internal fun createSpace(id: String, kind: String, wrapped: List<WrappedKeyEntry>): SpaceInfo {
+    internal fun createSpace(id: String, kind: String, wrapped: List<WrappedKey>): SpaceInfo {
         val body = buildString {
             append("{\"id\":").append(PsJson.goJsonString(id))
             append(",\"kind\":").append(PsJson.goJsonString(kind))
@@ -101,6 +125,7 @@ class PersonalStateClient(
     companion object {
         fun spacesUrl(baseUrl: String): String = baseUrl.trimEnd('/') + "/api/v1/spaces"
         fun keysUrl(baseUrl: String, spaceId: String): String = space(baseUrl, spaceId) + "/keys"
+        fun keyHistoryUrl(baseUrl: String, spaceId: String): String = space(baseUrl, spaceId) + "/key-history"
         fun changesUrl(baseUrl: String, spaceId: String): String = space(baseUrl, spaceId) + "/changes"
         fun snapshotUrl(baseUrl: String, spaceId: String): String = space(baseUrl, spaceId) + "/snapshot"
 

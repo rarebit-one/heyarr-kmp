@@ -1,8 +1,8 @@
 package one.rarebit.heyarr.desktop.device
 
-import one.rarebit.voidbind.Membership
-import one.rarebit.voidbind.MembershipOp
-import one.rarebit.voidbind.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.Membership
+import one.rarebit.voidwhichbinds.MembershipOp
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
 
 /**
  * Which membership ops this desktop presents beside its `Device` credential — the `ops`

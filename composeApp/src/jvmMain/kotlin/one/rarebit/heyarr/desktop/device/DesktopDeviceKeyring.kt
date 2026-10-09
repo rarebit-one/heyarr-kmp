@@ -1,12 +1,12 @@
 package one.rarebit.heyarr.desktop.device
 
-import one.rarebit.voidbind.DeviceIdentity
-import one.rarebit.voidbind.KeyRef
-import one.rarebit.voidbind.Membership
-import one.rarebit.voidbind.MembershipOp
-import one.rarebit.voidbind.auth.DeviceCredential
-import one.rarebit.voidbind.crypto.MiniJson
-import one.rarebit.voidbind.net.Admission
+import one.rarebit.voidwhichbinds.DeviceIdentity
+import one.rarebit.voidwhichbinds.KeyRef
+import one.rarebit.voidwhichbinds.Membership
+import one.rarebit.voidwhichbinds.MembershipOp
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.crypto.MiniJson
+import one.rarebit.voidwhichbinds.net.Admission
 import java.io.File
 
 /**
@@ -44,13 +44,20 @@ data class DeviceKeyInfo(
  *
  *  - the **Ed25519 signing key** — seed sealed at rest by [DesktopSecretStore], its
  *    public half stored plain. Generated once on first use; reconstructed into an
- *    [one.rarebit.voidbind.Ed25519Signer] via [DesktopEd25519] each launch. (No secure
+ *    [one.rarebit.voidwhichbinds.Ed25519Signer] via [DesktopEd25519] each launch. (No secure
  *    element on desktop — see [DesktopSecretStore] for the threat model.)
  *  - the **X25519 encryption key** — private half sealed, public half plain. Unseals the
  *    admission delivered over the pairing relay.
  *  - the **admission** ([Admission]): the member-signed add op that admitted this device
  *    (the credential token) plus the `ops` that authorise it (this device's replica of
  *    the identity's membership log), both stored plain once pairing completes.
+ *
+ * **Gen2 namespace (void-which-binds-go ADR-0022).** Everything lives under [GEN2_DIR]
+ * (`device/vwb/`: `sign.pub`, `enc.pub`, `cert.token`, `ops.json`, `recovery.pub`, and the
+ * sealed secrets under `vwb/sealed/`), and the secrets are named `vwb.sign` / `vwb.enc` (so a
+ * keychain-backed store looks up fresh accounts too). The gen1 files directly under
+ * `device/` and the gen1 `sign` / `enc` secrets are simply never read — no migration, no
+ * detect-and-clear — so an upgraded desktop reports unenrolled and pairs in fresh.
  *
  * Construction does NO I/O — it only computes paths — so building one in a preview / test
  * that never enrols touches no disk and reports [peek] == null.
@@ -65,14 +72,17 @@ class DesktopDeviceKeyring(
      * to first use, so constructing a keyring stays I/O-free. Tests inject a
      * [DesktopSecretStore] for a hermetic sealed-file path.
      */
-    private val secrets: SecretStore = SecretStores.forDevice(File(dataDir, "sealed"), keyFile),
+    private val secrets: SecretStore = SecretStores.forDevice(File(File(dataDir, GEN2_DIR), "sealed"), keyFile),
 ) {
 
-    private fun signPubFile() = File(dataDir, "sign.pub")
-    private fun encPubFile() = File(dataDir, "enc.pub")
-    private fun certFile() = File(dataDir, "cert.token")
-    private fun opsFile() = File(dataDir, "ops.json")
-    private fun recoveryFile() = File(dataDir, "recovery.pub")
+    /** The gen2 state dir (ADR-0022); gen1's files sit one level up and are never read. */
+    private val stateDir = File(dataDir, GEN2_DIR)
+
+    private fun signPubFile() = File(stateDir, "sign.pub")
+    private fun encPubFile() = File(stateDir, "enc.pub")
+    private fun certFile() = File(stateDir, "cert.token")
+    private fun opsFile() = File(stateDir, "ops.json")
+    private fun recoveryFile() = File(stateDir, "recovery.pub")
 
     // ── provisioning (generate-once, load-thereafter) ────────────────────────────
 
@@ -89,7 +99,7 @@ class DesktopDeviceKeyring(
         if (sealed != null && pubFile.exists()) return sealed
         val fresh = DesktopEd25519.generate()
         secrets.seal(SIGN_SEED, fresh.seed)
-        dataDir.mkdirs()
+        stateDir.mkdirs()
         pubFile.writeBytes(fresh.publicKey)
         return fresh.seed
     }
@@ -106,7 +116,7 @@ class DesktopDeviceKeyring(
         if (priv != null && pubFile.exists()) return DeviceIdentity.EncryptionKey(priv, pubFile.readBytes())
         val fresh = DeviceIdentity.generateEncryptionKey()
         secrets.seal(ENC_SECRET, fresh.privateKey)
-        dataDir.mkdirs()
+        stateDir.mkdirs()
         pubFile.writeBytes(fresh.publicKey)
         return fresh
     }
@@ -142,7 +152,7 @@ class DesktopDeviceKeyring(
     /** Replace the replica (merged with the admitting op so it can never be dropped). */
     fun saveOps(ops: List<String>) {
         val own = certToken()?.let { listOf(it) } ?: emptyList()
-        dataDir.mkdirs()
+        stateDir.mkdirs()
         opsFile().writeText(MiniJson.encodeObject(listOf(OPS_KEY to Membership.merge(ops, own))))
     }
 
@@ -158,7 +168,7 @@ class DesktopDeviceKeyring(
         require(parsed.kind == MembershipOp.Kind.ADD) { "admission is a ${parsed.kind.wire}, not an add" }
         require(parsed.device == self.deviceKey) { "admission binds a different device key" }
         require(parsed.deviceEnc == self.deviceEncKey) { "admission binds a different encryption key" }
-        dataDir.mkdirs()
+        stateDir.mkdirs()
         certFile().writeText(admission.op)
         saveOps(admission.ops)
     }
@@ -183,7 +193,7 @@ class DesktopDeviceKeyring(
     /** Persist the recovery encryption public key delivered by `/enrol` (a blank value clears it). */
     fun saveRecoveryRecipient(key: String) {
         val trimmed = key.trim()
-        dataDir.mkdirs()
+        stateDir.mkdirs()
         if (trimmed.isEmpty()) recoveryFile().delete() else recoveryFile().writeText(trimmed)
     }
 
@@ -219,8 +229,12 @@ class DesktopDeviceKeyring(
     }
 
     companion object {
-        private const val SIGN_SEED = "sign"
-        private const val ENC_SECRET = "enc"
+        /** The gen2 state subdir of the data dir (ADR-0022). */
+        const val GEN2_DIR = "vwb"
+
+        // Gen2 secret names (ADR-0022): gen1's `sign` / `enc` are never looked up.
+        private const val SIGN_SEED = "vwb.sign"
+        private const val ENC_SECRET = "vwb.enc"
         private const val OPS_KEY = "ops"
 
         /** `$XDG_DATA_HOME/heyarr-desktop/device`, else `~/.local/share/heyarr-desktop/device`. */

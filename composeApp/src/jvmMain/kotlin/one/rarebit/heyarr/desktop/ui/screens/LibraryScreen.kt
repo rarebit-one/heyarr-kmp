@@ -182,15 +182,16 @@ private fun filterWorks(
     experience: Experience?,
     statusOf: (String) -> LibraryStatus?,
 ): List<Work> = all.filter { w ->
-    (
-        state.type == null || (
-            state.type == MEDIA && MediaType.from(
-                w.kind,
-            ) in (experience?.kinds ?: MEDIA_KINDS)
-            ) ||
-            MediaType.from(w.kind) == state.type
-        ) &&
-        (state.status == null || statusOf(w.id) == state.status)
+    // MEDIA is MediaType.UNKNOWN standing in for "the media kinds", so it must never fall
+    // through to the equality test: an unknown-kind work would then pass the Media filter
+    // while the Media chip (which counts MEDIA_KINDS) left it out — "3074 of 3691" over a
+    // chip that said 3073 on a live node.
+    val kindMatches = when (state.type) {
+        null -> true
+        MEDIA -> MediaType.from(w.kind) in (experience?.kinds ?: MEDIA_KINDS)
+        else -> MediaType.from(w.kind) == state.type
+    }
+    kindMatches && (state.status == null || statusOf(w.id) == state.status)
 }
 
 /** The grid's cell width: wide for film and series (and the Watch experience), poster-wide otherwise. */

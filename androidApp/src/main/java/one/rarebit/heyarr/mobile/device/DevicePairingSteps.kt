@@ -4,12 +4,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runInterruptible
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.voidbind.KeyRef
-import one.rarebit.voidbind.auth.PossessionProof
-import one.rarebit.voidbind.flow.DevicePairing
-import one.rarebit.voidbind.flow.PairingFailureKind
-import one.rarebit.voidbind.flow.PairingOutcome
-import one.rarebit.voidbind.net.HttpTransport as VoidbindHttpTransport
+import one.rarebit.voidwhichbinds.KeyRef
+import one.rarebit.voidwhichbinds.auth.PossessionProof
+import one.rarebit.voidwhichbinds.flow.DevicePairing
+import one.rarebit.voidwhichbinds.flow.PairingFailureKind
+import one.rarebit.voidwhichbinds.flow.PairingOutcome
+import one.rarebit.voidwhichbinds.net.HttpTransport as VoidbindHttpTransport
 
 /**
  * The real [PairingSteps]: voidbind-client's `DevicePairing` (this phone as the relay

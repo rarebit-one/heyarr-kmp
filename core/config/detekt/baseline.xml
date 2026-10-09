@@ -8,8 +8,6 @@
     <ID>ComplexCondition:JsonScan.kt$JsonScan$j &lt; obj.length &amp;&amp; (obj[j] == ' ' || obj[j] == '\t' || obj[j] == '\n' || obj[j] == '\r' || obj[j] == ':')</ID>
     <ID>ComplexCondition:Series.kt$Series$mime != null &amp;&amp; (mime.startsWith("image/") || mime.startsWith("text/") || mime == "application/xml")</ID>
     <ID>CyclomaticComplexMethod:Continue.kt$ContinueJson$fun parse(obj: String): ContinueEntry?</ID>
-    <ID>CyclomaticComplexMethod:DriveCrdt.kt$Drive$fun retain(policy: RetentionPolicy, nowUnix: Long): List&lt;String&gt;</ID>
-    <ID>CyclomaticComplexMethod:DriveCrdt.kt$Drive.Companion$fun fromSnapshot(json: String): Drive</ID>
     <ID>CyclomaticComplexMethod:ExternalMetadata.kt$ExternalMetadata$private suspend fun resolve(key: MetaKey): ExternalMeta?</ID>
     <ID>CyclomaticComplexMethod:JsonScan.kt$JsonScan$fun stringMap(json: String, key: String): Map&lt;String, String&gt;</ID>
     <ID>CyclomaticComplexMethod:JsonScan.kt$JsonScan$private fun topLevelKey(json: String, key: String): Int?</ID>
@@ -17,16 +15,12 @@
     <ID>CyclomaticComplexMethod:McpModels.kt$SatisfactionJson$fun parse(body: String): Satisfaction?</ID>
     <ID>CyclomaticComplexMethod:McpModels.kt$SearchHitsJson$fun parse(body: String): SearchHits</ID>
     <ID>CyclomaticComplexMethod:SearchGrouping.kt$SearchGrouping$fun group( segments: Map&lt;MediaType, Segment&gt;, episodes: Segment, sources: Segment, filter: SearchFilter = SearchFilter.ALL, ): List&lt;SearchSection&gt;</ID>
-    <ID>CyclomaticComplexMethod:SyncReconcile.kt$fun reconcile( local: Map&lt;String, LocalFile&gt;, resolved: Map&lt;String, DriveEntry&gt;, index: Map&lt;String, SyncIndexEntry&gt;, ): List&lt;SyncAction&gt;</ID>
     <ID>LongParameterList:Blake3.kt$Blake3$(s: IntArray, a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int)</ID>
     <ID>LongParameterList:Fixtures.kt$Fixtures$(id: String, type: String, title: String, year: Int?, art: Boolean = false, attrs: String = "{}")</ID>
-    <ID>LoopWithTooManyJumpStatements:DriveCrdt.kt$Drive$for</ID>
-    <ID>LoopWithTooManyJumpStatements:DriveCrdt.kt$DriveRecord$for</ID>
     <ID>LoopWithTooManyJumpStatements:ExternalMetadata.kt$ExternalMetadata$for</ID>
     <ID>LoopWithTooManyJumpStatements:JsonScan.kt$JsonScan$for</ID>
     <ID>LoopWithTooManyJumpStatements:JsonScan.kt$JsonScan$while</ID>
     <ID>LoopWithTooManyJumpStatements:Variants.kt$Variants$for</ID>
-    <ID>LoopWithTooManyJumpStatements:VaultFrame.kt$VaultFrame$while</ID>
     <ID>MagicNumber:Blake3.kt$Blake3$0xFF</ID>
     <ID>MagicNumber:Blake3.kt$Blake3$0xFFFFFFFFL</ID>
     <ID>MagicNumber:Blake3.kt$Blake3$10</ID>
@@ -68,22 +62,8 @@
     <ID>MagicNumber:McpClient.kt$McpClient$200</ID>
     <ID>MagicNumber:McpClient.kt$McpClient$401</ID>
     <ID>MagicNumber:McpClient.kt$McpClient$403</ID>
-    <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$0x7F</ID>
-    <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$0x80</ID>
-    <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$64</ID>
-    <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$7</ID>
     <ID>MagicNumber:Series.kt$Series$4</ID>
-    <ID>MagicNumber:VaultFrame.kt$VaultFrame$0xFF</ID>
-    <ID>MagicNumber:VaultFrame.kt$VaultFrame$10</ID>
-    <ID>MagicNumber:VaultFrame.kt$VaultFrame$16</ID>
-    <ID>MagicNumber:VaultFrame.kt$VaultFrame$24</ID>
-    <ID>MagicNumber:VaultFrame.kt$VaultFrame$3</ID>
-    <ID>MagicNumber:VaultFrame.kt$VaultFrame$4</ID>
-    <ID>MagicNumber:VaultFrame.kt$VaultFrame$64</ID>
-    <ID>MagicNumber:VaultFrame.kt$VaultFrame$8</ID>
     <ID>MaxLineLength:Continue.kt$ContinueJson$(json[j].isDigit() || json[j] == '.' || json[j] == '-' || json[j] == '+' || json[j] == 'e' || json[j] == 'E')</ID>
-    <ID>MaxLineLength:DriveCrdtVectorsTest.kt$DriveCrdtVectorsTest$DriveChange(op = DriveOp.DELETE, path = "x", blob = "blake3:" + "0".repeat(64), at = 2, writer = "w")</ID>
-    <ID>MaxLineLength:DriveCrdtVectorsTest.kt$DriveCrdtVectorsTest$DriveChange(op = DriveOp.PUT, path = "bad", blob = "not-a-hash", at = 1, writer = "w")</ID>
     <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$"""[{"id":1,"season":4,"number":2,"name":"Phantom Pain","airdate":"2021-11-07","image":{"medium":"https://static.tvmaze.com/e.jpg"},"summary":"&lt;p&gt;The Yellowstone recovers.&lt;/p&gt;"},{"id":2,"season":5,"number":8,"name":"Desire Is All You Need","airdate":"2022-12-31","image":null,"summary":null}]"""</ID>
     <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$"""{"docs":[{"author_name":["Susanna Clarke"],"cover_i":10226290,"first_publish_year":2020,"title":"Piranesi","first_sentence":["When the Moon rose in the Third Northern Hall I went to the Ninth Vestibule."]}]}"""</ID>
     <ID>MaxLineLength:ExternalParsersTest.kt$ExternalParsersTest$"""{"id":24594,"url":"https://www.tvmaze.com/shows/24594/yellowstone","name":"Yellowstone","premiered":"2018-06-20","image":{"medium":"https://static.tvmaze.com/m.jpg","original":"https://static.tvmaze.com/o.jpg"},"summary":"&lt;p&gt;&lt;b&gt;Yellowstone &lt;/b&gt;follows the Dutton family &amp;amp; co.&lt;/p&gt;"}"""</ID>
@@ -113,15 +93,12 @@
     <ID>MayBeConst:Fixtures.kt$Fixtures$val profiles = """{"items":[ {"id":"qp-archival","name":"archival","description":"Keep the best there is. Never terminal: there is no condition under which this profile stops looking for something better.","content_types":["movie","series"]}, {"id":"qp-everyday","name":"everyday","description":"A laptop or a tablet. Accepts 720p and up and is finished at 1080p — smaller files, reached sooner.","content_types":["movie","series"]}, {"id":"qp-living","name":"living-room","description":"The big screen. Accepts 1080p and up, prefers HEVC/HDR/surround, finished at a 2160p remux."} ]}"""</ID>
     <ID>MayBeConst:Fixtures.kt$Fixtures$val renderers = """{"renderers":[{"udn":"uuid:1e055177","name":"Phantom II 95 dB-a98d","manufacturer":"Devialet","model":"Phantom II 95 dB","location":"http://192.168.16.69:45317/x.xml"},{"udn":"uuid:tv","name":"Living room TV","manufacturer":"Samsung","model":"QN85BA 55"}]}"""</ID>
     <ID>NestedBlockDepth:Blake3.kt$Blake3.Output$fun rootBytes(outLen: Int): ByteArray</ID>
-    <ID>NestedBlockDepth:DriveCrdt.kt$Drive$fun retain(policy: RetentionPolicy, nowUnix: Long): List&lt;String&gt;</ID>
-    <ID>NestedBlockDepth:DriveRetainTest.kt$DriveRetainTest$private fun parseStringArray(array: String): List&lt;String&gt;</ID>
     <ID>NestedBlockDepth:JsonArrays.kt$JsonArrays$fun parseStrings(array: String): List&lt;String&gt;</ID>
     <ID>NestedBlockDepth:JsonScan.kt$JsonScan$fun sliceBalanced(s: String, start: Int, open: Char, close: Char): String?</ID>
     <ID>NestedBlockDepth:JsonScan.kt$JsonScan$private fun topLevelKey(json: String, key: String): Int?</ID>
     <ID>ReturnCount:Continue.kt$ContinueJson$fun parse(obj: String): ContinueEntry?</ID>
     <ID>ReturnCount:Continue.kt$ContinueJson$private fun doubleField(json: String, key: String): Double?</ID>
     <ID>ReturnCount:Discovery.kt$NodeDiscovery$fun discover(manual: String? = null): DiscoveredServer</ID>
-    <ID>ReturnCount:DriveCrdt.kt$Drive$fun get(path: String): DriveEntry?</ID>
     <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$private suspend fun feedImage(key: MetaKey): ExternalMeta?</ID>
     <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$private suspend fun musicBrainz(key: MetaKey): ExternalMeta?</ID>
     <ID>ReturnCount:ExternalMetadata.kt$ExternalMetadata$suspend fun episodes(tvmazeId: Long): List&lt;ExternalEpisode&gt;</ID>
@@ -145,14 +122,9 @@
     <ID>ReturnCount:Series.kt$Series$private fun isEpisodeFile(asset: EpisodeFile): Boolean</ID>
     <ID>ReturnCount:Series.kt$Series$private fun markerIn(stem: String): Marker?</ID>
     <ID>ThrowsCount:McpClient.kt$McpClient$fun parse(tool: String, status: Int, body: String): McpOutcome</ID>
-    <ID>ThrowsCount:VaultFrame.kt$VaultFrame$fun openFrame(spaceKey: ByteArray, m: Manifest, index: Int, sealed: ByteArray): ByteArray</ID>
-    <ID>ThrowsCount:VaultFrame.kt$VaultFrame$fun parseManifest(json: String): Manifest</ID>
     <ID>TooGenericExceptionCaught:McpClient.kt$McpClient$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:VaultFrame.kt$VaultFrame$e: Exception</ID>
-    <ID>TooManyFunctions:DriveCrdt.kt$Drive</ID>
     <ID>TooManyFunctions:ExternalMetadata.kt$ExternalMetadata</ID>
     <ID>TooManyFunctions:JsonScan.kt$JsonScan</ID>
     <ID>TooManyFunctions:Series.kt$Series</ID>
-    <ID>TooManyFunctions:VaultFrame.kt$VaultFrame</ID>
   </CurrentIssues>
 </SmellBaseline>

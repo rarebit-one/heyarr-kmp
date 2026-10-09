@@ -167,4 +167,22 @@ class McpModelsTest {
         assertNull(attrs["source"])
         assertNull(attrs["hdr"])
     }
+
+    @Test
+    fun aWantNarrowerThanItsWorkIsNamedByItsItem() {
+        // One line on the wire (JsonScan scans fields, it does not parse), built in pieces.
+        val tail = ""","quality_profile":"published","state":"MISSING","monitor":true}"""
+        val article = """{"desired_item_id":"d1","work_id":"w1","title":"Hackaday",""" +
+            """"scope":"item","item":"A New Keyboard""""
+        val season = """{"desired_item_id":"d2","work_id":"w2","title":"Yellowstone",""" +
+            """"scope":"edition","edition":"Season 04""""
+        val film = """{"desired_item_id":"d3","work_id":"w3","title":"Sintel""""
+        val body = """{"wants":[""" + article + tail + "," + season + tail + "," + film + tail + "]}"
+        val wants = WantJson.list(body)
+        assertEquals(listOf("A New Keyboard", "Season 04", "Sintel"), wants.map { it.subject })
+        assertEquals(listOf("Hackaday", "Yellowstone", null), wants.map { it.context })
+        assertEquals("item", wants[0].scope)
+        assertEquals("Hackaday", wants[0].title, "the work's title is kept for the detail route")
+        assertEquals(null, wants[2].scope, "a node that predates the field sends none")
+    }
 }

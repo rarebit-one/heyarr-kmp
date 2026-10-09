@@ -3,7 +3,7 @@ package one.rarebit.heyarr.desktop.device
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
-import one.rarebit.voidbind.crypto.MiniJson
+import one.rarebit.voidwhichbinds.crypto.MiniJson
 
 /**
  * Registers a freshly paired desktop's admission with the heyarr node — the desktop

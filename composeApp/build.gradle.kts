@@ -27,6 +27,10 @@ kotlin {
                 // JdkHttpTransport / HeyarrApi (this module) implement/orchestrate over them.
                 implementation(project(":core"))
                 implementation(project(":ui"))
+                // The trusted vault client (space open, drive CRDT, frame codec, ref-addressed
+                // objects) — shared with the android app and published for other first-party
+                // clients. The sync engine, custody and daemon on top of it stay desktop-only.
+                implementation(project(":vault-client"))
                 implementation(compose.desktop.currentOs)
                 implementation(compose.runtime)
                 implementation(compose.foundation)
@@ -55,7 +59,7 @@ kotlin {
                 // drive the pairing flow. Resolves from the org's GitHub Packages repo
                 // (settings.gradle.kts) — CI passes GITHUB_ACTOR/GITHUB_TOKEN (desktop.yml),
                 // locally gpr.user/gpr.token in ~/.gradle/gradle.properties.
-                implementation(libs.voidbind.client)
+                implementation(libs.void.which.binds.client)
 
                 // The plain-JVM DeviceKeyStore actual voidbind ships is a NON-persisted,
                 // process-lifetime software key (regenerated each launch) and never exposes
@@ -122,4 +126,21 @@ tasks.register<JavaExec>("screenshots") {
     mainClass.set("one.rarebit.heyarr.desktop.preview.ScreenshotsKt")
     systemProperty("java.awt.headless", "true")
     args(layout.buildDirectory.dir("screenshots").get().asFile.absolutePath)
+}
+
+// The same off-screen renderer pointed at a REAL node (preview/LiveScreenshots.kt): a
+// stock-take's "what does the app show with live data" artefact. Reads HEYARR_BASE_URL /
+// HEYARR_TOKEN / HEYARR_DETAIL from the environment; writes build/live-screenshots/*.png.
+tasks.register<JavaExec>("liveScreenshots") {
+    group = "verification"
+    description = "Render each screen to build/live-screenshots/*.png against the node in HEYARR_BASE_URL."
+    dependsOn("jvmMainClasses")
+    classpath = files(
+        layout.buildDirectory.dir("classes/kotlin/jvm/main"),
+        layout.buildDirectory.dir("processedResources/jvm/main"),
+        configurations.getByName("jvmRuntimeClasspath"),
+    )
+    mainClass.set("one.rarebit.heyarr.desktop.preview.LiveScreenshotsKt")
+    systemProperty("java.awt.headless", "true")
+    args(layout.buildDirectory.dir("live-screenshots").get().asFile.absolutePath)
 }

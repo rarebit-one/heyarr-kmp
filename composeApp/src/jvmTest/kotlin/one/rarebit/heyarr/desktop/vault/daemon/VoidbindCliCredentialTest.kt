@@ -9,19 +9,19 @@ import kotlin.test.assertTrue
 
 /**
  * The credential shim's parsing + caching, with the process spawn faked via the [runner] seam — so
- * the header split and the proof cache are proven without invoking the real `voidbind` CLI.
+ * the header split and the proof cache are proven without invoking the real `void-which-binds` CLI.
  */
 class VoidbindCliCredentialTest {
 
     private val sampleOutput =
         "Authorization: Device eyJhbGciOiJFZERTQSJ9.CERT~eyJhbGciOiJFZERTQSJ9.PROOF\n" +
-            "Voidbind-Membership: op1,op2\n"
+            "Void-Which-Binds-Membership: op1,op2\n"
 
     @Test
     fun parsesBothHeaderLines() {
         val h = VoidbindCliCredential.parseHeaders(sampleOutput)
         assertEquals("Device eyJhbGciOiJFZERTQSJ9.CERT~eyJhbGciOiJFZERTQSJ9.PROOF", h["Authorization"])
-        assertEquals("op1,op2", h["Voidbind-Membership"])
+        assertEquals("op1,op2", h["Void-Which-Binds-Membership"])
     }
 
     @Test
@@ -36,7 +36,7 @@ class VoidbindCliCredentialTest {
         val cred = VoidbindCliCredential("/dev/null", runner = { sampleOutput }).credential()
         val headers = cred.asHeader()
         assertTrue(headers[Credential.HEADER]!!.startsWith("Device "))
-        assertEquals("op1,op2", headers["Voidbind-Membership"])
+        assertEquals("op1,op2", headers["Void-Which-Binds-Membership"])
     }
 
     @Test
@@ -64,7 +64,7 @@ class VoidbindCliCredentialTest {
 
     @Test
     fun outputWithoutAuthorizationFails() {
-        val cred = VoidbindCliCredential("/dev/null", runner = { "Voidbind-Membership: op1\n" }).credential()
+        val cred = VoidbindCliCredential("/dev/null", runner = { "Void-Which-Binds-Membership: op1\n" }).credential()
         assertFailsWith<IllegalArgumentException> { cred.asHeader() }
     }
 }

@@ -5,12 +5,13 @@ The **Kotlin Multiplatform monorepo** for heyarr's first-party clients. heyarr i
 
 | Module | What it is | Targets |
 |--------|------------|---------|
-| **`:core`** | The shared, pure-Kotlin client layer: the hand-rolled JSON codec (`JsonScan` / `JsonWrite`), the `HttpTransport` seam, the MCP client + models, REST/telemetry models, `Credential` (guest / bearer / voidbind `Device`), library-status and search-grouping derivation, the `MediaType` enum, BLAKE3 + the vault codec. **No Compose, no platform APIs in `commonMain`.** | JVM; Android when an SDK is present |
+| **`:core`** | The shared, pure-Kotlin client layer: the hand-rolled JSON codec (`JsonScan` / `JsonWrite`), the `HttpTransport` seam, the MCP client + models, REST/telemetry models, `Credential` (guest / bearer / voidbind `Device`), library-status and search-grouping derivation, the `MediaType` enum, BLAKE3. **No Compose, no platform APIs in `commonMain`.** | JVM; Android when an SDK is present |
 | **`:ui`** | The shared Compose design layer: `Tokens`, the media → accent table (`MediaThemes`) the self-hosted fonts (`HeyarrFonts`, shipped once as Compose resources), `HeyarrTheme` + `MediaScope`, and the stateless components both apps draw (buttons, chips, states, toasts, `DataTable`, rule lists), plus shared glyphs. Exposes `:core` as `api`. | JVM; Android when an SDK is present |
+| **`:vault-client`** | The trusted vault client, **published** to GitHub Packages as `one.rarebit.heyarr:vault-client` for other first-party clients: opening a space over its key history (`SpaceOpen`, `SpaceKeyring`), the drive CRDT, the frame codec, the space/blob clients, and sealed objects read and written by `hv1:` vault ref (`VaultRef`, `VaultObjects`). Decrypts only on the device. Exposes `:core` as `api`. See "Publishing the client libraries" below. | JVM; Android when an SDK is present |
 | **`:composeApp`** | The **desktop** client (Compose Multiplatform, JVM): Linux x64 **and** aarch64, with macOS/Windows for free via the JVM. Also ships the headless vault-sync daemon ([docs/vault-sync-daemon.md](docs/vault-sync-daemon.md)). | JVM |
 | **`:androidApp`** | The **Android** client (Compose, Media3/ExoPlayer, Readium), with voidbind QR login and device enrolment. See [androidApp/README.md](androidApp/README.md). | Android (minSdk 33) |
 
-Both apps depend on `:core` and `:ui`. `:androidApp` still carries some code that has not
+Both apps depend on `:core`, `:ui` and `:vault-client`. `:androidApp` still carries some code that has not
 converged into the shared modules yet (its own `HeyarrApi`, JSON readers and screens).
 New shared logic belongs in `:core` (or `:ui` if it is Compose-typed), not in either app.
 
@@ -18,7 +19,7 @@ New shared logic belongs in `:core` (or `:ui` if it is Compose-typed), not in ei
 
 JDK 21 is required (the JVM targets declare a JDK 21 toolchain). Android variants
 keep Java/Kotlin bytecode at 17 for device compatibility. Everything resolves
-`one.rarebit.voidbind:voidbind-client` from the org's GitHub Packages, so every build
+`one.rarebit.voidwhichbinds:void-which-binds-client` from the org's GitHub Packages, so every build
 needs a token with `read:packages`. Set `gpr.user` / `gpr.token` in
 `~/.gradle/gradle.properties`, or pass `GITHUB_ACTOR` / `GITHUB_TOKEN`
 (e.g. `GITHUB_TOKEN=$(gh auth token)`).
@@ -44,10 +45,27 @@ host, runs the command there, and syncs reports and screenshots back.
 
 | Workflow | Runs | Triggered by |
 |----------|------|--------------|
-| `desktop.yml` | `:core:build :ui:build :composeApp:build`, the vault-sync uber JAR, screenshots | PRs + `main`, path-filtered |
-| `android.yml` | `:androidApp:testDebugUnitTest :androidApp:assembleDebug` | PRs + `main`, path-filtered |
+| `desktop.yml` | `:core:build :ui:build :vault-client:build :composeApp:build`, the vault-sync uber JAR, screenshots | PRs + `main`, path-filtered |
+| `android.yml` | `:androidApp:testDebugUnitTest :vault-client:testDebugUnitTest :androidApp:assembleDebug` | PRs + `main`, path-filtered |
 | `instrumented.yml` | an on-device Compose smoke test on an emulator | PRs + `main`, path-filtered |
 | `android-release.yml` | the signed release APK, attached to a GitHub Release | `v*` tags |
+| `publish.yml` | publishes `one.rarebit.heyarr:{core,vault-client}` to GitHub Packages | `lib-v*` tags |
+
+### Publishing the client libraries
+
+`:vault-client`, and the `:core` its API exposes, publish to this repo's GitHub Packages
+registry at one version, `publishedLibraryVersion` in the root `build.gradle.kts`. To cut one:
+bump that line (and its changelog comment) in a PR, merge it, then tag the merge commit
+`lib-v<version>` and push the tag. `publish.yml` refuses a tag that does not match the
+version, re-runs the libraries' JVM and Android tests, and publishes. Library tags never use
+the bare `v*` prefix, which cuts an Android app release.
+
+A consumer resolves it like `void-which-binds-client` (a `read:packages` token), from
+`https://maven.pkg.github.com/rarebit-one/*` with `includeGroup("one.rarebit.heyarr")`, and
+declares `one.rarebit.heyarr:vault-client:<version>` in `commonMain`. It also needs
+`void-which-binds-client` resolvable (`one.rarebit.voidwhichbinds`), a cryptography-kotlin
+provider at runtime (`dev.whyoleg.cryptography:cryptography-provider-optimal`), and an
+Android `minSdk` of at least 33.
 
 ## Toolchain
 
@@ -59,7 +77,7 @@ host, runs the command there, and syncs reports and screenshots back.
 | AGP | 8.7.3 (compileSdk 35, minSdk 33) |
 | Compose Multiplatform | 1.9.3 (desktop, `:ui`) |
 | Compose compiler | bundled with Kotlin (`org.jetbrains.kotlin.plugin.compose`) |
-| voidbind-client | 0.9.0 (GitHub Packages, private) |
+| void-which-binds-client | 0.11.0 (GitHub Packages, private; gen2-only, ADR-0022) |
 
 ---
 

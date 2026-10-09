@@ -6,7 +6,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- The device signing key's hardware wrapping key is user-presence gated (BiometricPrompt). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-    <!-- The camera scans the `voidbind:pair?…` invite QR the Mac prints during enrolment.
+    <!-- The camera scans the `void-which-binds:pair?…` invite QR the Mac prints during enrolment.
          Optional so the app still installs on camera-less devices; Enrol keeps the paste path. -->
     <uses-feature android:name="android.hardware.camera.any" android:required="false" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -21,15 +21,17 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Package visibility (Android 11+): let us resolve the Cruciform authenticator app for the
-         same-phone `voidbind:` hand-off, so the "Approve on this phone" / "Open in Cruciform"
-         buttons only show when something actually handles the scheme. -->
+         same-phone `void-which-binds:` hand-off, so the "Approve on this phone" / "Open in
+         Cruciform" buttons only show when something actually handles the scheme. Gen2 only
+         (void-which-binds-go ADR-0022): Cruciform 1.0.0+ registers `void-which-binds:` alone,
+         and there is deliberately no gen1 `voidbind:` query beside it. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
-            <data android:scheme="voidbind" />
+            <data android:scheme="void-which-binds" />
         </intent>
         <!-- The same-phone one-tap report we fire back at Cruciform once we have joined
-             its invite and derived the SAS (voidbind-kmp ADR-0008). The <data> must match
+             its invite and derived the SAS (void-which-binds-kmp ADR-0008). The <data> must match
              Cruciform's filter exactly — scheme AND host — or the launch is invisible to
              us and we silently fall back to the human SAS comparison. -->
         <intent>
@@ -65,8 +67,8 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="heyarr-mobile" android:host="login" />
             </intent-filter>
-            <!-- `heyarr-mobile://pair?invite=<encoded voidbind:pair tuple>` — the REVERSE
-                 same-phone handoff (voidbind-kmp ADR-0006): Cruciform's "Add a device" hands
+            <!-- `heyarr-mobile://pair?invite=<encoded void-which-binds:pair tuple>` — the REVERSE
+                 same-phone handoff (void-which-binds-kmp ADR-0006): Cruciform's "Add a device" hands
                  us the invite it minted, since we can't scan the screen we share. Routed by
                  device/PairDeepLink into the same join path a scan takes; the SAS is then
                  confirmed on Cruciform. singleTop: a warm app gets it via onNewIntent. -->
@@ -76,22 +78,25 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="heyarr-mobile" android:host="pair" />
             </intent-filter>
-            <!-- Same-phone handoff DISCOVERY (voidbind-kmp ADR-0009): advertise to
-                 Cruciform that we can receive a Voidbind pairing handoff, so it lists a
+            <!-- Same-phone handoff DISCOVERY (void-which-binds-kmp ADR-0009): advertise to
+                 Cruciform that we can receive a Void-Which-Binds pairing handoff, so it lists a
                  "Send to heyarr on this phone" button WITHOUT a hard-coded registry entry.
                  Data-less by design — Cruciform's discovery probe (a VIEW intent carrying
                  only the RP_HANDOFF category) cannot match a scheme://pair filter, so this
                  dedicated filter advertises the capability and the meta-data below names
-                 the scheme Cruciform should fire (heyarr-mobile://pair, the filter above). -->
+                 the scheme Cruciform should fire (heyarr-mobile://pair, the filter above).
+                 The category and meta-data key are Cruciform 1.0.0's gen2 names
+                 (`one.rarebit.voidwhichbinds.*`, ADR-0022); a gen2 Cruciform does not look
+                 for the gen1 `one.rarebit.voidbind.*` ones, so those are gone. -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-                <category android:name="one.rarebit.voidbind.category.RP_HANDOFF" />
+                <category android:name="one.rarebit.voidwhichbinds.category.RP_HANDOFF" />
             </intent-filter>
             <meta-data
-                android:name="one.rarebit.voidbind.rp.pair_scheme"
+                android:name="one.rarebit.voidwhichbinds.rp.pair_scheme"
                 android:value="heyarr-mobile" />
             <!-- `heyarr-mobile://pair-done?session=…` — the return leg of the same-phone
-                 one-tap enrolment (voidbind-kmp ADR-0008). Cruciform opens it once it has
+                 one-tap enrolment (void-which-binds-kmp ADR-0008). Cruciform opens it once it has
                  signed and delivered the admission, so the human lands back here, on the
                  Device tab, enrolled. It carries the session id only: the admission itself
                  arrived sealed over the relay, and this link grants nothing. -->

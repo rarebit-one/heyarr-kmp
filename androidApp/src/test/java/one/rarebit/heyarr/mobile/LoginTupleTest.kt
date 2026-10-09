@@ -9,7 +9,7 @@ class LoginTupleTest {
 
     @Test fun encodesKeysSortedIdBeforeRp() {
         val s = LoginTuple.encode(rp = "https://heyarr.example", id = "abc123")
-        assertEquals("voidbind:login?id=abc123&rp=https%3A%2F%2Fheyarr.example", s)
+        assertEquals("void-which-binds:login?id=abc123&rp=https%3A%2F%2Fheyarr.example", s)
     }
 
     @Test fun roundTrips() {
@@ -20,20 +20,27 @@ class LoginTupleTest {
     }
 
     @Test fun decodeIsTolerantOfKeyOrder() {
-        val p = LoginTuple.decode("voidbind:login?rp=https%3A%2F%2Fx.y&id=z")
+        val p = LoginTuple.decode("void-which-binds:login?rp=https%3A%2F%2Fx.y&id=z")
         assertEquals("https://x.y", p.rp)
         assertEquals("z", p.id)
     }
 
     @Test fun rejectsWrongScheme() {
         assertThrows(IllegalArgumentException::class.java) {
-            LoginTuple.decode("https://not-voidbind?id=x&rp=y")
+            LoginTuple.decode("https://not-void-which-binds?id=x&rp=y")
+        }
+    }
+
+    @Test fun rejectsTheGen1Scheme() {
+        // void-which-binds-client 0.11.0 is gen2-only (ADR-0022): a `voidbind:` tuple is refused.
+        assertThrows(IllegalArgumentException::class.java) {
+            LoginTuple.decode("voidbind:login?id=x&rp=https%3A%2F%2Fx.y")
         }
     }
 
     @Test fun rejectsMissingField() {
         assertThrows(IllegalArgumentException::class.java) {
-            LoginTuple.decode("voidbind:login?id=x")
+            LoginTuple.decode("void-which-binds:login?id=x")
         }
     }
 }

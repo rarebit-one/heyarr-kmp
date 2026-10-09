@@ -2,16 +2,19 @@ package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.crypto.Blake3
-import one.rarebit.heyarr.core.vault.Drive
-import one.rarebit.heyarr.core.vault.DriveChange
-import one.rarebit.heyarr.core.vault.DriveEntry
-import one.rarebit.heyarr.core.vault.LocalFile
-import one.rarebit.heyarr.core.vault.SyncAction
-import one.rarebit.heyarr.core.vault.SyncIndexEntry
-import one.rarebit.heyarr.core.vault.VaultFrame
-import one.rarebit.heyarr.core.vault.encodeDriveChange
-import one.rarebit.heyarr.core.vault.reconcile
-import one.rarebit.voidbind.crypto.VoidbindEncryption
+import one.rarebit.heyarr.vault.Drive
+import one.rarebit.heyarr.vault.DriveChange
+import one.rarebit.heyarr.vault.DriveEntry
+import one.rarebit.heyarr.vault.LocalFile
+import one.rarebit.heyarr.vault.SpaceKeyring
+import one.rarebit.heyarr.vault.SpaceOpen
+import one.rarebit.heyarr.vault.SyncAction
+import one.rarebit.heyarr.vault.SyncIndexEntry
+import one.rarebit.heyarr.vault.VaultBlobStore
+import one.rarebit.heyarr.vault.VaultFrame
+import one.rarebit.heyarr.vault.VaultSpace
+import one.rarebit.heyarr.vault.encodeDriveChange
+import one.rarebit.heyarr.vault.reconcile
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
@@ -98,7 +101,21 @@ fun interface VaultSync {
  *
  * The daemon ([one.rarebit.heyarr.desktop.state.VaultSyncController]) just calls [syncOnce] on
  * its cadence; this class holds no loop and no clock.
+ *
+ * The space's key can rotate (ADR-0103) and nothing is re-encrypted when it does, so the engine
+ * holds the space's whole [keyring]: changes and manifests are opened with whichever key sealed
+ * them (newest first), a file's frames with the key that opened its manifest, and everything this
+ * device writes is sealed under the current key only. When no held key opens a blob, the space may
+ * have rotated since the ring was fetched: [reopen] re-fetches the keys and history ONCE per pass
+ * and the read is retried before the pass fails.
+ *
+ * A rotation that brings no newer blob would never trip that miss, and the engine would go on
+ * sealing local writes under the pre-rotation key — readable by a recipient the rotation revoked.
+ * So a pass that is about to write (an upload or a remote delete) first asks the peer for the
+ * space's current key epoch, once, and re-opens before sealing anything if it moved; if it cannot
+ * get onto the current key the pass fails rather than write under a stale one.
  */
+@Suppress("LongParameterList") // each argument is one injected seam of the engine (was baselined)
 class VaultSyncEngine(
     private val folder: VaultFolder,
     private val blobs: VaultBlobStore,
@@ -107,28 +124,68 @@ class VaultSyncEngine(
     private val baseUrl: String,
     private val credential: Credential,
     private val spaceId: String,
-    private val spaceKey: ByteArray,
+    /** The space's keys, newest first; replaced when [reopen] re-fetches them. */
+    private var keyring: SpaceKeyring,
+    /** Where the folded drive + cursor survive a restart (#73). The default keeps nothing. */
+    private val stateStore: DriveStateStore = NoDriveStateStore,
+    /**
+     * Re-open the space (re-fetch its key epoch, this device's copy and the key history) when no
+     * held key opens a blob. Null result = could not re-open; the read then fails as it would have.
+     * The default never re-opens.
+     */
+    private val reopen: () -> SpaceKeyring? = { null },
 ) : VaultSync {
     data class Stats(val uploaded: Int, val downloaded: Int, val deletedRemote: Int, val deletedLocal: Int)
 
     /**
      * The folded remote drive, carried BETWEEN passes so a steady-state sync pulls nothing.
-     * Null until the first successful fold. Held in memory only: a restarted daemon simply
-     * starts from cursor 0 and pays one full pull, which is the old cost exactly once rather
-     * than on every poll.
+     * Null until the first successful fold or a restored [stateStore] state. Persisted through
+     * [stateStore] after every fold that took in new changes, so a restarted daemon resumes from
+     * where it stopped instead of re-pulling the whole log (#73).
      */
     private var drive: Drive? = null
 
     /** The peer's opaque arrival position we have folded up to. 0 = nothing yet. */
     private var cursor: Long = 0
 
+    /** Whether [stateStore] has been consulted since the drive was last discarded. */
+    private var restored = false
+
+    /** Whether this pass already re-fetched the keyring: at most once per pass, so a corrupt blob cannot loop. */
+    private var reopened = false
+
     override fun syncOnce(): Stats {
+        reopened = false
         val index = indexStore.load()
         val local = folder.scan(index)
         val drive = buildDrive()
         val resolved = drive.resolved().associateBy { it.path }
         val actions = reconcile(local, resolved, index)
+        var completed = false
+        try {
+            return apply(actions, local, resolved, drive, index).also { completed = true }
+        } finally {
+            if (!completed) {
+                // A pass that fails part-way can leave a local write in the drive that never
+                // reached the server (a push that threw). Keeping that drive would make it look
+                // remote from then on, and persisting it would carry that across restarts. So
+                // drop it: the next pass restores the last saved fold, which holds only changes
+                // the server has, or re-folds from 0 when nothing was saved.
+                this.drive = null
+                cursor = 0
+                restored = false
+            }
+        }
+    }
 
+    private fun apply(
+        actions: List<SyncAction>,
+        local: Map<String, LocalFile>,
+        resolved: Map<String, DriveEntry>,
+        drive: Drive,
+        index: Map<String, SyncIndexEntry>,
+    ): Stats {
+        if (actions.any { it is SyncAction.UploadLocal || it is SyncAction.DeleteRemote }) ensureCurrentKey()
         val newIndex = index.toMutableMap()
         var up = 0
         var down = 0
@@ -183,18 +240,43 @@ class VaultSyncEngine(
      * back on a later pull and they fold in again idempotently, landing on the identical key.
      */
     private fun buildDrive(): Drive {
+        if (drive == null && !restored) {
+            restored = true
+            stateStore.load(baseUrl, spaceId)?.let {
+                drive = it.drive
+                cursor = it.cursor
+            }
+        }
         val d = drive ?: Drive()
         val page = space.pullChangesSince(spaceId, cursor)
         for (c in page.changes) {
-            val json = VoidbindEncryption.decryptChange(spaceKey, c.ciphertext).decodeToString()
-            d.apply(Drive.parseChange(json))
+            val json = withKeyring { it.decryptChange(c.ciphertext) }.decodeToString()
+            // An unknown op parses to null and is skipped, as Go's fold skips it (#111).
+            Drive.parseChange(json)?.let { d.apply(it) }
         }
         drive = d
         cursor = page.cursor
+        if (page.changes.isNotEmpty()) persist(d)
         return d
     }
 
+    /**
+     * Save the drive with the cursor it was just folded to. This runs straight after a fold,
+     * before this pass writes anything locally, so the drive is exactly the log up to [cursor].
+     * Earlier passes' local writes are in it too, but they were pushed before this pull, so they
+     * are part of that log already.
+     *
+     * A failed save is not a failed sync. The file on disk is then an older but still consistent
+     * pair, and the worst a restart pays is a longer tail.
+     */
+    private fun persist(d: Drive) {
+        runCatching { stateStore.save(baseUrl, spaceId, DriveState(cursor, d)) }
+    }
+
     private fun upload(path: String, lf: LocalFile, drive: Drive, newIndex: MutableMap<String, SyncIndexEntry>) {
+        // One key for the content frames AND the manifest: a reader finds the frames' key by the
+        // manifest it opens (ADR-0103), so the two must never straddle a re-fetched ring.
+        val spaceKey = keyring.current
         val fileId = ByteArray(16).also { SecureRandom().nextBytes(it) }
         // STREAM the seal to a temp ciphertext file, one frame in memory at a time — so a multi-GB
         // file neither OOMs the heap nor trips the JVM's ~2 GiB single-array cap. The random per-
@@ -212,10 +294,12 @@ class VaultSyncEngine(
                     )
                 }
             }
-            blobs.putBlobFile(baseUrl, manifest.content, tmp, credential) // the ciphertext content blob (streamed off disk)
+            // The ciphertext content blob, streamed off disk.
+            blobs.putBlobFile(baseUrl, manifest.content, tmp, credential)
             val manifestBlob = VaultFrame.sealManifest(spaceKey, manifest)
             val manifestHash = Blake3.hashHex(manifestBlob)
-            blobs.putBlob(baseUrl, manifestHash, manifestBlob, credential) // the sealed manifest (the drive entry's blob)
+            // The sealed manifest: the drive entry's blob.
+            blobs.putBlob(baseUrl, manifestHash, manifestBlob, credential)
             push(drive.put(path, manifestHash, lf.size, lf.mtime))
             newIndex[path] = SyncIndexEntry(lf.plaintextHash, manifestHash, lf.size, lf.mtime)
         } finally {
@@ -230,14 +314,46 @@ class VaultSyncEngine(
         newIndex: MutableMap<String, SyncIndexEntry>,
     ) {
         val manifestBlob = blobs.fetchAll(baseUrl, manifestHash, credential)
-        val manifest = VaultFrame.openManifest(spaceKey, manifestBlob)
-        val plaintext = VaultFrame.openAll(spaceKey, manifest, blobs.fetchFor(baseUrl, manifest.content, credential))
+        // Content addressing before anything is decrypted: the manifest must be the one the drive
+        // entry names (else a node could hand back another file's manifest of this space), and the
+        // content blob must hash to the id the manifest names. The manifest picks the key (the file
+        // may predate a rotation); its frames are under it.
+        val opened = withKeyring { VaultFrame.openManifestVerified(it, manifestBlob, manifestHash) }
+        val manifest = opened.manifest
+        val plaintext =
+            VaultFrame.openAllVerified(opened.key, manifest, blobs.fetchFor(baseUrl, manifest.content, credential))
         folder.write(path, plaintext, entry.mtime)
         newIndex[path] = SyncIndexEntry(Blake3.hashHex(plaintext), manifestHash, plaintext.size.toLong(), entry.mtime)
     }
 
+    /**
+     * Before this pass seals anything: when the peer's current key epoch is not the ring's, the
+     * space rotated without a newer blob reaching us. Re-open onto the new current key, or refuse
+     * to write at all — never seal under a key a rotation retired.
+     */
+    private fun ensureCurrentKey() {
+        keyring = SpaceOpen.currentForWrite(space.keyEpoch(spaceId), keyring, spaceId, reopen)
+    }
+
+    /**
+     * Run [read] over the keyring; when no held key opens the blob, re-open the space once this
+     * pass (it may have rotated since the ring was fetched) and retry with the fresh ring.
+     */
+    private fun <T> withKeyring(read: (SpaceKeyring) -> T): T = try {
+        read(keyring)
+    } catch (e: SpaceKeyring.NoKeyOpensException) {
+        if (reopened) throw e
+        reopened = true
+        val fresh = runCatching { reopen() }.getOrNull() ?: throw e
+        keyring = fresh
+        read(fresh)
+    }
+
     private fun push(change: DriveChange) {
-        val ciphertext = VoidbindEncryption.encryptChange(spaceKey, encodeDriveChange(change).encodeToByteArray())
-        space.pushChange(spaceId, emptyList(), ciphertext) // TODO: causal parents = the applied frontier
+        val ciphertext = keyring.encryptChange(encodeDriveChange(change).encodeToByteArray())
+        // Conditional on the epoch that sealed it (heyarr-core #712): a rotation committing since
+        // the pass's ensureCurrentKey fails this pass, and the next one re-opens onto the new key.
+        // TODO: causal parents = the applied frontier
+        space.pushChange(spaceId, emptyList(), ciphertext, keyEpoch = keyring.epoch)
     }
 }

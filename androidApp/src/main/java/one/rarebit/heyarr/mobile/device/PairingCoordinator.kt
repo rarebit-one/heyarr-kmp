@@ -7,8 +7,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import one.rarebit.voidbind.flow.PairingFailureKind
-import one.rarebit.voidbind.flow.PairingOutcome
+import one.rarebit.voidwhichbinds.flow.PairingFailureKind
+import one.rarebit.voidwhichbinds.flow.PairingOutcome
 
 /**
  * A pairing this phone had in flight, persisted (in [PendingPairingStore]) the moment
@@ -22,7 +22,7 @@ import one.rarebit.voidbind.flow.PairingOutcome
 data class PendingPairing(
     /** The relay session id — the key every pairing is identified by. */
     val session: String,
-    /** The `voidbind:pair?…` invite tuple, byte-identical to what was joined. */
+    /** The `void-which-binds:pair?…` invite tuple, byte-identical to what was joined. */
     val inviteQr: String,
     /** The invite came from Cruciform on THIS phone (the deep link), not another device. */
     val sameDevice: Boolean,
@@ -91,13 +91,21 @@ enum class PairingFailure {
     /** The human said the codes differ — aborted; nothing was exchanged. */
     MISMATCH,
 
+    /**
+     * The peer device (Cruciform, or another computer) REFUSED the pairing: its human
+     * said the numbers did not match, or cancelled (void-which-binds-go ADR-0012). The
+     * refusal is signed by the key the SAS bound, so it really came from that device.
+     * Nothing was admitted; retry with a fresh invite.
+     */
+    REFUSED,
+
     /** The app process died mid-pairing; the session cannot be resumed. */
     INTERRUPTED,
 
     /** A pairing found on restart whose relay session TTL has already passed. */
     EXPIRED,
 
-    /** The invite was not a joinable `voidbind:pair?` v3 tuple. */
+    /** The invite was not a joinable `void-which-binds:pair?` v4 (gen2) tuple. */
     INVALID,
 }
 
@@ -389,6 +397,7 @@ class PairingCoordinator(
                 PairingFailureKind.TIMEOUT -> PairingFailure.TIMEOUT
                 PairingFailureKind.REJECTED -> PairingFailure.REJECTED
                 PairingFailureKind.PROTOCOL -> PairingFailure.PROTOCOL
+                PairingFailureKind.REFUSED -> PairingFailure.REFUSED
             },
             message = f.message,
         ),

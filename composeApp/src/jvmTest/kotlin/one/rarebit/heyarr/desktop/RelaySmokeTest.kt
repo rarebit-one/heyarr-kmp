@@ -15,9 +15,9 @@ import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DevicePairingSteps
 import one.rarebit.heyarr.desktop.device.PairingCoordinator
 import one.rarebit.heyarr.desktop.device.PairingState
-import one.rarebit.voidbind.Ed25519Verifier
-import one.rarebit.voidbind.MembershipOp
-import one.rarebit.voidbind.auth.PossessionProof
+import one.rarebit.voidwhichbinds.Ed25519Verifier
+import one.rarebit.voidwhichbinds.MembershipOp
+import one.rarebit.voidwhichbinds.auth.PossessionProof
 import java.io.File
 import java.security.KeyFactory
 import java.security.Signature
@@ -32,10 +32,10 @@ import kotlin.test.assertTrue
 
 /**
  * The caveat on heyarr-kmp #32: an AUTOMATED end-to-end proof that the DESKTOP enroller's
- * relay transport completes a pairing against a REAL voidbind-go relay — not a fake.
+ * relay transport completes a pairing against a REAL void-which-binds-go relay — not a fake.
  *
  * PR #35's `PairingCoordinatorTest` proves the state machine with a fake `PairingSteps`;
- * this proves the missing half — the LIVE wire. It stands up a real voidbind-go relay and
+ * this proves the missing half — the LIVE wire. It stands up a real void-which-binds-go relay and
  * a real genesis initiator (the Go `relaysmoke` helper), then drives the production desktop
  * responder — [PairingCoordinator] → [DevicePairingSteps] → `DevicePairing` over a real
  * [one.rarebit.heyarr.desktop.device.PatientRelayTransport] and `JdkHttpTransport` — against
@@ -50,18 +50,19 @@ import kotlin.test.assertTrue
  *
  * # Gating (default CI stays green)
  *
- * The test is a no-op UNLESS `VOIDBIND_GO_DIR` points at a voidbind-go checkout AND the `go`
+ * The test is a no-op UNLESS `VOID_WHICH_BINDS_GO_DIR` points at a void-which-binds-go (v0.19.0+, gen2)
+ * checkout AND the `go`
  * toolchain is on PATH. `desktop.yml` sets neither, so `:composeApp:jvmTest` skips it. Run
  * it explicitly:
  *
  * ```
- * VOIDBIND_GO_DIR=/path/to/voidbind-go ./gradlew :composeApp:jvmTest \
+ * VOID_WHICH_BINDS_GO_DIR=/path/to/void-which-binds-go ./gradlew :composeApp:jvmTest \
  *     --tests one.rarebit.heyarr.desktop.RelaySmokeTest
  * ```
  *
  * The committed Go source (`src/jvmTest/resources/relaysmoke/relaysmoke.go`) is copied into
- * a throwaway package dir INSIDE the voidbind-go module and `go run`, so its imports resolve
- * against voidbind-go's own module with no network.
+ * a throwaway package dir INSIDE the void-which-binds-go module and `go run`, so its imports resolve
+ * against void-which-binds-go's own module with no network.
  */
 class RelaySmokeTest {
 
@@ -78,11 +79,11 @@ class RelaySmokeTest {
 
     @Test
     fun desktop_enroller_pairs_against_a_real_voidbind_relay() = runBlocking {
-        val goDir = System.getenv("VOIDBIND_GO_DIR")?.trim()?.takeIf { it.isNotEmpty() }?.let(::File)
+        val goDir = System.getenv("VOID_WHICH_BINDS_GO_DIR")?.trim()?.takeIf { it.isNotEmpty() }?.let(::File)
         if (goDir == null || !File(goDir, "go.mod").exists() || !goToolchainPresent()) {
             println(
-                "RelaySmokeTest SKIPPED — set VOIDBIND_GO_DIR to a voidbind-go checkout and have `go` on PATH " +
-                    "to run the live relay round-trip (goDir=$goDir).",
+                "RelaySmokeTest SKIPPED — set VOID_WHICH_BINDS_GO_DIR to a void-which-binds-go checkout and have " +
+                    "`go` on PATH to run the live relay round-trip (goDir=$goDir).",
             )
             return@runBlocking
         }

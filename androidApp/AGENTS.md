@@ -11,7 +11,8 @@ The first-party Android client for heyarr. It signs in via **Voidbind QR login**
 heyarr's native library, and holds **device-side personal state** (decrypt-on-device). The
 server contract is `heyarr-core/docs/design/mobile-client.md` (ADR-0048 device auth,
 ADR-0049/0051 personal state). Login approval is delegated to **Cruciform**, the Voidbind
-authenticator app in `rarebit-one/voidbind-kmp`, which also ships the `voidbind-client` library.
+authenticator app in `rarebit-one/void-which-binds-kmp` (formerly `voidbind-kmp`), which
+also ships the `void-which-binds-client` library.
 
 ## Invariants (each with its reason)
 

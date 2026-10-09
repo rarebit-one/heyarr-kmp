@@ -244,7 +244,6 @@
     <ID>LongParameterList:SeriesTest.kt$SeriesTest$( id: String, name: String, label: String? = null, role: String? = "primary", mime: String? = "video/mp4", hash: String? = "blake3:$id", path: String? = null, missing: String? = null, )</ID>
     <ID>LongParameterList:SideNav.kt$( current: Route, onGo: (Route) -&gt; Unit, connection: Connection, compact: Boolean = false, modifier: Modifier = Modifier, connectionDetail: String? = null, onConnection: () -&gt; Unit = {}, consuming: Boolean = false, )</ID>
     <ID>LongParameterList:VaultService.kt$VaultService$( private val scope: CoroutineScope, private val config: () -&gt; DesktopConfig, private val rememberFolder: (String?) -&gt; Unit, private val rememberSpaceId: (String) -&gt; Unit, /** Open the configured space or self-bootstrap one (network + device keys). */ private val openCustody: (configuredSpaceId: String?) -&gt; VaultCustody.Result, /** Build the sync engine for an opened vault + folder. */ private val engineFor: (OpenedVault, folder: String) -&gt; VaultSync, /** Build the folder change source (falls back to periodic when it throws). */ private val watchFor: (folder: String) -&gt; SyncChanges, private val retryMs: Long = 15_000, )</ID>
-    <ID>LongParameterList:VaultSyncEngine.kt$VaultSyncEngine$( private val folder: VaultFolder, private val blobs: VaultBlobStore, private val space: VaultSpace, private val indexStore: SyncIndexStore, private val baseUrl: String, private val credential: Credential, private val spaceId: String, private val spaceKey: ByteArray, )</ID>
     <ID>LoopWithTooManyJumpStatements:Libmpv.kt$MpvRenderer$while</ID>
     <ID>LoopWithTooManyJumpStatements:LocalScanner.kt$LocalScanner$for</ID>
     <ID>LoopWithTooManyJumpStatements:MembershipOps.kt$MembershipOps$while</ID>
@@ -460,10 +459,6 @@
     <ID>MagicNumber:VaultBlobStore.kt$JdkVaultBlobStore$201</ID>
     <ID>MagicNumber:VaultBlobStore.kt$JdkVaultBlobStore$206</ID>
     <ID>MagicNumber:VaultCustody.kt$VaultCustody$32</ID>
-    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$200</ID>
-    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$201</ID>
-    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$204</ID>
-    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$404</ID>
     <ID>MagicNumber:VaultSyncDaemon.kt$VaultSyncDaemon$1_000</ID>
     <ID>MagicNumber:VaultSyncEngine.kt$VaultSyncEngine$16</ID>
     <ID>MagicNumber:VoidbindCliCredential.kt$VoidbindCliCredential.Companion$10</ID>
@@ -567,8 +562,6 @@
     <ID>MaxLineLength:SettingsScreen.kt$detail = "Following, wants and peer sync are enrolled-only. Add a bearer token above to sign in."</ID>
     <ID>MaxLineLength:VaultCustody.kt$VaultCustody.Result$/** The outcome of [openOrBootstrap]: the opened vault (null when not ready), whether a space was minted, and why not. */</ID>
     <ID>MaxLineLength:VaultSyncDaemon.kt$VaultSyncDaemon.Resolved$/** What custody resolution produces: a ready engine, its folder watch, this device, and whether the watch is real. */</ID>
-    <ID>MaxLineLength:VaultSyncEngine.kt$VaultSyncEngine$blobs.putBlob(baseUrl, manifestHash, manifestBlob, credential)</ID>
-    <ID>MaxLineLength:VaultSyncEngine.kt$VaultSyncEngine$blobs.putBlobFile(baseUrl, manifest.content, tmp, credential)</ID>
     <ID>MaxLineLength:WantSeasonsPanel.kt$"Seasons the library hasn't seen yet arrive when you want the whole series below — wanting a series follows it."</ID>
     <ID>MaxLineLength:WantSeasonsPanel.kt$"Wanting the whole series follows it: heyarr resolves its metadata id automatically (no TVDB URL needed) and backfills every aired episode plus each new one. To follow a source that has no work here, use Settings → Followed sources."</ID>
     <ID>MaxLineLength:WantSheet.kt$"Created from the title with the same normalisation a scan uses, so wanting it now and scanning it later converge on one work."</ID>
@@ -584,7 +577,6 @@
     <ID>MayBeConst:Fixtures.kt$Fixtures$val renderers = """{"renderers":[{"udn":"uuid:1e055177","name":"Phantom II 95 dB-a98d","manufacturer":"Devialet","model":"Phantom II 95 dB","location":"http://192.168.16.69:45317/x.xml"},{"udn":"uuid:tv","name":"Living room TV","manufacturer":"Samsung","model":"QN85BA 55"}]}"""</ID>
     <ID>NestedBlockDepth:EmbeddedPlayer.kt$EmbeddedPlayer$private fun readLoop(ch: SocketChannel)</ID>
     <ID>NestedBlockDepth:Screenshots.kt$private fun verifyShelfSwitch()</ID>
-    <ID>NestedBlockDepth:VaultSpaceClient.kt$VaultSpaceClient$private fun stringArray(array: String?): List&lt;String&gt;</ID>
     <ID>ReturnCount:ArtworkLoader.kt$ArtworkLoader$suspend fun load(contentPath: String): ImageBitmap?</ID>
     <ID>ReturnCount:DaemonConfig.kt$DaemonConfig.Companion$fun fromFile(file: File): DaemonConfig</ID>
     <ID>ReturnCount:DesktopDeviceEnroller.kt$DesktopDeviceEnroller$override fun enrolled(): Credential.Device?</ID>
@@ -637,7 +629,6 @@
     <ID>TooManyFunctions:HeyarrApi.kt$HeyarrApi</ID>
     <ID>TooManyFunctions:Libmpv.kt$MpvLib : Library</ID>
     <ID>TooManyFunctions:PairingCoordinator.kt$PairingCoordinator</ID>
-    <ID>TooManyFunctions:VaultSpaceClient.kt$VaultSpaceClient : VaultSpaceVaultKeys</ID>
     <ID>UnusedParameter:DetailCurate.kt$session: AppSession</ID>
     <ID>UnusedParameter:DetailCurate.kt$wants: List&lt;DesiredItem&gt;</ID>
     <ID>UnusedParameter:DetailEpisodes.kt$state: DetailState</ID>

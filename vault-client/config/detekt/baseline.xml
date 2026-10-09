@@ -1,0 +1,38 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>CyclomaticComplexMethod:DriveCrdt.kt$Drive$fun retain(policy: RetentionPolicy, nowUnix: Long): List&lt;String&gt;</ID>
+    <ID>CyclomaticComplexMethod:DriveCrdt.kt$Drive.Companion$fun fromSnapshot(json: String): Drive</ID>
+    <ID>CyclomaticComplexMethod:SyncReconcile.kt$fun reconcile( local: Map&lt;String, LocalFile&gt;, resolved: Map&lt;String, DriveEntry&gt;, index: Map&lt;String, SyncIndexEntry&gt;, ): List&lt;SyncAction&gt;</ID>
+    <ID>LoopWithTooManyJumpStatements:DriveCrdt.kt$Drive$for</ID>
+    <ID>LoopWithTooManyJumpStatements:DriveCrdt.kt$DriveRecord$for</ID>
+    <ID>LoopWithTooManyJumpStatements:VaultFrame.kt$VaultFrame$while</ID>
+    <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$0x7F</ID>
+    <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$0x80</ID>
+    <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$64</ID>
+    <ID>MagicNumber:PersonalStateId.kt$PersonalStateId.ByteBuf$7</ID>
+    <ID>MagicNumber:VaultFrame.kt$VaultFrame$0xFF</ID>
+    <ID>MagicNumber:VaultFrame.kt$VaultFrame$10</ID>
+    <ID>MagicNumber:VaultFrame.kt$VaultFrame$16</ID>
+    <ID>MagicNumber:VaultFrame.kt$VaultFrame$24</ID>
+    <ID>MagicNumber:VaultFrame.kt$VaultFrame$3</ID>
+    <ID>MagicNumber:VaultFrame.kt$VaultFrame$4</ID>
+    <ID>MagicNumber:VaultFrame.kt$VaultFrame$64</ID>
+    <ID>MagicNumber:VaultFrame.kt$VaultFrame$8</ID>
+    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$200</ID>
+    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$201</ID>
+    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$204</ID>
+    <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$404</ID>
+    <ID>NestedBlockDepth:DriveCrdt.kt$Drive$fun retain(policy: RetentionPolicy, nowUnix: Long): List&lt;String&gt;</ID>
+    <ID>NestedBlockDepth:DriveRetainTest.kt$DriveRetainTest$private fun parseStringArray(array: String): List&lt;String&gt;</ID>
+    <ID>NestedBlockDepth:VaultSpaceClient.kt$VaultSpaceClient$private fun stringArray(array: String?): List&lt;String&gt;</ID>
+    <ID>ReturnCount:DriveCrdt.kt$Drive$fun get(path: String): DriveEntry?</ID>
+    <ID>ThrowsCount:VaultFrame.kt$VaultFrame$fun openFrame(spaceKey: ByteArray, m: Manifest, index: Int, sealed: ByteArray): ByteArray</ID>
+    <ID>ThrowsCount:VaultFrame.kt$VaultFrame$fun parseManifest(json: String): Manifest</ID>
+    <ID>TooGenericExceptionCaught:VaultFrame.kt$VaultFrame$e: Exception</ID>
+    <ID>TooManyFunctions:DriveCrdt.kt$Drive</ID>
+    <ID>TooManyFunctions:VaultFrame.kt$VaultFrame</ID>
+    <ID>TooManyFunctions:VaultSpaceClient.kt$VaultSpaceClient : VaultSpaceVaultKeys</ID>
+  </CurrentIssues>
+</SmellBaseline>

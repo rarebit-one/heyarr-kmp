@@ -1,15 +1,16 @@
 package one.rarebit.heyarr.mobile.login
 
-import one.rarebit.voidbind.VoidbindDeepLink
+import one.rarebit.voidwhichbinds.Invite
+import one.rarebit.voidwhichbinds.VoidbindDeepLink
 
 /**
  * Same-phone hand-off to the Cruciform authenticator app: instead of a second phone
  * scanning a QR, the app fires an `ACTION_VIEW` intent carrying the very same
- * `voidbind:` URI the QR encodes, and the authenticator (which registers the
- * `voidbind` scheme) approves it in place. Pure URI construction; the Android intent
+ * `void-which-binds:` URI the QR encodes, and the authenticator (which registers the
+ * `void-which-binds` scheme) approves it in place. Pure URI construction; the Android intent
  * plumbing is [one.rarebit.heyarr.mobile.device.HandoffLauncher].
  *
- * The login URI is the login tuple verbatim (`voidbind:login?id=…&rp=…`), optionally
+ * The login URI is the login tuple verbatim (`void-which-binds:login?id=…&rp=…`), optionally
  * with a `callback` the authenticator can open to bring this app back to the
  * foreground once it has approved ([CALLBACK_URI], matched by the manifest
  * intent-filter). The RP is still polled for the outcome — the callback is a
@@ -22,7 +23,7 @@ object VoidbindHandoff {
     const val CALLBACK_URI = "heyarr-mobile://login"
 
     /**
-     * Build the `voidbind:login?…` URI to hand off from the tuple the broker returned;
+     * Build the `void-which-binds:login?…` URI to hand off from the tuple the broker returned;
      * appends `callback=` when given. Delegates to [VoidbindDeepLink.loginUriFromTuple],
      * which parses the tuple (refusing a non-login string) and re-renders it canonically.
      */
@@ -31,7 +32,7 @@ object VoidbindHandoff {
 
     /** A pairing invite is handed off verbatim — it already carries relay, session and salt. */
     fun pairUri(inviteQr: String): String {
-        require(inviteQr.startsWith("voidbind:pair?")) { "not a voidbind pairing invite" }
+        require(inviteQr.startsWith("${Invite.SCHEME}:pair?")) { "not a void-which-binds pairing invite" }
         return inviteQr
     }
 }

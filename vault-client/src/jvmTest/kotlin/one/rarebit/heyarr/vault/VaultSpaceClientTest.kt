@@ -1,0 +1,249 @@
+package one.rarebit.heyarr.vault
+
+import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.net.HttpResponse
+import one.rarebit.heyarr.core.net.HttpTransport
+import java.util.Base64
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+/**
+ * Fake-transport tests for the vault sync pipe: correct routes/bodies, content-addressed
+ * ids computed with the vault's BLAKE3, base64 ciphertext, and response parsing. No live
+ * node (CI has none) — the transport is a programmable fake.
+ */
+class VaultSpaceClientTest {
+
+    private class Req(val method: String, val url: String, val body: String?)
+
+    private class FakeTransport(val responses: MutableMap<String, HttpResponse> = mutableMapOf()) : HttpTransport {
+        val requests = ArrayList<Req>()
+        override fun get(url: String, headers: Map<String, String>): HttpResponse {
+            requests.add(Req("GET", url, null))
+            return responses["GET $url"] ?: HttpResponse(404, "")
+        }
+        override fun post(
+            url: String,
+            body: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse {
+            requests.add(Req("POST", url, body))
+            return responses["POST $url"] ?: HttpResponse(500, "")
+        }
+        override fun delete(
+            url: String,
+            body: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse {
+            requests.add(Req("DELETE", url, body))
+            return responses["DELETE $url"] ?: HttpResponse(500, "")
+        }
+    }
+
+    private val base = "https://node.example:7777"
+    private val cred = Credential.Bearer("heyarr_x_secret")
+    private fun b64(b: ByteArray) = Base64.getEncoder().encodeToString(b)
+
+    @Test
+    fun spaceKeysReadsTheKeyEpochAndEachCopysEpoch() {
+        // The shape of heyarr-core's internal/api/personalstate/testdata/keys_after_rotation.json.
+        val fake = FakeTransport()
+        fake.responses["GET ${VaultSpaceClient.keysUrl(base, "s")}"] = HttpResponse(
+            200,
+            """{"space_id":"s","key_epoch":1,"wrapped_keys":[{"recipient":"x25519:11",""" +
+                """"wrapped":"${b64(byteArrayOf(9, 8))}","epoch":1,"created_at":"2026-10-08T09:30:00Z"}]}""",
+        )
+        val list = VaultSpaceClient(fake, base, cred).spaceKeys("s")
+        assertEquals(1, list.keyEpoch)
+        assertEquals(1, list.wrapped.single().epoch)
+        assertEquals("x25519:11", list.wrapped.single().recipient)
+    }
+
+    @Test
+    fun spaceKeysFromAPeerWithoutEpochsIsEpochZero() {
+        val fake = FakeTransport()
+        fake.responses["GET ${VaultSpaceClient.keysUrl(base, "s")}"] = HttpResponse(
+            200,
+            """{"space_id":"s","wrapped_keys":[{"recipient":"x25519:11","wrapped":"${b64(byteArrayOf(9))}"}]}""",
+        )
+        val list = VaultSpaceClient(fake, base, cred).spaceKeys("s")
+        assertEquals(0, list.keyEpoch)
+        assertEquals(0, list.wrapped.single().epoch)
+    }
+
+    @Test
+    fun keyHistoryReadsEveryRow() {
+        // The shape of heyarr-core's internal/api/personalstate/testdata/key_history.json.
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.keyHistoryUrl(base, "s")
+        assertEquals("$base/api/v1/spaces/s/key-history", url)
+        fake.responses["GET $url"] = HttpResponse(
+            200,
+            """{"space_id":"s","entries":[""" +
+                """{"epoch":1,"sealed_prev":"${b64(byteArrayOf(1, 2))}","created_at":"2026-10-08T09:30:00Z"},""" +
+                """{"epoch":2,"sealed_prev":"${b64(byteArrayOf(3))}","created_at":"2026-10-08T10:00:00Z"}]}""",
+        )
+        val rows = VaultSpaceClient(fake, base, cred).keyHistory("s")
+        assertEquals(listOf(1, 2), rows.map { it.epoch })
+        assertEquals(listOf<Byte>(1, 2), rows[0].sealedPrev.toList())
+    }
+
+    @Test
+    fun pushChangeContentAddressesAndPosts() {
+        val ct = byteArrayOf(1, 2, 3, 4, 5)
+        // The id is the FRAMED change id (domain ‖ space ‖ parents ‖ ciphertext), not blake3(ct) —
+        // this is what the real Go node re-derives and checks (KAT-locked in core PersonalStateIdTest).
+        val id = one.rarebit.heyarr.vault.PersonalStateId.changeId("space-1", listOf("blake3:aa", "blake3:bb"), ct)
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.changesUrl(base, "space-1")
+        fake.responses["POST $url"] = HttpResponse(201, """{"change_id":"$id"}""")
+
+        val client = VaultSpaceClient(fake, base, cred)
+        val returned = client.pushChange("space-1", listOf("blake3:aa", "blake3:bb"), ct)
+
+        assertEquals(id, returned)
+        val req = fake.requests.single()
+        assertEquals("POST", req.method)
+        assertEquals(url, req.url)
+        val body = req.body!!
+        assertTrue(body.contains(""""space_id":"space-1""""), "body has space_id: $body")
+        assertTrue(body.contains(""""change_id":"$id""""), "body has content-addressed id: $body")
+        assertTrue(body.contains(""""ciphertext":"${b64(ct)}""""), "body has base64 ciphertext: $body")
+    }
+
+    @Test
+    fun pushChangeAtAnEpochNamesItAndReadsTheRefusalCode() {
+        val ct = byteArrayOf(1, 2, 3)
+        val id = PersonalStateId.changeId("s", emptyList(), ct)
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.changesUrl(base, "s") + "?key_epoch=2"
+        fake.responses["POST $url"] = HttpResponse(201, """{"change_id":"$id"}""")
+        val client = VaultSpaceClient(fake, base, cred)
+        assertEquals(id, client.pushChange("s", emptyList(), ct, keyEpoch = 2))
+        assertEquals(url, fake.requests.single().url)
+
+        // heyarr-core #712's refusal: a problem document carrying the code.
+        fake.responses["POST $url"] = HttpResponse(
+            409,
+            """{"type":"about:blank","title":"Conflict","status":409,""" +
+                """"detail":"the space key has been rotated","code":"change_key_epoch_mismatch"}""",
+        )
+        val refused = assertFailsWith<VaultHttpException> { client.pushChange("s", emptyList(), ct, keyEpoch = 2) }
+        assertTrue(refused.isChangeKeyEpochMismatch)
+
+        // Any other 409, or a body that is not a problem document, is not that refusal.
+        fake.responses["POST $url"] = HttpResponse(409, "<html>busy</html>")
+        val other = assertFailsWith<VaultHttpException> { client.pushChange("s", emptyList(), ct, keyEpoch = 2) }
+        assertEquals(409, other.status)
+        assertTrue(!other.isChangeKeyEpochMismatch)
+    }
+
+    @Test
+    fun pullChangesParses() {
+        val ct = byteArrayOf(9, 8, 7)
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.changesUrl(base, "s")
+        fake.responses["GET $url"] = HttpResponse(
+            200,
+            """{"space_id":"s","changes":[{"space_id":"s","change_id":"blake3:cc","parents":["blake3:aa"],"ciphertext":"${b64(
+                ct,
+            )}"}]}""",
+        )
+        val changes = VaultSpaceClient(fake, base, cred).pullChanges("s")
+        assertEquals(1, changes.size)
+        assertEquals("blake3:cc", changes[0].changeId)
+        assertEquals(listOf("blake3:aa"), changes[0].parents)
+        assertTrue(ct.contentEquals(changes[0].ciphertext))
+    }
+
+    @Test
+    fun getSnapshotNullOn404AndParsesOn200() {
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.snapshotUrl(base, "s")
+        assertNull(VaultSpaceClient(fake, base, cred).getSnapshot("s"))
+
+        val ct = byteArrayOf(4, 4, 4)
+        fake.responses["GET $url"] =
+            HttpResponse(
+                200,
+                """{"space_id":"s","snapshot_id":"blake3:dd","frontier":["blake3:cc"],"ciphertext":"${b64(ct)}"}""",
+            )
+        val snap = VaultSpaceClient(fake, base, cred).getSnapshot("s")!!
+        assertEquals("blake3:dd", snap.snapshotId)
+        assertEquals(listOf("blake3:cc"), snap.frontier)
+        assertTrue(ct.contentEquals(snap.ciphertext))
+    }
+
+    @Test
+    fun pinPlacementPostsPair() {
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.placementsUrl(base)
+        fake.responses["POST $url"] = HttpResponse(200, """{"blob_hash":"blake3:ee","peer_id":"cove"}""")
+        VaultSpaceClient(fake, base, cred).pinPlacement("blake3:ee", "cove")
+        val body = fake.requests.single().body!!
+        assertTrue(body.contains(""""blob_hash":"blake3:ee""""), body)
+        assertTrue(body.contains(""""peer_id":"cove""""), body)
+    }
+
+    @Test
+    fun unpinPlacementDeletesPair() {
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.placementsUrl(base)
+        fake.responses["DELETE $url"] = HttpResponse(204, "")
+        VaultSpaceClient(fake, base, cred).unpinPlacement("blake3:ee", "cove")
+        val req = fake.requests.single()
+        assertEquals("DELETE", req.method)
+        assertTrue(req.body!!.contains(""""blob_hash":"blake3:ee""""), req.body!!)
+        assertTrue(req.body!!.contains(""""peer_id":"cove""""), req.body!!)
+    }
+
+    @Test
+    fun createSpacePostsIdKindAndBase64WrappedKeys() {
+        val w1 = byteArrayOf(1, 2, 3)
+        val w2 = byteArrayOf(9, 9)
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.spacesUrl(base)
+        fake.responses["POST $url"] = HttpResponse(201, """{"id":"space-7","kind":"personal","created_at":"t"}""")
+
+        val id = VaultSpaceClient(fake, base, cred).createSpace(
+            "space-7",
+            "personal",
+            listOf(WrappedKey("x25519:aa", w1), WrappedKey("x25519:bb", w2)),
+        )
+
+        assertEquals("space-7", id)
+        val req = fake.requests.single()
+        assertEquals("POST", req.method)
+        assertEquals(url, req.url)
+        val body = req.body!!
+        assertTrue(body.contains(""""id":"space-7""""), body)
+        assertTrue(body.contains(""""kind":"personal""""), body)
+        assertTrue(body.contains(""""recipient":"x25519:aa""""), body)
+        assertTrue(body.contains(""""wrapped":"${b64(w1)}""""), body)
+        assertTrue(body.contains(""""recipient":"x25519:bb""""), body)
+        assertTrue(body.contains(""""wrapped":"${b64(w2)}""""), body)
+    }
+
+    @Test
+    fun listKeysParses() {
+        val w = byteArrayOf(1, 1, 2, 3)
+        val fake = FakeTransport()
+        val url = VaultSpaceClient.keysUrl(base, "s")
+        fake.responses["GET $url"] =
+            HttpResponse(
+                200,
+                """{"space_id":"s","wrapped_keys":[{"recipient":"x25519:ab","wrapped":"${b64(
+                    w,
+                )}","created_at":"t"}]}""",
+            )
+        val keys = VaultSpaceClient(fake, base, cred).listKeys("s")
+        assertEquals(1, keys.size)
+        assertEquals("x25519:ab", keys[0].recipient)
+        assertTrue(w.contentEquals(keys[0].wrapped))
+    }
+}

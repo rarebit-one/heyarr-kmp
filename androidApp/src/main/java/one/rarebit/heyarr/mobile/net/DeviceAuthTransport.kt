@@ -2,8 +2,8 @@ package one.rarebit.heyarr.mobile.net
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.voidbind.auth.DeviceAuthPolicy
-import one.rarebit.voidbind.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.auth.DeviceAuthPolicy
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
 
 /**
  * Wraps the app's [HttpTransport] so an enrolled device's requests always carry a
@@ -33,7 +33,7 @@ import one.rarebit.voidbind.auth.DeviceCredential
  * Requests with a `Bearer` (session) credential, or none, pass straight through.
  *
  * **Membership.** Device requests additionally carry [MEMBERSHIP_HEADER]
- * (`Voidbind-Membership`, voidbind-kmp ADR-0005 / heyarr-core ADR-0068) from
+ * (`Void-Which-Binds-Membership`, voidbind-kmp ADR-0005 / heyarr-core ADR-0068) from
  * [membership]: the comma-joined membership ops this device knows (at most
  * [DeviceCredential.MAX_PRESENTED_OPS] — `device/MembershipOps` picks which), so a
  * node that has never met the member that admitted this device can still evaluate

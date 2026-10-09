@@ -55,6 +55,28 @@ KAT (`voidbind-client:0.7.0`, already a `:core` dependency):
 Space key = a raw 32-byte `ByteArray` (no named type). We wrap it in a thin `SpaceKey`
 value class on our side.
 
+## Key epochs and the keyring (heyarr ADR-0103)
+
+A space's key can rotate, and a rotation re-encrypts nothing: it wraps a fresh key for the
+remaining recipients and stores the previous key sealed under it as a history row
+(`VoidbindEncryption.sealSpaceKey`, void-which-binds-client >= 0.12.0). So a device never
+opens a space with one key. `:vault-client`'s `SpaceOpen` (used by the desktop custody,
+the daemon, Android's `SpaceSession` and the ref-addressed `VaultObjects`) fetches
+`GET /spaces/{id}/keys` (the space's `key_epoch`, each copy's `epoch`), unwrap this
+device's copy at the current epoch, fetches `GET /spaces/{id}/key-history` and unrolls it to
+a `SpaceKeyring` (`SpaceKeyring.open` / `unroll`, the twin of heyarr-core's
+`personalstate/client` `Unroll`). A copy at a superseded epoch, or a history with a row
+missing, duplicated or beyond the epoch, refuses to open.
+
+- **Reads** try every key, newest first: changes and snapshots through
+  `SpaceKeyring.open`, a vault manifest through `VaultFrame.openManifest(keyring, …)`, whose
+  opening key is the one that file's frames are read with.
+- **Writes** (changes, frames, manifests) use the current key only.
+- **No key opens a blob:** the ring may predate a rotation, so the sync engine re-opens the
+  space once per pass (Android: once per operation) and retries before failing.
+- Neither app adds a recipient to an existing space (`POST /spaces/{id}/keys`) or rotates
+  one; a new space's copies are at epoch 0 implicitly.
+
 ## The one new primitive: BLAKE3
 
 There is no BLAKE3 anywhere in Kotlin (voidbind-kmp, heyarr-kmp, or cryptography-kotlin
@@ -102,7 +124,7 @@ HTTP endpoints (all `/api/v1`, bearer/Device auth):
   wrapper + manifest + `frameByteRange`/`openRange`/`openAll`, seal names blobs via BLAKE3.
   Proven on Go golden vectors. Repeated same-frame / random-access decrypt works since
   the voidbind-client 0.8.0 JVM fix (see "Resolved" below).
-- **W4.2 — drive CRDT** (`:core` `vault/DriveCrdt.kt`): DONE — merge, heads/versions,
+- **W4.2 — drive CRDT** (`:vault-client` `DriveCrdt.kt`, commonMain since M1): DONE — merge, heads/versions,
   byte-identical snapshot, NFC paths, conflicted-copy relocation (`resolved()`), and the
   retention/GC view (`retain()`). Proven on Go vectors (tree, convergence, snapshot,
   resolved trees, retention). Still deferred, as in Go: a dotted version vector for

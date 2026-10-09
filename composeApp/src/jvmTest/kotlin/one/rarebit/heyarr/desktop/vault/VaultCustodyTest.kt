@@ -2,9 +2,13 @@ package one.rarebit.heyarr.desktop.vault
 
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DesktopSecretStore
-import one.rarebit.voidbind.DeviceIdentity
-import one.rarebit.voidbind.KeyRef
-import one.rarebit.voidbind.crypto.VoidbindEncryption
+import one.rarebit.heyarr.vault.KeyHistoryEntry
+import one.rarebit.heyarr.vault.SpaceKeyList
+import one.rarebit.heyarr.vault.VaultKeys
+import one.rarebit.heyarr.vault.WrappedKey
+import one.rarebit.voidwhichbinds.DeviceIdentity
+import one.rarebit.voidwhichbinds.KeyRef
+import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.AfterTest
@@ -43,11 +47,18 @@ class VaultCustodyTest {
         )
     }
 
-    /** Records created spaces + serves their wrapped keys; can simulate the enrol-before-wrap 403. */
+    /**
+     * Records created spaces + serves their wrapped keys, key epoch and key history; can simulate
+     * the enrol-before-wrap 403.
+     */
     private class FakeKeys(private val failCreate: Boolean = false) : VaultKeys {
         val spaces = LinkedHashMap<String, MutableList<WrappedKey>>()
+        val epochs = HashMap<String, Int>()
+        val history = HashMap<String, MutableList<KeyHistoryEntry>>()
         var created = 0
         override fun listKeys(spaceId: String): List<WrappedKey> = spaces[spaceId] ?: emptyList()
+        override fun spaceKeys(spaceId: String) = SpaceKeyList(epochs[spaceId] ?: 0, listKeys(spaceId))
+        override fun keyHistory(spaceId: String): List<KeyHistoryEntry> = history[spaceId] ?: emptyList()
         override fun createSpace(id: String, kind: String, wrapped: List<WrappedKey>): String {
             if (failCreate) throw IllegalStateException("vault: POST /spaces failed: HTTP 403")
             created++
@@ -98,6 +109,57 @@ class VaultCustodyTest {
         val opened = custody.open("s")
         assertNotNull(opened)
         assertContentEquals(minted.spaceKey, opened.spaceKey)
+    }
+
+    /**
+     * What a rotation (ADR-0103) does on the peer: a fresh key wrapped for [recipient] at the next
+     * epoch, the previous key sealed under it as a history row, and the old copies dropped.
+     */
+    private fun rotate(keys: FakeKeys, spaceId: String, prev: ByteArray, recipient: String, pub: ByteArray): ByteArray {
+        val next = VoidbindEncryption.newSpaceKey()
+        val epoch = (keys.epochs[spaceId] ?: 0) + 1
+        keys.epochs[spaceId] = epoch
+        keys.history.getOrPut(spaceId) { mutableListOf() }.add(
+            KeyHistoryEntry(epoch, VoidbindEncryption.sealSpaceKey(next, prev)),
+        )
+        keys.spaces[spaceId] = mutableListOf(WrappedKey(recipient, VoidbindEncryption.seal(next, pub), epoch))
+        return next
+    }
+
+    @Test
+    fun openUnrollsARotatedSpaceToEveryEarlierKey() {
+        val ring = keyring()
+        val keys = FakeKeys()
+        val custody = VaultCustody(ring, keys, newSpaceId = { "s" })
+        val k0 = custody.bootstrap().spaceKey
+        val id = ring.identity()
+        val k1 = rotate(keys, "s", k0, id.deviceEncId.render(), id.encPublicKey)
+        val k2 = rotate(keys, "s", k1, id.deviceEncId.render(), id.encPublicKey)
+
+        val opened = assertNotNull(custody.open("s"))
+        assertEquals(2, opened.keyring.epoch)
+        assertContentEquals(k2, opened.spaceKey, "writes use the current key")
+        assertEquals(listOf(k2, k1, k0).map { it.toList() }, opened.keyring.keys().map { it.toList() })
+    }
+
+    @Test
+    fun openRefusesASupersededCopyOrAnIncompleteHistory() {
+        val ring = keyring()
+        val keys = FakeKeys()
+        val custody = VaultCustody(ring, keys, newSpaceId = { "s" })
+        val k0 = custody.bootstrap().spaceKey
+        val id = ring.identity()
+        rotate(keys, "s", k0, id.deviceEncId.render(), id.encPublicKey)
+
+        // The peer still serving this device's epoch-0 copy at epoch 1: refused, not opened stale.
+        val stale = keys.spaces.getValue("s").single().copy(epoch = 0)
+        keys.spaces["s"] = mutableListOf(stale)
+        assertNull(custody.open("s"))
+
+        // A rotated space with its history row missing: refused rather than silently half-readable.
+        keys.spaces["s"] = mutableListOf(stale.copy(epoch = 1))
+        keys.history.getValue("s").clear()
+        assertNull(custody.open("s"))
     }
 
     @Test

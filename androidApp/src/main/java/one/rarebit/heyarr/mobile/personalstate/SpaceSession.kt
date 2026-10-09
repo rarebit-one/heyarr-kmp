@@ -1,5 +1,9 @@
 package one.rarebit.heyarr.mobile.personalstate
 
+import one.rarebit.heyarr.vault.SnapshotEnvelope
+import one.rarebit.heyarr.vault.SpaceKeyring
+import one.rarebit.heyarr.vault.SpaceOpen
+import one.rarebit.heyarr.vault.WrappedKey
 import java.util.UUID
 
 /**
@@ -13,6 +17,13 @@ import java.util.UUID
  * node swap needs no cache invalidation; the wrapped key on the peer is the source
  * of truth. All the CRDT parity lives in [Playlist]/[StarSet]/[PlayLog]/
  * [ReadingPositions]; this class is the encrypt/decrypt/HTTP glue around them.
+ *
+ * A space's key can rotate (ADR-0103) and nothing is re-encrypted when it does, so
+ * opening a space yields a [SpaceKeyring]: this device's copy of the CURRENT key plus
+ * every earlier key unrolled from the key history. Reads open each snapshot/change
+ * with whichever key sealed it (newest first); writes use the current key only. A
+ * rotation can land between fetching the keys and fetching the changes, so an
+ * operation whose blob no held key opens re-opens the space once and runs again.
  */
 internal class SpaceSession(
     private val client: PersonalStateClient,
@@ -33,100 +44,195 @@ internal class SpaceSession(
     fun listSpaces(): List<SpaceInfo> = client.listSpaces()
 
     /** True when this device holds a wrapped copy of the space's key it can unwrap. */
-    fun canOpen(spaceId: String): Boolean = openKey(spaceId) != null
+    fun canOpen(spaceId: String): Boolean = openState(spaceId) == OpenState.OPEN
 
-    private fun openKey(spaceId: String): ByteArray? {
-        val mine = device.recipientId()
-        val wrapped = client.wrappedKeys(spaceId).firstOrNull { it.recipient == mine }?.wrapped ?: return null
-        return runCatching { crypto.unwrap(wrapped, device.seed()) }.getOrNull()
+    /** Whether this device can open a space, and if not, which kind of "not". */
+    enum class OpenState {
+        /** This device holds a readable copy and the key chain unrolls. */
+        OPEN,
+
+        /** The space holds no copy for this device (or is gone): this device is not a reader. */
+        NO_COPY,
+
+        /**
+         * This device HAS a copy but the space would not open (it did not unwrap, the copy is
+         * superseded, the history is inconsistent, or the node failed). The space exists; a
+         * caller must surface this, never treat it as missing and mint a replacement — that
+         * would orphan the user's state.
+         */
+        UNREADABLE,
     }
+
+    fun openState(spaceId: String): OpenState = when (open(spaceId)) {
+        is Opening.Open -> OpenState.OPEN
+        Opening.NoCopy -> OpenState.NO_COPY
+        is Opening.Unreadable -> OpenState.UNREADABLE
+    }
+
+    private sealed interface Opening {
+        class Open(val ring: SpaceKeyring) : Opening
+        object NoCopy : Opening
+        class Unreadable(val cause: Throwable) : Opening
+    }
+
+    /**
+     * Open the space, retrying the keys + history pair ONCE when it is inconsistent: they are two
+     * reads, and a rotation committing between them is transient, not a broken space.
+     */
+    private fun open(spaceId: String): Opening {
+        val first = openOnce(spaceId)
+        return if (first is Opening.Unreadable) openOnce(spaceId) else first
+    }
+
+    /**
+     * The space's keyring for this device (heyarr-core `spaceopen.Open`, through `:vault-client`'s
+     * [SpaceOpen] — the one opener the desktop shares): its copy at the current key epoch,
+     * unwrapped, and the key history unrolled to epoch 0.
+     */
+    private fun openOnce(spaceId: String): Opening = runCatching {
+        val ring = SpaceOpen.open(client, spaceId, device.recipientId(), crypto::openSpaceKey) {
+            crypto.unwrap(it, device.seed())
+        }
+        if (ring == null) Opening.NoCopy else Opening.Open(ring)
+    }.getOrElse { Opening.Unreadable(it) }
+
+    /** The keyring, or null when this device cannot read the space (either kind of "not"). */
+    private fun openRing(spaceId: String): SpaceKeyring? = (open(spaceId) as? Opening.Open)?.ring
+
+    /**
+     * The key a write is sealed under: the CURRENT key as of now, not as of when the operation
+     * opened the space. A rotation brings no blob this operation would fail to decrypt, so
+     * without this check a write would go out under the retired key — readable by a recipient
+     * the rotation revoked. One `GET /keys` per write; re-open if the epoch moved, and refuse to
+     * write if this device cannot get onto the new key.
+     */
+    private fun writeKey(spaceId: String, ring: SpaceKeyring): ByteArray {
+        val epoch = client.spaceKeys(spaceId).keyEpoch
+        return SpaceOpen.currentForWrite(epoch, ring, spaceId) { openRing(spaceId) }.current
+    }
+
+    /**
+     * Run [op] with the space's keyring; when no held key opens a blob it read, the space may
+     * have rotated after the keys were fetched, so re-open it ONCE and run [op] again.
+     */
+    private fun <T> withRing(spaceId: String, op: (SpaceKeyring) -> T): T? {
+        val ring = openRing(spaceId) ?: return null
+        return try {
+            op(ring)
+        } catch (e: SpaceKeyring.NoKeyOpensException) {
+            op(openRing(spaceId) ?: throw e)
+        }
+    }
+
+    /** Decrypt a snapshot or change under whichever key on [ring] sealed it. */
+    private fun decrypt(ring: SpaceKeyring, blob: ByteArray): ByteArray =
+        ring.open(blob, crypto::decryptChange).plaintext
 
     private class Folded<S>(val state: S, val changes: List<EncryptedChange>, val frontier: List<String>)
 
-    private fun <S> load(
-        spaceId: String,
-        key: ByteArray,
-        empty: () -> S,
-        fromSnapshot: (String) -> S,
-        apply: (S, String) -> Unit,
-    ): Folded<S> {
-        var state = empty()
+    /** How one CRDT kind is built empty, read from and written to its snapshot, and folded. */
+    private class Kind<S>(
+        val empty: () -> S,
+        val fromSnapshot: (String) -> S,
+        val snapshotOf: (S) -> String,
+        val apply: (S, String) -> Unit,
+    )
+
+    private fun <S> load(spaceId: String, key: SpaceKeyring, kind: Kind<S>): Folded<S> {
+        var state = kind.empty()
         var frontier = emptyList<String>()
         val snap = client.snapshot(spaceId)
         if (snap != null && snap.validate()) {
-            state = fromSnapshot(crypto.decryptChange(key, snap.ciphertext).decodeToString())
+            state = openSnapshot(snap, decrypt(key, snap.ciphertext), kind)
             frontier = snap.frontier
         }
         val changes = client.changes(spaceId)
         for (c in changes) {
-            if (c.validate()) apply(state, crypto.decryptChange(key, c.ciphertext).decodeToString())
+            if (c.validate()) kind.apply(state, decrypt(key, c.ciphertext).decodeToString())
         }
         return Folded(state, changes, frontier)
     }
 
-    /** Encrypt a minted change's plaintext, mint it at the current heads, and push it. */
-    private fun post(spaceId: String, key: ByteArray, folded: Folded<*>, plaintext: String) {
+    /**
+     * The state inside a decrypted snapshot, after checking what it was sealed with (heyarr-core#681).
+     * The frontier and space ride outside the ciphertext, and the snapshot id is a public digest, so
+     * a `write` token with no space key could relabel a valid snapshot; the envelope inside the
+     * ciphertext is what proves the frontier. A relabelled snapshot fails the fold rather than being
+     * folded under a causal point it was never taken at — the same fail-closed stance an undecryptable
+     * change already gets here.
+     *
+     * A snapshot sealed before the envelope is still read, since a key rotation can leave one as the
+     * only copy of the state. It must then be the CANONICAL snapshot of this kind (it re-serialises to
+     * its own bytes), so another record's ciphertext — a change — cannot pass as an empty snapshot and
+     * hide what compaction removed from the log.
+     */
+    private fun <S> openSnapshot(snap: EncryptedSnapshot, plaintext: ByteArray, kind: Kind<S>): S =
+        when (val opened = SnapshotEnvelope.open(snap.spaceId, snap.frontier, plaintext)) {
+            is SnapshotEnvelope.Opened.Authenticated -> kind.fromSnapshot(opened.state.decodeToString())
+
+            is SnapshotEnvelope.Opened.Legacy -> {
+                val json = opened.state.decodeToString()
+                val state = kind.fromSnapshot(json)
+                check(kind.snapshotOf(state) == json) {
+                    "refusing snapshot ${snap.snapshotId}: not a canonical legacy snapshot"
+                }
+                state
+            }
+
+            is SnapshotEnvelope.Opened.Refused -> error("refusing snapshot ${snap.snapshotId}: ${opened.reason}")
+        }
+
+    /** Encrypt a minted change's plaintext under the CURRENT key, mint it at the current heads, and push it. */
+    private fun post(spaceId: String, key: SpaceKeyring, folded: Folded<*>, plaintext: String) {
         val heads = Reconcile.heads(folded.changes, folded.frontier)
-        val ciphertext = crypto.encryptChange(key, plaintext.encodeToByteArray())
+        val ciphertext = crypto.encryptChange(writeKey(spaceId, key), plaintext.encodeToByteArray())
         client.putChange(spaceId, EncryptedChange.mint(spaceId, heads, ciphertext))
     }
 
     // --- reads --------------------------------------------------------------------
 
-    fun playlist(spaceId: String): Playlist? {
-        val key = openKey(spaceId) ?: return null
-        return foldPlaylist(spaceId, key).state
-    }
+    fun playlist(spaceId: String): Playlist? = withRing(spaceId) { foldPlaylist(spaceId, it).state }
 
-    fun starred(spaceId: String): StarSet? {
-        val key = openKey(spaceId) ?: return null
-        return foldStarred(spaceId, key).state
-    }
+    fun starred(spaceId: String): StarSet? = withRing(spaceId) { foldStarred(spaceId, it).state }
 
-    fun history(spaceId: String): PlayLog? {
-        val key = openKey(spaceId) ?: return null
-        return foldHistory(spaceId, key).state
-    }
+    fun history(spaceId: String): PlayLog? = withRing(spaceId) { foldHistory(spaceId, it).state }
 
-    fun readingPositions(spaceId: String): ReadingPositions? {
-        val key = openKey(spaceId) ?: return null
-        return foldReading(spaceId, key).state
-    }
+    fun readingPositions(spaceId: String): ReadingPositions? = withRing(spaceId) { foldReading(spaceId, it).state }
 
     // --- writes (optimistic: return the locally-applied state) --------------------
 
-    fun addToPlaylist(spaceId: String, itemId: String): Playlist? = openKey(spaceId)?.let { key ->
+    fun addToPlaylist(spaceId: String, itemId: String): Playlist? = withRing(spaceId) { key ->
         val f = foldPlaylist(spaceId, key)
         post(spaceId, key, f, f.state.add(itemId, newTag()).encode())
         f.state
     }
 
-    fun removeFromPlaylist(spaceId: String, itemId: String): Playlist? = openKey(spaceId)?.let { key ->
+    fun removeFromPlaylist(spaceId: String, itemId: String): Playlist? = withRing(spaceId) { key ->
         val f = foldPlaylist(spaceId, key)
         post(spaceId, key, f, f.state.remove(itemId).encode())
         f.state
     }
 
-    fun star(spaceId: String, itemId: String): StarSet? = openKey(spaceId)?.let { key ->
+    fun star(spaceId: String, itemId: String): StarSet? = withRing(spaceId) { key ->
         val f = foldStarred(spaceId, key)
         post(spaceId, key, f, f.state.star(itemId, newTag()).encode())
         f.state
     }
 
-    fun unstar(spaceId: String, itemId: String): StarSet? = openKey(spaceId)?.let { key ->
+    fun unstar(spaceId: String, itemId: String): StarSet? = withRing(spaceId) { key ->
         val f = foldStarred(spaceId, key)
         post(spaceId, key, f, f.state.unstar(itemId).encode())
         f.state
     }
 
-    fun recordPlay(spaceId: String, itemId: String): PlayLog? = openKey(spaceId)?.let { key ->
+    fun recordPlay(spaceId: String, itemId: String): PlayLog? = withRing(spaceId) { key ->
         val f = foldHistory(spaceId, key)
         post(spaceId, key, f, f.state.record(itemId, newTag()).encode())
         f.state
     }
 
     fun setReadingPosition(spaceId: String, pubId: String, position: String): ReadingPositions? =
-        openKey(spaceId)?.let { key ->
+        withRing(spaceId) { key ->
             val f = foldReading(spaceId, key)
             post(spaceId, key, f, f.state.set(pubId, position, newWriter()).encode())
             f.state
@@ -141,10 +247,10 @@ internal class SpaceSession(
     fun createSpace(kind: String): String {
         val id = newSpaceId()
         val key = crypto.newSpaceKey()
-        val recipients = ArrayList<WrappedKeyEntry>()
-        recipients.add(WrappedKeyEntry(device.recipientId(), crypto.seal(key, device.publicKey())))
+        val recipients = ArrayList<WrappedKey>()
+        recipients.add(WrappedKey(device.recipientId(), crypto.seal(key, device.publicKey())))
         for (pub in additionalRecipients()) {
-            recipients.add(WrappedKeyEntry("x25519:" + Hex.encode(pub), crypto.seal(key, pub)))
+            recipients.add(WrappedKey("x25519:" + Hex.encode(pub), crypto.seal(key, pub)))
         }
         client.createSpace(id, kind, recipients)
         return id
@@ -152,17 +258,41 @@ internal class SpaceSession(
 
     // --- folds --------------------------------------------------------------------
 
-    private fun foldPlaylist(spaceId: String, key: ByteArray): Folded<Playlist> = load(spaceId, key, {
-        Playlist()
-    }, { Playlist.fromSnapshot(it) }) { s, pt -> s.apply(PlaylistChange.decode(pt)) }
+    private val playlistKind = Kind<Playlist>(
+        empty = { Playlist() },
+        fromSnapshot = { Playlist.fromSnapshot(it) },
+        snapshotOf = { it.snapshot() },
+        // An unknown op decodes to null and is ignored, never coerced (heyarr-kmp#111).
+        apply = { s, pt -> PlaylistChange.decode(pt)?.let(s::apply) },
+    )
 
-    private fun foldStarred(spaceId: String, key: ByteArray): Folded<StarSet> =
-        load(spaceId, key, { StarSet() }, { StarSet.fromSnapshot(it) }) { s, pt -> s.apply(StarChange.decode(pt)) }
+    private val starredKind = Kind<StarSet>(
+        empty = { StarSet() },
+        fromSnapshot = { StarSet.fromSnapshot(it) },
+        snapshotOf = { it.snapshot() },
+        apply = { s, pt -> StarChange.decode(pt)?.let(s::apply) },
+    )
 
-    private fun foldHistory(spaceId: String, key: ByteArray): Folded<PlayLog> =
-        load(spaceId, key, { PlayLog() }, { PlayLog.fromSnapshot(it) }) { s, pt -> s.apply(PlayChange.decode(pt)) }
+    private val historyKind = Kind<PlayLog>(
+        empty = { PlayLog() },
+        fromSnapshot = { PlayLog.fromSnapshot(it) },
+        snapshotOf = { it.snapshot() },
+        apply = { s, pt -> s.apply(PlayChange.decode(pt)) },
+    )
 
-    private fun foldReading(spaceId: String, key: ByteArray): Folded<ReadingPositions> = load(spaceId, key, {
-        ReadingPositions()
-    }, { ReadingPositions.fromSnapshot(it) }) { s, pt -> s.apply(PositionChange.decode(pt)) }
+    private val readingKind = Kind<ReadingPositions>(
+        empty = { ReadingPositions() },
+        fromSnapshot = { ReadingPositions.fromSnapshot(it) },
+        snapshotOf = { it.snapshot() },
+        apply = { s, pt -> s.apply(PositionChange.decode(pt)) },
+    )
+
+    private fun foldPlaylist(spaceId: String, key: SpaceKeyring): Folded<Playlist> = load(spaceId, key, playlistKind)
+
+    private fun foldStarred(spaceId: String, key: SpaceKeyring): Folded<StarSet> = load(spaceId, key, starredKind)
+
+    private fun foldHistory(spaceId: String, key: SpaceKeyring): Folded<PlayLog> = load(spaceId, key, historyKind)
+
+    private fun foldReading(spaceId: String, key: SpaceKeyring): Folded<ReadingPositions> =
+        load(spaceId, key, readingKind)
 }

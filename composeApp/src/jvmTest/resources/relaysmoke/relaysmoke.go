@@ -1,19 +1,20 @@
 // Command relaysmoke is the Go side of heyarr-kmp's desktop-enrolment relay smoke
-// test (RelaySmokeTest). It stands up a REAL voidbind-go relay and drives a REAL
-// genesis initiator through the pairflow against it — the counterpart the Kotlin
+// test (RelaySmokeTest). It stands up a REAL void-which-binds-go relay and drives a
+// REAL genesis initiator through the pairflow against it — the counterpart the Kotlin
 // desktop responder (PairingCoordinator + PatientRelayTransport + DevicePairing)
-// pairs with. Nothing here is a fake: the relay is voidbind-go/relay, the
-// handshake + seal is voidbind-go/pairflow, and the invite is the same
-// voidbind:pair?v=3 URI voidbind-kmp's Invite.decode parses.
+// pairs with. Nothing here is a fake: the relay is void-which-binds-go/relay, the
+// handshake + seal is void-which-binds-go/pairflow, and the invite is the same gen2
+// void-which-binds:pair?v=4 URI void-which-binds-kmp's Invite.decode parses
+// (void-which-binds-go v0.19.0+, ADR-0022: gen2 only).
 //
-// It is NOT built into the voidbind-go tree. The Kotlin test copies this file
-// into a throwaway package directory *inside the voidbind-go module* at run time
-// and `go run`s it, so its imports resolve against voidbind-go's own go.mod /
+// It is NOT built into the void-which-binds-go tree. The Kotlin test copies this file
+// into a throwaway package directory *inside the void-which-binds-go module* at run
+// time and `go run`s it, so its imports resolve against that module's own go.mod /
 // module cache with no network. See RelaySmokeTest for the gating.
 //
 // Protocol with the Kotlin side (line-oriented over stdout; stderr is diagnostics):
 //
-//	INVITE <voidbind:pair?…>   emitted once the relay is up and the session is open;
+//	INVITE <void-which-binds:pair?…>  emitted once the relay is up and the session is open;
 //	                           the responder joins on this and nothing else
 //	USER <ed25519:hex>         the genesis identity the new device is enrolled into
 //	SAS <7 digits>             the initiator's derived SAS, after the handshake
@@ -36,9 +37,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/rarebit-one/voidbind-go/identity"
-	"github.com/rarebit-one/voidbind-go/pairflow"
-	"github.com/rarebit-one/voidbind-go/relay"
+	"github.com/rarebit-one/void-which-binds-go/identity"
+	"github.com/rarebit-one/void-which-binds-go/pairflow"
+	"github.com/rarebit-one/void-which-binds-go/relay"
 )
 
 // overallTimeout bounds the whole exchange so a responder that never joins (a

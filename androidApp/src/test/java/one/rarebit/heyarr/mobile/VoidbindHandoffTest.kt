@@ -12,7 +12,8 @@ class VoidbindHandoffTest {
 
     @Test fun loginUriIsTheTuplePlusAnEncodedCallback() {
         assertEquals(
-            "voidbind:login?id=abc123&rp=http%3A%2F%2F192.168.16.224%3A7777&callback=heyarr-mobile%3A%2F%2Flogin",
+            "void-which-binds:login?id=abc123&rp=http%3A%2F%2F192.168.16.224%3A7777" +
+                "&callback=heyarr-mobile%3A%2F%2Flogin",
             VoidbindHandoff.loginUri(tuple),
         )
     }
@@ -26,19 +27,23 @@ class VoidbindHandoffTest {
     }
 
     @Test fun pairUriIsVerbatimAndTyped() {
-        val invite = "voidbind:pair?relay=http%3A%2F%2Fh%2Fpair&salt=00&session=s&v=2"
+        val invite = "void-which-binds:pair?relay=http%3A%2F%2Fh%2Fpair&salt=00&session=s&v=2"
         assertEquals(invite, VoidbindHandoff.pairUri(invite))
         assertThrows(IllegalArgumentException::class.java) { VoidbindHandoff.pairUri(tuple) }
         assertThrows(IllegalArgumentException::class.java) { VoidbindHandoff.loginUri(invite) }
+        // Gen2 only (ADR-0022): a gen1 `voidbind:` invite is not handed to Cruciform 1.0.0+.
+        assertThrows(IllegalArgumentException::class.java) {
+            VoidbindHandoff.pairUri("voidbind:pair?relay=http%3A%2F%2Fh%2Fpair&salt=00&session=s&v=3")
+        }
     }
 
     @Test fun loginUriIsVoidbindClientsDeepLinkShape() {
         // voidbind-client 0.2.0 is the source of truth for the handoff URI (ADR-0003).
         assertEquals(
-            one.rarebit.voidbind.VoidbindDeepLink.loginUriFromTuple(tuple, VoidbindHandoff.CALLBACK_URI),
+            one.rarebit.voidwhichbinds.VoidbindDeepLink.loginUriFromTuple(tuple, VoidbindHandoff.CALLBACK_URI),
             VoidbindHandoff.loginUri(tuple),
         )
-        val parsed = one.rarebit.voidbind.VoidbindDeepLink.parse(VoidbindHandoff.loginUri(tuple))
+        val parsed = one.rarebit.voidwhichbinds.VoidbindDeepLink.parse(VoidbindHandoff.loginUri(tuple))
         assertEquals(VoidbindHandoff.CALLBACK_URI, parsed.callback)
     }
 }

@@ -209,7 +209,7 @@ private fun EpisodeInfo(ep: Episode, ext: ExternalEpisode?, modifier: Modifier) 
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ep.code?.let { Text(it, style = MaterialTheme.typography.labelMedium, color = theme.accentGradientEnd) }
             Text(
-                ep.title ?: ext?.name ?: ep.asset.filename ?: ep.asset.id,
+                ep.displayTitle(ext?.name),
                 style = MaterialTheme.typography.titleMedium,
                 color = if (ep.isPlayable) Tokens.textPrimary else Tokens.textDisabled,
                 maxLines = 1,
@@ -235,6 +235,9 @@ private fun EpisodeInfo(ep: Episode, ext: ExternalEpisode?, modifier: Modifier) 
 private fun EpisodeFileFacts(ep: Episode) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         for (tag in Series.qualityTags(ep.asset)) RuleCode(tag, tone = Tokens.textMuted)
+        // A second release of the same episode folds under this row (core `Series.fold`);
+        // say so rather than list it as an episode of its own.
+        if (ep.copies.isNotEmpty()) RuleCode("${ep.fileCount} FILES", tone = Tokens.textMuted)
         ep.asset.sizeBytes?.let {
             Text(
                 PrimaryAsset.formatBytes(it),

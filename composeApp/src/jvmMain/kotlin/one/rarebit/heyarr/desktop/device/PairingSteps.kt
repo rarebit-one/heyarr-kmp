@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.desktop.device
 
-import one.rarebit.voidbind.flow.PairingOutcome
+import one.rarebit.voidwhichbinds.flow.PairingOutcome
 
 /**
  * The relay/node steps of ONE desktop pairing session, behind a seam so the state
@@ -44,7 +44,15 @@ enum class PairingFailure {
     /** The human said the codes differ — aborted; nothing was exchanged. */
     MISMATCH,
 
-    /** The pasted text was not a joinable `voidbind:pair?` v3 invite. */
+    /**
+     * The peer device (Cruciform, or another computer) REFUSED the pairing: its human
+     * said the numbers did not match, or cancelled (void-which-binds-go ADR-0012). The
+     * refusal is signed by the key the SAS bound, so it really came from that device.
+     * Nothing was admitted; retry with a fresh invite.
+     */
+    REFUSED,
+
+    /** The pasted text was not a joinable `void-which-binds:pair?` v4 (gen2) invite. */
     INVALID,
 }
 

@@ -52,7 +52,7 @@ sealed interface EnrolUiState {
     /**
      * This device **joined** an invite a member device rendered — scanned or pasted —
      * and is connecting to the relay it names to run the handshake. [inviteQr] is the
-     * `voidbind:pair?…` tuple (v3: it carries the identity, `usr`).
+     * `void-which-binds:pair?…` tuple (v4, gen2; it carries the identity, `usr`).
      */
     data class Joining(
         val info: DeviceKeyInfo,
@@ -126,6 +126,7 @@ internal fun failureTitle(kind: PairingFailure?): String = when (kind) {
     PairingFailure.REJECTED -> "The relay refused this invite"
     PairingFailure.PROTOCOL -> "The pairing didn't check out"
     PairingFailure.MISMATCH -> "Codes differed — aborted"
+    PairingFailure.REFUSED -> "The other device cancelled the pairing"
     PairingFailure.INTERRUPTED -> "The pairing was interrupted"
     PairingFailure.EXPIRED -> "The pairing expired"
     PairingFailure.INVALID -> "Not a pairing invite"
@@ -166,8 +167,8 @@ private fun rememberNowMillis(): Long {
 /**
  * The "Enrol this device" screen. This phone is the **new device** — voidbind-client's
  * `DevicePairing`, the relay *responder*: it shows its device key + honest hardware
- * tier, **joins** the `voidbind:pair?…` invite a member device rendered (Cruciform's
- * "Add a device" on another phone, or `voidbind pair-initiate` on the Mac — v3
+ * tier, **joins** the `void-which-binds:pair?…` invite a member device rendered (Cruciform's
+ * "Add a device" on another phone, or `void-which-binds pair-initiate` on the Mac — v3+
  * invites name the identity, so only a member can mint one; ADR-0005), scanned with
  * the camera or pasted — both through [PairInvite] (the library's parser) — runs the
  * commit-before-reveal handshake, judges the initiator's membership before any SAS
@@ -361,7 +362,11 @@ fun EnrolScreen(
                     Text(
                         state.registration,
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (state.needsAdmin) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (state.needsAdmin) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
                     )
                     if (state.needsAdmin && info?.certToken != null) {
                         Text("Admitting op to register:", style = MaterialTheme.typography.labelSmall)
@@ -376,7 +381,8 @@ fun EnrolScreen(
                     if (settled) {
                         Text(
                             "This device signs in with its own admission (${info?.knownOps?.size ?: 0} membership " +
-                                "op(s) known). Whether it can also manage follows depends on the grant an admin gives its key.",
+                                "op(s) known). Whether it can also manage follows depends on the grant an " +
+                                "admin gives its key.",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -548,7 +554,7 @@ private fun SasCard(sas: String) {
 /**
  * Join an invite a member device rendered: **scan** its QR with the camera, or
  * **paste** its text. Both go through [PairInvite.check] — the library's parser — and
- * anything that isn't a `voidbind:pair?…` invite is refused inline with a reason, while
+ * anything that isn't a `void-which-binds:pair?…` invite is refused inline with a reason, while
  * the scanner keeps looking so the user can just point at the right code.
  */
 @Composable
@@ -573,8 +579,8 @@ private fun InviteEntry(onJoin: (String) -> Unit) {
     }
 
     Text(
-        "Cruciform on another phone, or `voidbind pair-initiate` on your Mac, shows an invite QR. " +
-            "Scan it here, or paste the voidbind:pair?… text.",
+        "Cruciform on another phone, or `void-which-binds pair-initiate` on your Mac, shows an " +
+            "invite QR. Scan it here, or paste the void-which-binds:pair?… text.",
         style = MaterialTheme.typography.bodySmall,
     )
     if (scanning) {
@@ -599,7 +605,7 @@ private fun InviteEntry(onJoin: (String) -> Unit) {
     OutlinedTextField(
         value = invite,
         onValueChange = { invite = it },
-        label = { Text("voidbind:pair?v=3&relay=…&session=…&salt=…&usr=…") },
+        label = { Text("void-which-binds:pair?v=4&relay=…&session=…&salt=…&usr=…") },
         minLines = 2,
         modifier = Modifier.fillMaxWidth(),
     )

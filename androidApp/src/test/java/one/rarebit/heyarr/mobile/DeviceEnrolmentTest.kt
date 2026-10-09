@@ -16,10 +16,10 @@ import one.rarebit.heyarr.mobile.device.PairingSteps
 import one.rarebit.heyarr.mobile.login.LoginUiState
 import one.rarebit.heyarr.mobile.personalstate.DevicePersonalState
 import one.rarebit.heyarr.mobile.personalstate.InMemorySpaceRegistry
-import one.rarebit.voidbind.Invite
-import one.rarebit.voidbind.auth.DeviceCredential
-import one.rarebit.voidbind.flow.PairingFailureKind
-import one.rarebit.voidbind.flow.PairingOutcome
+import one.rarebit.voidwhichbinds.Invite
+import one.rarebit.voidwhichbinds.auth.DeviceCredential
+import one.rarebit.voidwhichbinds.flow.PairingFailureKind
+import one.rarebit.voidwhichbinds.flow.PairingOutcome
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

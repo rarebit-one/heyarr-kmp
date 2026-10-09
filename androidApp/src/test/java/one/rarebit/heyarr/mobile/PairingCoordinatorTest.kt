@@ -16,9 +16,9 @@ import one.rarebit.heyarr.mobile.device.PairingFailure
 import one.rarebit.heyarr.mobile.device.PairingState
 import one.rarebit.heyarr.mobile.device.PairingSteps
 import one.rarebit.heyarr.mobile.device.PendingPairing
-import one.rarebit.voidbind.Invite
-import one.rarebit.voidbind.flow.PairingFailureKind
-import one.rarebit.voidbind.flow.PairingOutcome
+import one.rarebit.voidwhichbinds.Invite
+import one.rarebit.voidwhichbinds.flow.PairingFailureKind
+import one.rarebit.voidwhichbinds.flow.PairingOutcome
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -212,6 +212,16 @@ class PairingCoordinatorTest {
         assertEquals(PairingFailure.UNREACHABLE, (h.state as PairingState.Failed).kind)
     }
 
+    @Test fun `a signed refusal from Cruciform is its own failure`() = runTest(StandardTestDispatcher()) {
+        val h = Harness(this, { now })
+        h.coordinator.start(inviteA, true)
+        advanceUntilIdle()
+        h.last.handshakeGate.complete(failed(PairingFailureKind.REFUSED))
+        advanceUntilIdle()
+        assertEquals(PairingFailure.REFUSED, (h.state as PairingState.Failed).kind)
+        assertNull(h.store.pending)
+    }
+
     @Test fun `they differ aborts before anything is received`() = runTest(StandardTestDispatcher()) {
         val h = Harness(this, { now })
         h.coordinator.start(inviteA, true)
@@ -302,7 +312,7 @@ class PairingCoordinatorTest {
         StandardTestDispatcher(),
     ) {
         val h = Harness(this, { now })
-        h.coordinator.start("voidbind:login?id=x&rp=http%3A%2F%2Fh", true)
+        h.coordinator.start("void-which-binds:login?id=x&rp=http%3A%2F%2Fh", true)
         advanceUntilIdle()
         val f = h.state as PairingState.Failed
         assertEquals(PairingFailure.INVALID, f.kind)

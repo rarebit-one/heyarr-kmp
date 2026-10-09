@@ -1,0 +1,80 @@
+name: publish
+
+# Publishes the shared client libraries — `one.rarebit.heyarr:vault-client` and the
+# `one.rarebit.heyarr:core` its API exposes (jvm + android release variants + metadata) — to this
+# repo's GitHub Packages registry, for other first-party clients (the Jumpdrive KMP client).
+# Modelled on void-which-binds-kmp's publish.yml.
+#
+# Triggers on a pushed `lib-v*` tag (or a dispatch against one). NOT `v*`: that prefix is an
+# android app release (android-release.yml), and `v*` would also match `vault-…` tags. Before
+# publishing it (1) fails unless the tag equals `lib-v` + `publishedLibraryVersion` in the root
+# build.gradle.kts — a tag must never push a different version (or 409 against an existing one) —
+# and (2) re-runs the libraries' JVM and Android unit tests on the tagged commit.
+on:
+  push:
+    tags:
+      - "lib-v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      # Resolves void-which-binds-client (packages: read is implied by write) and publishes here.
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # The android variants need the SDK (its presence switches the android target on in
+      # :core / :vault-client). Use the runner's preinstalled SDK, as android.yml does.
+      - name: Accept Android SDK licenses
+        run: yes | "${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+        with:
+          cache-disabled: true # release path: no Gradle cache restore (cache poisoning)
+
+      - name: Tag must equal publishedLibraryVersion
+        env:
+          TAG: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+        run: |
+          version="$(sed -n 's/^val publishedLibraryVersion = "\(.*\)"$/\1/p' build.gradle.kts)"
+          test -n "$version" || { echo "::error::no top-level publishedLibraryVersion in build.gradle.kts"; exit 1; }
+          if [ -z "$TAG" ]; then
+            echo "::error::run publish from a lib-v$version tag, not a branch"
+            exit 1
+          fi
+          if [ "$TAG" != "lib-v$version" ]; then
+            echo "::error::tag $TAG does not match publishedLibraryVersion $version (expected lib-v$version)"
+            exit 1
+          fi
+          echo "tag $TAG matches version $version"
+
+      - name: Test before publishing
+        run: >-
+          ./gradlew :core:jvmTest :vault-client:jvmTest :vault-client:testDebugUnitTest
+          --no-daemon --stacktrace
+
+      - name: Publish core + vault-client to GitHub Packages
+        run: >-
+          ./gradlew :core:publishAllPublicationsToGitHubPackagesRepository
+          :vault-client:publishAllPublicationsToGitHubPackagesRepository
+          --no-daemon --stacktrace

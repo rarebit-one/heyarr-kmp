@@ -4,7 +4,7 @@ package one.rarebit.heyarr.mobile.login
  * The app's Voidbind QR-login seam. heyarr's login channel is **QR** (plan
  * DECISIONS LOG: "heyarr login channel = QR"). The app is the *initiator* — the
  * relying party (RP): it asks heyarr's weblogin broker to start a login, renders the
- * returned `voidbind:login?rp=&id=` tuple as a QR code for the user's authenticator
+ * returned `void-which-binds:login?rp=&id=` tuple as a QR code for the user's authenticator
  * to scan, and polls until the broker reports the login approved, receiving a
  * short-lived **Bearer** session token (bootstrap credential — see
  * `auth/Credential.Session`).

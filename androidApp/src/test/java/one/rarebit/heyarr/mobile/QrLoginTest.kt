@@ -24,6 +24,8 @@ private class FakeTransport(private val createBody: String, private val pollBodi
 }
 
 class QrLoginTest {
+    /** The broker's gen2 login tuple for `login-42` (void-which-binds-go v0.19.0, ADR-0022). */
+    private val qr42 = "void-which-binds:login?id=login-42&rp=https%3A%2F%2Fheyarr.example"
 
     private fun client(t: FakeTransport) = QrLoginClient(
         http = t,
@@ -34,19 +36,19 @@ class QrLoginTest {
 
     @Test fun beginParsesTheTupleAndExposesTheQr() {
         val t = FakeTransport(
-            createBody = """{"id":"login-42","qr":"voidbind:login?id=login-42&rp=https%3A%2F%2Fheyarr.example"}""",
+            createBody = """{"id":"login-42","qr":"$qr42"}""",
             pollBodies = listOf("""{"status":"pending"}"""),
         )
         val pending = client(t).begin()
         assertEquals("login-42", pending.loginId)
         assertEquals("https://heyarr.example", pending.tuple.rp)
         assertEquals("login-42", pending.tuple.id)
-        assertTrue(pending.qrTuple.startsWith("voidbind:login?"))
+        assertTrue(pending.qrTuple.startsWith("void-which-binds:login?"))
     }
 
     @Test fun pollsUntilApprovedThenReturnsToken() {
         val t = FakeTransport(
-            createBody = """{"id":"login-42","qr":"voidbind:login?id=login-42&rp=https%3A%2F%2Fheyarr.example"}""",
+            createBody = """{"id":"login-42","qr":"$qr42"}""",
             pollBodies = listOf(
                 """{"status":"pending"}""",
                 """{"status":"pending"}""",
@@ -64,7 +66,7 @@ class QrLoginTest {
 
     @Test fun deniedApprovalSurfacesReason() {
         val t = FakeTransport(
-            createBody = """{"id":"x","qr":"voidbind:login?id=x&rp=https%3A%2F%2Fheyarr.example"}""",
+            createBody = """{"id":"x","qr":"void-which-binds:login?id=x&rp=https%3A%2F%2Fheyarr.example"}""",
             pollBodies = listOf("""{"status":"denied"}"""),
         )
         val c = client(t)

@@ -7,14 +7,15 @@ import kotlinx.coroutines.cancel
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.desktop.net.JdkHttpTransport
+import one.rarebit.heyarr.desktop.vault.FileDriveStateStore
 import one.rarebit.heyarr.desktop.vault.FileSyncIndexStore
 import one.rarebit.heyarr.desktop.vault.JdkVaultBlobStore
 import one.rarebit.heyarr.desktop.vault.PeriodicOnlyChanges
 import one.rarebit.heyarr.desktop.vault.RealVaultFolder
 import one.rarebit.heyarr.desktop.vault.SyncChanges
-import one.rarebit.heyarr.desktop.vault.VaultSpaceClient
 import one.rarebit.heyarr.desktop.vault.VaultSyncEngine
 import one.rarebit.heyarr.desktop.vault.WatchedFolder
+import one.rarebit.heyarr.vault.VaultSpaceClient
 import java.io.File
 import java.nio.file.Path
 import java.util.concurrent.CountDownLatch
@@ -102,18 +103,23 @@ private fun resolveCustody(
     val custodyClient = VaultSpaceClient(transport, config.controller, credential)
     val opened = GoStoreCustody(store, custodyClient).open(config.spaceId)
 
+    // Per-vault sync index: an explicit --index-file / HEYARR_VAULT_INDEX / "index_file" keeps
+    // each per-vault daemon instance's index separate without the XDG_CONFIG_HOME hack; unset
+    // falls back to FileSyncIndexStore's own default.
+    val indexFile = config.indexFile?.let { File(it) } ?: FileSyncIndexStore.defaultIndexFile()
     val engine = VaultSyncEngine(
         folder = RealVaultFolder(Path.of(folder)),
         blobs = JdkVaultBlobStore(),
         space = VaultSpaceClient(transport, config.controller, credential),
-        // Per-vault sync index: an explicit --index-file / HEYARR_VAULT_INDEX / "index_file" keeps
-        // each per-vault daemon instance's index separate without the XDG_CONFIG_HOME hack; null
-        // falls back to FileSyncIndexStore's own default.
-        indexStore = config.indexFile?.let { FileSyncIndexStore(File(it)) } ?: FileSyncIndexStore(),
+        indexStore = FileSyncIndexStore(indexFile),
         baseUrl = config.controller,
         credential = credential,
         spaceId = opened.spaceId,
-        spaceKey = opened.spaceKey,
+        keyring = opened.keyring,
+        // The folded drive + cursor, beside the index, so a restart pulls only the tail (#73).
+        stateStore = FileDriveStateStore(FileDriveStateStore.besideIndex(indexFile)),
+        // No held key opened a blob: the space may have rotated since (ADR-0103). Re-open it.
+        reopen = { runCatching { GoStoreCustody(store, custodyClient).open(config.spaceId).keyring }.getOrNull() },
     )
 
     // A real filesystem watch when we can get one; degrade to the controller's periodic-only tick

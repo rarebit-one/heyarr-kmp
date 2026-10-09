@@ -9,9 +9,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runInterruptible
-import one.rarebit.voidbind.Invite
-import one.rarebit.voidbind.flow.PairingFailureKind
-import one.rarebit.voidbind.flow.PairingOutcome
+import one.rarebit.voidwhichbinds.Invite
+import one.rarebit.voidwhichbinds.flow.PairingFailureKind
+import one.rarebit.voidwhichbinds.flow.PairingOutcome
 
 /**
  * The desktop holder for the join → handshake → confirm → receive → enrol pipeline
@@ -49,7 +49,7 @@ class PairingCoordinator(
             _state.value = PairingState.Failed(
                 invite,
                 PairingFailure.INVALID,
-                checked.exceptionOrNull()?.message ?: "That is not a voidbind pairing invite.",
+                checked.exceptionOrNull()?.message ?: "That is not a void-which-binds pairing invite.",
             )
             return
         }
@@ -126,6 +126,7 @@ class PairingCoordinator(
                 PairingFailureKind.TIMEOUT -> PairingFailure.TIMEOUT
                 PairingFailureKind.REJECTED -> PairingFailure.REJECTED
                 PairingFailureKind.PROTOCOL -> PairingFailure.PROTOCOL
+                PairingFailureKind.REFUSED -> PairingFailure.REFUSED
             },
             message = f.message,
         ),

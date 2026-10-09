@@ -9,6 +9,7 @@ on:
     paths:
       - "androidApp/**"
       - "core/**"
+      - "vault-client/**"
       - "ui/**"
       - "build.gradle.kts"
       - "settings.gradle.kts"
@@ -37,7 +38,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
-    # Gradle resolves `one.rarebit.voidbind:voidbind-client` from GitHub Packages
+    # Gradle resolves `one.rarebit.voidwhichbinds:void-which-binds-client` from GitHub Packages
     # (settings.gradle.kts) with these credentials.
     env:
       GITHUB_ACTOR: ${{ github.actor }}
@@ -68,8 +69,10 @@ jobs:
       - name: Lint (ktlint + detekt)
         run: ./gradlew :androidApp:ktlintCheck :androidApp:detekt --no-daemon --stacktrace
 
+      # :vault-client's golden vectors (frame codec, key chain, drive CRDT) also run in the
+      # Android unit-test runtime, so its android variant is proven like the JVM one.
       - name: Unit tests
-        run: ./gradlew :androidApp:testDebugUnitTest --no-daemon --stacktrace
+        run: ./gradlew :androidApp:testDebugUnitTest :vault-client:testDebugUnitTest --no-daemon --stacktrace
 
       - name: Assemble debug APK
         run: ./gradlew :androidApp:assembleDebug --no-daemon --stacktrace

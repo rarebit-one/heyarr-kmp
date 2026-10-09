@@ -15,7 +15,12 @@ import java.util.Base64
 internal class FakeServer(val base: String = "https://node.test") : HttpTransport {
     private class Space(val kind: String) {
         val keys = LinkedHashMap<String, ByteArray>() // recipient -> wrapped
+        val keyEpochs = HashMap<String, Int>() // recipient -> the epoch its copy seals
+        var keyEpoch = 0
+        val history = ArrayList<Pair<Int, ByteArray>>() // (epoch, sealed_prev), oldest first
+        val keysQueue = ArrayDeque<String>() // /keys bodies to serve first (fetches that raced a rotation)
         val changes = ArrayList<EncryptedChange>()
+        var snapshot: EncryptedSnapshot? = null
     }
 
     private val spaces = LinkedHashMap<String, Space>()
@@ -31,10 +36,17 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
 
             path.endsWith("/keys") -> {
                 val sp = spaces[spaceId(path)] ?: return notFound()
+                keysGets++
+                sp.keysQueue.removeFirstOrNull()?.let { return ok(it) }
+                ok(keysBody(spaceId(path), sp))
+            }
+
+            path.endsWith("/key-history") -> {
+                val sp = spaces[spaceId(path)] ?: return notFound()
                 ok(
-                    "{\"space_id\":${q(spaceId(path))},\"wrapped_keys\":[" +
-                        sp.keys.entries.joinToString(",") { (r, w) ->
-                            "{\"recipient\":${q(r)},\"wrapped\":${q(b64(w))},\"created_at\":\"2026-09-05T00:00:00Z\"}"
+                    "{\"space_id\":${q(spaceId(path))},\"entries\":[" +
+                        sp.history.joinToString(",") { (e, sealed) ->
+                            "{\"epoch\":$e,\"sealed_prev\":${q(b64(sealed))},\"created_at\":\"2026-10-08T00:00:00Z\"}"
                         } + "]}",
                 )
             }
@@ -47,9 +59,14 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
                 )
             }
 
-            path.endsWith("/snapshot") -> notFound()
+            path.endsWith("/snapshot") -> {
+                val snap = spaces[spaceId(path)]?.snapshot ?: return notFound()
+                ok(
+                    "{\"space_id\":${q(snap.spaceId)},\"snapshot_id\":${q(snap.snapshotId)},\"frontier\":[" +
+                        snap.frontier.joinToString(",") { q(it) } + "],\"ciphertext\":${q(b64(snap.ciphertext))}}",
+                )
+            }
 
-            // no snapshots in the fake
             else -> notFound()
         }
     }
@@ -85,8 +102,70 @@ internal class FakeServer(val base: String = "https://node.test") : HttpTranspor
         }
     }
 
+    /** How many `GET /keys` the fake has answered (a re-open is one more). */
+    var keysGets = 0
+        private set
+
+    private fun keysBody(id: String, sp: Space): String =
+        "{\"space_id\":${q(id)},\"key_epoch\":${sp.keyEpoch},\"wrapped_keys\":[" +
+            sp.keys.entries.joinToString(",") { (r, w) ->
+                "{\"recipient\":${q(r)},\"wrapped\":${q(b64(w))},\"epoch\":${sp.keyEpochs[r] ?: 0}," +
+                    "\"created_at\":\"2026-09-05T00:00:00Z\"}"
+            } + "]}"
+
+    /** The wrapped copy a space holds for [recipient] (test helper). */
+    fun wrapped(spaceId: String, recipient: String): ByteArray = spaces.getValue(spaceId).keys.getValue(recipient)
+
+    /**
+     * A rotation landing on the node (ADR-0103, `POST /spaces/{id}/rotate`): the space moves to
+     * the next epoch, [sealedPrev] is stored as its history row, and every copy is replaced by
+     * [wrapped] (a revoked recipient is simply absent). Returns the new epoch.
+     */
+    fun rotate(spaceId: String, wrapped: Map<String, ByteArray>, sealedPrev: ByteArray): Int {
+        val sp = spaces.getValue(spaceId)
+        sp.keyEpoch++
+        sp.history.add(sp.keyEpoch to sealedPrev)
+        sp.keys.clear()
+        sp.keyEpochs.clear()
+        for ((r, w) in wrapped) {
+            sp.keys[r] = w
+            sp.keyEpochs[r] = sp.keyEpoch
+        }
+        return sp.keyEpoch
+    }
+
+    /** Drop a space's key-history rows (an incomplete chain). */
+    fun dropHistory(spaceId: String) = spaces.getValue(spaceId).history.clear()
+
+    /** The `/keys` body the space serves right now — to replay later with [serveKeysOnce]. */
+    fun keysSnapshot(spaceId: String): String = keysBody(spaceId, spaces.getValue(spaceId))
+
+    /** Serve [body] for the next [times] `GET /keys`: key fetches that raced a rotation. */
+    fun serveKeysOnce(spaceId: String, body: String, times: Int = 1) {
+        repeat(times) { spaces.getValue(spaceId).keysQueue.addLast(body) }
+    }
+
+    /** How many spaces the node holds. */
+    fun spaceCount(): Int = spaces.size
+
     /** The recipient ids a space is wrapped for (test assertion helper). */
     fun recipients(spaceId: String): Set<String> = spaces[spaceId]?.keys?.keys?.toSet() ?: emptySet()
+
+    /**
+     * Store [snap] as the space's latest snapshot, as `POST /snapshots` would. Like the node, the fake
+     * checks only the content-addressed id — it cannot decrypt, so it cannot see a relabel.
+     */
+    fun putSnapshot(snap: EncryptedSnapshot) {
+        require(snap.validate()) { "snapshot id does not match its content" }
+        spaces.getValue(snap.spaceId).snapshot = snap
+    }
+
+    /** Drop every change the space holds, as compaction under a snapshot would. */
+    fun compact(spaceId: String) {
+        spaces.getValue(spaceId).changes.clear()
+    }
+
+    fun changes(spaceId: String): List<EncryptedChange> = spaces[spaceId]?.changes?.toList() ?: emptyList()
 
     fun changeCount(spaceId: String): Int = spaces[spaceId]?.changes?.size ?: 0
 
@@ -122,7 +201,20 @@ internal class IdentityCrypto : SpaceCrypto {
         return blob.copyOfRange(4, blob.size)
     }
 
+    /** A history row in the fake: `sealing[0..4) ‖ 0xC4 ‖ key`, so it never opens as a change. */
+    override fun openSpaceKey(sealing: ByteArray, sealed: ByteArray): ByteArray {
+        require(sealed.size == 37 && sealed[4] == CHAIN_TAG) { "not a sealed key" }
+        require(sealed.copyOfRange(0, 4).contentEquals(sealing.copyOfRange(0, 4))) { "wrong sealing key" }
+        return sealed.copyOfRange(5, sealed.size)
+    }
+
     companion object {
+        private const val CHAIN_TAG: Byte = 0xC4.toByte()
+
+        /** The fake's history row: [key] sealed under [sealing] (the inverse of [openSpaceKey]). */
+        fun sealSpaceKey(sealing: ByteArray, key: ByteArray): ByteArray =
+            sealing.copyOfRange(0, 4) + byteArrayOf(CHAIN_TAG) + key
+
         /** In the fake, a device's "public key" is its seed (identity); the real crypto derives it via X25519. */
         fun pubOf(seed: ByteArray): ByteArray = seed
     }

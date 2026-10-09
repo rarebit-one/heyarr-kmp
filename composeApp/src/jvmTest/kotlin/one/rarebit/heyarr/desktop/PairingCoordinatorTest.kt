@@ -12,11 +12,11 @@ import one.rarebit.heyarr.desktop.device.PairingCoordinator
 import one.rarebit.heyarr.desktop.device.PairingFailure
 import one.rarebit.heyarr.desktop.device.PairingState
 import one.rarebit.heyarr.desktop.device.PairingSteps
-import one.rarebit.voidbind.Invite
-import one.rarebit.voidbind.KeyRef
-import one.rarebit.voidbind.Pairing
-import one.rarebit.voidbind.flow.PairingFailureKind
-import one.rarebit.voidbind.flow.PairingOutcome
+import one.rarebit.voidwhichbinds.Invite
+import one.rarebit.voidwhichbinds.KeyRef
+import one.rarebit.voidwhichbinds.Pairing
+import one.rarebit.voidwhichbinds.flow.PairingFailureKind
+import one.rarebit.voidwhichbinds.flow.PairingOutcome
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -28,7 +28,7 @@ class PairingCoordinatorTest {
 
     @AfterTest fun tearDown() = scope.cancel()
 
-    /** A valid `voidbind:pair?v=3…` invite the FAKE steps ignore — it only has to decode. */
+    /** A valid `void-which-binds:pair?v=4…` invite the FAKE steps ignore — it only has to decode. */
     private fun validInvite(): String {
         val usr = KeyRef.ed25519(ByteArray(32) { (it + 1).toByte() }).render()
         return Invite.encode(
@@ -83,6 +83,15 @@ class PairingCoordinatorTest {
         c.start(validInvite())
         val failed = c.await { it is PairingState.Failed }
         assertEquals(PairingFailure.UNREACHABLE, (failed as PairingState.Failed).kind)
+    }
+
+    @Test fun a_signed_refusal_from_cruciform_is_its_own_failure() = runBlocking {
+        val steps = FakeSteps(PairingOutcome.Failed(PairingFailureKind.REFUSED, "Cruciform refused.", "refuse"))
+        val c = PairingCoordinator(scope, steps = { steps })
+
+        c.start(validInvite())
+        val failed = c.await { it is PairingState.Failed }
+        assertEquals(PairingFailure.REFUSED, (failed as PairingState.Failed).kind)
     }
 
     @Test fun a_node_that_needs_an_admin_still_stores_the_admission() = runBlocking {
