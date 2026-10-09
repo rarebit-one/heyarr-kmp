@@ -244,12 +244,13 @@ private fun BulkActions(
 @Composable
 private fun MissingRow(w: Want, checked: Boolean, state: MissingState, onOpen: (Route) -> Unit) {
     MediaRow(
-        w.title,
+        w.subject,
         MediaType.UNKNOWN,
         onOpen = {
             w.workId?.let { onOpen(detailRoute(it, MediaType.UNKNOWN, w.title, from = "Missing")) }
         },
         subtitle = listOfNotNull(
+            w.context,
             w.qualityProfile?.let {
                 "profile $it"
             },
@@ -262,10 +263,15 @@ private fun MissingRow(w: Want, checked: Boolean, state: MissingState, onOpen: (
         status = LibraryStatus.ofState(w.state),
         selected = checked,
         trailing = {
-            IconButtonRound(if (checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank, if (checked) "Deselect ${w.title}" else "Select ${w.title}", {
-                state.selected =
-                    if (checked) state.selected - w.desiredItemId else state.selected + w.desiredItemId
-            }, size = 36.dp)
+            IconButtonRound(
+                if (checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
+                if (checked) "Deselect ${w.subject}" else "Select ${w.subject}",
+                {
+                    state.selected =
+                        if (checked) state.selected - w.desiredItemId else state.selected + w.desiredItemId
+                },
+                size = 36.dp,
+            )
         },
     )
 }

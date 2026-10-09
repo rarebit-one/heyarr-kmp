@@ -238,12 +238,13 @@ fun MissingScreen(
                 items(list, key = { it.desiredItemId }) { w ->
                     val checked = w.desiredItemId in sel
                     MediaRow(
-                        w.title,
+                        w.subject,
                         MediaType.UNKNOWN,
                         onOpen = {
                             w.workId?.let { onOpen(Route.Detail(it, MediaType.UNKNOWN, w.title, from = "Missing")) }
                         },
                         subtitle = listOfNotNull(
+                            w.context,
                             w.qualityProfile?.let {
                                 "profile $it"
                             },
@@ -256,10 +257,20 @@ fun MissingScreen(
                         status = LibraryStatus.ofState(w.state),
                         selected = checked,
                         trailing = {
-                            IconButtonRound(if (checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank, if (checked) "Deselect ${w.title}" else "Select ${w.title}", {
-                                state.selected =
-                                    if (checked) state.selected - w.desiredItemId else state.selected + w.desiredItemId
-                            }, size = 32.dp)
+                            IconButtonRound(
+                                if (checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
+                                if (checked) "Deselect ${w.subject}" else "Select ${w.subject}",
+                                {
+                                    state.selected =
+                                        if (checked) {
+                                            state.selected - w.desiredItemId
+                                        } else {
+                                            state.selected +
+                                                w.desiredItemId
+                                        }
+                                },
+                                size = 32.dp,
+                            )
                         },
                     )
                 }
