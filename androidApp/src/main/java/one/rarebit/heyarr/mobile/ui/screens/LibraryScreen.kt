@@ -126,11 +126,15 @@ fun LibraryScreen(
     val all = state.works.orEmpty().filter { it.id !in variants }
     val counts = all.groupingBy { MediaType.from(it.kind) }.eachCount()
     val filtered = all.filter { w ->
-        (
-            state.type == null || (state.type == MEDIA && MediaType.from(w.kind) in MEDIA_KINDS) ||
-                MediaType.from(w.kind) == state.type
-            ) &&
-            (state.status == null || session.index.statusOf(w.id) == state.status)
+        // MEDIA is MediaType.UNKNOWN standing in for "the media kinds"; never let it reach
+        // the equality test, or an unknown-kind work passes the Media filter the chip's
+        // count leaves out (the desktop's filterWorks has the same guard).
+        val kindMatches = when (state.type) {
+            null -> true
+            MEDIA -> MediaType.from(w.kind) in MEDIA_KINDS
+            else -> MediaType.from(w.kind) == state.type
+        }
+        kindMatches && (state.status == null || session.index.statusOf(w.id) == state.status)
     }
 
     Column(
