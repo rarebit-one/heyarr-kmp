@@ -156,4 +156,33 @@ class SeriesTest {
         assertEquals("23:45 / 55:12", e.progressLabel)
         assertTrue(ContinueClient.parse("""{"items":[]}""").isEmpty())
     }
+
+    @Test fun twoFilesOfOneEpisodeFoldIntoOneRow() {
+        // A live node held a second release of S04E02 (HEVC re-encode) next to the first:
+        // it listed as its own episode under a scene name, and the season read "18 of 10 held".
+        val seasons = Series.seasons(
+            listOf(
+                file("a-hevc", "Yellowstone.2018.S04E02.1080p.HEVC.x265-MeGusta.mkv", "Season 04"),
+                file("a", "Yellowstone (2018) - S04E02 - Phantom Pain [HDTV-1080p][AC3 5.1][x264].mkv", "Season 04"),
+                file(
+                    "a-srt",
+                    "Yellowstone.2018.S04E02.1080p.HEVC.x265-MeGusta.en.srt",
+                    "Season 04",
+                    role = "subtitle",
+                    mime = "text/plain",
+                ),
+                file("b", "Yellowstone.2018.S04E01.Half.the.Money.1080p.WEB-DL.mkv", "Season 04"),
+            ),
+        )
+        val s4 = seasons.single()
+        assertEquals("one row per episode", listOf("S04E01", "S04E02"), s4.episodes.map { it.code })
+        val e2 = s4.episodes[1]
+        assertEquals("the file whose name carries the title leads", "a", e2.asset.id)
+        assertEquals("Phantom Pain", e2.title)
+        assertEquals(listOf("a-hevc"), e2.copies.map { it.id })
+        assertEquals(2, e2.fileCount)
+        assertEquals("a copy's sidecar joins the row", listOf("a-srt"), e2.subtitles.map { it.id })
+        assertEquals("episodes held, not files held", 2, s4.held)
+        assertEquals(3, s4.filesHeld)
+    }
 }

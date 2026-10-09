@@ -151,4 +151,46 @@ class SeriesTest {
         assertEquals("23:45 / 55:12", e.progressLabel)
         assertTrue(ContinueJson.list("""{"items":[]}""").isEmpty())
     }
+
+    @Test fun twoFilesOfOneEpisodeFoldIntoOneRow() {
+        // A live node held a second release of S04E02 (HEVC re-encode) next to the first:
+        // it listed as its own episode under a scene name, and the season read "18 of 10 held".
+        val seasons = Series.seasons(
+            listOf(
+                file("a-hevc", "Yellowstone.2018.S04E02.1080p.HEVC.x265-MeGusta.mkv", "Season 04"),
+                file("a", "Yellowstone (2018) - S04E02 - Phantom Pain [HDTV-1080p][AC3 5.1][x264].mkv", "Season 04"),
+                file(
+                    "a-srt",
+                    "Yellowstone.2018.S04E02.1080p.HEVC.x265-MeGusta.en.srt",
+                    "Season 04",
+                    role = "subtitle",
+                    mime = "text/plain",
+                ),
+                file("b", "Yellowstone.2018.S04E01.Half.the.Money.1080p.WEB-DL.mkv", "Season 04"),
+            ),
+        )
+        val s4 = seasons.single()
+        assertEquals(listOf("S04E01", "S04E02"), s4.episodes.map { it.code }, "one row per episode")
+        val e2 = s4.episodes[1]
+        assertEquals("a", e2.asset.id, "the file whose name carries the title leads")
+        assertEquals("Phantom Pain", e2.title)
+        assertEquals(listOf("a-hevc"), e2.copies.map { it.id })
+        assertEquals(2, e2.fileCount)
+        assertEquals(listOf("a-srt"), e2.subtitles.map { it.id }, "a copy's sidecar joins the row")
+        assertEquals(2, s4.held, "episodes held, not files held")
+        assertEquals(3, s4.filesHeld)
+    }
+
+    @Test fun aSceneNamedFileIsCalledByItsNumberNotItsFilename() {
+        val bare = Series.episode(file("x", "Yellowstone.2018.S04E02.1080p.HEVC.x265-MeGusta.mkv", "Season 04"))!!
+        assertNull(bare.title, "nothing after the marker but release metadata")
+        assertEquals("Episode 2", bare.displayTitle())
+        assertEquals(
+            "Phantom Pain",
+            bare.displayTitle(externalName = "Phantom Pain"),
+            "a calendar name wins over the number",
+        )
+        val unnumbered = Series.episode(file("y", "Behind the Story.mkv", "Specials"))!!
+        assertEquals("Behind the Story", unnumbered.displayTitle(), "no number: the filename title is all there is")
+    }
 }

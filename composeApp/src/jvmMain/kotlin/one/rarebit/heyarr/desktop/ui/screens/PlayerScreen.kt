@@ -13,6 +13,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -504,11 +505,16 @@ fun PlayerScreen(
             }
             if (state.castOpen) Box(Modifier.padding(horizontal = 24.dp)) { CastRow(session, state, item) }
 
-            Picture(
-                Modifier.fillMaxWidth().padding(
-                    horizontal = 24.dp,
-                ).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard)),
-            )
+            // Keep the picture inside the height left after the header, the transport and
+            // the up-next card. Sized from the width alone, a maximized window's 16:9 picture
+            // runs past the bottom edge and takes the transport with it.
+            BoxWithConstraints(
+                Modifier.fillMaxWidth().weight(1f, fill = false).padding(horizontal = 24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                val pictureWidth = minOf(maxWidth, maxHeight * (16f / 9f))
+                Picture(Modifier.width(pictureWidth).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard)))
+            }
             Transport(overlay = false)
 
             // ── up next: the one episode after this one ──
