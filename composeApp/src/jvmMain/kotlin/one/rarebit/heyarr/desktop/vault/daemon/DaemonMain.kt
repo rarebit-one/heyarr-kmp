@@ -99,7 +99,32 @@ private fun resolveCustody(
 ): VaultSyncDaemon.Resolved {
     val folder = config.folder?.takeIf { it.isNotBlank() } ?: error("no folder configured")
     val store = GoDeviceStore(File(config.deviceDir))
+    val engine = buildEngine(config, transport, credential, store, JdkVaultBlobStore())
 
+    // A real filesystem watch when we can get one; degrade to the controller's periodic-only tick
+    // (a network mount, no inotify) rather than fail the whole resolve.
+    val watched = runCatching { WatchedFolder(Path.of(folder)) as SyncChanges }.getOrNull()
+    return VaultSyncDaemon.Resolved(
+        engine = engine,
+        changes = watched ?: PeriodicOnlyChanges,
+        device = store.deviceKeyRef(),
+        watching = watched != null,
+    )
+}
+
+/**
+ * Unwrap the space key from the Go device store and build the engine over the configured folder,
+ * index and drive state. Shared by the daemon and [repairMain], so a repair sees exactly the state
+ * the daemon would.
+ */
+internal fun buildEngine(
+    config: DaemonConfig,
+    transport: HttpTransport,
+    credential: Credential,
+    store: GoDeviceStore,
+    blobs: JdkVaultBlobStore,
+): VaultSyncEngine {
+    val folder = config.folder?.takeIf { it.isNotBlank() } ?: error("no folder configured")
     val custodyClient = VaultSpaceClient(transport, config.controller, credential)
     val opened = GoStoreCustody(store, custodyClient).open(config.spaceId)
 
@@ -107,9 +132,9 @@ private fun resolveCustody(
     // each per-vault daemon instance's index separate without the XDG_CONFIG_HOME hack; unset
     // falls back to FileSyncIndexStore's own default.
     val indexFile = config.indexFile?.let { File(it) } ?: FileSyncIndexStore.defaultIndexFile()
-    val engine = VaultSyncEngine(
+    return VaultSyncEngine(
         folder = RealVaultFolder(Path.of(folder)),
-        blobs = JdkVaultBlobStore(),
+        blobs = blobs,
         space = VaultSpaceClient(transport, config.controller, credential),
         indexStore = FileSyncIndexStore(indexFile),
         baseUrl = config.controller,
@@ -120,16 +145,6 @@ private fun resolveCustody(
         stateStore = FileDriveStateStore(FileDriveStateStore.besideIndex(indexFile)),
         // No held key opened a blob: the space may have rotated since (ADR-0103). Re-open it.
         reopen = { runCatching { GoStoreCustody(store, custodyClient).open(config.spaceId).keyring }.getOrNull() },
-    )
-
-    // A real filesystem watch when we can get one; degrade to the controller's periodic-only tick
-    // (a network mount, no inotify) rather than fail the whole resolve.
-    val watched = runCatching { WatchedFolder(Path.of(folder)) as SyncChanges }.getOrNull()
-    return VaultSyncDaemon.Resolved(
-        engine = engine,
-        changes = watched ?: PeriodicOnlyChanges,
-        device = store.deviceKeyRef(),
-        watching = watched != null,
     )
 }
 

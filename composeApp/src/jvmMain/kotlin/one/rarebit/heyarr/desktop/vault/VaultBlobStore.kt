@@ -5,6 +5,7 @@ import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.vault.PutResult
 import one.rarebit.heyarr.vault.VaultBlobStore
 import one.rarebit.heyarr.vault.VaultFrame
+import java.net.HttpURLConnection
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -29,6 +30,16 @@ fun VaultBlobStore.putBlobFile(baseUrl: String, hash: String, file: Path, creden
     } else {
         putBlob(baseUrl, hash, Files.readAllBytes(file), credential)
     }
+
+/**
+ * Whether the node still HOLDS a blob's bytes — the question [VaultSyncEngine.repair] asks of every
+ * blob the drive names. A seam so the repair is tested against an in-memory store. Answers only a
+ * definite yes or no; anything else (an auth failure, a 5xx, no network) throws, so an unreachable
+ * node is never mistaken for a node that lost everything.
+ */
+fun interface BlobPresence {
+    fun isHeld(hash: String): Boolean
+}
 
 /** The desktop actual on JDK 17's `java.net.http`, mirroring `JdkBlobDownloader`. */
 class JdkVaultBlobStore(
@@ -59,6 +70,27 @@ class JdkVaultBlobStore(
             PutResult.Failed("upload failed: ${e.message}")
         }
     }
+
+    /**
+     * HEAD the blob's content: 200 = held, 404 = this node holds no such bytes. The content endpoint
+     * answers from the content store, not the catalog, so bytes that were reclaimed read as absent
+     * even while a pin or a catalog row still names them.
+     */
+    fun isHeld(baseUrl: String, hash: String, credential: Credential): Boolean {
+        val builder = HttpRequest.newBuilder(URI.create(VaultBlobStore.contentUrl(baseUrl, hash)))
+            .timeout(requestTimeout)
+            .method("HEAD", BodyPublishers.noBody())
+        for ((k, v) in credential.asHeader()) builder.header(k, v)
+        return when (val code = client.send(builder.build(), BodyHandlers.discarding()).statusCode()) {
+            HttpURLConnection.HTTP_OK, HttpURLConnection.HTTP_PARTIAL -> true
+            HttpURLConnection.HTTP_NOT_FOUND -> false
+            else -> error("vault: HEAD of $hash failed: HTTP $code")
+        }
+    }
+
+    /** [isHeld] bound to one node and credential, as the repair's [BlobPresence]. */
+    fun presence(baseUrl: String, credential: Credential): BlobPresence =
+        BlobPresence { hash -> isHeld(baseUrl, hash, credential) }
 
     /** The streaming upload behind [putBlobFile]. */
     internal fun putFile(baseUrl: String, hash: String, file: Path, credential: Credential): PutResult {

@@ -472,4 +472,86 @@ class VaultSyncEngineTest {
         val saved = assertNotNull(FileDriveStateStore(file).load("http://x", "space-1"))
         assertNull(saved.drive.get("b.txt"), "the saved fold predates b.txt's (successful) push")
     }
+
+    // --- repair: the node lost blobs the drive still names --------------------------
+
+    /** A folder holding a.txt, synced first so its two blobs can be told apart from b.txt's. */
+    private class LostBlobFixture {
+        val blobs = MemBlobStore()
+        val space = MemSpace()
+        val a = "the file whose blobs the node will lose".encodeToByteArray()
+        val folder = MemFolder(mutableMapOf("a.txt" to a), mutableMapOf("a.txt" to 10L))
+        val index = InMemorySyncIndexStore()
+        val key = SpaceKeyring.single(ByteArray(32) { it.toByte() })
+        val engine = VaultSyncEngine(folder, blobs, space, index, "http://x", Credential.Guest, "space-1", key)
+
+        /** a.txt's content and manifest blob ids. */
+        val aBlobs: List<String>
+
+        init {
+            engine.syncOnce()
+            aBlobs = blobs.blobs.keys.toList()
+            folder.files["b.txt"] = "an untouched neighbour".encodeToByteArray()
+            folder.mtimes["b.txt"] = 11L
+            engine.syncOnce()
+        }
+
+        val presence = BlobPresence { blobs.blobs.containsKey(it) }
+    }
+
+    @Test
+    fun repairReuploadsAFileWhoseBlobsTheNodeLost() {
+        val f = LostBlobFixture()
+        f.aBlobs.forEach { f.blobs.blobs.remove(it) }
+
+        val dry = f.engine.repair(f.presence, apply = false)
+        assertEquals(2, dry.checked)
+        assertEquals(listOf("a.txt"), dry.missing)
+        assertEquals(listOf("a.txt"), dry.repairable)
+        assertTrue(dry.repaired.isEmpty(), "a dry run uploads nothing")
+        assertTrue(f.aBlobs.none { it in f.blobs.blobs }, "a dry run uploads nothing")
+
+        val applied = f.engine.repair(f.presence, apply = true)
+        assertEquals(listOf("a.txt"), applied.repaired)
+        assertTrue(f.engine.repair(f.presence, apply = false).missing.isEmpty(), "nothing is missing afterwards")
+        assertEquals(0, f.engine.syncOnce().uploaded, "the index agrees, so a normal pass has nothing to redo")
+
+        // A second device rebuilt from the server alone gets the file back byte for byte.
+        val other = MemFolder()
+        VaultSyncEngine(
+            other,
+            f.blobs,
+            f.space,
+            InMemorySyncIndexStore(),
+            "http://x",
+            Credential.Guest,
+            "space-1",
+            f.key,
+        )
+            .syncOnce()
+        assertTrue(f.a.contentEquals(other.files["a.txt"]))
+    }
+
+    @Test
+    fun repairFindsALostContentBlobBehindAHeldManifest() {
+        val f = LostBlobFixture()
+        val manifest = f.index.load().getValue("a.txt").remoteBlob
+        f.blobs.blobs.remove(f.aBlobs.single { it != manifest }) // the content blob; the manifest is still held
+
+        assertEquals(listOf("a.txt"), f.engine.repair(f.presence, apply = false).repairable)
+    }
+
+    @Test
+    fun repairLeavesAChangedOrAbsentFileAlone() {
+        val f = LostBlobFixture()
+        f.aBlobs.forEach { f.blobs.blobs.remove(it) }
+        f.folder.files["a.txt"] = "edited since the last sync".encodeToByteArray()
+
+        val changed = f.engine.repair(f.presence, apply = true)
+        assertEquals(listOf("a.txt"), changed.changedLocally)
+        assertTrue(changed.repaired.isEmpty(), "bytes that differ from the synced ones are not passed off as them")
+
+        f.folder.files.remove("a.txt")
+        assertEquals(listOf("a.txt"), f.engine.repair(f.presence, apply = true).unrecoverable)
+    }
 }

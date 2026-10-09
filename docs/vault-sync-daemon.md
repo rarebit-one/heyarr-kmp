@@ -160,3 +160,40 @@ systemctl --user enable --now heyarr-vault-sync@personal heyarr-vault-sync@famil
 Convention: the personal vault keeps the un-suffixed `vault-sync.json` / `vault-sync.sock` (so
 existing consumers keep working), and each additional vault uses `vault-sync-<vault>.json` /
 `.sock`. The homelab-ops heyarr-hub plugin + MCP discover `vault-sync*.json` and show every vault.
+
+## Repairing a vault whose blobs the node lost
+
+A normal sync pass compares the folder with the drive and this device's sync index. It never asks
+the node whether it still holds the bytes. If the node loses blobs the drive still names (a GC that
+reclaimed pinned vault bytes, a restored or rebuilt content store, a lost disk), the drive and the
+index both still say those files are synced. Nothing re-uploads them, and every other device fails
+to download them.
+
+`RepairMainKt` is a one-shot pass for that case. It takes the daemon's config. For every live drive
+entry, it `HEAD`s the sealed manifest and the content blob that manifest names
+(`/api/v1/blobs/{hash}/content`, which answers from the content store, so reclaimed bytes read as
+absent). Each missing entry lands in one of three buckets:
+
+- **repairable**: the local file's plaintext hash equals the one this device recorded for that
+  entry's blob, so the bytes going up are provably the lost ones. With `--apply` they are re-sealed
+  and re-uploaded as a new version of the path. Sealing uses fresh randomness, so the old blob ids
+  are not recreated.
+- **changed locally**: the file differs from what this device last synced, or the index has no
+  record of it. Left alone. A normal pass uploads a genuine local edit.
+- **unrecoverable here**: no file at that path on this device. Restore it into the folder from
+  another copy and let the daemon sync it, or run the repair on a device that has it.
+
+```sh
+systemctl --user stop heyarr-vault-sync@personal          # the repair writes the same index and state
+J="$HOME/.local/lib/heyarr-vault-sync/*"
+java -cp "$J" one.rarebit.heyarr.desktop.vault.daemon.RepairMainKt \
+    --config ~/.config/heyarr-vault-sync/personal.json        # report only
+java -cp "$J" one.rarebit.heyarr.desktop.vault.daemon.RepairMainKt \
+    --config ~/.config/heyarr-vault-sync/personal.json --apply
+systemctl --user start heyarr-vault-sync@personal
+```
+
+It refuses to run while that vault's daemon answers on its control socket. `--apply` needs the
+write token, the same as the daemon. The exit status is 0 when nothing is left missing, 2 when
+entries remain that this device cannot repair, and 1 on an error. The lost blobs' placement pins
+are not touched: removing those is the node's job (heyarr-core).

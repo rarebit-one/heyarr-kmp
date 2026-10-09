@@ -115,7 +115,10 @@ fun interface VaultSync {
  * space's current key epoch, once, and re-opens before sealing anything if it moved; if it cannot
  * get onto the current key the pass fails rather than write under a stale one.
  */
-@Suppress("LongParameterList") // each argument is one injected seam of the engine (was baselined)
+@Suppress(
+    "LongParameterList", // each argument is one injected seam of the engine (was baselined)
+    "TooManyFunctions", // one sync pass and one repair pass over the same private seams
+)
 class VaultSyncEngine(
     private val folder: VaultFolder,
     private val blobs: VaultBlobStore,
@@ -161,17 +164,118 @@ class VaultSyncEngine(
         val drive = buildDrive()
         val resolved = drive.resolved().associateBy { it.path }
         val actions = reconcile(local, resolved, index)
+        return discardingDriveOnFailure { apply(actions, local, resolved, drive, index) }
+    }
+
+    /** What [repair] found, as path lists so the caller can print or act on each one. */
+    data class RepairReport(
+        /** Live drive entries checked. */
+        val checked: Int,
+        /** Entries whose manifest or content blob the node no longer holds. */
+        val missing: List<String>,
+        /** Missing, and this device holds the exact plaintext it synced, so it can be re-sealed. */
+        val repairable: List<String>,
+        /** Re-sealed and re-uploaded (only with apply = true). */
+        val repaired: List<String>,
+        /**
+         * Missing, and the local file differs from what this device last synced (or the index
+         * has no record of it). Not touched: the repair only re-uploads bytes it can prove are
+         * the ones the drive entry stands for. A normal sync pass handles a genuine local edit.
+         */
+        val changedLocally: List<String>,
+        /** Missing, and this device has no copy at the path. Another device, or a manual restore, must supply it. */
+        val unrecoverable: List<String>,
+    )
+
+    /**
+     * Find every live drive entry whose bytes the node no longer holds, and (with [apply]) re-seal
+     * and re-upload the ones this device can vouch for.
+     *
+     * The drive and this device's index can both say a file is synced while the node has lost its
+     * blobs (a GC that reclaimed pinned vault bytes, a restored CAS, a lost disk). A normal pass
+     * cannot see that: [reconcile] compares local files with the drive and the index, never with
+     * the node's store, so a lost blob stays lost until something rewrites the file. This pass asks
+     * the node about each entry's manifest and, through the opened manifest, its content blob.
+     *
+     * Sealing uses fresh randomness, so a re-upload cannot recreate the lost blob ids. It is a new
+     * version of the path instead, exactly as if the file had been edited. It happens only when the
+     * local file's plaintext hash equals the one this device recorded for that entry's blob, which
+     * means the bytes going up are the bytes the lost blob held.
+     *
+     * Run it with the daemon stopped: it writes the same index and drive state a pass does.
+     */
+    fun repair(presence: BlobPresence, apply: Boolean): RepairReport {
+        reopened = false
+        val index = indexStore.load()
+        val local = folder.scan(index)
+        val drive = buildDrive()
+        val entries = drive.resolved()
+        val missing = entries.filter { !blobsHeld(it.blob, presence) }
+        val (repairable, changed, unrecoverable) = classifyMissing(missing, local, index)
+        val repaired = if (apply && repairable.isNotEmpty()) reupload(repairable, local, drive, index) else emptyList()
+        return RepairReport(entries.size, missing.map { it.path }, repairable, repaired, changed, unrecoverable)
+    }
+
+    /**
+     * Re-seal and upload [paths] as new versions. The index is saved every [REPAIR_SAVE_EVERY]
+     * uploads as well as at the end, because a large repair can be killed outright (the OOM killer,
+     * a reboot) and a `finally` does not run then. Each upload's change is already on the node by
+     * the time it is counted, so an index that lags would only make the next pass re-download
+     * files that are already correct.
+     */
+    private fun reupload(
+        paths: List<String>,
+        local: Map<String, LocalFile>,
+        drive: Drive,
+        index: Map<String, SyncIndexEntry>,
+    ): List<String> = discardingDriveOnFailure {
+        ensureCurrentKey()
+        val newIndex = index.toMutableMap()
+        val done = ArrayList<String>()
+        try {
+            for (path in paths) {
+                upload(path, local.getValue(path), drive, newIndex)
+                done += path
+                if (done.size % REPAIR_SAVE_EVERY == 0) indexStore.save(newIndex)
+            }
+        } finally {
+            // Record whatever made it up, so an interrupted repair resumes rather than redoes.
+            indexStore.save(newIndex)
+        }
+        done
+    }
+
+    /**
+     * Whether the node holds both blobs an entry needs: the sealed manifest it names and the
+     * content blob that manifest names. A manifest that is held but cannot be opened or verified
+     * counts as missing, because a download of that entry would fail the same way.
+     */
+    @Suppress("SwallowedException") // an unverifiable manifest is the finding, not an error to report
+    private fun blobsHeld(manifestHash: String, presence: BlobPresence): Boolean {
+        if (!presence.isHeld(manifestHash)) return false
+        val content = try {
+            val manifestBlob = blobs.fetchAll(baseUrl, manifestHash, credential)
+            withKeyring { VaultFrame.openManifestVerified(it, manifestBlob, manifestHash) }.manifest.content
+        } catch (e: VaultFrame.IntegrityException) {
+            null
+        }
+        return content != null && presence.isHeld(content)
+    }
+
+    /**
+     * Run [block], and if it throws, drop the in-memory drive. A pass that fails part-way can leave
+     * a local write in the drive that never reached the server (a push that threw). Keeping that
+     * drive would make it look remote from then on, and persisting it would carry that across
+     * restarts. So the next pass restores the last saved fold, which holds only changes the server
+     * has, or re-folds from 0 when nothing was saved.
+     */
+    private inline fun <T> discardingDriveOnFailure(block: () -> T): T {
         var completed = false
         try {
-            return apply(actions, local, resolved, drive, index).also { completed = true }
+            return block().also { completed = true }
         } finally {
             if (!completed) {
-                // A pass that fails part-way can leave a local write in the drive that never
-                // reached the server (a push that threw). Keeping that drive would make it look
-                // remote from then on, and persisting it would carry that across restarts. So
-                // drop it: the next pass restores the last saved fold, which holds only changes
-                // the server has, or re-folds from 0 when nothing was saved.
-                this.drive = null
+                drive = null
                 cursor = 0
                 restored = false
             }
@@ -356,4 +460,26 @@ class VaultSyncEngine(
         // TODO: causal parents = the applied frontier
         space.pushChange(spaceId, emptyList(), ciphertext, keyEpoch = keyring.epoch)
     }
+}
+
+/** How many re-uploads [VaultSyncEngine.repair] makes between index saves. */
+private const val REPAIR_SAVE_EVERY = 100
+
+/**
+ * Sort the entries whose blobs are missing by what this device can do about each:
+ * (repairable, changed locally, no local copy). Repairable means the local file's plaintext hash
+ * equals the one the index recorded for that entry's very blob, so re-sealing it reproduces the
+ * lost content. See [VaultSyncEngine.repair].
+ */
+internal fun classifyMissing(
+    missing: List<DriveEntry>,
+    local: Map<String, LocalFile>,
+    index: Map<String, SyncIndexEntry>,
+): Triple<List<String>, List<String>, List<String>> {
+    val (absent, present) = missing.partition { local[it.path] == null }
+    val (repairable, changed) = present.partition {
+        val synced = index[it.path]
+        synced != null && synced.remoteBlob == it.blob && synced.plaintextHash == local.getValue(it.path).plaintextHash
+    }
+    return Triple(repairable.map { it.path }, changed.map { it.path }, absent.map { it.path })
 }
