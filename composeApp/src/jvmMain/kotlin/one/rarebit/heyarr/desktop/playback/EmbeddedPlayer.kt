@@ -395,7 +395,10 @@ class EmbeddedPlayer(
      * difference between a scrub that works anywhere on the bar and one that only
      * works inside what has already buffered.
      */
-    private val seekCoalescer = SeekCoalescer(CoroutineScope(SupervisorJob() + Dispatchers.Swing)) { seconds ->
+    private val seekCoalescer = SeekCoalescer(
+        CoroutineScope(SupervisorJob() + Dispatchers.Swing),
+        canSeekImmediately = { withinCache(it) },
+    ) { seconds ->
         if (withinCache(seconds)) send("seek", seconds - streamStart, "absolute") else restartStream(seconds)
     }
 

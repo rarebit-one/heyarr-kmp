@@ -58,4 +58,16 @@ class SeekCoalescerTest {
         runCurrent()
         assertEquals(listOf(0.0), committed)
     }
+
+    @Test fun bufferedSeekIsImmediateAndCancelsAnOlderRestart() = runTest {
+        val committed = mutableListOf<Double>()
+        val seek = SeekCoalescer(this, canSeekImmediately = { it <= 200.0 }) { committed.add(it) }
+        seek.seekTo(600.0)
+        runCurrent()
+        seek.seekBy(100.0, -450.0)
+        assertEquals(listOf(150.0), committed)
+        advanceTimeBy(500)
+        runCurrent()
+        assertEquals(listOf(150.0), committed)
+    }
 }
