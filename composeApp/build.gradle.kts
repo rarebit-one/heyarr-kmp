@@ -127,3 +127,20 @@ tasks.register<JavaExec>("screenshots") {
     systemProperty("java.awt.headless", "true")
     args(layout.buildDirectory.dir("screenshots").get().asFile.absolutePath)
 }
+
+// The same off-screen renderer pointed at a REAL node (preview/LiveScreenshots.kt): a
+// stock-take's "what does the app show with live data" artefact. Reads HEYARR_BASE_URL /
+// HEYARR_TOKEN / HEYARR_DETAIL from the environment; writes build/live-screenshots/*.png.
+tasks.register<JavaExec>("liveScreenshots") {
+    group = "verification"
+    description = "Render each screen to build/live-screenshots/*.png against the node in HEYARR_BASE_URL."
+    dependsOn("jvmMainClasses")
+    classpath = files(
+        layout.buildDirectory.dir("classes/kotlin/jvm/main"),
+        layout.buildDirectory.dir("processedResources/jvm/main"),
+        configurations.getByName("jvmRuntimeClasspath"),
+    )
+    mainClass.set("one.rarebit.heyarr.desktop.preview.LiveScreenshotsKt")
+    systemProperty("java.awt.headless", "true")
+    args(layout.buildDirectory.dir("live-screenshots").get().asFile.absolutePath)
+}
