@@ -268,6 +268,7 @@ class EmbeddedPlayer(
             // elsewhere; mpv falls back to software if the method is unavailable, so it is always safe.
             "msg-level" to "all=error", "osc" to "no", "osd-level" to "0", "input-default-bindings" to "no",
             "hwdec" to EMBEDDED_HWDEC,
+            "alang" to "eng,en", "slang" to "eng,en",
             // HDR sources (4K especially) tone-mapped toward the SDR, 8-bit surface this
             // software renderer presents. Without it mpv hands back BT.2020/PQ pixels the UI
             // shows as if they were sRGB — the washed-out, low-contrast look on 4K HDR. The
@@ -316,6 +317,7 @@ class EmbeddedPlayer(
                     "--input-vo-keyboard=yes",
                     "--geometry=60%",
                     "--input-conf=${inputConf().absolutePath}",
+                    "--alang=eng,en", "--slang=eng,en",
                 ),
             )
             start?.let { add("--start=$it") }
@@ -342,7 +344,11 @@ class EmbeddedPlayer(
         wantedSubs = emptyList()
         resubOnLoad = false // and they belonged to the old item
         state =
-            state.copy(loaded = false, position = 0.0, duration = knownDuration ?: 0.0, eof = false, error = null, hasStarted = false, coreIdle = true, title = title, subtitles = emptyList(), audio = emptyList())
+            state.copy(
+                loaded = false, position = 0.0, duration = knownDuration ?: 0.0, eof = false,
+                error = null, hasStarted = false, coreIdle = true, title = title,
+                subtitles = emptyList(), audio = emptyList(),
+            )
         send("set_property", "force-media-title", title)
         send("loadfile", streamBaseUrl ?: url)
         send("set_property", "pause", false)
@@ -596,7 +602,10 @@ class EmbeddedPlayer(
 
         /** Properties observed in order; the index+1 is the observer id. */
         val OBSERVED =
-            listOf("time-pos", "duration", "pause", "volume", "mute", "paused-for-cache", "demuxer-cache-time", "eof-reached", "core-idle", "track-list", "sid", "aid", "media-title")
+            listOf(
+                "time-pos", "duration", "pause", "volume", "mute", "paused-for-cache", "demuxer-cache-time",
+                "eof-reached", "core-idle", "track-list", "sid", "aid", "media-title",
+            )
     }
 }
 

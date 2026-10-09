@@ -264,6 +264,7 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
                     "containers" to listOf("mp4"),
                     "video" to listOf("h264"),
                     "audio" to listOf("aac"),
+                    "audio_languages" to listOf("en"),
                     "max_height" to maxHeight,
                 ),
             ),

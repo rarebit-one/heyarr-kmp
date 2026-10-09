@@ -24,6 +24,8 @@ data class Track(
     val missingSince: String? = null,
     override val editionLabel: String? = null,
     override val sourcePath: String? = null,
+    override val language: String? = null,
+    override val hearingImpaired: Boolean = false,
 ) : EpisodeFile {
     /** A blob we can stream, and the file is present. */
     override val isPlayable: Boolean get() = !blobHash.isNullOrBlank() && missingSince.isNullOrBlank()
@@ -95,6 +97,8 @@ object TracksJson {
             missingSince = JsonScan.stringField(obj, "missing_since"),
             editionLabel = JsonScan.stringField(obj, "edition_label"),
             sourcePath = JsonScan.stringField(obj, "source_path"),
+            language = JsonScan.stringField(obj, "language"),
+            hearingImpaired = JsonScan.boolField(obj, "hearing_impaired") ?: false,
         )
     }
 }

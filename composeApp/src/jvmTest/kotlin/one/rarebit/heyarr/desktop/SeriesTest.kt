@@ -70,6 +70,47 @@ class SeriesTest {
         file("sp1", "Yellowstone.S00E01.Behind.the.Story.720p.mp4", "Specials"),
     )
 
+    @Test fun prefersSourceMarkedSdhWithoutASdhFilename() {
+        val files = TracksJson.parse(
+            """{"items":[{"id":"video",""" +
+                """"edition_id":"e",""" +
+                """"filename":"Show.S01E06.mkv",""" +
+                """"blob_hash":"b",""" +
+                """"role":"primary"},""" +
+                """{"id":"plain",""" +
+                """"edition_id":"e",""" +
+                """"filename":"Show.S01E06.en.srt",""" +
+                """"blob_hash":"p",""" +
+                """"role":"subtitle",""" +
+                """"language":"en"},""" +
+                """{"id":"marked",""" +
+                """"edition_id":"e",""" +
+                """"filename":"Show.S01E06.en-US.sdh.srt",""" +
+                """"blob_hash":"s",""" +
+                """"role":"subtitle",""" +
+                """"language":"en-US",""" +
+                """"hearing_impaired":true}]}""",
+        )
+        assertEquals(
+            listOf("marked", "plain"),
+            Series.seasons(files).single().episodes.single().subtitles.map {
+                it.id
+            },
+        )
+    }
+
+    @Test fun prefersEnglishSdhAndExcludesQuarantinedCaptions() {
+        val files = listOf(
+            file("video", "Show.S01E06.mkv", "Season 01"),
+            file("italian", "Show.S01E06.ita.srt", "Season 01", role = "subtitle"),
+            file("english", "Show.S01E06.eng.srt", "Season 01", role = "subtitle"),
+            file("sdh", "Show.S01E06.en.sdh.srt", "Season 01", role = "subtitle"),
+            file("bad", "Show.S01E06.en.srt", "Season 01", role = "extra"),
+        )
+        val episode = Series.seasons(files).single().episodes.single()
+        assertEquals(listOf("sdh", "english", "italian"), episode.subtitles.map { it.id })
+    }
+
     @Test fun groupsAShowIntoSeasonsThenEpisodesInOrderWithSidecarsAttached() {
         val seasons = Series.seasons(yellowstone)
         assertEquals(listOf("Season 4", "Season 5", "Specials"), seasons.map { it.label })

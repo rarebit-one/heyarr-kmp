@@ -49,6 +49,7 @@ class PlaybackPlanTest {
         // A conservative, transcode-forcing profile: H.264 up to 1080p, this asset.
         assertTrue(sentBody!!.contains("\"asset_id\":\"asset-1\""), "sends the asset id")
         assertTrue(sentBody!!.contains("\"max_height\":1080"), "declares max_height 1080")
+        assertTrue(sentBody!!.contains("\"audio_languages\":[\"en\"]"), "requests English before transcoding")
         assertTrue(sentBody!!.contains("h264"), "declares only h264 video so hevc transcodes")
     }
 
