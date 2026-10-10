@@ -9,8 +9,6 @@
     <ID>ComplexCondition:DetailHero.kt$status == LibraryStatus.NOT_TRACKED &amp;&amp; canWant &amp;&amp; (asset != null || type == MediaType.SERIES)</ID>
     <ID>ComplexCondition:SearchShortcut.kt$!enabled || event.id != KeyEvent.KEY_PRESSED || event.keyCode != KeyEvent.VK_F || !event.isControlDown || event.isMetaDown || event.isAltDown || event.isShiftDown</ID>
     <ID>CyclomaticComplexMethod:App.kt$@Composable fun App( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
-    <ID>CyclomaticComplexMethod:AudioDock.kt$@Composable fun AudioDock(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
-    <ID>CyclomaticComplexMethod:DaemonConfig.kt$DaemonConfig.Companion$fun resolve(args: Array&lt;String&gt;, env: (String) -&gt; String? = System::getenv): DaemonConfig</ID>
     <ID>CyclomaticComplexMethod:DetailScreen.kt$@Composable fun DetailScreen( session: AppSession, route: Route.Detail, state: DetailState, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>CyclomaticComplexMethod:DetailWatch.kt$@Composable internal fun SeasonsBlock( session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, state: DetailState, wants: List&lt;DesiredItem&gt;, )</ID>
     <ID>CyclomaticComplexMethod:DownloadsScreen.kt$@Composable fun DownloadsScreen( session: AppSession, state: DownloadsState, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
@@ -26,20 +24,16 @@
     <ID>CyclomaticComplexMethod:PlayerScreen.kt$PlayerKeys$fun fromAwt(code: Int): Key?</ID>
     <ID>CyclomaticComplexMethod:VideoSurface.kt$@Composable fun PlaybackHost(session: AppSession)</ID>
     <ID>EmptyFunctionBlock:KeychainSecretStoreTest.kt$KeychainSecretStoreTest.&lt;no name provided&gt;${}</ID>
-    <ID>ForbiddenComment:VaultSyncEngine.kt$VaultSyncEngine$// TODO: causal parents = the applied frontier</ID>
     <ID>FunctionNaming:App.kt$@Composable fun App( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
     <ID>FunctionNaming:App.kt$@Composable private fun SignInSheet(session: AppSession, onClose: () -&gt; Unit, onOpenSettings: () -&gt; Unit)</ID>
-    <ID>FunctionNaming:AudioDock.kt$@Composable fun AudioDock(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:CardPieces.kt$@Composable internal fun BoxScope.HeroScrims()</ID>
     <ID>FunctionNaming:CardPieces.kt$@Composable internal fun CardCaption(title: String, subtitle: String?, meta: List&lt;String?&gt;)</ID>
-    <ID>FunctionNaming:CardPieces.kt$@Composable internal fun CardProgressBar(progress: Float, modifier: Modifier)</ID>
     <ID>FunctionNaming:CardPieces.kt$@Composable internal fun CardWantButton(status: LibraryStatus?, onWant: () -&gt; Unit, modifier: Modifier)</ID>
     <ID>FunctionNaming:CardPieces.kt$@Composable internal fun HeroKicker(type: MediaType, kicker: String?, status: LibraryStatus?)</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun &lt;T&gt; Rail( title: String, state: RailState&lt;T&gt;, modifier: Modifier = Modifier, subtitle: String? = null, emptyText: String = "Nothing here yet.", skeletonAspect: CardAspect = CardAspect.POSTER, skeletonWidth: Dp = Tokens.posterWidth, trailing: (@Composable () -&gt; Unit)? = null, onRetry: (() -&gt; Unit)? = null, key: ((T) -&gt; Any)? = null, card: @Composable (T) -&gt; Unit, )</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun Artwork( bitmap: ImageBitmap?, type: MediaType, modifier: Modifier = Modifier, contentDescription: String? = null, glyphSize: Dp = 28.dp, )</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun Hero( title: String, type: MediaType, modifier: Modifier = Modifier, kicker: String? = null, meta: List&lt;String?&gt; = emptyList(), description: String? = null, artwork: ImageBitmap? = null, status: LibraryStatus? = null, primary: (@Composable () -&gt; Unit)? = null, secondary: (@Composable () -&gt; Unit)? = null, height: Dp = 380.dp, )</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun HeroSkeleton(height: Dp = 380.dp)</ID>
-    <ID>FunctionNaming:Cards.kt$@Composable fun MediaCard( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The client's mode; a guest ([ClientMode.GUEST]) never sees the Want affordance. */ mode: ClientMode = ClientMode.ENROLLED, width: Dp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, )</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun MediaCardSkeleton(aspect: CardAspect = CardAspect.POSTER, width: Dp = Tokens.posterWidth)</ID>
     <ID>FunctionNaming:Cards.kt$@Composable fun MediaRow( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, selected: Boolean = false, trailing: (@Composable () -&gt; Unit)? = null, )</ID>
     <ID>FunctionNaming:ConnectionPanels.kt$@Composable internal fun ConnectionPanel( session: AppSession, state: ConnectionState, onRefresh: () -&gt; Unit, onClose: () -&gt; Unit, onSettings: () -&gt; Unit, )</ID>
@@ -58,7 +52,6 @@
     <ID>FunctionNaming:CurateSections.kt$@Composable internal fun HealthSection(session: AppSession, detail: WorkDetail, state: DetailState, scope: CoroutineScope)</ID>
     <ID>FunctionNaming:CurateSections.kt$@Composable internal fun IdentifiersSection(detail: WorkDetail, type: MediaType, state: DetailState)</ID>
     <ID>FunctionNaming:CurateSections.kt$@Composable internal fun VariantsSection(state: DetailState)</ID>
-    <ID>FunctionNaming:CurateSections.kt$@Composable private fun CandidateCell(cand: Candidate, c: Int, acquireEnabled: Boolean, onAcquire: () -&gt; Unit)</ID>
     <ID>FunctionNaming:CurateSections.kt$@Composable private fun ReplicaTable(replicas: McpResult&lt;List&lt;Replica&gt;&gt;?, hash: String?)</ID>
     <ID>FunctionNaming:CurateSections.kt$@Composable private fun SearchIndexersButton(session: AppSession, wants: List&lt;DesiredItem&gt;, scope: CoroutineScope)</ID>
     <ID>FunctionNaming:CurateSections.kt$@Composable private fun VerifyBytesButton(session: AppSession, hash: String, scope: CoroutineScope)</ID>
@@ -80,8 +73,6 @@
     <ID>FunctionNaming:DetailEpisodes.kt$@Composable internal fun MissingEpisodeRow( session: AppSession, season: Season, number: Int, wants: List&lt;DesiredItem&gt;, state: DetailState, ext: ExternalEpisode? = null, )</ID>
     <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun EpisodeActions(label: String, playEnabled: Boolean, onCast: () -&gt; Unit, onPlay: () -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun EpisodeFileFacts(ep: Episode)</ID>
-    <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun EpisodeInfo(ep: Episode, ext: ExternalEpisode?, continueLabel: String?, modifier: Modifier)</ID>
-    <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun EpisodeThumb(art: ImageBitmap?, playOverlay: Boolean, progress: Float?)</ID>
     <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun LookForEpisodeButton(session: AppSession, season: Season, wants: List&lt;DesiredItem&gt;, scope: CoroutineScope)</ID>
     <ID>FunctionNaming:DetailEpisodes.kt$@Composable private fun MissingEpisodeThumb(art: ImageBitmap?)</ID>
     <ID>FunctionNaming:DetailHero.kt$@Composable internal fun DetailHero( session: AppSession, detail: WorkDetail, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
@@ -102,8 +93,6 @@
     <ID>FunctionNaming:DetailWatch.kt$@Composable private fun ArchiveItemRow(item: FollowedItem, onOpen: (() -&gt; Unit)?)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable private fun SeasonChips(all: List&lt;Season&gt;, selected: Season, ext: List&lt;ExternalEpisode&gt;, onSelect: (Int?) -&gt; Unit)</ID>
     <ID>FunctionNaming:DetailWatch.kt$@Composable private fun TrackRow(i: Int, t: Track, onPlay: () -&gt; Unit)</ID>
-    <ID>FunctionNaming:DiscoverScreen.kt$@Composable fun DiscoverScreen(session: AppSession, state: DiscoverState, onWantTitle: WantByTitle, modifier: Modifier = Modifier)</ID>
-    <ID>FunctionNaming:DiscoverScreen.kt$@Composable fun DiscoveryResults( session: AppSession, query: String, result: McpResult&lt;List&lt;DiscoveryHit&gt;&gt;?, busy: Boolean, onWantTitle: WantByTitle, )</ID>
     <ID>FunctionNaming:DownloadsScreen.kt$@Composable fun DownloadsScreen( session: AppSession, state: DownloadsState, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>FunctionNaming:EnrolPanel.kt$@Composable fun EnrolPanel(session: AppSession)</ID>
     <ID>FunctionNaming:FollowedPanel.kt$@Composable internal fun FollowedPanel(session: AppSession, state: SettingsState, reload: () -&gt; Unit)</ID>
@@ -111,7 +100,6 @@
     <ID>FunctionNaming:FollowedPanel.kt$@Composable private fun FollowHeading()</ID>
     <ID>FunctionNaming:FollowedPanel.kt$@Composable private fun FollowedList(session: AppSession, list: List&lt;FollowedSource&gt;?, reload: () -&gt; Unit)</ID>
     <ID>FunctionNaming:FollowedPanel.kt$@Composable private fun FollowedRow(s: FollowedSource, onUnfollow: () -&gt; Unit)</ID>
-    <ID>FunctionNaming:HomeRails.kt$@Composable internal fun ContinueRail(session: AppSession, cont: RailState&lt;ContinueEntry&gt;, onOpen: (Route) -&gt; Unit)</ID>
     <ID>FunctionNaming:HomeRails.kt$@Composable internal fun FollowingRail(session: AppSession, followed: RailState&lt;FollowedSource&gt;, onOpen: (Route) -&gt; Unit)</ID>
     <ID>FunctionNaming:HomeRails.kt$@Composable internal fun TypeRail( session: AppSession, t: MediaType, rail: RailState&lt;SearchHit&gt;, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, )</ID>
     <ID>FunctionNaming:HomeScreen.kt$@Composable fun HomeScreen( session: AppSession, state: HomeState, onOpen: (Route) -&gt; Unit, onWant: (String, String, MediaType) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
@@ -188,11 +176,7 @@
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun AppearancePanel(session: AppSession)</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun ConnectionPanel(session: AppSession)</ID>
     <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun PeersPanel(session: AppSession, state: SettingsState)</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun VaultPanel(session: AppSession)</ID>
-    <ID>FunctionNaming:SettingsScreen.kt$@Composable private fun VaultStatus(vault: VaultService)</ID>
-    <ID>FunctionNaming:SideNav.kt$@Composable fun SideNav( current: Route, onGo: (Route) -&gt; Unit, connection: Connection, compact: Boolean = false, modifier: Modifier = Modifier, connectionDetail: String? = null, onConnection: () -&gt; Unit = {}, consuming: Boolean = false, )</ID>
     <ID>FunctionNaming:SideNav.kt$@Composable private fun ConnectionTile(connection: Connection, detail: String?, onClick: () -&gt; Unit)</ID>
-    <ID>FunctionNaming:SideNav.kt$@Composable private fun RailItem(item: NavItem, active: Boolean, accent: Color, accentEnd: Color, onClick: () -&gt; Unit)</ID>
     <ID>FunctionNaming:VideoSurface.kt$@Composable fun PlaybackHost(session: AppSession)</ID>
     <ID>FunctionNaming:VideoSurface.kt$@Composable fun VideoSurface(player: one.rarebit.heyarr.desktop.playback.EmbeddedPlayer, modifier: Modifier = Modifier)</ID>
     <ID>FunctionNaming:WantSeasonsPanel.kt$@Composable internal fun WantSeasonsPanel( session: AppSession, detail: WorkDetail, seasons: List&lt;Season&gt;, wants: List&lt;DesiredItem&gt;, )</ID>
@@ -204,7 +188,6 @@
     <ID>FunctionNaming:WantSheet.kt$@Composable private fun TitleAndYear(title: String, onTitle: (String) -&gt; Unit, year: String, onYear: (String) -&gt; Unit)</ID>
     <ID>FunctionNaming:WantSheet.kt$@Composable private fun WantOptions(monitor: Boolean, onToggleMonitor: () -&gt; Unit, reason: String, onReason: (String) -&gt; Unit)</ID>
     <ID>LongMethod:App.kt$@Composable fun App( settings: SettingsStore, transport: HttpTransport, player: Player = MpvPlayer(), opener: ExternalOpener = XdgOpen(), downloader: BlobDownloader = JdkBlobDownloader(), initialRoute: Route = Route.Consume(Experience.WATCH), artworkLoader: ArtworkLoader? = null, externalMetadata: one.rarebit.heyarr.core.state.ExternalMetadata? = null, /** LAN mDNS browser for auto-discovery; the no-op default keeps previews/tests network-free. */ mdns: MdnsResolver = NoMdnsResolver, /** Preview/test seam: a query typed into search on first composition. */ initialQuery: String? = null, /** Preview/test seam: open the connection sheet at once. */ initialConnectionSheet: Boolean = false, initialLibraryTab: Int = 0, /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */ initialAudioQueue: List&lt;Route.Player&gt; = emptyList(), /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */ onFullscreen: (Boolean) -&gt; Unit = {}, /** * Turn on the real desktop device-enrol stack ("Sign in to save" over guest). The * desktop entry point ([one.rarebit.heyarr.desktop.MainKt]) sets this true; previews / * tests leave it false so they stay guest and touch no device key store. */ enableDeviceEnrol: Boolean = false, )</ID>
-    <ID>LongMethod:AudioDock.kt$@Composable fun AudioDock(session: AppSession, onOpen: () -&gt; Unit, modifier: Modifier = Modifier)</ID>
     <ID>LongMethod:DownloadsScreen.kt$@Composable fun DownloadsScreen( session: AppSession, state: DownloadsState, onOpen: (Route) -&gt; Unit, modifier: Modifier = Modifier, )</ID>
     <ID>LongMethod:EmbeddedPlayer.kt$EmbeddedPlayer$fun start( embedded: Boolean, url: String, token: String, title: String, knownDurationSec: Double? = null, streamBaseUrl: String? = null, ): String?</ID>
     <ID>LongMethod:EnrolPanel.kt$@Composable fun EnrolPanel(session: AppSession)</ID>
@@ -218,7 +201,6 @@
     <ID>LongParameterList:AppSession.kt$AppSession$( workId: String, title: String, profile: String, monitor: Boolean = true, reason: String? = null, onDone: (McpResult&lt;*&gt;?) -&gt; Unit = {}, )</ID>
     <ID>LongParameterList:Cards.kt$( title: String, state: RailState&lt;T&gt;, modifier: Modifier = Modifier, subtitle: String? = null, emptyText: String = "Nothing here yet.", skeletonAspect: CardAspect = CardAspect.POSTER, skeletonWidth: Dp = Tokens.posterWidth, trailing: (@Composable () -&gt; Unit)? = null, onRetry: (() -&gt; Unit)? = null, key: ((T) -&gt; Any)? = null, card: @Composable (T) -&gt; Unit, )</ID>
     <ID>LongParameterList:Cards.kt$( title: String, type: MediaType, modifier: Modifier = Modifier, kicker: String? = null, meta: List&lt;String?&gt; = emptyList(), description: String? = null, artwork: ImageBitmap? = null, status: LibraryStatus? = null, primary: (@Composable () -&gt; Unit)? = null, secondary: (@Composable () -&gt; Unit)? = null, height: Dp = 380.dp, )</ID>
-    <ID>LongParameterList:Cards.kt$( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, onWant: (() -&gt; Unit)? = null, /** The client's mode; a guest ([ClientMode.GUEST]) never sees the Want affordance. */ mode: ClientMode = ClientMode.ENROLLED, width: Dp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth, showBadge: Boolean = true, /** 0..1 to draw a progress bar along the art's bottom edge (the continue rail). */ progress: Float? = null, aspectOverride: CardAspect? = null, )</ID>
     <ID>LongParameterList:Cards.kt$( title: String, type: MediaType, onOpen: () -&gt; Unit, modifier: Modifier = Modifier, subtitle: String? = null, meta: List&lt;String?&gt; = emptyList(), artwork: ImageBitmap? = null, status: LibraryStatus? = null, selected: Boolean = false, trailing: (@Composable () -&gt; Unit)? = null, )</ID>
     <ID>LongParameterList:Cover.kt$( session: AppSession, type: MediaType, title: String, nodeArtPath: String?, year: Int? = null, creator: String? = null, feedRef: String? = null, )</ID>
     <ID>LongParameterList:DetailCurate.kt$( label: String, value: String, modifier: Modifier = Modifier, placeholder: String? = null, secret: Boolean = false, onChange: (String) -&gt; Unit, )</ID>
@@ -242,14 +224,8 @@
     <ID>LongParameterList:SearchScreen.kt$( session: AppSession, search: SearchController, onOpen: (Route) -&gt; Unit, onWant: (workId: String, title: String, type: MediaType) -&gt; Unit, onWantTitle: WantByTitle, focusRequester: FocusRequester, modifier: Modifier = Modifier, initialDiscover: Boolean = false, )</ID>
     <ID>LongParameterList:SearchScreen.kt$( value: String, onValueChange: (String) -&gt; Unit, onSubmit: () -&gt; Unit, onMove: (Int) -&gt; Unit, onClear: () -&gt; Unit, focusRequester: FocusRequester, )</ID>
     <ID>LongParameterList:SeriesTest.kt$SeriesTest$( id: String, name: String, label: String? = null, role: String? = "primary", mime: String? = "video/mp4", hash: String? = "blake3:$id", path: String? = null, missing: String? = null, )</ID>
-    <ID>LongParameterList:SideNav.kt$( current: Route, onGo: (Route) -&gt; Unit, connection: Connection, compact: Boolean = false, modifier: Modifier = Modifier, connectionDetail: String? = null, onConnection: () -&gt; Unit = {}, consuming: Boolean = false, )</ID>
-    <ID>LongParameterList:VaultService.kt$VaultService$( private val scope: CoroutineScope, private val config: () -&gt; DesktopConfig, private val rememberFolder: (String?) -&gt; Unit, private val rememberSpaceId: (String) -&gt; Unit, /** Open the configured space or self-bootstrap one (network + device keys). */ private val openCustody: (configuredSpaceId: String?) -&gt; VaultCustody.Result, /** Build the sync engine for an opened vault + folder. */ private val engineFor: (OpenedVault, folder: String) -&gt; VaultSync, /** Build the folder change source (falls back to periodic when it throws). */ private val watchFor: (folder: String) -&gt; SyncChanges, private val retryMs: Long = 15_000, )</ID>
     <ID>LoopWithTooManyJumpStatements:Libmpv.kt$MpvRenderer$while</ID>
-    <ID>LoopWithTooManyJumpStatements:LocalScanner.kt$LocalScanner$for</ID>
     <ID>LoopWithTooManyJumpStatements:MembershipOps.kt$MembershipOps$while</ID>
-    <ID>LoopWithTooManyJumpStatements:SyncChanges.kt$WatchedFolder$for</ID>
-    <ID>LoopWithTooManyJumpStatements:SyncIndex.kt$FileSyncIndexStore$for</ID>
-    <ID>LoopWithTooManyJumpStatements:VoidbindCliCredential.kt$VoidbindCliCredential.Companion$for</ID>
     <ID>MagicNumber:App.kt$4</ID>
     <ID>MagicNumber:AppSession.kt$AppSession$1000</ID>
     <ID>MagicNumber:AppSession.kt$AppSession$1_000_000</ID>
@@ -360,9 +336,6 @@
     <ID>MagicNumber:Fixtures.kt$Fixtures$4</ID>
     <ID>MagicNumber:Fixtures.kt$Fixtures$412_000_000L</ID>
     <ID>MagicNumber:Fixtures.kt$Fixtures$5</ID>
-    <ID>MagicNumber:GoDeviceStore.kt$GoDeviceStore$64</ID>
-    <ID>MagicNumber:GoDeviceStore.kt$GoDeviceStore.Companion$16</ID>
-    <ID>MagicNumber:GoDeviceStore.kt$GoDeviceStore.Companion$4</ID>
     <ID>MagicNumber:HeyarrApi.kt$HeyarrApi$200</ID>
     <ID>MagicNumber:HeyarrApi.kt$HeyarrApi$201</ID>
     <ID>MagicNumber:HeyarrApi.kt$HeyarrApi$202</ID>
@@ -440,28 +413,14 @@
     <ID>MagicNumber:ReaderScreen.kt$200</ID>
     <ID>MagicNumber:ReaderScreen.kt$32</ID>
     <ID>MagicNumber:Screenshots.kt$100</ID>
-    <ID>MagicNumber:Screenshots.kt$1280</ID>
     <ID>MagicNumber:Screenshots.kt$150</ID>
     <ID>MagicNumber:Screenshots.kt$20</ID>
     <ID>MagicNumber:Screenshots.kt$30</ID>
     <ID>MagicNumber:Screenshots.kt$400</ID>
-    <ID>MagicNumber:Screenshots.kt$620</ID>
-    <ID>MagicNumber:Screenshots.kt$760</ID>
-    <ID>MagicNumber:Screenshots.kt$900</ID>
-    <ID>MagicNumber:SearchScreen.kt$300</ID>
     <ID>MagicNumber:SettingsStore.kt$DesktopConfig$0.5f</ID>
     <ID>MagicNumber:SettingsStore.kt$DesktopConfig$4f</ID>
     <ID>MagicNumber:SettingsStore.kt$FileSettingsStore$0.5f</ID>
     <ID>MagicNumber:SettingsStore.kt$FileSettingsStore$4f</ID>
-    <ID>MagicNumber:VaultBlobStore.kt$JdkVaultBlobStore$120</ID>
-    <ID>MagicNumber:VaultBlobStore.kt$JdkVaultBlobStore$15</ID>
-    <ID>MagicNumber:VaultBlobStore.kt$JdkVaultBlobStore$200</ID>
-    <ID>MagicNumber:VaultBlobStore.kt$JdkVaultBlobStore$201</ID>
-    <ID>MagicNumber:VaultBlobStore.kt$JdkVaultBlobStore$206</ID>
-    <ID>MagicNumber:VaultCustody.kt$VaultCustody$32</ID>
-    <ID>MagicNumber:VaultSyncDaemon.kt$VaultSyncDaemon$1_000</ID>
-    <ID>MagicNumber:VaultSyncEngine.kt$VaultSyncEngine$16</ID>
-    <ID>MagicNumber:VoidbindCliCredential.kt$VoidbindCliCredential.Companion$10</ID>
     <ID>MagicNumber:WantSheet.kt$4</ID>
     <ID>MagicNumber:WorkDetail.kt$PrimaryAsset.Companion$100</ID>
     <ID>MagicNumber:WorkDetail.kt$PrimaryAsset.Companion$1024</ID>
@@ -474,37 +433,21 @@
     <ID>MatchingDeclarationName:MissingScreen.kt$MissingState</ID>
     <ID>MatchingDeclarationName:NowPlayingScreen.kt$NowPlayingState</ID>
     <ID>MatchingDeclarationName:SettingsScreen.kt$SettingsState</ID>
-    <ID>MatchingDeclarationName:SideNav.kt$NavItem</ID>
     <ID>MaxLineLength:App.kt$"Device sign-in (Voidbind device/QR) is the next upgrade and is not wired on desktop yet — a pasted token is the way in for now."</ID>
-    <ID>MaxLineLength:App.kt$"You're browsing as a guest — watch and listen freely, no account needed. Sign in to save your place, keep playlists, and want or follow things."</ID>
-    <ID>MaxLineLength:App.kt$Connection.OFFLINE</ID>
-    <ID>MaxLineLength:App.kt$Connection.UNAUTHORIZED</ID>
-    <ID>MaxLineLength:App.kt$is Route.Player</ID>
     <ID>MaxLineLength:AppSession.kt$Connection.Companion$/** What one liveness probe says: its HTTP status, or 0 when the transport failed. A refused credential is not "offline". */</ID>
     <ID>MaxLineLength:ConnectionPanels.kt$if (s.canWrite) "yes — want, follow, acquire will succeed" else "no — this token is read-only; writes will be refused"</ID>
     <ID>MaxLineLength:ConnectionPanels.kt$if (session.config.bearerToken.isBlank()) "none (guest)" else "bearer, ${session.config.bearerToken.trim().length} chars, in ~/.config/heyarr-desktop/config.json (0600)"</ID>
-    <ID>MaxLineLength:CurateSections.kt$Section</ID>
-    <ID>MaxLineLength:CurateSections.kt$subtitle = "Works the scanner minted for this title's download folders (heyarr-core#470) — hidden from listings, folded here"</ID>
     <ID>MaxLineLength:CurateWants.kt$Section</ID>
     <ID>MaxLineLength:CurateWants.kt$subtitle = "${held.size} playable file${if (held.size == 1) "" else "s"} · ${verdicts.size} judged against a profile"</ID>
     <ID>MaxLineLength:DetailCurate.kt$"Describe a release and heyarr explains, rule by rule, whether the profile would accept it. Leave a field blank when you do not know — a blank reads as undetermined, a guess reads as a claim."</ID>
     <ID>MaxLineLength:DetailCurate.kt$"heyarr's tool surface has no caption or artwork search yet: sidecars arrive with a release or a scan. Asking the indexers again (Releases) is the only fetch this node can queue."</ID>
     <ID>MaxLineLength:DetailCurate.kt$/** "Would this be accepted?" — describe a release, get every rule back. Absent fields stay absent so they read as undetermined. */</ID>
-    <ID>MaxLineLength:DetailEpisodes.kt$if (wants.isEmpty()) "Want this series and heyarr will look for it." else "Wanted — heyarr searches on its schedule; ask now to jump the queue."</ID>
     <ID>MaxLineLength:DetailHero.kt$"No renderers found. A device that is switched off will not be listed — that is not the same as it not existing."</ID>
-    <ID>MaxLineLength:DetailHero.kt$"Nothing to play yet — ${if (wants.isEmpty()) "not wanted, so nothing is looking for a copy." else "heyarr is looking. Curate → Releases shows what the indexers found."}"</ID>
     <ID>MaxLineLength:DetailScreen.kt$"Stops following this title and removes its catalogue entry and download requests. Files are not deleted immediately; unused managed data may be reclaimed later."</ID>
-    <ID>MaxLineLength:DetailScreen.kt$one.rarebit.heyarr.ui.components</ID>
-    <ID>MaxLineLength:DetailWatch.kt$"No episode files are held for this series yet.${if (wants.isNotEmpty()) " heyarr is looking — Curate → Releases shows what it found." else ""}"</ID>
     <ID>MaxLineLength:DetailWatch.kt$"No synopsis — the node has no metadata provider and no public source knew this title. Titles, seasons and episodes below come from the files themselves."</ID>
     <ID>MaxLineLength:DetailWatch.kt$"Synopsis${if (ext.imageUrl != null &amp;&amp; detail.artworkPath == null) " and cover" else ""} via ${ext.source} — not from your library. The node has no metadata provider (TVDB, ADR-0058)."</ID>
-    <ID>MaxLineLength:DiscoverScreen.kt$"This node reports no metadata provider — ${state.providers?.size ?: 0} provider(s), none able to discover. Discovery will answer with a refusal; Search still finds everything catalogued, and Missing lets you Want a title by name."</ID>
-    <ID>MaxLineLength:DiscoverScreen.kt$detail = "Discovery needs a metadata provider configured on the node (ADR-0058). Wanting by title still works."</ID>
-    <ID>MaxLineLength:DiscoverScreen.kt$detail = "The node could not be reached for this call. The connection state at the foot of the sidebar has the details."</ID>
     <ID>MaxLineLength:DownloadsScreen.kt$"The node reports each want's acquisition state and phase, not a percentage — a transfer's byte count lives in the download client (Transmission) and heyarr does not relay it yet."</ID>
     <ID>MaxLineLength:EmbeddedPlayer.kt$EmbeddedPlayer$/** A window of mpv's own. Picture only: the app's transport is the one UI in either mode; its keys still work on their own. */</ID>
-    <ID>MaxLineLength:EmbeddedPlayer.kt$EmbeddedPlayer$state.copy(loaded = false, position = 0.0, duration = knownDuration ?: 0.0, eof = false, error = null, hasStarted = false, coreIdle = true, title = title, subtitles = emptyList(), audio = emptyList())</ID>
-    <ID>MaxLineLength:EmbeddedPlayer.kt$EmbeddedPlayer.Companion$listOf("time-pos", "duration", "pause", "volume", "mute", "paused-for-cache", "demuxer-cache-time", "eof-reached", "core-idle", "track-list", "sid", "aid", "media-title")</ID>
     <ID>MaxLineLength:Fixtures.kt$FakeHeyarrTransport$"candidate rejected by rule source.nin: source cam, which is not outside [cam, telesync] — change the profile if it should be acceptable"</ID>
     <ID>MaxLineLength:Fixtures.kt$FakeHeyarrTransport$"no metadata provider is configured that can search for new content — configure a TVDB provider (ADR-0058) to enable discovery"</ID>
     <ID>MaxLineLength:Fixtures.kt$FakeHeyarrTransport$)</ID>
@@ -531,37 +474,22 @@
     <ID>MaxLineLength:HeyarrApi.kt$HeyarrApi$/** `GET /api/v1/consumption/continue` — the node's continue rail: the newest unfinished playback session per work (ADR-0075). */</ID>
     <ID>MaxLineLength:HeyarrApi.kt$HeyarrApi$/** `acquire_release` — fetch one named candidate. A profile-rejected candidate is refused by rule; the refusal is returned to show. */</ID>
     <ID>MaxLineLength:HeyarrApi.kt$HeyarrApi$/** `discover_content` — ask the metadata provider (TVDB) for series the library does NOT hold. A node with no provider refuses; that refusal is returned for the UI to show. */</ID>
-    <ID>MaxLineLength:HomeRails.kt$Rail</ID>
     <ID>MaxLineLength:LandscapeMetadataTest.kt$LandscapeMetadataTest$"""[{"type":"background","resolutions":{"original":{"width":1920,"height":1080,"url":"https://art/wide"}}}]"""</ID>
     <ID>MaxLineLength:Libmpv.kt$MpvLib.UpdateCallback$/** `mpv_render_update_fn`: mpv has a new frame (or wants attention). Called on mpv's thread; must return at once. */</ID>
     <ID>MaxLineLength:Libmpv.kt$VideoFrame$/** One rendered picture: an immutable Skia image plus its pixel size. Owned by [MpvRenderer]; never closed while a draw holds it. */</ID>
     <ID>MaxLineLength:LibraryScreen.kt$LibraryState$/** null = every kind; [MEDIA] = films, series, music, books (the default — feeds are the Archive, not the shelf). */</ID>
-    <ID>MaxLineLength:LibraryScreen.kt$detail = if (all.isEmpty()) "Scan a library root on the node, or Want something and let heyarr find it." else "Clear a filter to see more."</ID>
-    <ID>MaxLineLength:MissingScreen.kt$IconButtonRound</ID>
     <ID>MaxLineLength:MovieArtworkTest.kt$MovieArtworkTest$"""{"results":[{"title":"Alien: Romulus","year":2024,"type":"movie","source":"tmdb","external_id":"945961","poster_url":"https://image.tmdb.org/t/p/w500/poster.jpg","backdrop_url":"https://image.tmdb.org/t/p/w1280/backdrop.jpg"}]}"""</ID>
     <ID>MaxLineLength:NowPlayingBar.kt$IconButtonRound</ID>
     <ID>MaxLineLength:NowPlayingScreen.kt$"Playback position and history are the device's own report, live. heyarr keeps no play history this client can read."</ID>
     <ID>MaxLineLength:NowPlayingScreen.kt$detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again."</ID>
     <ID>MaxLineLength:PlayerEventsTest.kt$PlayerEventsTest$val line = """{"event":"property-change","id":8,"name":"track-list","data":[{"id":1,"type":"video","selected":true},{"id":1,"type":"audio","lang":"eng","selected":true},{"id":1,"type":"sub","lang":"en","title":"English","selected":false,"external":true},{"id":2,"type":"sub","lang":"es","selected":false}]}"""</ID>
-    <ID>MaxLineLength:PlayerScreen.kt$IconButtonRound</ID>
     <ID>MaxLineLength:RemoveWorkTest.kt$RemoveWorkTest.&lt;no name provided&gt;$"""{"sources":[{"id":"mine","title":"Mine","work_id":"selected"},{"id":"other","title":"Other","work_id":"untouched"}]}"""</ID>
-    <ID>MaxLineLength:Screenshots.kt$initialRoute = route</ID>
-    <ID>MaxLineLength:Screenshots.kt$settings = settings</ID>
-    <ID>MaxLineLength:SearchScreen.kt$"Kept on this machine only — heyarr's personal history is encrypted controller-side and not reachable from here."</ID>
-    <ID>MaxLineLength:SearchScreen.kt$)</ID>
-    <ID>MaxLineLength:SearchScreen.kt$detail = "Movies, series, music and books come from the library; podcasts and feeds from what you follow. Results appear per type as each answer lands."</ID>
-    <ID>MaxLineLength:SearchScreen.kt$subtitle = "Find titles to add — series, movies, books and music the node's metadata providers know about but the library doesn't hold yet."</ID>
     <ID>MaxLineLength:SeriesTest.kt$SeriesTest$id = id</ID>
     <ID>MaxLineLength:SettingsScreen.kt$"A JVM under XWayland on a HiDPI Wayland desktop reports 1× and ignores the JVM scale flags, so pick the scale here (or set HEYARR_UI_SCALE / GDK_SCALE)."</ID>
     <ID>MaxLineLength:SettingsScreen.kt$"On a trusted network you browse and play as a guest with no token. Add a bearer token to sign in and save wants, follows and your place. Saved to ~/.config/heyarr-desktop/config.json (0600); the token is a secret. Prefer device sign-in? Use “Sign in to save” below to pair this desktop with Voidbind — the primary, offline credential."</ID>
-    <ID>MaxLineLength:SettingsScreen.kt$"One folder ⇄ one vault. Files are encrypted on this machine before they leave; the node and every peer store only ciphertext. Deletes are index-proven and a conflict writes a copy on disk rather than losing an edit."</ID>
-    <ID>MaxLineLength:SettingsScreen.kt$"The accent follows the media in focus: emerald for film, violet for series, amber for books, teal for audiobooks, magenta for podcasts, rose for music. Surfaces and text never change."</ID>
     <ID>MaxLineLength:SettingsScreen.kt$"Transfers move afterwards; this reply only says the cycle was accepted."</ID>
     <ID>MaxLineLength:SettingsScreen.kt$"Where the node holds no artwork, covers and synopses come from keyless public sources — TVmaze (series, with episode lists), Wikipedia (films), Open Library (books), Apple Podcasts, Cover Art Archive (music) and a feed's own image or site icon. Titles are sent to those services; each answer is cached for a week under ~/.cache/heyarr-desktop/meta. Everything external is labelled as such."</ID>
-    <ID>MaxLineLength:SettingsScreen.kt$detail = "Folder sync encrypts every file on this machine before it leaves, and unwraps the vault key with this device's key — so it needs device sign-in (pair with Voidbind in “Sign in to save”)."</ID>
     <ID>MaxLineLength:SettingsScreen.kt$detail = "Following, wants and peer sync are enrolled-only. Add a bearer token above to sign in."</ID>
-    <ID>MaxLineLength:VaultCustody.kt$VaultCustody.Result$/** The outcome of [openOrBootstrap]: the opened vault (null when not ready), whether a space was minted, and why not. */</ID>
-    <ID>MaxLineLength:VaultSyncDaemon.kt$VaultSyncDaemon.Resolved$/** What custody resolution produces: a ready engine, its folder watch, this device, and whether the watch is real. */</ID>
     <ID>MaxLineLength:WantSeasonsPanel.kt$"Seasons the library hasn't seen yet arrive when you want the whole series below — wanting a series follows it."</ID>
     <ID>MaxLineLength:WantSeasonsPanel.kt$"Wanting the whole series follows it: heyarr resolves its metadata id automatically (no TVDB URL needed) and backfills every aired episode plus each new one. To follow a source that has no work here, use Settings → Followed sources."</ID>
     <ID>MaxLineLength:WantSheet.kt$"Created from the title with the same normalisation a scan uses, so wanting it now and scanning it later converge on one work."</ID>
@@ -578,7 +506,6 @@
     <ID>NestedBlockDepth:EmbeddedPlayer.kt$EmbeddedPlayer$private fun readLoop(ch: SocketChannel)</ID>
     <ID>NestedBlockDepth:Screenshots.kt$private fun verifyShelfSwitch()</ID>
     <ID>ReturnCount:ArtworkLoader.kt$ArtworkLoader$suspend fun load(contentPath: String): ImageBitmap?</ID>
-    <ID>ReturnCount:DaemonConfig.kt$DaemonConfig.Companion$fun fromFile(file: File): DaemonConfig</ID>
     <ID>ReturnCount:DesktopDeviceEnroller.kt$DesktopDeviceEnroller$override fun enrolled(): Credential.Device?</ID>
     <ID>ReturnCount:DesktopSecretStore.kt$DesktopSecretStore$override fun unseal(name: String): ByteArray?</ID>
     <ID>ReturnCount:DevicePairingSteps.kt$DevicePairingSteps$override fun receive(deadlineMillis: Long): PairingOutcome&lt;String&gt;</ID>
@@ -605,9 +532,7 @@
     <ID>ReturnCount:PlaybackSession.kt$PlaybackSession$fun next(): Route.Player?</ID>
     <ID>ReturnCount:RecentSearches.kt$RecentSearches$fun load(): List&lt;String&gt;</ID>
     <ID>ReturnCount:SettingsStore.kt$FileSettingsStore$override fun load(): DesktopConfig</ID>
-    <ID>ReturnCount:SyncIndex.kt$FileSyncIndexStore$override fun load(): Map&lt;String, SyncIndexEntry&gt;</ID>
     <ID>ReturnCount:Track.kt$TracksJson$private fun parseObject(obj: String): Track?</ID>
-    <ID>ReturnCount:VaultCustody.kt$VaultCustody$fun open(spaceId: String): OpenedVault?</ID>
     <ID>ReturnCount:WorkDetail.kt$WorkDetailJson$fun parse(body: String): WorkDetail?</ID>
     <ID>ReturnCount:WorkDetail.kt$WorkDetailJson$fun parsePrimaryAsset(workObj: String): PrimaryAsset?</ID>
     <ID>SwallowedException:EmbeddedPlayer.kt$EmbeddedPlayer$e: IOException</ID>
@@ -617,10 +542,7 @@
     <ID>TooGenericExceptionCaught:AppSession.kt$AppSession$e: Exception</ID>
     <ID>TooGenericExceptionCaught:BlobDownloader.kt$JdkBlobDownloader$e: Exception</ID>
     <ID>TooGenericExceptionCaught:DevicePairingSteps.kt$DevicePairingSteps$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:VaultBlobStore.kt$JdkVaultBlobStore$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:VaultSyncController.kt$VaultSyncController$t: Throwable</ID>
     <ID>TooGenericExceptionThrown:KeychainSecretStoreTest.kt$KeychainSecretStoreTest.&lt;no name provided&gt;$throw RuntimeException("keychain exploded")</ID>
-    <ID>TooGenericExceptionThrown:VaultSyncControllerTest.kt$VaultSyncControllerTest$throw RuntimeException("boom")</ID>
     <ID>TooManyFunctions:AppSession.kt$AppSession</ID>
     <ID>TooManyFunctions:DesktopDeviceKeyring.kt$DesktopDeviceKeyring</ID>
     <ID>TooManyFunctions:EmbeddedPlayer.kt$EmbeddedPlayer</ID>
@@ -639,23 +561,14 @@
     <ID>UnusedParameter:DetailWatch.kt$type: MediaType</ID>
     <ID>UnusedParameter:HomeScreen.kt$session: AppSession</ID>
     <ID>UnusedParameter:PlayerScreen.kt$onOpen: (Route) -&gt; Unit</ID>
-    <ID>UnusedParameter:SideNav.kt$compact: Boolean = false</ID>
-    <ID>UnusedPrivateProperty:App.kt$val discover = remember { DiscoverState() }</ID>
     <ID>UnusedPrivateProperty:Screenshots.kt$attempt</ID>
-    <ID>UnusedPrivateProperty:SearchScreen.kt$val scope = rememberCoroutineScope()</ID>
     <ID>UseCheckOrError:Libmpv.kt$MpvRenderer$throw IllegalStateException("libmpv render context: ${lib.mpv_error_string(rc)}")</ID>
-    <ID>UseCheckOrError:VaultCustodyTest.kt$VaultCustodyTest.FakeKeys$throw IllegalStateException("vault: POST /spaces failed: HTTP 403")</ID>
     <ID>VariableNaming:MpvPlayerTest.kt$MpvPlayerTest$private val HASH = "blake3:" + "0123456789abcdef".repeat(4)</ID>
     <ID>VariableNaming:MpvPlayerTest.kt$MpvPlayerTest$private val TOKEN = "heyarr_1_supersecret"</ID>
     <ID>VariableNaming:WorkDetailTest.kt$WorkDetailTest$private val HASH = "blake3:" + "a".repeat(64)</ID>
-    <ID>WildcardImport:AppSession.kt$import one.rarebit.heyarr.core.state.*</ID>
     <ID>WildcardImport:ArchiveExperienceTest.kt$import kotlin.test.*</ID>
     <ID>WildcardImport:ArchiveExperienceTest.kt$import one.rarebit.heyarr.desktop.ui.*</ID>
     <ID>WildcardImport:ArtworkLoader.kt$import one.rarebit.heyarr.core.state.*</ID>
-    <ID>WildcardImport:AudioDock.kt$import androidx.compose.foundation.layout.*</ID>
-    <ID>WildcardImport:AudioDock.kt$import androidx.compose.material.icons.rounded.*</ID>
-    <ID>WildcardImport:AudioDock.kt$import androidx.compose.material3.*</ID>
-    <ID>WildcardImport:AudioDock.kt$import androidx.compose.runtime.*</ID>
     <ID>WildcardImport:FeedsClient.kt$import one.rarebit.heyarr.core.feeds.*</ID>
     <ID>WildcardImport:HeyarrApi.kt$import one.rarebit.heyarr.core.heyarr.*</ID>
     <ID>WildcardImport:JdkHttpTransport.kt$import one.rarebit.heyarr.core.net.*</ID>
