@@ -69,7 +69,7 @@ class OpenApiContractTest {
             "PersonalStateClient" to SPACES,
             "EncryptedChange" to listOf("#EncryptedChange"),
             "EncryptedSnapshot" to listOf("#EncryptedSnapshot"),
-            "JdkVaultBlobStore" to listOf("PUT /api/v1/vault/blobs/{hash}"),
+            // JdkVaultBlobStore moved to rarebit-one/mnemosyne-kmp (Refs heyarr-core#733).
             // :vault-client.
             "UrlConnectionVaultBlobStore" to listOf("PUT /api/v1/vault/blobs/{hash}"),
         )
@@ -99,11 +99,11 @@ class OpenApiContractTest {
                 "StarChange", "StarSet", "Drive", "VaultFrame",
             ).forEach { put(it, crdt) }
             val local = "a file this app writes and reads itself"
-            listOf("DaemonConfig", "FileSettingsStore", "FileSyncIndexStore", "RecentSearches", "ReaderPosition")
+            // DaemonConfig, FileSyncIndexStore, FileDriveStateStore, VaultSyncDaemon moved to
+            // rarebit-one/mnemosyne-kmp (Refs heyarr-core#733).
+            listOf("FileSettingsStore", "RecentSearches", "ReaderPosition")
                 .forEach { put(it, local) }
-            put("FileDriveStateStore", local)
             put("ExternalMetadata", "its own on-disk cache of third-party metadata")
-            put("VaultSyncDaemon", "requests on its own local control socket")
             put("ExternalParsers", "third-party public metadata APIs, not heyarr")
             put("LandscapeArtwork", "third-party artwork API, not heyarr")
             put("PlayerEvents", "libmpv JSON IPC events, not heyarr")

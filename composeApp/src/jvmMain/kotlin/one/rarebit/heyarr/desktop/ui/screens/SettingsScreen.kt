@@ -34,9 +34,6 @@ import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.Connection
-import one.rarebit.heyarr.desktop.state.SyncStatus
-import one.rarebit.heyarr.desktop.state.VaultPhase
-import one.rarebit.heyarr.desktop.state.VaultService
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.KeyValue
@@ -86,7 +83,6 @@ fun SettingsScreen(
         item { SectionHeader("Settings") }
         item { ConnectionPanel(session) }
         item { one.rarebit.heyarr.desktop.ui.EnrolPanel(session) }
-        item { VaultPanel(session) }
         if (session.isGuest) {
             item {
                 Panel("Followed sources & peers") {
@@ -170,104 +166,6 @@ private fun ConnectionPanel(session: AppSession) {
             style = MaterialTheme.typography.bodySmall,
             color = Tokens.textDisabled,
         )
-    }
-}
-
-/**
- * Vault sync (W4): pick a local folder to keep in sync with an admin-blind encrypted vault space,
- * start/stop the daemon, and watch its status. Sync needs the device enrolled (the space key is
- * unwrapped with this device's key), so without the real device stack this panel explains that
- * rather than offering a dead toggle.
- */
-@Composable
-private fun VaultPanel(session: AppSession) {
-    val vault = session.vault
-    if (vault == null) {
-        Panel("Vault sync") {
-            Notice(
-                "Sign in on this device to sync a folder.",
-                detail = "Folder sync encrypts every file on this machine before it leaves, and unwraps the vault key with this device's key — so it needs device sign-in (pair with Voidbind in “Sign in to save”).",
-                tone = Tokens.slate,
-            )
-        }
-        return
-    }
-    var folder by remember(session.config) { mutableStateOf(session.config.vaultFolder.orEmpty()) }
-    val phase = vault.phase
-    val running = phase !is VaultPhase.Off
-    Panel("Vault sync") {
-        Field("Folder to sync", folder, placeholder = "/home/you/Vault") { folder = it }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            SecondaryButton("Choose folder…", {
-                chooseDirectory(folder)?.let { folder = it }
-            }, compact = true)
-            if (!running) {
-                PrimaryButton("Start sync", {
-                    vault.enable(folder.trim())
-                }, icon = Icons.Rounded.Sync, compact = true, enabled = folder.isNotBlank())
-            } else {
-                PrimaryButton("Stop sync", { vault.disable() }, compact = true)
-            }
-        }
-        VaultStatus(vault)
-        vault.controller.lastStats?.let { s ->
-            KeyValue("last sync", "↑${s.uploaded}  ↓${s.downloaded}  ⌫${s.deletedRemote}/${s.deletedLocal}")
-        }
-        vault.controller.lastError?.let { KeyValue("last error", it, valueColor = Tokens.textMuted) }
-        session.config.vaultSpaceId?.let { KeyValue("space", it) }
-        Text(
-            "One folder ⇄ one vault. Files are encrypted on this machine before they leave; the node and every peer store only ciphertext. Deletes are index-proven and a conflict writes a copy on disk rather than losing an edit.",
-            style = MaterialTheme.typography.bodySmall,
-            color = Tokens.textDisabled,
-        )
-    }
-}
-
-/** The sync's phase, and once it runs the engine's own status: off, waiting, up to date, syncing, error. */
-@Composable
-private fun VaultStatus(vault: VaultService) {
-    val phase = vault.phase
-    KeyValue(
-        "status",
-        when (val p = phase) {
-            VaultPhase.Off -> "off"
-
-            is VaultPhase.Preparing -> "getting ready — ${p.reason}"
-
-            VaultPhase.Running -> when (val s = vault.controller.status) {
-                SyncStatus.Off -> "stopped"
-                SyncStatus.Waiting -> "waiting for setup"
-                SyncStatus.Idle -> "up to date"
-                SyncStatus.Syncing -> "syncing…"
-                is SyncStatus.Error -> "error: ${s.message}"
-            }
-        },
-        valueColor = when {
-            phase is VaultPhase.Running && vault.controller.status is SyncStatus.Error -> Tokens.textPrimary
-            phase is VaultPhase.Running && vault.controller.status == SyncStatus.Idle -> Tokens.success
-            else -> Tokens.textMuted
-        },
-    )
-}
-
-/** A native directory picker (Swing, EDT — runs on the button click, never during render). */
-private fun chooseDirectory(current: String): String? {
-    val chooser = javax.swing.JFileChooser().apply {
-        fileSelectionMode = javax.swing.JFileChooser.DIRECTORIES_ONLY
-        dialogTitle = "Choose a folder to sync"
-        current.takeIf { it.isNotBlank() }?.let {
-            java.io.File(it).takeIf(java.io.File::isDirectory)?.let { d ->
-                currentDirectory =
-                    d
-            }
-        }
-    }
-    return if (chooser.showOpenDialog(null) ==
-        javax.swing.JFileChooser.APPROVE_OPTION
-    ) {
-        chooser.selectedFile?.absolutePath
-    } else {
-        null
     }
 }
 

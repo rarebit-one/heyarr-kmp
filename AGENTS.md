@@ -15,7 +15,7 @@ commit messages or PR bodies.
 | `:core` | `kotlin.multiplatform` (jvm + android when an SDK is present) | The pure client layer: `net/` (`HttpTransport`, `JsonScan`, `JsonEscapes`, `JsonArrays`), `mcp/` (`McpClient`, `JsonWrite`, `McpModels`), `heyarr/` (REST + telemetry models), `auth/` (`Credential`, `ClientMode`, `GuestGate`), `state/` (library status, search grouping and the shared `SearchController` behind its `SearchBackend` seam, toasts), `library/` (`Series` episode grouping and `Variants`, over the `EpisodeFile` / `CatalogWork` seams each app's models implement), `theme/MediaType`, `crypto/Blake3`, `jvmAndAndroidMain` (JVM-API code both apps share: `state/ExternalMetadata`, the public cover/synopsis cache, behind each app's fetcher), `feeds/`, `discovery/`. Published alongside `:vault-client`, which exposes it. |
 | `:vault-client` | `kotlin.multiplatform` (jvm + android when an SDK is present) + `maven-publish` | The trusted vault client (package `one.rarebit.heyarr.vault`), **published** as `one.rarebit.heyarr:vault-client`: `SpaceOpen` / `SpaceKeyring` (ADR-0103), the drive CRDT, `VaultFrame`, `SnapshotEnvelope`, `PersonalStateId`, `VaultSpaceClient`, the `VaultBlobStore` seam, and ref-addressed objects (`VaultRef`, `VaultObjects`, ADR-0104). commonMain; `jvmAndAndroidMain` holds the java.* actuals (NFC, `UrlConnectionVaultBlobStore`). Its golden-vector tests live in `jvmTest` and also run as Android unit tests. Its public API is a contract with other repos: bump `publishedLibraryVersion` (root `build.gradle.kts`) on any API or wire change. |
 | `:ui` | `kotlin.multiplatform` + Compose MP | Compose-typed but platform-free design layer: `theme/Tokens`, `theme/MediaThemes` (the media → accent table), `theme/HeyarrFonts` (the self-hosted fonts, shipped once as Compose resources), `theme/HeyarrTheme` (Material mapping, `MediaScope`, `HeyarrPlatform`), `components/` (Primitives, Table, Reasons, card parts) and shared glyphs. `api(project(":core"))`. |
-| `:composeApp` | `kotlin.multiplatform` (jvm only) + Compose MP desktop | The desktop app and the headless vault-sync daemon. JVM-only code (`JdkHttpTransport`, jmdns, JNA/libmpv, OS keychains) lives here. |
+| `:composeApp` | `kotlin.multiplatform` (jvm only) + Compose MP desktop | The desktop app. JVM-only code (jmdns, JNA/libmpv, OS keychains) lives here. The vault-sync engine, custody, daemon and CLI were moved to `rarebit-one/mnemosyne-kmp` (Refs heyarr-core#733). |
 | `:androidApp` | `com.android.application` + `kotlin.android` | The Android app. Only included when an Android SDK is detected. |
 
 Rules:
@@ -31,7 +31,7 @@ Rules:
   than forking.
 - Dependency direction: apps → `:ui` → `:core`, and apps → `:vault-client` → `:core`. Never
   the reverse, and the two apps never depend on each other. `:vault-client` holds no app state
-  and no UI; the desktop's sync engine, custody and daemon stay in `:composeApp`.
+  and no UI; the vault-sync engine, custody and daemon live in `rarebit-one/mnemosyne-kmp`.
 - **Shared logic goes in `:core`, not into an app.** `:androidApp` still carries copies of code
   that has not converged yet (its own `HeyarrApi`, `search/FollowedSource` — mapped to `:core`'s
   at the search boundary by `asFeedSource()`, …). When you touch one, prefer moving
