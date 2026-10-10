@@ -4,8 +4,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.sun.jna.Pointer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.swing.Swing
 import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.playback.SeekCoalescer
 import java.io.File
 import java.io.IOException
 import java.net.StandardProtocolFamily
@@ -268,6 +273,7 @@ class EmbeddedPlayer(
             // elsewhere; mpv falls back to software if the method is unavailable, so it is always safe.
             "msg-level" to "all=error", "osc" to "no", "osd-level" to "0", "input-default-bindings" to "no",
             "hwdec" to EMBEDDED_HWDEC,
+            "alang" to "eng,en", "slang" to "eng,en",
             // HDR sources (4K especially) tone-mapped toward the SDR, 8-bit surface this
             // software renderer presents. Without it mpv hands back BT.2020/PQ pixels the UI
             // shows as if they were sRGB — the washed-out, low-contrast look on 4K HDR. The
@@ -316,6 +322,7 @@ class EmbeddedPlayer(
                     "--input-vo-keyboard=yes",
                     "--geometry=60%",
                     "--input-conf=${inputConf().absolutePath}",
+                    "--alang=eng,en", "--slang=eng,en",
                 ),
             )
             start?.let { add("--start=$it") }
@@ -333,6 +340,7 @@ class EmbeddedPlayer(
 
     /** Replace what is playing (the token was given at start; mpv keeps its header option). */
     fun load(url: String, title: String, knownDurationSec: Double? = null, streamBaseUrl: String? = null) {
+        seekCoalescer.cancel()
         lastUrl = url
         lastTitle = title
         knownDuration = knownDurationSec?.takeIf { it > 0 }
@@ -342,7 +350,11 @@ class EmbeddedPlayer(
         wantedSubs = emptyList()
         resubOnLoad = false // and they belonged to the old item
         state =
-            state.copy(loaded = false, position = 0.0, duration = knownDuration ?: 0.0, eof = false, error = null, hasStarted = false, coreIdle = true, title = title, subtitles = emptyList(), audio = emptyList())
+            state.copy(
+                loaded = false, position = 0.0, duration = knownDuration ?: 0.0, eof = false,
+                error = null, hasStarted = false, coreIdle = true, title = title,
+                subtitles = emptyList(), audio = emptyList(),
+            )
         send("set_property", "force-media-title", title)
         send("loadfile", streamBaseUrl ?: url)
         send("set_property", "pause", false)
@@ -383,6 +395,13 @@ class EmbeddedPlayer(
      * difference between a scrub that works anywhere on the bar and one that only
      * works inside what has already buffered.
      */
+    private val seekCoalescer = SeekCoalescer(
+        CoroutineScope(SupervisorJob() + Dispatchers.Swing),
+        canSeekImmediately = { withinCache(it) },
+    ) { seconds ->
+        if (withinCache(seconds)) send("seek", seconds - streamStart, "absolute") else restartStream(seconds)
+    }
+
     fun seekTo(seconds: Double) {
         if (streamBase == null) {
             send("seek", seconds, "absolute")
@@ -391,7 +410,7 @@ class EmbeddedPlayer(
         // Inside what mpv has already demuxed there is nothing to re-cut: seek it
         // natively, in mpv's own clock. That keeps Back-10 and a small nudge forward
         // instant, and spends an ffmpeg only on the seek that actually needs one.
-        if (withinCache(seconds)) send("seek", seconds - streamStart, "absolute") else restartStream(seconds)
+        seekCoalescer.seekTo(seconds)
     }
 
     /** Relative seek. [state] carries source time, so the arithmetic is the same either way. */
@@ -400,7 +419,7 @@ class EmbeddedPlayer(
             send("seek", seconds, "relative")
             return
         }
-        seekTo(state.position + seconds)
+        seekCoalescer.seekBy(state.position, seconds)
     }
 
     /**
@@ -465,9 +484,13 @@ class EmbeddedPlayer(
         }
     }
     fun setAudio(id: Int) = send("set_property", "aid", id)
-    fun stop() = send("stop")
+    fun stop() {
+        seekCoalescer.cancel()
+        send("stop")
+    }
 
     fun close() {
+        seekCoalescer.cancel()
         closed = true
         runCatching { send("quit") }
         runCatching { channel?.close() }
@@ -596,7 +619,10 @@ class EmbeddedPlayer(
 
         /** Properties observed in order; the index+1 is the observer id. */
         val OBSERVED =
-            listOf("time-pos", "duration", "pause", "volume", "mute", "paused-for-cache", "demuxer-cache-time", "eof-reached", "core-idle", "track-list", "sid", "aid", "media-title")
+            listOf(
+                "time-pos", "duration", "pause", "volume", "mute", "paused-for-cache", "demuxer-cache-time",
+                "eof-reached", "core-idle", "track-list", "sid", "aid", "media-title",
+            )
     }
 }
 

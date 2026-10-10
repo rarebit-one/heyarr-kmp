@@ -15,6 +15,8 @@ interface EpisodeFile {
     /** The edition's label (`Season 02`, `Specials`, …): the node's own season grouping. */
     val editionLabel: String?
     val blobHash: String?
+    val language: String? get() = null
+    val hearingImpaired: Boolean get() = false
 
     /** A blob the client can stream, and the file is present. */
     val isPlayable: Boolean
@@ -139,7 +141,7 @@ object Series {
         val files = assets.mapNotNull { a ->
             episode(a)?.let { e ->
                 val key = stemKey(a, stripThumb = false)
-                e.copy(thumbnail = thumbs[key], subtitles = subs[key].orEmpty())
+                e.copy(thumbnail = thumbs[key], subtitles = preferredSubtitles(subs[key].orEmpty()))
             }
         }
         if (files.isEmpty()) return emptyList()
@@ -195,7 +197,13 @@ object Series {
             out.add(
                 lead.copy(
                     thumbnail = lead.thumbnail ?: rest.firstNotNullOfOrNull { it.thumbnail },
-                    subtitles = (lead.subtitles + rest.flatMap { it.subtitles }).distinctBy { it.id },
+                    subtitles = preferredSubtitles(
+                        (
+                            lead.subtitles + rest.flatMap {
+                                it.subtitles
+                            }
+                            ).distinctBy { it.id },
+                    ),
                     copies = rest.map { it.asset },
                 ),
             )
@@ -256,9 +264,37 @@ object Series {
     /** True for a subtitle sidecar (`.srt`, `.vtt`, `.ass`, `.sub`, `.sup`). */
     fun isSubtitle(asset: EpisodeFile): Boolean {
         val role = asset.role?.lowercase()
-        if (role == "subtitle" || role == "subtitles") return true
-        val ext = (asset.filename ?: "").substringAfterLast('.', "").lowercase()
-        return ext in SUBTITLE_EXTENSIONS
+        return when (role) {
+            "extra", "artwork" -> false
+            "subtitle", "subtitles" -> true
+            else -> (asset.filename ?: "").substringAfterLast('.', "").lowercase() in SUBTITLE_EXTENSIONS
+        }
+    }
+
+    /** English SDH first, then English dialogue, while retaining other selectable languages. */
+    private fun <A : EpisodeFile> preferredSubtitles(files: List<A>): List<A> = files.sortedWith(
+        compareBy<A> { subtitleRank(it) }.thenBy { it.filename ?: it.id },
+    )
+
+    private enum class CaptionRank { ENGLISH_SDH, ENGLISH, UNKNOWN, FORCED_ENGLISH, OTHER }
+
+    private fun subtitleRank(file: EpisodeFile): CaptionRank {
+        val stem = file.filename.orEmpty().substringBeforeLast('.').lowercase()
+        val suffix = RE_LANG_SUFFIX.find(stem)?.value.orEmpty()
+        val english = file.language?.substringBefore('-')?.lowercase() in setOf("en", "eng") ||
+            Regex("""^\.(en|eng)(\.|$)""").containsMatchIn(suffix)
+        return when {
+            english && !suffix.contains("forced") &&
+                (file.hearingImpaired || suffix.contains("sdh") || suffix.contains("cc")) -> CaptionRank.ENGLISH_SDH
+
+            english && !suffix.contains("forced") -> CaptionRank.ENGLISH
+
+            suffix.isEmpty() -> CaptionRank.UNKNOWN
+
+            english -> CaptionRank.FORCED_ENGLISH
+
+            else -> CaptionRank.OTHER
+        }
     }
 
     /** The normalised stem two sidecars share: lowercase, `-thumb` and a trailing language tag stripped. */
@@ -269,7 +305,10 @@ object Series {
             ) ?: asset.id
             ).substringBeforeLast('.').lowercase()
         if (stripThumb) stem = stem.removeSuffix("-thumb")
-        if (stripLang) stem = stem.replace(RE_LANG_SUFFIX, "")
+        if (stripLang) {
+            stem = stem.replace(RE_LANG_SUFFIX, "")
+            asset.language?.lowercase()?.let { stem = stem.removeSuffix(".$it") }
+        }
         return stem
     }
 
@@ -384,7 +423,8 @@ object Series {
         )
     private val RE_LANG_SUFFIX =
         Regex(
-            """\.(en|eng|es|spa|fr|fre|fra|de|ger|deu|it|ita|pt|por|ja|jpn|zh|chi|nl|dut|sv|swe|forced|sdh)(\.(forced|sdh))?$""",
+            """\.(en|eng|es|spa|fr|fre|fra|de|ger|deu|it|ita|pt|por|ja|jpn|zh|chi|nl|dut|sv|swe|""" +
+                """forced|sdh|cc)(\.(forced|sdh|cc))?$""",
         )
 
     private val NOISE = setOf(

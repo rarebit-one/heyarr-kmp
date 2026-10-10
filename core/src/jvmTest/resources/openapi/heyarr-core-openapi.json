@@ -10512,6 +10512,14 @@
          "string",
          "null"
         ]
+       },
+       "language": {
+        "type": "string",
+        "description": "Caption language from asset metadata."
+       },
+       "hearing_impaired": {
+        "type": "boolean",
+        "description": "Caption marked SDH by its source."
        }
       }
      }
@@ -11876,6 +11884,9 @@
      },
      "language": {
       "type": "string"
+     },
+     "commentary": {
+      "type": "boolean"
      }
     }
    },
@@ -12035,6 +12046,13 @@
        "type": "string"
       }
      },
+     "audio_languages": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "Preferred audio languages in order, using language tags or ISO codes.\nOmitted uses media.audio_languages; an empty list keeps original main\naudio. Missing preferred dialogue falls back to original main audio.\n"
+     },
      "max_height": {
       "type": "integer",
       "minimum": 0,
@@ -12064,7 +12082,7 @@
    },
    "PlaybackSource": {
     "type": "object",
-    "description": "What the probe found — the first video and audio stream.",
+    "description": "What the probe found — the first video and selected main audio stream.",
     "properties": {
      "container": {
       "type": "string",
@@ -12074,6 +12092,14 @@
       "type": "string"
      },
      "audio": {
+      "type": "string"
+     },
+     "audio_track": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Selected zero-based audio ordinal."
+     },
+     "audio_language": {
       "type": "string"
      },
      "width": {
