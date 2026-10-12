@@ -36,6 +36,7 @@ import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
+import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
@@ -155,20 +156,34 @@ fun HomeScreen(
             // Page up to HOME_PAGE_CAP times so we have enough non-variant works to fill both
             // rails even when the first page is heavy with season variants (#135). We stop
             // early once both quotas are filled (or we run out of pages / hit an error).
-            // A single `break` is used at the bottom of the loop to satisfy detekt's
-            // LoopWithTooManyJumpStatements max-1 rule; all three termination conditions
-            // (fetch error, end-of-catalogue, quotas met) are combined into that one test.
+            // Off-page canonicals are resolved before every quota check, so a page heavy with
+            // season variants doesn't stop the paging early (Codex on #138). The lookup caches
+            // per (base, kind), so re-resolving as pages accumulate costs no extra request.
+            suspend fun visible(works: List<Work>): List<Work> {
+                val canonicals = session.io {
+                    state.canonicalLookup.resolveFor(works) { q, kind ->
+                        runCatching { a.worksMatching(LibraryClient.variantQuery(q, null), kind) }
+                            .getOrElse { emptyList() }
+                    }
+                }.getOrElse { emptyList() }
+                val variantIds = Variants.variantIds(works + canonicals)
+                return works.filter { it.id !in variantIds }
+            }
             var cursor: String? = null
             val accumulated = mutableListOf<Work>()
             var pageError: Throwable? = null
-            for (page in 1..HOME_PAGE_CAP) {
+            var pages = 0
+            var shown = emptyList<Work>()
+            var done = false
+            while (!done) {
                 val worksPage = session.io { a.libraryPage(cursor, limit = 100) }.getOrElse { pageError = it; null }
-                if (worksPage != null) {
-                    accumulated.addAll(worksPage.items)
-                    cursor = worksPage.nextCursor
+                worksPage?.let {
+                    accumulated.addAll(it.items)
+                    cursor = it.nextCursor
                 }
-                val variantIds = Variants.variantIds(accumulated)
-                if (worksPage == null || cursor == null || quotasMet(accumulated.filter { it.id !in variantIds })) break
+                pages++
+                shown = visible(accumulated)
+                done = worksPage == null || cursor == null || pages >= HOME_PAGE_CAP || quotasMet(shown)
             }
             val err = pageError
             if (accumulated.isEmpty() && err != null) {
@@ -176,17 +191,7 @@ fun HomeScreen(
                 state.recent = RailState.Failed(msg)
                 state.spotlight = RailState.Failed(msg)
             } else {
-                // Resolve any off-page canonicals so season variants visible in this paged set
-                // are still hidden even when their canonical sits on a later (unloaded) page
-                // (#134). The lookup caches per (base, kind) pair for this screen visit.
-                val canonicals = session.io {
-                    state.canonicalLookup.resolveFor(accumulated) { q, kind ->
-                        runCatching { a.worksMatching(q, kind) }.getOrElse { emptyList() }
-                    }
-                }.getOrElse { emptyList() }
-                val variantIds = Variants.variantIds(accumulated + canonicals)
-                val visible = accumulated.filter { it.id !in variantIds }
-                val (spotlight, recent) = homeRails(visible)
+                val (spotlight, recent) = homeRails(shown)
                 state.recent = RailState.Loaded(recent)
                 state.spotlight = RailState.Loaded(spotlight)
             }
