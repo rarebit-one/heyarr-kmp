@@ -227,8 +227,7 @@ fun LibraryScreen(
         val works = state.works ?: return@LaunchedEffect
         val resolved = session.io {
             state.canonicalLookup.resolveFor(works) { q, kind ->
-                runCatching { session.api.worksMatching(LibraryClient.variantQuery(q, null), kind) }
-                    .getOrElse { emptyList() }
+                session.api.worksMatching(LibraryClient.variantQuery(q, null), kind)
             }
         }.getOrElse { emptyList() }
         state.resolvedCanonicals = resolved

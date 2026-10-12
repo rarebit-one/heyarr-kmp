@@ -85,4 +85,33 @@ class CanonicalLookupTest {
         }
         assertEquals(2, calls, "distinct kind values must produce distinct cache keys")
     }
+
+    @Test fun queriesWithTheTitlesOwnSpelling() {
+        // The node matches sort_title by substring, so punctuation must survive (Codex on #138).
+        val asked = mutableListOf<String>()
+        CanonicalLookup().resolveFor(listOf(TestWork("v", "9-1-1 Season 2"))) { q, _ ->
+            asked += q
+            emptyList()
+        }
+        assertEquals(listOf("9-1-1"), asked)
+    }
+
+    @Test fun aFailedLookupIsRetriedNotCached() {
+        // A transient failure must not be cached as "no canonical" (Codex on #138).
+        val lookup = CanonicalLookup()
+        val works: List<CatalogWork> = listOf(TestWork("ys4", "Yellowstone Season 4"))
+        var calls = 0
+        val first = lookup.resolveFor(works) { _, _ ->
+            calls++
+            error("timeout")
+        }
+        assertTrue(first.isEmpty(), "a failure yields nothing this time")
+        val canon = TestWork("ys", "Yellowstone")
+        val second = lookup.resolveFor(works) { _, _ ->
+            calls++
+            listOf(canon)
+        }
+        assertEquals(2, calls, "the failed key is looked up again")
+        assertEquals(listOf<CatalogWork>(canon), second)
+    }
 }

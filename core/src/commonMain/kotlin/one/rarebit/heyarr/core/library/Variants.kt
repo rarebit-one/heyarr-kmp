@@ -21,12 +21,13 @@ interface CatalogWork {
 object Variants {
     private val RE = Regex("""^(.+?)\s+(?:season|series|s)\s*(\d{1,3})(?:\s.*)?$""", RegexOption.IGNORE_CASE)
 
-    data class Split(val base: String, val season: Int)
+    /** [base] is normalised for matching; [rawBase] keeps the title's own spelling (for queries). */
+    data class Split(val base: String, val season: Int, val rawBase: String = base)
 
     /** `"Yellowstone Season 4 Mp4 1080p"` → base `yellowstone`, season 4; null when the title has no season marker. */
     fun split(title: String): Split? {
         val m = RE.matchEntire(title.trim()) ?: return null
-        return Split(norm(m.groupValues[1]), m.groupValues[2].toInt())
+        return Split(norm(m.groupValues[1]), m.groupValues[2].toInt(), m.groupValues[1].trim())
     }
 
     private fun norm(s: String) = s.lowercase().replace(Regex("""[^a-z0-9]+"""), " ").trim()

@@ -49,14 +49,14 @@ object HeyarrDataSource {
         live?.takeIf { it.isNotBlank() } ?: target.authHeaders()[AUTHORIZATION]
     }
 
+    // The private marker a guest-planned read carries so AuthInterceptor leaves it bare.
+    private val GUEST_MARKER = mapOf(AuthInterceptor.NO_AUTH_MARKER to AuthInterceptor.NO_AUTH_VALUE)
+
     /**
      * A factory whose every open re-stamps `Authorization` through [live]. The header
      * used to be frozen into the factory's default request properties at play time, and
      * because a request that already carries one is left alone by the app's interceptor,
      * a film outlived its proof: every range read after ~2 minutes came back 401.
-     */
-    /**
-     * A factory whose every open re-stamps `Authorization` through [live].
      *
      * For a guest-planned stream, instead of a credential we set [AuthInterceptor.NO_AUTH_MARKER]
      * on each range read. The interceptor strips the marker and skips stamping, so a sign-in that
@@ -69,12 +69,8 @@ object HeyarrDataSource {
         return ResolvingDataSource.Factory(upstream) { spec ->
             val value = authorization(live(), target)
             when {
-                value != null ->
-                    spec.withAdditionalHeaders(mapOf(AUTHORIZATION to value))
-                target.credential is Credential.Guest ->
-                    spec.withAdditionalHeaders(
-                        mapOf(AuthInterceptor.NO_AUTH_MARKER to AuthInterceptor.NO_AUTH_VALUE),
-                    )
+                value != null -> spec.withAdditionalHeaders(mapOf(AUTHORIZATION to value))
+                target.credential is Credential.Guest -> spec.withAdditionalHeaders(GUEST_MARKER)
                 else -> spec
             }
         }

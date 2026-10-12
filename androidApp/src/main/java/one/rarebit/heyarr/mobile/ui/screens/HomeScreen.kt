@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import one.rarebit.heyarr.core.library.CanonicalLookup
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.core.mcp.Want
@@ -54,7 +55,6 @@ import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.RailState
 import one.rarebit.heyarr.ui.components.SecondaryButton
-import one.rarebit.heyarr.core.library.CanonicalLookup
 import one.rarebit.heyarr.ui.components.StatusMark
 import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.ui.theme.MediaScope
@@ -162,8 +162,7 @@ fun HomeScreen(
             suspend fun visible(works: List<Work>): List<Work> {
                 val canonicals = session.io {
                     state.canonicalLookup.resolveFor(works) { q, kind ->
-                        runCatching { a.worksMatching(LibraryClient.variantQuery(q, null), kind) }
-                            .getOrElse { emptyList() }
+                        a.worksMatching(LibraryClient.variantQuery(q, null), kind)
                     }
                 }.getOrElse { emptyList() }
                 val variantIds = Variants.variantIds(works + canonicals)
@@ -176,7 +175,10 @@ fun HomeScreen(
             var shown = emptyList<Work>()
             var done = false
             while (!done) {
-                val worksPage = session.io { a.libraryPage(cursor, limit = 100) }.getOrElse { pageError = it; null }
+                val worksPage = session.io { a.libraryPage(cursor, limit = 100) }.getOrElse {
+                    pageError = it
+                    null
+                }
                 worksPage?.let {
                     accumulated.addAll(it.items)
                     cursor = it.nextCursor
