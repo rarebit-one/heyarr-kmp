@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.mobile
 
+import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorksJson
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -110,6 +111,47 @@ class WorksJsonEmbedsTest {
         val w = one.rarebit.heyarr.mobile.library.WorksJson.parse(body).single()
         assertEquals(null, w.primaryAssetId)
         assertEquals(null, w.artworkPath)
+        assertEquals(emptyMap<String, String>(), w.artworkSizes)
         assertEquals(null, w.artist)
+    }
+}
+
+class WorksJsonSizesTest {
+
+    @Test fun parsesSizesFromArtworkEmbed() {
+        // `sizes` sub-object maps bucket widths to paths; `content_url` still populates artworkPath.
+        val body = """[{"id":"w1","title":"T","artwork":{"content_url":"/blobs/b1/content","sizes":{"256":"/blobs/b1/content?size=256","512":"/blobs/b1/content?size=512","1024":"/blobs/b1/content?size=1024"}}}]"""
+        val w = WorksJson.parse(body).single()
+        assertEquals("/blobs/b1/content", w.artworkPath)
+        assertEquals(
+            mapOf("256" to "/blobs/b1/content?size=256", "512" to "/blobs/b1/content?size=512", "1024" to "/blobs/b1/content?size=1024"),
+            w.artworkSizes,
+        )
+    }
+
+    @Test fun artworkForSelectsCorrectBucket() {
+        // Picks the smallest bucket >= sizePx; rounds up past a gap; takes the largest when all are smaller.
+        val w = Work(id = "w1", title = "T", artworkSizes = mapOf("256" to "u256", "512" to "u512", "1024" to "u1024"), artworkPath = "/fb")
+        assertEquals("u256", w.artworkFor(256))   // exact match
+        assertEquals("u512", w.artworkFor(300))   // 300 not present → round up to 512
+        assertEquals("u512", w.artworkFor(512))   // exact match
+        assertEquals("u1024", w.artworkFor(2048)) // larger than all buckets → largest available
+    }
+
+    @Test fun artworkForFallsBackToArtworkPathWhenSizesAbsent() {
+        // Older node or list row without include=artwork: artworkSizes empty, artworkPath used.
+        val w = Work(id = "w1", title = "T", artworkPath = "/blobs/b0/content")
+        assertEquals("/blobs/b0/content", w.artworkFor(256))
+        assertEquals("/blobs/b0/content", w.artworkFor(512))
+        // Both artworkSizes and artworkPath absent → null, matching today's artworkPath behaviour.
+        assertEquals(null, Work(id = "w2", title = "T").artworkFor(256))
+    }
+
+    @Test fun artworkSizesIsEmptyWhenSizesKeyAbsentFromEmbed() {
+        // Artwork embed present but without a `sizes` key → artworkSizes stays empty; artworkFor falls back.
+        val body = """[{"id":"w1","title":"T","artwork":{"content_url":"/blobs/b2/content"}}]"""
+        val w = WorksJson.parse(body).single()
+        assertEquals(emptyMap<String, String>(), w.artworkSizes)
+        assertEquals("/blobs/b2/content", w.artworkFor(256))
     }
 }

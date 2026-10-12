@@ -14,6 +14,11 @@ import java.net.URLEncoder
  */
 object Artwork {
 
+    /** Pixel width requested for card, rail, grid and list artwork thumbnails (ADR-0109). */
+    const val CARD_ARTWORK_PX = 256
+    /** Pixel width requested for detail-screen hero and backdrop thumbnails (ADR-0109). */
+    const val DETAIL_ARTWORK_PX = 512
+
     fun posterUrl(baseUrl: String, work: Work): String = posterUrl(baseUrl, work.id, work.artworkPath)
 
     fun posterUrl(baseUrl: String, workId: String, artworkPath: String?): String {

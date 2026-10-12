@@ -59,6 +59,7 @@ object WorksJson {
             mime = JsonScan.firstString(obj, MIME_KEYS) ?: primary?.let { JsonScan.stringField(it, "mime") },
             primaryAssetId = primary?.let { JsonScan.stringField(it, "asset_id") },
             artworkPath = artwork?.let { JsonScan.stringField(it, "content_url") },
+            artworkSizes = artwork?.let { JsonScan.stringMap(it, "sizes") } ?: emptyMap(),
             artist = attributes?.let { JsonScan.stringField(it, "artist") },
             author = attributes?.let { JsonScan.stringField(it, "author") },
             attributes =

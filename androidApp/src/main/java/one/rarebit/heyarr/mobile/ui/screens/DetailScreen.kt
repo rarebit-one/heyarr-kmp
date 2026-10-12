@@ -65,6 +65,7 @@ import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.catalog.Artwork
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.library.LibraryClient
@@ -277,7 +278,7 @@ fun DetailScreen(
         session,
         type,
         detail?.title ?: route.title ?: "",
-        detail?.artworkPath,
+        detail?.artworkFor(Artwork.DETAIL_ARTWORK_PX),
         detail?.year,
         detail?.artist ?: detail?.author,
     )
