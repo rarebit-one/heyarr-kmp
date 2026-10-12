@@ -100,7 +100,8 @@ class WorksJsonEmbedsTest {
     }
 
     @Test fun aTopLevelHashStillWinsOverTheEmbed() {
-        val body = """[{"id":"w1","title":"T","blob_hash":"blake3:top","primary_asset":{"asset_id":"a1","blob_hash":"blake3:11"}}]"""
+        val body = """[{"id":"w1","title":"T","blob_hash":"blake3:top",""" +
+            """"primary_asset":{"asset_id":"a1","blob_hash":"blake3:11"}}]"""
         val w = one.rarebit.heyarr.mobile.library.WorksJson.parse(body).single()
         assertEquals("blake3:top", w.blobHash)
         assertEquals("a1", w.primaryAssetId)

@@ -82,6 +82,7 @@ import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Hero
 import one.rarebit.heyarr.mobile.ui.components.HeroSkeleton
+import one.rarebit.heyarr.mobile.ui.components.artworkForDp
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
@@ -278,7 +279,7 @@ fun DetailScreen(
         session,
         type,
         detail?.title ?: route.title ?: "",
-        detail?.artworkFor(Artwork.DETAIL_ARTWORK_PX),
+        detail?.artworkForDp(Artwork.HERO_ARTWORK_DP),
         detail?.year,
         detail?.artist ?: detail?.author,
     )

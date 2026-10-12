@@ -63,6 +63,7 @@ import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.MediaCard
 import one.rarebit.heyarr.mobile.ui.components.MediaCardSkeleton
 import one.rarebit.heyarr.mobile.ui.components.MediaRow
+import one.rarebit.heyarr.mobile.ui.components.artworkForDp
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.Cell
 import one.rarebit.heyarr.ui.components.DataTable
@@ -437,7 +438,7 @@ fun LibraryScreen(
                         session,
                         type,
                         w.title,
-                        w.artworkFor(Artwork.CARD_ARTWORK_PX),
+                        w.artworkForDp(Artwork.CARD_ARTWORK_DP),
                         w.year,
                         w.artist ?: w.author,
                     )
@@ -469,7 +470,7 @@ fun LibraryScreen(
                         session,
                         type,
                         w.title,
-                        w.artworkFor(Artwork.CARD_ARTWORK_PX),
+                        w.artworkForDp(Artwork.CARD_ARTWORK_DP),
                         w.year,
                         w.artist ?: w.author,
                     )

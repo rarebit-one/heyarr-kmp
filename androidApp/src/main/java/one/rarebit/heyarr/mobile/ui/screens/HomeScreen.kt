@@ -50,6 +50,7 @@ import one.rarebit.heyarr.mobile.ui.components.Hero
 import one.rarebit.heyarr.mobile.ui.components.HeroSkeleton
 import one.rarebit.heyarr.mobile.ui.components.MediaCard
 import one.rarebit.heyarr.mobile.ui.components.Rail
+import one.rarebit.heyarr.mobile.ui.components.artworkForDp
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.Notice
@@ -439,7 +440,7 @@ private fun WorkCard(
         session,
         type,
         w.title,
-        w.artworkFor(Artwork.CARD_ARTWORK_PX),
+        w.artworkForDp(Artwork.CARD_ARTWORK_DP),
         w.year,
         w.artist ?: w.author,
     )
@@ -482,7 +483,7 @@ private fun SpotlightBlock(
                 session,
                 type,
                 work.title,
-                work.artworkFor(Artwork.HERO_ARTWORK_PX),
+                work.artworkForDp(Artwork.HERO_ARTWORK_DP),
                 work.year,
                 work.artist ?: work.author,
             )

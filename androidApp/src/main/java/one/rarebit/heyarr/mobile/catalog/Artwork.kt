@@ -14,16 +14,15 @@ import java.net.URLEncoder
  */
 object Artwork {
 
-    /** Pixel width requested for card, rail, grid and list artwork thumbnails (ADR-0109). */
-    const val CARD_ARTWORK_PX = 256
-    /** Pixel width requested for detail-screen hero and backdrop thumbnails (ADR-0109). */
-    const val DETAIL_ARTWORK_PX = 512
-
     /**
-     * Pixel width for a full-width hero, such as Home's spotlight: ~360dp wide at 3x density
-     * is ~1,000 physical pixels, so a card bucket would be upscaled about 4x (Codex on #137).
+     * Nominal on-screen width, in dp, of a card, rail, grid or list poster (ADR-0109). The
+     * request is made in physical pixels (dp × density), so a 3x phone asks for the 512
+     * bucket rather than upscaling 256 (Codex on #137).
      */
-    const val HERO_ARTWORK_PX = 1024
+    const val CARD_ARTWORK_DP = 140
+
+    /** Nominal on-screen width, in dp, of a full-width hero: Home's spotlight, a detail backdrop. */
+    const val HERO_ARTWORK_DP = 360
 
     fun posterUrl(baseUrl: String, work: Work): String = posterUrl(baseUrl, work.id, work.artworkPath)
 
