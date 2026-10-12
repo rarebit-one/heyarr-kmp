@@ -30,12 +30,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import one.rarebit.heyarr.core.library.CanonicalLookup
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
+import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
@@ -58,6 +60,40 @@ import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 
+// --- #135: named quotas and paging helpers ---
+
+/** Maximum non-document, non-unknown works to put in the spotlight rail. */
+internal const val SPOTLIGHT_QUOTA = 6
+
+/** Maximum non-document works to put in the recent rail. */
+internal const val RECENT_QUOTA = 24
+
+/** Maximum pages to fetch before accepting whatever we have (avoids a full catalogue walk). */
+internal const val HOME_PAGE_CAP = 3
+
+/**
+ * Splits [works] into (spotlight, recent) rails after document-kind filtering.
+ * Spotlight excludes `"unknown"` kind; recent includes it.
+ * Both rails are capped at their quotas.
+ *
+ * Pure helper so it can be unit-tested on plain JVM without Compose (#135).
+ */
+internal fun homeRails(works: List<Work>): Pair<List<Work>, List<Work>> {
+    val eligible = works.filter { it.kind != "document" }
+    return eligible.filter { it.kind != "unknown" }.take(SPOTLIGHT_QUOTA) to eligible.take(RECENT_QUOTA)
+}
+
+/**
+ * True once both quotas are filled — the paging loop can stop early (#135).
+ * Evaluated on the visible set (variants already removed) so a page full of hidden variants
+ * does not falsely satisfy the quota.
+ */
+internal fun quotasMet(works: List<Work>): Boolean {
+    val eligible = works.filter { it.kind != "document" }
+    return eligible.filter { it.kind != "unknown" }.size >= SPOTLIGHT_QUOTA &&
+        eligible.size >= RECENT_QUOTA
+}
+
 /** Everything the Home screen shows, loaded rail by rail so a slow one never blanks the page. */
 class HomeState {
     var spotlight by mutableStateOf<RailState<Work>>(RailState.Loading)
@@ -71,6 +107,10 @@ class HomeState {
     var upgrades by mutableStateOf<RailState<Want>>(RailState.Loading)
     var followed by mutableStateOf<RailState<FollowedSource>>(RailState.Loading)
     var loadedOnce = false
+
+    // Holds a lookup cache for off-page canonicals (#134); lives here so it
+    // survives recompositions for the duration of the screen visit.
+    val canonicalLookup = CanonicalLookup()
 }
 
 /**
@@ -113,23 +153,50 @@ fun HomeScreen(
         val a = session.api
         state.loadedOnce = true
         scope.launch {
-            // One page of 100 recent works covers both home rails. Variant suppression is
-            // page-local — a variant outside this page is not hidden, which is an acceptable
-            // trade-off for the home screen that avoids a full catalogue walk.
-            session.io { a.libraryPage(cursor = null, limit = 100).items }.fold(
-                onSuccess = { page ->
-                    val variants = Variants.variantIds(page)
-                    val works = page.filter { it.id !in variants }
-                    state.recent = RailState.Loaded(works.filter { it.kind != "document" }.take(24))
-                    state.spotlight =
-                        RailState.Loaded(works.filter { it.kind != "document" && it.kind != "unknown" }.take(6))
-                },
-                onFailure = {
-                    state.recent = RailState.Failed(it.message ?: "failed")
-                    state.spotlight =
-                        RailState.Failed(it.message ?: "failed")
-                },
-            )
+            // Page up to HOME_PAGE_CAP times so we have enough non-variant works to fill both
+            // rails even when the first page is heavy with season variants (#135). We stop
+            // early once both quotas are filled (or we run out of pages / hit an error).
+            // Off-page canonicals are resolved before every quota check, so a page heavy with
+            // season variants doesn't stop the paging early (Codex on #138). The lookup caches
+            // per (base, kind), so re-resolving as pages accumulate costs no extra request.
+            suspend fun visible(works: List<Work>): List<Work> {
+                val canonicals = session.io {
+                    state.canonicalLookup.resolveFor(works) { q, kind ->
+                        a.worksMatching(LibraryClient.variantQuery(q, null), kind)
+                    }
+                }.getOrElse { emptyList() }
+                val variantIds = Variants.variantIds(works + canonicals)
+                return works.filter { it.id !in variantIds }
+            }
+            var cursor: String? = null
+            val accumulated = mutableListOf<Work>()
+            var pageError: Throwable? = null
+            var pages = 0
+            var shown = emptyList<Work>()
+            var done = false
+            while (!done) {
+                val worksPage = session.io { a.libraryPage(cursor, limit = 100) }.getOrElse {
+                    pageError = it
+                    null
+                }
+                worksPage?.let {
+                    accumulated.addAll(it.items)
+                    cursor = it.nextCursor
+                }
+                pages++
+                shown = visible(accumulated)
+                done = worksPage == null || cursor == null || pages >= HOME_PAGE_CAP || quotasMet(shown)
+            }
+            val err = pageError
+            if (accumulated.isEmpty() && err != null) {
+                val msg = err.message ?: "failed"
+                state.recent = RailState.Failed(msg)
+                state.spotlight = RailState.Failed(msg)
+            } else {
+                val (spotlight, recent) = homeRails(shown)
+                state.recent = RailState.Loaded(recent)
+                state.spotlight = RailState.Loaded(spotlight)
+            }
         }
         for (t in MediaType.SEARCHABLE) {
             scope.launch {
