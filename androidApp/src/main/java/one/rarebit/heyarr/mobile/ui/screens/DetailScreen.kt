@@ -65,8 +65,10 @@ import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.catalog.Artwork
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.heyarr.McpResult
+import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Season
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
@@ -80,6 +82,7 @@ import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Hero
 import one.rarebit.heyarr.mobile.ui.components.HeroSkeleton
+import one.rarebit.heyarr.mobile.ui.components.artworkForDp
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
@@ -219,6 +222,16 @@ fun DetailScreen(
             )
             state.loading = false
             val d = state.detail ?: return@launch
+            // Fetch variant siblings concurrently with external metadata. q= is a
+            // sort_title substring match on the server (case-insensitive, heyarr-core#470);
+            // Variants.group on this narrow page replaces a full catalogue walk.
+            scope.launch {
+                val query = LibraryClient.variantQuery(d.title, d.sortTitle)
+                val kind = d.kind
+                session.io { a.worksMatching(query, kind) }.onSuccess { siblings ->
+                    state.variants = Variants.group(siblings)[route.workId].orEmpty()
+                }
+            }
             if (session.externalMetadata) {
                 val t = MediaType.from(d.kind)
                 val feedRef = if (t == MediaType.FEED ||
@@ -235,12 +248,6 @@ fun DetailScreen(
         }
         scope.launch { session.io { a.assets(route.workId) }.onSuccess { state.assets = it } }
         scope.launch { session.io { a.externalIds(route.workId) }.onSuccess { state.externalIds = it } }
-        scope.launch {
-            session.io { a.works() }.onSuccess { all ->
-                state.variants =
-                    Variants.group(all)[route.workId].orEmpty()
-            }
-        }
     }
     fun loadWants() {
         val a = session.api
@@ -272,7 +279,7 @@ fun DetailScreen(
         session,
         type,
         detail?.title ?: route.title ?: "",
-        detail?.artworkPath,
+        detail?.artworkForDp(Artwork.HERO_ARTWORK_DP),
         detail?.year,
         detail?.artist ?: detail?.author,
     )

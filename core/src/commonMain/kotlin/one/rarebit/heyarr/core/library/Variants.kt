@@ -29,6 +29,12 @@ object Variants {
         return Split(norm(m.groupValues[1]), m.groupValues[2].toInt())
     }
 
+    /**
+     * The base of a variant title as the title spells it (`"9-1-1 Season 2"` → `9-1-1`), for
+     * querying the node, whose sort_title match is a substring match; null when [split] is.
+     */
+    fun rawBase(title: String): String? = RE.matchEntire(title.trim())?.groupValues?.get(1)?.trim()
+
     private fun norm(s: String) = s.lowercase().replace(Regex("""[^a-z0-9]+"""), " ").trim()
 
     /** canonical work id → its variant works, for every canonical work that has any. */

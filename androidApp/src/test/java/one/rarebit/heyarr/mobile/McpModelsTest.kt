@@ -150,7 +150,6 @@ class McpModelsTest {
         val http = FakeHeyarrTransport()
         val api = HeyarrApi(http, "https://node.example:7777", Credential.Session("tok"))
         assertEquals(listOf("Dune: Part Two"), api.searchContent("dune", MediaType.MOVIE).works.map { it.title })
-        assertEquals(11, api.works().size)
         assertEquals("Yellowstone", api.work(Fixtures.YELLOWSTONE)?.title)
         assertEquals(Fixtures.HASH, api.work(Fixtures.YELLOWSTONE)?.blobHash)
         assertEquals(34, api.assets(Fixtures.YELLOWSTONE).size)

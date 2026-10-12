@@ -32,6 +32,13 @@ data class Work(
      * work has no poster; `catalog/Artwork` decides what to fetch either way.
      */
     val artworkPath: String? = null,
+    /**
+     * Thumbnail size map from the `artwork` embed's `sizes` sub-object (heyarr-core
+     * ADR-0109): keys are pixel widths ("256", "512", "1024"), values are blob-route
+     * paths in the same form as [artworkPath]. Empty when the row predates ADR-0109
+     * or was loaded without `include=artwork`.
+     */
+    val artworkSizes: Map<String, String> = emptyMap(),
     /** `attributes.artist` (music) / `attributes.author` (books), when the identifier wrote one. */
     val artist: String? = null,
     val author: String? = null,
@@ -65,5 +72,23 @@ data class Work(
     /** The node's own synopsis, when a provider wrote one under any of the usual keys. */
     val synopsis: String? get() = listOf("overview", "synopsis", "description", "summary").firstNotNullOfOrNull { k ->
         attributes[k]?.takeIf { it.isNotBlank() }
+    }
+
+    /**
+     * The best poster path for [sizePx] from the thumbnail size map (heyarr-core ADR-0109).
+     * When [artworkSizes] is empty — an older node or a list row without `include=artwork` —
+     * the call falls back to [artworkPath], preserving existing behaviour exactly.
+     *
+     * Pass the result to `rememberCover` or `Artwork.posterUrl` as you would [artworkPath]
+     * today; path-vs-URL handling is unchanged.
+     *
+     * The server publishes 256, 512 and 1024 px buckets. The call picks the smallest
+     * published bucket that covers [sizePx]; when all are smaller it takes the largest.
+     */
+    fun artworkFor(sizePx: Int): String? {
+        if (artworkSizes.isEmpty()) return artworkPath
+        val sorted = artworkSizes.keys.mapNotNull { it.toIntOrNull() }.sorted()
+        val key = (sorted.firstOrNull { it >= sizePx } ?: sorted.lastOrNull())?.toString()
+        return key?.let { artworkSizes[it] } ?: artworkPath
     }
 }

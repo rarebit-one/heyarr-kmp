@@ -14,6 +14,16 @@ import java.net.URLEncoder
  */
 object Artwork {
 
+    /**
+     * Nominal on-screen width, in dp, of a card, rail, grid or list poster (ADR-0109). The
+     * request is made in physical pixels (dp × density), so a 3x phone asks for the 512
+     * bucket rather than upscaling 256 (Codex on #137).
+     */
+    const val CARD_ARTWORK_DP = 140
+
+    /** Nominal on-screen width, in dp, of a full-width hero: Home's spotlight, a detail backdrop. */
+    const val HERO_ARTWORK_DP = 360
+
     fun posterUrl(baseUrl: String, work: Work): String = posterUrl(baseUrl, work.id, work.artworkPath)
 
     fun posterUrl(baseUrl: String, workId: String, artworkPath: String?): String {
