@@ -62,6 +62,12 @@ class PlaybackCoordinator(
     @Volatile
     var capabilities: ClientCapabilities? = null
 
+    // When there is no credential the caller is browsing as a guest. Play as [Credential.Guest]
+    // (sends no Authorization header) so heyarr's trusted-network guest path applies. A vault
+    // asset that requires enrolment will 404 at the blob endpoint, which the player surfaces as
+    // any other HTTP error — correct per ADR-0074.
+    private fun effectiveCred(): Credential = credential() ?: Credential.Guest
+
     private val _nowPlaying = MutableStateFlow<NowPlaying?>(null)
     val nowPlaying: StateFlow<NowPlaying?> = _nowPlaying.asStateFlow()
 
@@ -74,7 +80,7 @@ class PlaybackCoordinator(
      * range-capable blob endpoint; one without a hash has nothing to point a player at.
      */
     fun play(work: Work) {
-        val cred = credential() ?: return
+        val cred = effectiveCred()
         val hash = work.blobHash
         if (hash.isNullOrBlank()) {
             _notice.value = "“${work.title}” has no directly-streamable file yet."
@@ -102,7 +108,7 @@ class PlaybackCoordinator(
 
     /** Play one of a work's files: the asset's own blob hash and MIME drive the target. */
     fun playAsset(work: Work, asset: WorkAsset, subtitles: List<WorkAsset> = emptyList()) {
-        val cred = credential() ?: return
+        val cred = effectiveCred()
         val hash = asset.blobHash
         if (hash.isNullOrBlank()) {
             _notice.value = "“${asset.filename ?: work.title}” has no blob to stream (a linked asset has none)."
@@ -145,7 +151,7 @@ class PlaybackCoordinator(
         artworkUrl: String? = null,
         subtitles: List<WorkAsset> = emptyList(),
     ) {
-        val cred = credential() ?: return
+        val cred = effectiveCred()
         val isVideo = PlaybackTarget.looksLikeVideo(mime, kind)
         val client = PlaybackClient(transport, baseUrl(), cred)
         val subs = client.subtitleSidecars(subtitles)
@@ -241,7 +247,7 @@ class PlaybackCoordinator(
      */
     fun onIssue(issue: PlaybackDiagnostics.Issue) {
         val playing = _nowPlaying.value ?: return
-        val cred = credential() ?: return
+        val cred = effectiveCred()
         val caps = capabilities ?: return
         if (playing.target.origin != PlaybackTarget.Origin.DIRECT_PLANNED || playing.replanned) return
         val assetId = playing.assetId ?: return
