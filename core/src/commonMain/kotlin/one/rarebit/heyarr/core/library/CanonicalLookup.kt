@@ -34,7 +34,10 @@ class CanonicalLookup {
         // cached; a failure (timeout, 401) is retried on the next call (Codex on #138).
         return works.asSequence()
             .filter { it.id !in alreadyGrouped }
-            .mapNotNull { w -> Variants.split(w.title)?.let { (it.base to w.kind) to it.rawBase } }
+            .mapNotNull { w ->
+                val split = Variants.split(w.title) ?: return@mapNotNull null
+                (split.base to w.kind) to (Variants.rawBase(w.title) ?: split.base)
+            }
             .distinctBy { it.first }
             .flatMap { (key, raw) ->
                 cache[key] ?: runCatching { lookup(raw, key.second) }
