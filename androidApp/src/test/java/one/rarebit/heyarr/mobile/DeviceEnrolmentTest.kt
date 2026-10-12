@@ -63,9 +63,6 @@ class DeviceEnrolmentTest {
         override fun loadSessionAuthority() {
             calls += "authority"
         }
-        override fun loadLibrary() {
-            calls += "library"
-        }
         override fun startGuestBrowsing() {
             calls += "guest"
         }
