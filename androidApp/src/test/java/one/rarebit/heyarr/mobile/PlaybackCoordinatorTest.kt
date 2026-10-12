@@ -69,7 +69,11 @@ class PlaybackCoordinatorTest {
         val (c, _) = coordinator(emptyMap(), cred = cred)
         c.play(Work(id = "w1", title = "Dune", blobHash = hash))
         val np = c.nowPlaying.value!!
-        assertEquals("enrolled Session credential is carried through to the target unchanged", cred, np.target.credential)
+        assertEquals(
+            "enrolled Session credential is carried through to the target unchanged",
+            cred,
+            np.target.credential,
+        )
         assertFalse("enrolled credential has an Authorization header", np.target.authHeaders().isEmpty())
     }
 
