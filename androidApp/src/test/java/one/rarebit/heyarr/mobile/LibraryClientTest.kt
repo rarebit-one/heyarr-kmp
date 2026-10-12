@@ -98,4 +98,16 @@ class LibraryClientTest {
         assertEquals("q in url", true, t.lastUrl?.contains("q=Dune") == true)
         assertEquals("limit in url", true, t.lastUrl?.contains("limit=5") == true)
     }
+
+    @Test fun variantQueryUsesTheSortTitleUpToItsArticleSuffix() {
+        // q is a substring match over sort_title, which moves a leading article to the end.
+        assertEquals("conversation", LibraryClient.variantQuery("The Conversation", "conversation, the"))
+        assertEquals("yellowstone", LibraryClient.variantQuery("Yellowstone", "yellowstone"))
+    }
+
+    @Test fun variantQueryFallsBackToTheTitleWithoutALeadingArticle() {
+        assertEquals("Conversation", LibraryClient.variantQuery("The Conversation", null))
+        assertEquals("Office", LibraryClient.variantQuery("  the Office ", " "))
+        assertEquals("Dune", LibraryClient.variantQuery("Dune", null))
+    }
 }

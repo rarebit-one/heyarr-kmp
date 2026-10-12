@@ -26,6 +26,7 @@ class LibraryPager(
     // Bumped by every reset(); a fetch compares it before and after to tell whether its
     // page still belongs to the current list.
     @Volatile private var generation = 0
+    private val lock = Any()
 
     private val inFlight = AtomicBoolean(false)
 
@@ -41,18 +42,24 @@ class LibraryPager(
     fun loadNext(): Boolean {
         if (isAtEnd || !inFlight.compareAndSet(false, true)) return false
         try {
-            var gen: Int
-            var page: WorksPage
             // A reset() that lands while a page is in flight makes that page belong to the
             // list the user just threw away: drop it and fetch from the new start in the
-            // same slot, so a Refresh pressed mid-scroll never splices a stale page in.
+            // same slot, so a Refresh pressed mid-scroll never splices a stale page in. The
+            // generation check and the publish share [lock] with reset(), so a reset can't
+            // slip in between them (Codex on #133).
+            var published = false
             do {
-                gen = generation
-                page = fetchPage(cursor)
-            } while (gen != generation)
-            items = items + page.items
-            cursor = page.nextCursor
-            isAtEnd = page.nextCursor == null
+                val gen = synchronized(lock) { generation }
+                val page = fetchPage(cursor)
+                synchronized(lock) {
+                    if (gen == generation) {
+                        items = items + page.items
+                        cursor = page.nextCursor
+                        isAtEnd = page.nextCursor == null
+                        published = true
+                    }
+                }
+            } while (!published)
             return true
         } finally {
             inFlight.set(false)
@@ -88,7 +95,7 @@ class LibraryPager(
      * its page and fetches page 1 instead, and its caller publishes the fresh list (a
      * concurrent [loadNext] returns false while it runs).
      */
-    fun reset() {
+    fun reset() = synchronized(lock) {
         generation++
         items = emptyList()
         cursor = null

@@ -67,6 +67,7 @@ import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.heyarr.McpResult
+import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Season
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
@@ -223,9 +224,9 @@ fun DetailScreen(
             // sort_title substring match on the server (case-insensitive, heyarr-core#470);
             // Variants.group on this narrow page replaces a full catalogue walk.
             scope.launch {
-                val title = d.title
+                val query = LibraryClient.variantQuery(d.title, d.sortTitle)
                 val kind = d.kind
-                session.io { a.worksMatching(title, kind) }.onSuccess { siblings ->
+                session.io { a.worksMatching(query, kind) }.onSuccess { siblings ->
                     state.variants = Variants.group(siblings)[route.workId].orEmpty()
                 }
             }

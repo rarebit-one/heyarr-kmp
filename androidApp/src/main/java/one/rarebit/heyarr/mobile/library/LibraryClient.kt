@@ -85,6 +85,21 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
          */
         const val FIRST_PAGE_LIMIT = 50
 
+        private val LEADING_ARTICLE = Regex("""^(the|a|an)\s+""", RegexOption.IGNORE_CASE)
+
+        /**
+         * The `q=` key that finds a work's variant siblings. `q` is a substring match over
+         * `sort_title`, which moves a leading article to the end ("The Conversation" is
+         * `conversation, the`), so the display title can miss even the work itself (Codex on
+         * #133). Use the sort title up to its article suffix, and when the node sent none,
+         * the display title without a leading article. A variant's title extends the
+         * canonical one ("<base> Season 4 …"), so its sort title contains this key too.
+         */
+        fun variantQuery(title: String, sortTitle: String?): String {
+            val sort = sortTitle?.trim()?.takeIf { it.isNotEmpty() }
+            return sort?.substringBefore(", ")?.trim() ?: title.trim().replace(LEADING_ARTICLE, "")
+        }
+
         /** A guard so a misbehaving cursor can never loop forever (200 × 50 = 10k works). */
         const val MAX_PAGES = 50
 
@@ -119,7 +134,9 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
                 .append("?q=").append(URLEncoder.encode(q, "UTF-8"))
                 .append("&limit=").append(limit)
                 .append("&include=").append(INCLUDE)
-            if (!contentType.isNullOrBlank()) sb.append("&content_type=").append(URLEncoder.encode(contentType, "UTF-8"))
+            if (!contentType.isNullOrBlank()) {
+                sb.append("&content_type=").append(URLEncoder.encode(contentType, "UTF-8"))
+            }
             return sb.toString()
         }
 

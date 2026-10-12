@@ -85,6 +85,14 @@ val MEDIA = MediaType.UNKNOWN
 private val MEDIA_KINDS =
     setOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.AUDIOBOOK, MediaType.PODCAST)
 
+// Load the next page when the last visible card is this close to the end of the grid/list.
+private const val NEAR_END_ITEMS = 8
+
+// Keep paging while a filter shows fewer than this many works and more pages exist: a
+// filter whose matches all sit past the loaded prefix would otherwise show the empty state
+// with no scroll to trigger the next page (Codex on #133).
+private const val MIN_FILTERED_TO_STOP_PAGING = 24
+
 class LibraryState {
     var tab by mutableStateOf(0)
     val downloads = DownloadsState()
@@ -314,7 +322,7 @@ fun LibraryScreen(
             }
         }
 
-        // Scroll-position sentinels: trigger [loadMore] when the grid or list is 8 items
+        // Scroll-position sentinels: trigger [loadMore] when the grid or list is NEAR_END_ITEMS items
         // from the end. Using `derivedStateOf` avoids recomposition on every scroll event
         // — only the derived boolean change triggers the effect.
         val gridState = rememberLazyStaggeredGridState()
@@ -323,18 +331,22 @@ fun LibraryScreen(
             derivedStateOf {
                 val info = gridState.layoutInfo
                 val last = info.visibleItemsInfo.lastOrNull()?.index ?: return@derivedStateOf false
-                last >= info.totalItemsCount - 8
+                last >= info.totalItemsCount - NEAR_END_ITEMS
             }
         }
         val nearEndList = remember {
             derivedStateOf {
                 val info = listState.layoutInfo
                 val last = info.visibleItemsInfo.lastOrNull()?.index ?: return@derivedStateOf false
-                last >= info.totalItemsCount - 8
+                last >= info.totalItemsCount - NEAR_END_ITEMS
             }
         }
         LaunchedEffect(nearEndGrid.value) { if (nearEndGrid.value) loadMore() }
         LaunchedEffect(nearEndList.value) { if (nearEndList.value) loadMore() }
+        // A sparse filter: page on until it shows a screenful or the catalogue ends. Keyed on
+        // the loaded size so each landed page re-checks; loadMore's own guard dedupes.
+        val sparse = state.works != null && !state.isAtEnd && filtered.size < MIN_FILTERED_TO_STOP_PAGING
+        LaunchedEffect(sparse, state.works?.size, state.isLoadingMore) { if (sparse) loadMore() }
 
         when {
             state.error != null && state.works == null -> ErrorState("Couldn't load the library", state.error, ::load)
