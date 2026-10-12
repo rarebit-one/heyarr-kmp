@@ -21,14 +21,27 @@ class AuthInterceptor(private val baseUrl: () -> String, private val header: Aut
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val req = chain.request()
+        // A guest-planned stream carries NO_AUTH_MARKER so auth is never stamped onto it
+        // mid-playback (#132). Strip the marker here — it must not reach the wire.
+        if (req.header(NO_AUTH_MARKER) != null) {
+            return chain.proceed(req.newBuilder().removeHeader(NO_AUTH_MARKER).build())
+        }
         val hasAuth = req.header(AUTHORIZATION) != null
-        if (!shouldStamp(req.url.toString(), baseUrl(), hasAuth)) return chain.proceed(req)
-        val value = header.current() ?: return chain.proceed(req)
-        return chain.proceed(req.newBuilder().header(AUTHORIZATION, value).build())
+        val value = if (shouldStamp(req.url.toString(), baseUrl(), hasAuth)) header.current() else null
+        return chain.proceed(if (value != null) req.newBuilder().header(AUTHORIZATION, value).build() else req)
     }
 
     companion object {
         const val AUTHORIZATION = "Authorization"
+
+        /**
+         * Marker added by [one.rarebit.heyarr.mobile.playback.HeyarrDataSource] for
+         * guest-planned streams: [intercept] strips it and skips stamping so a sign-in
+         * mid-playback cannot re-credential a guest-target range read (#132).
+         */
+        const val NO_AUTH_MARKER = "X-Heyarr-No-Auth"
+        const val NO_AUTH_VALUE = "1"
+
         private const val API_PREFIX = "/api/v1/"
 
         /**
