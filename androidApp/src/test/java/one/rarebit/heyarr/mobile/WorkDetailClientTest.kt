@@ -186,5 +186,4 @@ class WorkDetailClientTest {
         assertTrue(boom is WorkDetailClient.Outcome.Failed)
         assertEquals("retry failed: HTTP 500", (boom as WorkDetailClient.Outcome.Failed).message)
     }
-
 }

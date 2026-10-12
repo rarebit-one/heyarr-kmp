@@ -113,6 +113,10 @@ class LibraryState {
 
     /** True while an incremental [loadMore] fetch is in progress (distinct from the initial [loading]). */
     var isLoadingMore by mutableStateOf(false)
+
+    // A next-page fetch failed: pause the automatic sparse-filter paging (it would retry at
+    // once, forever, while the node is down). A scroll to the end or a Refresh retries.
+    var pagingFailed by mutableStateOf(false)
 }
 
 /**
@@ -161,6 +165,7 @@ fun LibraryScreen(
         state.nextCursor = null
         state.isAtEnd = false
         state.isLoadingMore = false
+        state.pagingFailed = false
         pager.reset()
         scope.launch {
             session.io { pager.loadNext() }.fold(
@@ -182,18 +187,27 @@ fun LibraryScreen(
         if (state.isLoadingMore || pager.isAtEnd || state.works == null) return
         state.isLoadingMore = true
         scope.launch {
-            session.io { pager.loadNext() }.fold(
-                onSuccess = { fetched -> if (fetched) publish() },
-                onFailure = {
-                    // Silent when a list is showing (end-of-scroll retries). With no list,
-                    // a Refresh was waiting on this fetch's page-1 refetch: surface it.
-                    if (state.works == null) {
-                        state.error = it.message
-                        state.loading = false
-                    }
-                },
-            )
-            state.isLoadingMore = false
+            // finally: leaving the screen cancels this scope mid-fetch, and LibraryState
+            // outlives it; a stuck isLoadingMore would refuse every later loadMore.
+            try {
+                session.io { pager.loadNext() }.fold(
+                    onSuccess = { fetched ->
+                        state.pagingFailed = false
+                        if (fetched) publish()
+                    },
+                    onFailure = {
+                        state.pagingFailed = true
+                        // Silent when a list is showing (end-of-scroll retries). With no list,
+                        // a Refresh was waiting on this fetch's page-1 refetch: surface it.
+                        if (state.works == null) {
+                            state.error = it.message
+                            state.loading = false
+                        }
+                    },
+                )
+            } finally {
+                state.isLoadingMore = false
+            }
         }
     }
 
@@ -345,7 +359,8 @@ fun LibraryScreen(
         LaunchedEffect(nearEndList.value) { if (nearEndList.value) loadMore() }
         // A sparse filter: page on until it shows a screenful or the catalogue ends. Keyed on
         // the loaded size so each landed page re-checks; loadMore's own guard dedupes.
-        val sparse = state.works != null && !state.isAtEnd && filtered.size < MIN_FILTERED_TO_STOP_PAGING
+        val sparse = state.works != null && !state.isAtEnd && !state.pagingFailed &&
+            filtered.size < MIN_FILTERED_TO_STOP_PAGING
         LaunchedEffect(sparse, state.works?.size, state.isLoadingMore) { if (sparse) loadMore() }
 
         when {

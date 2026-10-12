@@ -57,17 +57,17 @@ class LibraryPagerTest {
         val releaseFetch = CountDownLatch(1)
 
         val pager = LibraryPager {
-            startFetch.countDown()      // signal that the first fetch started
-            releaseFetch.await()        // block until the test lets it through
+            startFetch.countDown() // signal that the first fetch started
+            releaseFetch.await() // block until the test lets it through
             page(work(1))
         }
 
         val pool = Executors.newSingleThreadExecutor()
         val future = pool.submit<Boolean> { pager.loadNext() }
 
-        startFetch.await()              // wait until first fetch is actually running
-        val secondResult = pager.loadNext()   // must be rejected while first is in flight
-        releaseFetch.countDown()        // release first fetch to complete
+        startFetch.await() // wait until first fetch is actually running
+        val secondResult = pager.loadNext() // must be rejected while first is in flight
+        releaseFetch.countDown() // release first fetch to complete
 
         val firstResult = future.get()
         pool.shutdown()
@@ -115,14 +115,14 @@ class LibraryPagerTest {
             call++
             if (cursor == null) page(work(call)) else page()
         }
-        pager.loadNext()                    // load page 1
+        pager.loadNext() // load page 1
         assertEquals("one item before reset", 1, pager.items.size)
 
         pager.reset()
         assertEquals("items cleared", 0, pager.items.size)
         assertFalse("not at end after reset", pager.isAtEnd)
 
-        pager.loadNext()                    // load page 1 again from cursor==null
+        pager.loadNext() // load page 1 again from cursor==null
         assertEquals("one item after reset-reload", 1, pager.items.size)
         assertEquals("second fetch restarted from null cursor", 2, call)
     }
