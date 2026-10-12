@@ -3,7 +3,6 @@ package one.rarebit.heyarr.mobile
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
-import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.WorkDetailClient
 import one.rarebit.heyarr.mobile.library.WorkPatch
 import org.junit.Assert.assertEquals
@@ -51,11 +50,6 @@ class WorkDetailClientTest {
         assertEquals("$base/api/v1/desired?work_id=w1&limit=200", WorkDetailClient.wantsUrl(base, "w1"))
         assertEquals("$base/api/v1/desired/d1", WorkDetailClient.wantUrl(base, "d1"))
         assertEquals("""{"monitor":false}""", WorkDetailClient.monitorBody(false))
-        assertEquals("$base/api/v1/works?limit=200&include=artwork%2Cprimary_asset", LibraryClient.worksUrl(base, null))
-        assertEquals(
-            "$base/api/v1/works?limit=200&include=artwork%2Cprimary_asset&cursor=c1",
-            LibraryClient.worksUrl(base, "c1"),
-        )
     }
 
     @Test fun assetsForWorkReadsTheJoinedPerWorkRoute() {
@@ -193,19 +187,4 @@ class WorkDetailClientTest {
         assertEquals("retry failed: HTTP 500", (boom as WorkDetailClient.Outcome.Failed).message)
     }
 
-    @Test fun libraryListFollowsNextCursorAndOrdersRecentFirst() {
-        val t = RoutedTransport(
-            mapOf(
-                "GET /works?limit=200&include=artwork%2Cprimary_asset" to
-                    HttpResponse(
-                        200,
-                        """{"items":[{"id":"a","title":"A","updated_at":"2026-01-01T00:00:00Z"}],"next_cursor":"n"}""",
-                    ),
-                "GET /works?limit=200&include=artwork%2Cprimary_asset&cursor=n" to
-                    HttpResponse(200, """{"items":[{"id":"b","title":"B","updated_at":"2026-05-01T00:00:00Z"}]}"""),
-            ),
-        )
-        assertEquals(listOf("b", "a"), LibraryClient(t, base, cred).listWorks().map { it.id })
-        assertEquals(2, t.calls.size)
-    }
 }

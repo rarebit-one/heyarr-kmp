@@ -16,9 +16,11 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.GridView
@@ -29,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +50,8 @@ import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.McpResult
+import one.rarebit.heyarr.mobile.library.LibraryClient
+import one.rarebit.heyarr.mobile.library.LibraryPager
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
@@ -91,6 +96,15 @@ class LibraryState {
     var type by mutableStateOf<MediaType?>(MEDIA)
     var status by mutableStateOf<LibraryStatus?>(null)
     var grid by mutableStateOf(true)
+
+    /** The cursor returned with the last loaded page; null before the first page or after [reset]. */
+    var nextCursor by mutableStateOf<String?>(null)
+
+    /** True once [nextCursor] is null — no more pages to fetch. */
+    var isAtEnd by mutableStateOf(false)
+
+    /** True while an incremental [loadMore] fetch is in progress (distinct from the initial [loading]). */
+    var isLoadingMore by mutableStateOf(false)
 }
 
 /**
@@ -109,17 +123,72 @@ fun LibraryScreen(
     onPlaylists: (() -> Unit)? = null,
 ) {
     val scope = rememberCoroutineScope()
+
+    // One LibraryPager per composable lifetime, restored from screen state if the
+    // composable is recreated after a tab switch (state survives in SessionHolder;
+    // the pager itself does not, because it lives in `remember`).
+    val pager = remember {
+        LibraryPager { cursor ->
+            val limit = if (cursor == null) LibraryClient.FIRST_PAGE_LIMIT else LibraryClient.PAGE_LIMIT
+            session.api.libraryPage(cursor, limit)
+        }.also { p ->
+            if (state.works != null) p.resume(state.works!!, state.nextCursor, state.isAtEnd)
+        }
+    }
+
+    // Mirror the pager into screen state (it survives a tab switch; the pager does not).
+    fun publish() {
+        state.works = pager.items
+        state.nextCursor = pager.nextCursor
+        state.isAtEnd = pager.isAtEnd
+        state.loading = false
+    }
+
+    // Reset to page 1 and fetch the first (small) page. Clears the current list so the
+    // skeleton shows while loading. Triggered by the Refresh button and on first visit.
     fun load() {
         state.loading = true
         state.error = null
+        state.works = null
+        state.nextCursor = null
+        state.isAtEnd = false
+        state.isLoadingMore = false
+        pager.reset()
         scope.launch {
-            session.io { session.api.works() }.fold(onSuccess = { state.works = it }, onFailure = {
-                state.error =
-                    it.message
-            })
-            state.loading = false
+            session.io { pager.loadNext() }.fold(
+                // false = a loadMore fetch was already in flight; the reset makes it fetch
+                // page 1 instead, and its own completion publishes (and ends loading).
+                onSuccess = { fetched -> if (fetched) publish() },
+                onFailure = {
+                    state.error = it.message
+                    state.loading = false
+                },
+            )
         }
     }
+
+    // Append the next page to the already-loaded list. One request in flight at a time;
+    // silent on failure so the already-loaded items are preserved and the user can retry
+    // by scrolling past the current position again.
+    fun loadMore() {
+        if (state.isLoadingMore || pager.isAtEnd || state.works == null) return
+        state.isLoadingMore = true
+        scope.launch {
+            session.io { pager.loadNext() }.fold(
+                onSuccess = { fetched -> if (fetched) publish() },
+                onFailure = {
+                    // Silent when a list is showing (end-of-scroll retries). With no list,
+                    // a Refresh was waiting on this fetch's page-1 refetch: surface it.
+                    if (state.works == null) {
+                        state.error = it.message
+                        state.loading = false
+                    }
+                },
+            )
+            state.isLoadingMore = false
+        }
+    }
+
     LaunchedEffect(Unit) { if (state.works == null) load() }
 
     val variants = remember(state.works) { Variants.variantIds(state.works.orEmpty()) }
@@ -244,6 +313,29 @@ fun LibraryScreen(
                 })
             }
         }
+
+        // Scroll-position sentinels: trigger [loadMore] when the grid or list is 8 items
+        // from the end. Using `derivedStateOf` avoids recomposition on every scroll event
+        // — only the derived boolean change triggers the effect.
+        val gridState = rememberLazyStaggeredGridState()
+        val listState = rememberLazyListState()
+        val nearEndGrid = remember {
+            derivedStateOf {
+                val info = gridState.layoutInfo
+                val last = info.visibleItemsInfo.lastOrNull()?.index ?: return@derivedStateOf false
+                last >= info.totalItemsCount - 8
+            }
+        }
+        val nearEndList = remember {
+            derivedStateOf {
+                val info = listState.layoutInfo
+                val last = info.visibleItemsInfo.lastOrNull()?.index ?: return@derivedStateOf false
+                last >= info.totalItemsCount - 8
+            }
+        }
+        LaunchedEffect(nearEndGrid.value) { if (nearEndGrid.value) loadMore() }
+        LaunchedEffect(nearEndList.value) { if (nearEndList.value) loadMore() }
+
         when {
             state.error != null && state.works == null -> ErrorState("Couldn't load the library", state.error, ::load)
 
@@ -283,6 +375,7 @@ fun LibraryScreen(
                         Tokens.posterWidth
                     },
                 ),
+                state = gridState,
                 horizontalArrangement = Arrangement.spacedBy(Tokens.s3),
                 verticalItemSpacing = Tokens.s3,
                 contentPadding = PaddingValues(bottom = 32.dp),
@@ -308,6 +401,7 @@ fun LibraryScreen(
             }
 
             else -> LazyColumn(
+                state = listState,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
                 contentPadding = PaddingValues(bottom = 32.dp),
                 modifier = Modifier.fillMaxSize(),
@@ -344,7 +438,21 @@ class DownloadsState {
     var jobs by mutableStateOf<List<JobInfo>?>(null)
     var titles by mutableStateOf<Map<String, String>>(emptyMap())
     var error by mutableStateOf<String?>(null)
+
+    /** Work ids that returned a 404 from the node — not re-fetched on subsequent ticks. */
+    var notFound by mutableStateOf<Set<String>>(emptySet())
 }
+
+/**
+ * Returns ids from [wanted] that are neither already resolved in [titles] nor
+ * permanently 404'd in [notFound]. Pure function — no I/O — so the Downloads polling
+ * logic can be unit-tested without Compose or coroutine machinery.
+ */
+fun workIdsToFetch(
+    wanted: List<String>,
+    titles: Map<String, String>,
+    notFound: Set<String>,
+): List<String> = wanted.filter { it !in titles && it !in notFound }
 
 /**
  * Library → Downloads: what heyarr is doing about the wants right now. Two tables —
@@ -365,16 +473,26 @@ fun DownloadsScreen(
     fun load() {
         state.error = null
         scope.launch {
-            session.io { session.api.desired() }.fold(onSuccess = { state.desired = it }, onFailure = {
-                state.error =
-                    it.message
-            })
+            session.io { session.api.desired() }.fold(
+                onSuccess = { state.desired = it },
+                onFailure = { state.error = it.message },
+            )
             session.io { session.api.jobs(40) }.onSuccess { state.jobs = it }
-            val wanted = state.desired.orEmpty().mapNotNull { it.workId }.distinct().filter { it !in state.titles }
-            if (wanted.isNotEmpty()) {
-                session.io { session.api.works() }.onSuccess { works ->
-                    state.titles =
-                        state.titles + works.associate { it.id to it.title }
+            // Only fetch titles for ids that are new (not already in titles or known
+            // to be 404 — permanently absent from the node's catalogue). Sequential
+            // to avoid flooding the node on a large wants list.
+            val toFetch = workIdsToFetch(
+                wanted = state.desired.orEmpty().mapNotNull { it.workId }.distinct(),
+                titles = state.titles,
+                notFound = state.notFound,
+            )
+            for (id in toFetch) {
+                session.io { session.api.work(id) }.onSuccess { work ->
+                    if (work != null) {
+                        state.titles = state.titles + (id to work.title)
+                    } else {
+                        state.notFound = state.notFound + id
+                    }
                 }
             }
         }
