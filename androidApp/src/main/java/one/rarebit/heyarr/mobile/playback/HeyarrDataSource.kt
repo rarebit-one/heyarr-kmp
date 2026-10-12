@@ -6,6 +6,7 @@ import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import okhttp3.OkHttpClient
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.mobile.net.AuthInterceptor
 
 /**
  * The bridge from a [PlaybackTarget] to a Media3 [DataSource.Factory] that streams the
@@ -54,11 +55,28 @@ object HeyarrDataSource {
      * because a request that already carries one is left alone by the app's interceptor,
      * a film outlived its proof: every range read after ~2 minutes came back 401.
      */
+    /**
+     * A factory whose every open re-stamps `Authorization` through [live].
+     *
+     * For a guest-planned stream, instead of a credential we set [AuthInterceptor.NO_AUTH_MARKER]
+     * on each range read. The interceptor strips the marker and skips stamping, so a sign-in that
+     * happens mid-playback cannot accidentally re-credential a guest-target range read
+     * (#132). The marker is private to the OkHttp stack: ExoPlayer never sees it,
+     * and it is removed before the request leaves the process.
+     */
     fun factory(client: OkHttpClient, target: PlaybackTarget, live: () -> String? = { null }): DataSource.Factory {
         val upstream = OkHttpDataSource.Factory(client)
         return ResolvingDataSource.Factory(upstream) { spec ->
             val value = authorization(live(), target)
-            if (value == null) spec else spec.withAdditionalHeaders(mapOf(AUTHORIZATION to value))
+            when {
+                value != null ->
+                    spec.withAdditionalHeaders(mapOf(AUTHORIZATION to value))
+                target.credential is Credential.Guest ->
+                    spec.withAdditionalHeaders(
+                        mapOf(AuthInterceptor.NO_AUTH_MARKER to AuthInterceptor.NO_AUTH_VALUE),
+                    )
+                else -> spec
+            }
         }
     }
 }

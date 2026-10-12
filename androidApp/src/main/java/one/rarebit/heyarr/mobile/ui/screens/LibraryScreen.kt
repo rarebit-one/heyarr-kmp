@@ -45,6 +45,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.heyarr.JobInfo
+import one.rarebit.heyarr.core.library.CanonicalLookup
+import one.rarebit.heyarr.core.library.CatalogWork
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
@@ -117,6 +119,12 @@ class LibraryState {
     // A next-page fetch failed: pause the automatic sparse-filter paging (it would retry at
     // once, forever, while the node is down). A scroll to the end or a Refresh retries.
     var pagingFailed by mutableStateOf(false)
+
+    // Canonical works fetched for variant suppression whose canonical was not in the loaded
+    // page (#134). Held here so the Variants.variantIds call sees them even if
+    // the user's page ends before the canonical appears.
+    val canonicalLookup = CanonicalLookup()
+    var resolvedCanonicals by mutableStateOf<List<CatalogWork>>(emptyList())
 }
 
 /**
@@ -213,7 +221,21 @@ fun LibraryScreen(
 
     LaunchedEffect(Unit) { if (state.works == null) load() }
 
-    val variants = remember(state.works) { Variants.variantIds(state.works.orEmpty()) }
+    // Fetch off-page canonicals whenever the works list changes so that season variants
+    // whose canonical is not in the loaded page are suppressed correctly (#134).
+    LaunchedEffect(state.works) {
+        val works = state.works ?: return@LaunchedEffect
+        val resolved = session.io {
+            state.canonicalLookup.resolveFor(works) { q, kind ->
+                runCatching { session.api.worksMatching(q, kind) }.getOrElse { emptyList() }
+            }
+        }.getOrElse { emptyList() }
+        state.resolvedCanonicals = resolved
+    }
+
+    val variants = remember(state.works, state.resolvedCanonicals) {
+        Variants.variantIds(state.works.orEmpty() + state.resolvedCanonicals)
+    }
     val all = state.works.orEmpty().filter { it.id !in variants }
     val counts = all.groupingBy { MediaType.from(it.kind) }.eachCount()
     val filtered = all.filter { w ->
