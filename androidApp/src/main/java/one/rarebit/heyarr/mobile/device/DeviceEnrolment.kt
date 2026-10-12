@@ -45,7 +45,6 @@ internal class DeviceEnrolment(
 
         fun setLoginState(state: LoginUiState)
         fun loadSessionAuthority()
-        fun loadLibrary()
         fun startGuestBrowsing()
         fun signOut()
     }
@@ -322,7 +321,6 @@ internal class DeviceEnrolment(
                 needsAdmin = false,
             )
             host.loadSessionAuthority()
-            host.loadLibrary()
         }.onFailure {
             _enrolState.value =
                 EnrolUiState.Error(deviceInfo.value, "could not sign with the device key: ${it.message}")

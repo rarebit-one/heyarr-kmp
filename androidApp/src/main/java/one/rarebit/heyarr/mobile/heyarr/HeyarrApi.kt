@@ -49,6 +49,7 @@ import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.catalog.ContinueClient
 import one.rarebit.heyarr.mobile.catalog.ContinueEntry
+import one.rarebit.heyarr.mobile.catalog.WorksPage
 import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
@@ -270,8 +271,23 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
 
     // ── REST reads with no tool equivalent (the app's existing clients) ──────────
 
-    /** `GET /api/v1/works` — the whole library, recent first, with the artwork + primary-asset embeds. */
-    fun works(): List<Work> = rest { library.listWorks() }
+    /**
+     * `GET /api/v1/works?sort=recent&limit=…[&cursor=…]` — one page of the library.
+     * Use [LibraryClient.FIRST_PAGE_LIMIT] for the initial page and [LibraryClient.PAGE_LIMIT]
+     * for subsequent ones; pass the previous page's `nextCursor` to continue. Returns a
+     * [WorksPage] so the caller can thread the cursor forward and detect end-of-list.
+     */
+    fun libraryPage(cursor: String? = null, limit: Int = LibraryClient.PAGE_LIMIT): WorksPage =
+        rest { library.page(cursor, limit) }
+
+    /**
+     * `GET /api/v1/works?q=<title>&content_type=<kind>&limit=<n>` — works whose sort_title
+     * contains [title] (case-insensitive substring). Returns one page (up to [limit] items):
+     * enough to collect variant siblings for one canonical work without a full catalogue walk.
+     * Pass the result to [one.rarebit.heyarr.core.library.Variants.group] to extract them.
+     */
+    fun worksMatching(title: String, kind: String?, limit: Int = LibraryClient.PAGE_LIMIT): List<Work> =
+        rest { library.queryWorks(title, kind, limit) }
 
     /** `GET /api/v1/works/{id}` — one work with its artwork, primary asset and attributes; null on a 404. */
     fun work(id: String): Work? = rest { library.getWork(id) }

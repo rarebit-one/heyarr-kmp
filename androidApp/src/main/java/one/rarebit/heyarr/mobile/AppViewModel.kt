@@ -25,8 +25,6 @@ import one.rarebit.heyarr.mobile.device.InMemoryPendingPairingStore
 import one.rarebit.heyarr.mobile.device.MembershipOps
 import one.rarebit.heyarr.mobile.device.PairingCoordinator
 import one.rarebit.heyarr.mobile.device.PairingSteps
-import one.rarebit.heyarr.mobile.library.LibraryClient
-import one.rarebit.heyarr.mobile.library.LibraryUiState
 import one.rarebit.heyarr.mobile.login.LoginUiState
 import one.rarebit.heyarr.mobile.login.QrLoginClient
 import one.rarebit.heyarr.mobile.login.VoidbindLogin
@@ -56,9 +54,8 @@ private object UnavailablePairingSteps : PairingSteps {
 }
 
 /**
- * Drives the QR login, holds the resulting Bearer session token as a [Credential],
- * then loads the library with it. Blocking transport calls run on [Dispatchers.IO];
- * the UI observes [loginState] and [libraryState].
+ * Drives the QR login, holds the resulting Bearer session token as a [Credential].
+ * Blocking transport calls run on [Dispatchers.IO]; the UI observes [loginState].
  *
  * The effective [config] is resolved from the build default plus the runtime
  * overrides in [settings] ([HeyarrConfig.resolve]); [updateSettings] re-resolves it
@@ -165,9 +162,6 @@ class AppViewModel internal constructor(
 
     private val _loginState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val loginState: StateFlow<LoginUiState> = _loginState.asStateFlow()
-
-    private val _libraryState = MutableStateFlow<LibraryUiState>(LibraryUiState.Loading)
-    val libraryState: StateFlow<LibraryUiState> = _libraryState.asStateFlow()
 
     private val _sessionAuthority = MutableStateFlow<SessionAuthority?>(null)
     val sessionAuthority: StateFlow<SessionAuthority?> = _sessionAuthority.asStateFlow()
@@ -281,7 +275,6 @@ class AppViewModel internal constructor(
         deviceCredential = null
         _sessionAuthority.value = null
         playback.stop()
-        _libraryState.value = LibraryUiState.Loading
         _loginState.value = LoginUiState.Idle
         startGuestBrowsing()
     }
@@ -295,7 +288,6 @@ class AppViewModel internal constructor(
     fun startGuestBrowsing() {
         if (credential != null) return
         loadSessionAuthority()
-        loadLibrary()
     }
 
     fun signIn() {
@@ -315,7 +307,6 @@ class AppViewModel internal constructor(
                     credential = Credential.Session(result.sessionToken)
                     _loginState.value = LoginUiState.Approved(result.user)
                     loadSessionAuthority()
-                    loadLibrary()
                 }
 
                 is VoidbindLogin.Result.Denied -> _loginState.value = LoginUiState.Error(result.reason)
@@ -362,7 +353,6 @@ class AppViewModel internal constructor(
             }
 
             override fun loadSessionAuthority() = this@AppViewModel.loadSessionAuthority()
-            override fun loadLibrary() = this@AppViewModel.loadLibrary()
             override fun startGuestBrowsing() = this@AppViewModel.startGuestBrowsing()
             override fun signOut() = this@AppViewModel.signOut()
         },
@@ -422,19 +412,4 @@ class AppViewModel internal constructor(
 
     /** A human-readable name for the node's device registry. */
     var deviceName: String = "heyarr-mobile"
-
-    private fun loadLibrary() {
-        // Guest-as-default: browse with Credential.Guest when nothing is enrolled.
-        val cred = effectiveCredential()
-        _libraryState.value = LibraryUiState.Loading
-        viewModelScope.launch {
-            val state = withContext(Dispatchers.IO) {
-                runCatching {
-                    val works = LibraryClient(transport, config.baseUrl, cred).listWorks()
-                    LibraryUiState.Loaded(works)
-                }.getOrElse { LibraryUiState.Error(it.message ?: "failed to load library") }
-            }
-            _libraryState.value = state
-        }
-    }
 }

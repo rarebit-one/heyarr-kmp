@@ -113,10 +113,13 @@ fun HomeScreen(
         val a = session.api
         state.loadedOnce = true
         scope.launch {
-            session.io { a.works() }.fold(
-                onSuccess = { all ->
-                    val variants = Variants.variantIds(all)
-                    val works = all.filter { it.id !in variants }
+            // One page of 100 recent works covers both home rails. Variant suppression is
+            // page-local — a variant outside this page is not hidden, which is an acceptable
+            // trade-off for the home screen that avoids a full catalogue walk.
+            session.io { a.libraryPage(cursor = null, limit = 100).items }.fold(
+                onSuccess = { page ->
+                    val variants = Variants.variantIds(page)
+                    val works = page.filter { it.id !in variants }
                     state.recent = RailState.Loaded(works.filter { it.kind != "document" }.take(24))
                     state.spotlight =
                         RailState.Loaded(works.filter { it.kind != "document" && it.kind != "unknown" }.take(6))

@@ -2,6 +2,7 @@ package one.rarebit.heyarr.mobile.library
 
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.catalog.WorksPage
 import one.rarebit.heyarr.mobile.net.Timestamps
 import java.net.URLEncoder
 
@@ -13,25 +14,37 @@ import java.net.URLEncoder
  *
  * `/api/v1/works` and `/api/v1/works/{id}` are the real server routes
  * (internal/api/resources). The list is paged (`{items, next_cursor?}`, server max
- * 200 per page) and served in `sort_title` order; [listWorks] follows `next_cursor`
- * to the end and returns the whole library **most-recently-touched first** — the
- * settings-free order the Library tab shows. Response parsing goes through
- * [WorksJson] so it is exercised on plain JVM in CI.
+ * 200 per page). [page] fetches one page at a time in `sort=recent` order — the
+ * server sorts by `(created_at, id)` descending (ADR-0075); the Library tab
+ * streams pages incrementally through [LibraryPager]. [listWorks] walks every page
+ * (without the `sort` parameter, so the server uses its default alphabetical order)
+ * and then sorts the full result client-side via [one.rarebit.heyarr.mobile.net.Timestamps.recentFirst].
+ * Response parsing goes through [WorksJson] so it is exercised on plain JVM in CI.
  */
 class LibraryClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
-    /** Fetch every work, recent first. Throws on a non-200 so the caller can surface the status. */
-    fun listWorks(): List<Work> {
-        val all = ArrayList<Work>()
-        var cursor: String? = null
-        var pages = 0
-        do {
-            val resp = http.get(worksUrl(baseUrl, cursor), credential.asHeader())
-            require(resp.status == 200) { "library: GET /works failed: HTTP ${resp.status}" }
-            all.addAll(WorksJson.parse(resp.body))
-            cursor = WorksJson.nextCursor(resp.body)
-            pages++
-        } while (cursor != null && pages < MAX_PAGES)
-        return Timestamps.recentFirst(all) { it.recency }
+    /**
+     * Fetch one page of the library in `sort=recent` order. The first page should be
+     * requested with [FIRST_PAGE_LIMIT] so the first paint arrives quickly; subsequent
+     * pages can use the full [PAGE_LIMIT]. [cursor] null starts from the beginning.
+     * Returns a [WorksPage] so the caller can thread the next cursor back in.
+     */
+    fun page(cursor: String? = null, limit: Int = PAGE_LIMIT): WorksPage {
+        val resp = http.get(worksUrl(baseUrl, cursor, limit, "recent"), credential.asHeader())
+        require(resp.status == 200) { "library: GET /works failed: HTTP ${resp.status}" }
+        return WorksPage(items = WorksJson.parse(resp.body), nextCursor = WorksJson.nextCursor(resp.body))
+    }
+
+    /**
+     * Fetch the first page of works that match [q] as a sort_title substring
+     * (`GET /works?q=…&content_type=…&limit=…`) — no cursor, no paging. Used to gather
+     * variant siblings for a single canonical work without walking the whole catalogue
+     * (heyarr-core#470). [contentType] null omits the content_type filter. Throws on
+     * a non-200.
+     */
+    fun queryWorks(q: String, contentType: String?, limit: Int = PAGE_LIMIT): List<Work> {
+        val resp = http.get(worksUrl(baseUrl, q, contentType, limit), credential.asHeader())
+        require(resp.status == 200) { "library: GET /works failed: HTTP ${resp.status}" }
+        return WorksJson.parse(resp.body)
     }
 
     /** Fetch one work (`GET /works/{id}`); null on a 404, throws on any other non-200. */
@@ -63,8 +76,31 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
     }
 
     companion object {
-        /** The server's per-page maximum; asking for it minimises round trips. */
+        /** The server's per-page maximum; asking for it minimises round trips for [page]. */
         const val PAGE_LIMIT = 200
+
+        /**
+         * Limit for the very first page: small enough to paint quickly, large enough to
+         * fill a phone screen with a margin. Subsequent pages load at [PAGE_LIMIT].
+         */
+        const val FIRST_PAGE_LIMIT = 50
+
+        private val LEADING_ARTICLE = Regex("""^(the|a|an)\s+""", RegexOption.IGNORE_CASE)
+        private val ARTICLE_SUFFIX = Regex(""",\s*(the|a|an)$""", RegexOption.IGNORE_CASE)
+
+        /**
+         * The `q=` key that finds a work's variant siblings. `q` is a substring match over
+         * `sort_title`, which moves a leading article to the end ("The Conversation" is
+         * `conversation, the`), so the display title can miss even the work itself (Codex on
+         * #133). Use the sort title without its article suffix, and when the node sent none,
+         * the display title without a leading article. A variant's title extends the
+         * canonical one ("<base> Season 4 …"), so its sort title contains this key too.
+         */
+        fun variantQuery(title: String, sortTitle: String?): String {
+            val sort = sortTitle?.trim()?.takeIf { it.isNotEmpty() }
+            // Only a real article suffix is stripped: `i, robot` keeps its comma (Codex on #133).
+            return sort?.replace(ARTICLE_SUFFIX, "")?.trim() ?: title.trim().replace(LEADING_ARTICLE, "")
+        }
 
         /** A guard so a misbehaving cursor can never loop forever (200 × 50 = 10k works). */
         const val MAX_PAGES = 50
@@ -75,10 +111,35 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
         /** The browse embeds every list row is asked for (heyarr-core ADR-0075): the poster and the one playable file. */
         private val INCLUDE = URLEncoder.encode("artwork,primary_asset", "UTF-8")
 
-        /** `GET /works?limit=200&include=artwork,primary_asset[&cursor=…]` — one page of the list. */
-        fun worksUrl(baseUrl: String, cursor: String?): String {
-            val base = worksUrl(baseUrl) + "?limit=" + PAGE_LIMIT + "&include=" + INCLUDE
-            return if (cursor.isNullOrBlank()) base else base + "&cursor=" + URLEncoder.encode(cursor, "UTF-8")
+        /**
+         * Paged URL with an explicit [limit] and [sort] wire value — used by [page] with
+         * `sort=recent` (ADR-0075). [INCLUDE] is already percent-encoded; no double-encoding.
+         */
+        fun worksUrl(baseUrl: String, cursor: String?, limit: Int, sort: String): String {
+            val sb = StringBuilder(worksUrl(baseUrl))
+                .append("?limit=").append(limit)
+                .append("&sort=").append(sort)
+                .append("&include=").append(INCLUDE)
+            if (!cursor.isNullOrBlank()) sb.append("&cursor=").append(URLEncoder.encode(cursor, "UTF-8"))
+            return sb.toString()
+        }
+
+        /**
+         * Keyword-filter URL — `GET /works?q=<q>&content_type=<ct>&limit=<n>&include=…`.
+         * [q] is a case-insensitive sort_title substring match (server-side); [contentType]
+         * null omits the filter. Used by [queryWorks] to fetch variant siblings for one
+         * canonical work without walking the whole catalogue (heyarr-core#470).
+         * Unit-tested; both [q] and [contentType] are percent-encoded.
+         */
+        fun worksUrl(baseUrl: String, q: String, contentType: String?, limit: Int): String {
+            val sb = StringBuilder(worksUrl(baseUrl))
+                .append("?q=").append(URLEncoder.encode(q, "UTF-8"))
+                .append("&limit=").append(limit)
+                .append("&include=").append(INCLUDE)
+            if (!contentType.isNullOrBlank()) {
+                sb.append("&content_type=").append(URLEncoder.encode(contentType, "UTF-8"))
+            }
+            return sb.toString()
         }
 
         /** Pure URL builder for a single work — unit-tested. */
