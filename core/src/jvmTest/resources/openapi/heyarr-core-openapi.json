@@ -370,21 +370,60 @@
     ],
     "operationId": "getWorkArtwork",
     "summary": "A work's poster, by redirect to its blob.",
-    "description": "Answers `307` with a `Location` of the ordinary blob route for the\nwork's representative artwork asset (ADR-0075) — a `poster`/`cover`\nbefore an unnamed image before `fanart`/`backdrop`/`banner`, the id\nbreaking ties, and only an asset that holds bytes and is not missing.\n\nA redirect rather than a second byte route on purpose: the blob route\nis the one contract for bytes (ADR-0013), and its immutable cache\nheaders are correct only because the URL is the hash. A work's poster\ncan change, so this work-keyed URL carries a short private `max-age`\nand the target carries the immutable one. `307`, not `302`, so a\n`HEAD` stays a `HEAD`.\n\nNo resizing: the node has no image library and no thumbnail cache. A\nclient that already holds the `artwork` embed can skip this route and\nfetch `artwork.content_url` directly.\n\nThe guest boundary applies (ADR-0074): a `vault` poster is a 404 to a\nGuest, as the asset itself is.\n",
+    "description": "Answers `307` with a `Location` of the ordinary blob route for the\nwork's representative artwork asset (ADR-0075) — a `poster`/`cover`\nbefore an unnamed image before `fanart`/`backdrop`/`banner`, the id\nbreaking ties, and only an asset that holds bytes and is not missing.\n\nA redirect rather than a second byte route on purpose: the blob route\nis the one contract for bytes (ADR-0013), and its immutable cache\nheaders are correct only because the URL is the hash. A work's poster\ncan change, so this work-keyed URL carries a short private `max-age`\nand the target carries the immutable one. `307`, not `302`, so a\n`HEAD` stays a `HEAD`.\n\nWhen `?size=N` is given the node acts as a thumbnail cache (ADR-0109):\nif the derived JPEG thumbnail is ready the redirect goes to the thumb\nblob (short private `max-age`); if the source is undecodable it falls\nback to the original blob (short private `max-age`); otherwise it\nenqueues a derivation job and redirects to the original with\n`Cache-Control: no-store` so the client retries until the thumbnail is\nready. Only the long-edge buckets `256`, `512` and `1024` are valid;\nany other value is a `400`.\n\nThe guest boundary applies (ADR-0074): a `vault` poster is a 404 to a\nGuest, as the asset itself is.\n",
     "parameters": [
      {
       "$ref": "#/components/parameters/id"
+     },
+     {
+      "name": "size",
+      "in": "query",
+      "required": false,
+      "description": "Requested thumbnail long-edge bucket in pixels (ADR-0109).\nAccepted values: `256`, `512`, `1024`. Omit for the original blob.\n",
+      "schema": {
+       "type": "integer",
+       "enum": [
+        256,
+        512,
+        1024
+       ]
+      }
+     },
+     {
+      "name": "v",
+      "in": "query",
+      "required": false,
+      "description": "Cache-busting token (the source blob's BLAKE3 hash). Accepted and ignored by the server; present so Android image-cache clients treat a changed poster as a new URL. Pre-built into the URLs in `artwork.sizes` — clients should not need to construct it.",
+      "schema": {
+       "type": "string"
+      }
      }
     ],
     "responses": {
      "307": {
-      "description": "Redirect to the blob route.",
+      "description": "Redirect to the blob route. `Location` is the thumb blob when the derived thumbnail is ready, or the original blob otherwise.",
       "headers": {
        "Location": {
         "schema": {
          "type": "string"
         },
         "description": "`/api/v1/blobs/{hash}/content`"
+       },
+       "Cache-Control": {
+        "schema": {
+         "type": "string"
+        },
+        "description": "`private, max-age=300` for ready/undecodable responses; `no-store` while derivation is pending."
+       }
+      }
+     },
+     "400": {
+      "description": "`size` is present but not one of the supported values (256, 512, 1024).",
+      "content": {
+       "application/problem+json": {
+        "schema": {
+         "$ref": "#/components/schemas/Problem"
+        }
        }
       }
      },
@@ -412,15 +451,40 @@
     ],
     "operationId": "headWorkArtwork",
     "summary": "The artwork redirect, headers only.",
-    "description": "Identical to `get`: a `307` with the same `Location`, so a client can learn whether a poster exists without following the redirect. A 307 preserves the method, which is why the redirect is not a 302.",
+    "description": "Identical to `get`: a `307` with the same `Location`, so a client can learn whether a poster exists without following the redirect. A 307 preserves the method, which is why the redirect is not a 302. Supports the same `?size=` and `?v=` parameters as `GET`.",
     "parameters": [
      {
       "$ref": "#/components/parameters/id"
+     },
+     {
+      "name": "size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "enum": [
+        256,
+        512,
+        1024
+       ]
+      }
+     },
+     {
+      "name": "v",
+      "in": "query",
+      "required": false,
+      "description": "Cache-busting token; accepted and ignored by the server.",
+      "schema": {
+       "type": "string"
+      }
      }
     ],
     "responses": {
      "307": {
       "description": "Redirect to the blob route."
+     },
+     "400": {
+      "description": "size is not one of the supported values."
      },
      "401": {
       "$ref": "#/components/responses/Unauthorized"
@@ -10250,7 +10314,7 @@
    },
    "ArtworkRef": {
     "type": "object",
-    "description": "A work's representative poster (ADR-0075): the `artwork`-role asset\nthat ranks first — `poster`/`cover`/`folder`/`front` before an unnamed\nimage before `fanart`/`backdrop`/`banner` — among those that hold\nbytes and are not missing. `content_url` is the ordinary blob route\n(ADR-0013); `GET /works/{id}/artwork` redirects to the same place.\n",
+    "description": "A work's representative poster (ADR-0075): the `artwork`-role asset\nthat ranks first — `poster`/`cover`/`folder`/`front` before an unnamed\nimage before `fanart`/`backdrop`/`banner` — among those that hold\nbytes and are not missing. `content_url` is the ordinary blob route\n(ADR-0013); `GET /works/{id}/artwork` redirects to the same place.\n\n`sizes` maps each supported thumbnail bucket (256, 512, 1024) to the\nartwork redirect URL with `?size=N&v=<blob_hash>` appended (ADR-0109).\nA client follows that URL to receive the derived JPEG thumbnail when\nready, or the original while derivation is in progress. The `v`\nparameter carries the source blob hash so that Android image caches\n(which ignore `Cache-Control`) treat a changed poster as a new URL; the\nserver accepts and ignores it. `sizes` is present only on artwork\nembedded in work cards, not on group (artist/author) artwork.\n",
     "required": [
      "asset_id",
      "blob_hash",
@@ -10273,6 +10337,18 @@
      },
      "content_url": {
       "type": "string"
+     },
+     "sizes": {
+      "type": "object",
+      "description": "Thumbnail bucket URLs (ADR-0109). Keys are `\"256\"`, `\"512\"`, `\"1024\"`; values are the artwork redirect URL for this work with `?size=N&v=<blob_hash>` appended. The `v` value equals `blob_hash` and busts Android image caches when the poster changes. Present only when artwork is embedded in a work card, not in group summaries.",
+      "additionalProperties": {
+       "type": "string"
+      },
+      "example": {
+       "256": "/api/v1/works/018f4a92-b7c3-7000-a5e0-000000000001/artwork?size=256&v=blake3:3333333333333333333333333333333333333333333333333333333333333333",
+       "512": "/api/v1/works/018f4a92-b7c3-7000-a5e0-000000000001/artwork?size=512&v=blake3:3333333333333333333333333333333333333333333333333333333333333333",
+       "1024": "/api/v1/works/018f4a92-b7c3-7000-a5e0-000000000001/artwork?size=1024&v=blake3:3333333333333333333333333333333333333333333333333333333333333333"
+      }
      }
     }
    },

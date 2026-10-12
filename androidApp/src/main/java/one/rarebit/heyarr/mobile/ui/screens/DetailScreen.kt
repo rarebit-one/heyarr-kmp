@@ -65,6 +65,7 @@ import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.catalog.Artwork
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.library.LibraryClient
@@ -81,6 +82,7 @@ import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Hero
 import one.rarebit.heyarr.mobile.ui.components.HeroSkeleton
+import one.rarebit.heyarr.mobile.ui.components.artworkForDp
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
@@ -277,7 +279,7 @@ fun DetailScreen(
         session,
         type,
         detail?.title ?: route.title ?: "",
-        detail?.artworkPath,
+        detail?.artworkForDp(Artwork.HERO_ARTWORK_DP),
         detail?.year,
         detail?.artist ?: detail?.author,
     )

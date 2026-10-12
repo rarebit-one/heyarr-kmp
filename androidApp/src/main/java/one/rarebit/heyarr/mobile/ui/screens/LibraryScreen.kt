@@ -51,6 +51,7 @@ import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.catalog.Artwork
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.LibraryPager
@@ -62,6 +63,7 @@ import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.MediaCard
 import one.rarebit.heyarr.mobile.ui.components.MediaCardSkeleton
 import one.rarebit.heyarr.mobile.ui.components.MediaRow
+import one.rarebit.heyarr.mobile.ui.components.artworkForDp
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.Cell
 import one.rarebit.heyarr.ui.components.DataTable
@@ -147,7 +149,7 @@ fun LibraryScreen(
     // One LibraryPager per composable lifetime, restored from screen state if the
     // composable is recreated after a tab switch (state survives in SessionHolder;
     // the pager itself does not, because it lives in `remember`).
-    val pager = remember {
+    val pager = remember(session, state) {
         LibraryPager { cursor ->
             val limit = if (cursor == null) LibraryClient.FIRST_PAGE_LIMIT else LibraryClient.PAGE_LIMIT
             session.api.libraryPage(cursor, limit)
@@ -219,7 +221,7 @@ fun LibraryScreen(
         }
     }
 
-    LaunchedEffect(Unit) { if (state.works == null) load() }
+    LaunchedEffect(state) { if (state.works == null) load() }
 
     // Fetch off-page canonicals whenever the works list changes so that season variants
     // whose canonical is not in the loaded page are suppressed correctly (#134).
@@ -432,7 +434,14 @@ fun LibraryScreen(
             ) {
                 items(filtered, key = { it.id }) { w ->
                     val type = MediaType.from(w.kind)
-                    val cover by rememberCover(session, type, w.title, w.artworkPath, w.year, w.artist ?: w.author)
+                    val cover by rememberCover(
+                        session,
+                        type,
+                        w.title,
+                        w.artworkForDp(Artwork.CARD_ARTWORK_DP),
+                        w.year,
+                        w.artist ?: w.author,
+                    )
                     MediaCard(
                         w.title, type, onOpen = {
                             onOpen(detailRoute(w.id, type, w.title, from = "Library"))
@@ -457,7 +466,14 @@ fun LibraryScreen(
             ) {
                 items(filtered, key = { it.id }) { w ->
                     val type = MediaType.from(w.kind)
-                    val cover by rememberCover(session, type, w.title, w.artworkPath, w.year, w.artist ?: w.author)
+                    val cover by rememberCover(
+                        session,
+                        type,
+                        w.title,
+                        w.artworkForDp(Artwork.CARD_ARTWORK_DP),
+                        w.year,
+                        w.artist ?: w.author,
+                    )
                     MediaRow(
                         w.title,
                         type,

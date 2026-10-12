@@ -36,6 +36,7 @@ import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.mobile.catalog.Artwork
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Work
@@ -49,6 +50,7 @@ import one.rarebit.heyarr.mobile.ui.components.Hero
 import one.rarebit.heyarr.mobile.ui.components.HeroSkeleton
 import one.rarebit.heyarr.mobile.ui.components.MediaCard
 import one.rarebit.heyarr.mobile.ui.components.Rail
+import one.rarebit.heyarr.mobile.ui.components.artworkForDp
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.Notice
@@ -434,7 +436,14 @@ private fun WorkCard(
 ) {
     val type = MediaType.from(w.kind)
     val status = session.index.statusOf(w.id)
-    val cover by rememberCover(session, type, w.title, w.artworkPath, w.year, w.artist ?: w.author)
+    val cover by rememberCover(
+        session,
+        type,
+        w.title,
+        w.artworkForDp(Artwork.CARD_ARTWORK_DP),
+        w.year,
+        w.artist ?: w.author,
+    )
     MediaCard(
         w.title, type, onOpen = { onOpen(detailRoute(w.id, type, w.title, from = from)) },
         subtitle =
@@ -474,7 +483,7 @@ private fun SpotlightBlock(
                 session,
                 type,
                 work.title,
-                work.artworkPath,
+                work.artworkForDp(Artwork.HERO_ARTWORK_DP),
                 work.year,
                 work.artist ?: work.author,
             )
