@@ -482,7 +482,7 @@ private fun SpotlightBlock(
                 session,
                 type,
                 work.title,
-                work.artworkFor(Artwork.CARD_ARTWORK_PX),
+                work.artworkFor(Artwork.HERO_ARTWORK_PX),
                 work.year,
                 work.artist ?: work.author,
             )

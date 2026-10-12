@@ -42,6 +42,11 @@ object WorksJson {
     fun nextCursor(body: String): String? =
         JsonScan.rootObject(body)?.let { JsonScan.stringField(it, "next_cursor") }?.takeIf { it.isNotBlank() }
 
+    // The ADR-0109 thumbnail buckets in an `artwork` embed; its own function keeps
+    // parseObject under detekt's complexity bar.
+    private fun sizesOf(artwork: String?): Map<String, String> =
+        artwork?.let { JsonScan.stringMap(it, "sizes") }.orEmpty()
+
     private fun parseObject(obj: String): Work? {
         val id = JsonScan.stringField(obj, "id") ?: return null
         val title = JsonScan.firstString(obj, TITLE_KEYS) ?: id
@@ -59,7 +64,7 @@ object WorksJson {
             mime = JsonScan.firstString(obj, MIME_KEYS) ?: primary?.let { JsonScan.stringField(it, "mime") },
             primaryAssetId = primary?.let { JsonScan.stringField(it, "asset_id") },
             artworkPath = artwork?.let { JsonScan.stringField(it, "content_url") },
-            artworkSizes = artwork?.let { JsonScan.stringMap(it, "sizes") } ?: emptyMap(),
+            artworkSizes = sizesOf(artwork),
             artist = attributes?.let { JsonScan.stringField(it, "artist") },
             author = attributes?.let { JsonScan.stringField(it, "author") },
             attributes =

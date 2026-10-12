@@ -117,41 +117,41 @@ class WorksJsonEmbedsTest {
 }
 
 class WorksJsonSizesTest {
+    private val sized = Work(
+        id = "w1",
+        title = "T",
+        artworkPath = "/fb",
+        artworkSizes = mapOf("256" to "u256", "512" to "u512", "1024" to "u1024"),
+    )
 
     @Test fun parsesSizesFromArtworkEmbed() {
-        // `sizes` sub-object maps bucket widths to paths; `content_url` still populates artworkPath.
-        val body = """[{"id":"w1","title":"T","artwork":{"content_url":"/blobs/b1/content","sizes":{"256":"/blobs/b1/content?size=256","512":"/blobs/b1/content?size=512","1024":"/blobs/b1/content?size=1024"}}}]"""
+        // `sizes` maps bucket widths to redirect paths; `content_url` still fills artworkPath.
+        // JsonScan reads one line, so the fixture is joined, not wrapped.
+        val body = "[{\"id\":\"w1\",\"title\":\"T\",\"artwork\":{\"content_url\":\"/blobs/b1/content\"," +
+            "\"sizes\":{\"256\":\"/a?size=256\",\"512\":\"/a?size=512\",\"1024\":\"/a?size=1024\"}}}]"
         val w = WorksJson.parse(body).single()
         assertEquals("/blobs/b1/content", w.artworkPath)
-        assertEquals(
-            mapOf("256" to "/blobs/b1/content?size=256", "512" to "/blobs/b1/content?size=512", "1024" to "/blobs/b1/content?size=1024"),
-            w.artworkSizes,
-        )
+        assertEquals(mapOf("256" to "/a?size=256", "512" to "/a?size=512", "1024" to "/a?size=1024"), w.artworkSizes)
     }
 
     @Test fun artworkForSelectsCorrectBucket() {
-        // Picks the smallest bucket >= sizePx; rounds up past a gap; takes the largest when all are smaller.
-        val w = Work(id = "w1", title = "T", artworkSizes = mapOf("256" to "u256", "512" to "u512", "1024" to "u1024"), artworkPath = "/fb")
-        assertEquals("u256", w.artworkFor(256))   // exact match
-        assertEquals("u512", w.artworkFor(300))   // 300 not present → round up to 512
-        assertEquals("u512", w.artworkFor(512))   // exact match
-        assertEquals("u1024", w.artworkFor(2048)) // larger than all buckets → largest available
+        assertEquals("exact bucket", "u256", sized.artworkFor(256))
+        assertEquals("rounds up to the next bucket", "u512", sized.artworkFor(300))
+        assertEquals("exact bucket", "u512", sized.artworkFor(512))
+        assertEquals("larger than every bucket takes the largest", "u1024", sized.artworkFor(2048))
     }
 
     @Test fun artworkForFallsBackToArtworkPathWhenSizesAbsent() {
-        // Older node or list row without include=artwork: artworkSizes empty, artworkPath used.
-        val w = Work(id = "w1", title = "T", artworkPath = "/blobs/b0/content")
-        assertEquals("/blobs/b0/content", w.artworkFor(256))
-        assertEquals("/blobs/b0/content", w.artworkFor(512))
-        // Both artworkSizes and artworkPath absent → null, matching today's artworkPath behaviour.
-        assertEquals(null, Work(id = "w2", title = "T").artworkFor(256))
+        val plain = Work(id = "w1", title = "T", artworkPath = "/fb")
+        assertEquals("/fb", plain.artworkFor(256))
+        assertEquals("/fb", plain.artworkFor(1024))
+        assertEquals(null, Work(id = "w1", title = "T").artworkFor(256))
     }
 
     @Test fun artworkSizesIsEmptyWhenSizesKeyAbsentFromEmbed() {
-        // Artwork embed present but without a `sizes` key → artworkSizes stays empty; artworkFor falls back.
-        val body = """[{"id":"w1","title":"T","artwork":{"content_url":"/blobs/b2/content"}}]"""
+        val body = "[{\"id\":\"w1\",\"title\":\"T\",\"artwork\":{\"content_url\":\"/blobs/b1/content\"}}]"
         val w = WorksJson.parse(body).single()
         assertEquals(emptyMap<String, String>(), w.artworkSizes)
-        assertEquals("/blobs/b2/content", w.artworkFor(256))
+        assertEquals("/blobs/b1/content", w.artworkFor(256))
     }
 }

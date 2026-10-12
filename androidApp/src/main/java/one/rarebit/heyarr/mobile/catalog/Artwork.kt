@@ -19,6 +19,12 @@ object Artwork {
     /** Pixel width requested for detail-screen hero and backdrop thumbnails (ADR-0109). */
     const val DETAIL_ARTWORK_PX = 512
 
+    /**
+     * Pixel width for a full-width hero, such as Home's spotlight: ~360dp wide at 3x density
+     * is ~1,000 physical pixels, so a card bucket would be upscaled about 4x (Codex on #137).
+     */
+    const val HERO_ARTWORK_PX = 1024
+
     fun posterUrl(baseUrl: String, work: Work): String = posterUrl(baseUrl, work.id, work.artworkPath)
 
     fun posterUrl(baseUrl: String, workId: String, artworkPath: String?): String {
