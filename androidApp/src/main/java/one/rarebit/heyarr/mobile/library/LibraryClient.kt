@@ -86,18 +86,20 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
         const val FIRST_PAGE_LIMIT = 50
 
         private val LEADING_ARTICLE = Regex("""^(the|a|an)\s+""", RegexOption.IGNORE_CASE)
+        private val ARTICLE_SUFFIX = Regex(""",\s*(the|a|an)$""", RegexOption.IGNORE_CASE)
 
         /**
          * The `q=` key that finds a work's variant siblings. `q` is a substring match over
          * `sort_title`, which moves a leading article to the end ("The Conversation" is
          * `conversation, the`), so the display title can miss even the work itself (Codex on
-         * #133). Use the sort title up to its article suffix, and when the node sent none,
+         * #133). Use the sort title without its article suffix, and when the node sent none,
          * the display title without a leading article. A variant's title extends the
          * canonical one ("<base> Season 4 …"), so its sort title contains this key too.
          */
         fun variantQuery(title: String, sortTitle: String?): String {
             val sort = sortTitle?.trim()?.takeIf { it.isNotEmpty() }
-            return sort?.substringBefore(", ")?.trim() ?: title.trim().replace(LEADING_ARTICLE, "")
+            // Only a real article suffix is stripped: `i, robot` keeps its comma (Codex on #133).
+            return sort?.replace(ARTICLE_SUFFIX, "")?.trim() ?: title.trim().replace(LEADING_ARTICLE, "")
         }
 
         /** A guard so a misbehaving cursor can never loop forever (200 × 50 = 10k works). */

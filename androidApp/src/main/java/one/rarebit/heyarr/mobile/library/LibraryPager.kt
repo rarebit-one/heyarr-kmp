@@ -12,9 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Keeping this class free of Compose and coroutine state means the pager logic can be
  * exercised in plain-JVM unit tests without an Android runtime.
  */
-class LibraryPager(
-    private val fetchPage: (cursor: String?) -> WorksPage,
-) {
+class LibraryPager(private val fetchPage: (cursor: String?) -> WorksPage) {
     @Volatile var items: List<Work> = emptyList()
         private set
 

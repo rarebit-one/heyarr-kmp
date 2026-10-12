@@ -103,6 +103,12 @@ class LibraryClientTest {
         // q is a substring match over sort_title, which moves a leading article to the end.
         assertEquals("conversation", LibraryClient.variantQuery("The Conversation", "conversation, the"))
         assertEquals("yellowstone", LibraryClient.variantQuery("Yellowstone", "yellowstone"))
+        assertEquals("office", LibraryClient.variantQuery("An Office", "office, an"))
+    }
+
+    @Test fun variantQueryKeepsACommaThatIsNotAnArticleSuffix() {
+        // `i, robot` is the title, not "i" with an article: cutting at the comma would query "i".
+        assertEquals("i, robot", LibraryClient.variantQuery("I, Robot", "i, robot"))
     }
 
     @Test fun variantQueryFallsBackToTheTitleWithoutALeadingArticle() {

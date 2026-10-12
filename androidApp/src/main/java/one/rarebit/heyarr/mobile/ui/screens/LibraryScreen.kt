@@ -460,11 +460,8 @@ class DownloadsState {
  * permanently 404'd in [notFound]. Pure function — no I/O — so the Downloads polling
  * logic can be unit-tested without Compose or coroutine machinery.
  */
-fun workIdsToFetch(
-    wanted: List<String>,
-    titles: Map<String, String>,
-    notFound: Set<String>,
-): List<String> = wanted.filter { it !in titles && it !in notFound }
+fun workIdsToFetch(wanted: List<String>, titles: Map<String, String>, notFound: Set<String>): List<String> =
+    wanted.filter { it !in titles && it !in notFound }
 
 /**
  * Library → Downloads: what heyarr is doing about the wants right now. Two tables —

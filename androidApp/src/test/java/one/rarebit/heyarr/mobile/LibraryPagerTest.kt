@@ -13,8 +13,7 @@ import java.util.concurrent.Executors
 private fun work(n: Int) = Work(id = "w$n", title = "Work w$n")
 
 /** Builds a [WorksPage] from a vararg list of works and an optional next cursor. */
-private fun page(vararg works: Work, next: String? = null) =
-    WorksPage(items = works.toList(), nextCursor = next)
+private fun page(vararg works: Work, next: String? = null) = WorksPage(items = works.toList(), nextCursor = next)
 
 class LibraryPagerTest {
 
