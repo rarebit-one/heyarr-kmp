@@ -42,12 +42,11 @@ object HeyarrDataSource {
      * bound to the principal that planned it, so stamping a credential minted by a sign-in
      * mid-playback onto it would get the next range read refused (Codex on #131).
      */
-    fun authorization(live: String?, target: PlaybackTarget): String? =
-        if (target.credential is Credential.Guest) {
-            null
-        } else {
-            live?.takeIf { it.isNotBlank() } ?: target.authHeaders()[AUTHORIZATION]
-        }
+    fun authorization(live: String?, target: PlaybackTarget): String? = if (target.credential is Credential.Guest) {
+        null
+    } else {
+        live?.takeIf { it.isNotBlank() } ?: target.authHeaders()[AUTHORIZATION]
+    }
 
     /**
      * A factory whose every open re-stamps `Authorization` through [live]. The header
