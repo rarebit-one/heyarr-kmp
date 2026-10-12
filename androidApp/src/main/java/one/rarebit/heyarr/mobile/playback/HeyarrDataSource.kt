@@ -5,6 +5,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import okhttp3.OkHttpClient
+import one.rarebit.heyarr.core.auth.Credential
 
 /**
  * The bridge from a [PlaybackTarget] to a Media3 [DataSource.Factory] that streams the
@@ -36,9 +37,16 @@ object HeyarrDataSource {
      * (an enrolled phone's possession proof lives about two minutes and is re-minted
      * by the library; a session token also lapses), else the value the target was
      * planned with. Pure, so the choice is unit-tested.
+     *
+     * A target planned as a guest stays headerless for its whole life: its stream URL is
+     * bound to the principal that planned it, so stamping a credential minted by a sign-in
+     * mid-playback onto it would get the next range read refused (Codex on #131).
      */
-    fun authorization(live: String?, target: PlaybackTarget): String? =
+    fun authorization(live: String?, target: PlaybackTarget): String? = if (target.credential is Credential.Guest) {
+        null
+    } else {
         live?.takeIf { it.isNotBlank() } ?: target.authHeaders()[AUTHORIZATION]
+    }
 
     /**
      * A factory whose every open re-stamps `Authorization` through [live]. The header

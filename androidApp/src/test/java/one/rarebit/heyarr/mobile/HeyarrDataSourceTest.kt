@@ -4,6 +4,7 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.mobile.playback.HeyarrDataSource
 import one.rarebit.heyarr.mobile.playback.PlaybackTarget
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 /** A range read carries the proof in force now, not the one the play was planned with. */
@@ -22,5 +23,14 @@ class HeyarrDataSourceTest {
         )
         assertEquals(planned.authHeaders()["Authorization"], HeyarrDataSource.authorization(null, planned))
         assertEquals(planned.authHeaders()["Authorization"], HeyarrDataSource.authorization("", planned))
+    }
+
+    @Test
+    fun aGuestPlannedTargetStaysHeaderlessAfterASignIn() {
+        // The stream URL a guest's plan returned is bound to the guest; a sign-in during
+        // playback must not stamp the new credential onto its reads (Codex on #131).
+        val guest = planned.copy(credential = Credential.Guest)
+        assertNull(HeyarrDataSource.authorization("Device cert.token proof.fresh", guest))
+        assertNull(HeyarrDataSource.authorization(null, guest))
     }
 }

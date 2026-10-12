@@ -49,11 +49,32 @@ class PlaybackCoordinatorTest {
         assertNull(c.notice.value)
     }
 
-    @Test fun noCredentialMeansNothingHappens() {
+    @Test fun nullCredentialPlaysAsGuest() {
+        // After sign-out (credential == null) heyarr's trusted-network guest path applies
+        // (ADR-0074): the blob endpoint returns 200 for guests, so pressing Play must produce
+        // a NowPlaying — it used to silently no-op.
         val (c, t) = coordinator(emptyMap(), cred = null)
         c.play(Work(id = "w1", title = "Dune", blobHash = hash))
-        assertNull(c.nowPlaying.value)
-        assertTrue(t.calls.isEmpty())
+        val np = c.nowPlaying.value
+        assertNotNull("null credential falls back to Credential.Guest, producing a NowPlaying", np)
+        assertEquals("null credential gives Credential.Guest target", Credential.Guest, np!!.target.credential)
+        assertTrue("Credential.Guest sends no Authorization header", np.target.authHeaders().isEmpty())
+        assertTrue("direct blob needs no plan call", t.calls.isEmpty())
+    }
+
+    @Test fun enrolledCredentialIsPreservedInTarget() {
+        // A signed-in session credential must survive the play path unchanged so the blob
+        // and any re-plan calls carry the correct Authorization header.
+        val cred = Credential.Session("tok")
+        val (c, _) = coordinator(emptyMap(), cred = cred)
+        c.play(Work(id = "w1", title = "Dune", blobHash = hash))
+        val np = c.nowPlaying.value!!
+        assertEquals(
+            "enrolled Session credential is carried through to the target unchanged",
+            cred,
+            np.target.credential,
+        )
+        assertFalse("enrolled credential has an Authorization header", np.target.authHeaders().isEmpty())
     }
 
     @Test fun aRowWithAHashAndNoCapabilitiesPlaysTheBlobDirectly() {
