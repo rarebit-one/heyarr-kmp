@@ -377,6 +377,13 @@ fun HeyarrNavHost(
                                         onSettings = { open(Route.Settings) },
                                     )
 
+                                    Connection.SIGNING_FAILED -> OfflineBanner(
+                                        "Device authentication required",
+                                        "Unlock with your fingerprint or PIN, then retry.",
+                                        onRetry = { scope.launch { session.probe() } },
+                                        onSettings = { open(Route.Settings) },
+                                    )
+
                                     else -> {}
                                 }
                             }

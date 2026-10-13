@@ -233,6 +233,7 @@ private fun ConnectionStatus(session: AppSession, authority: SessionAuthority?, 
         Connection.ONLINE -> Tokens.success to "connected"
         Connection.OFFLINE -> Tokens.danger to "offline"
         Connection.UNAUTHORIZED -> Tokens.warning to "credential refused"
+        Connection.SIGNING_FAILED -> Tokens.warning to "device authentication needed"
         Connection.UNKNOWN -> Tokens.textDisabled to "connecting…"
     }
     KeyValue("status", label + (session.lastLatencyMs?.let { " · $it ms" } ?: ""), valueColor = tone)

@@ -227,6 +227,7 @@ private fun ConnectionTile(connection: Connection, detail: String?, onClick: () 
         Connection.ONLINE -> Tokens.success to "Online"
         Connection.OFFLINE -> Tokens.danger to "Offline"
         Connection.UNAUTHORIZED -> Tokens.warning to "Refused"
+        Connection.SIGNING_FAILED -> Tokens.warning to "Locked"
         Connection.UNKNOWN -> Tokens.textDisabled to "Connecting"
     }
     val interaction = remember { MutableInteractionSource() }

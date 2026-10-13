@@ -110,6 +110,7 @@ fun TelemetryScreen(
                     Connection.ONLINE -> Tokens.success to "Connected"
                     Connection.OFFLINE -> Tokens.danger to "Offline"
                     Connection.UNAUTHORIZED -> Tokens.warning to "Credential refused"
+                    Connection.SIGNING_FAILED -> Tokens.warning to "Device authentication needed"
                     Connection.UNKNOWN -> Tokens.textDisabled to "Connecting…"
                 }
                 Row(
@@ -149,7 +150,11 @@ fun TelemetryScreen(
                         KeyValue("scopes", s.scopes.joinToString(", ").ifBlank { "none" })
                         KeyValue(
                             "can write",
-                            if (s.canWrite) "yes — want, follow, acquire will succeed" else "no — this credential is read-only; writes will be refused",
+                            if (s.canWrite) {
+                                "yes — want, follow, acquire will succeed"
+                            } else {
+                                "no — this credential is read-only; writes will be refused"
+                            },
                             valueColor = if (s.canWrite) Tokens.success else Tokens.warning,
                         )
                         s.principalId?.let { KeyValue("principal", it, valueColor = Tokens.textMuted) }
