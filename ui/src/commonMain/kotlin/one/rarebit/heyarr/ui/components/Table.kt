@@ -52,8 +52,8 @@ data class TableColumn(val title: String, val weight: Float = 1f, val width: Dp?
  * rows, columns by weight. Cells are composables so a cell can hold a chip or a button.
  * Rows may carry an expandable detail (the rule list behind a verdict) — the row is a
  * button that toggles it, so nothing needs a second control. On the desktop an expandable
- * row lights up under the pointer. On a phone a table wider than the screen ([minWidth])
- * scrolls sideways inside its own frame rather than squeezing every column.
+ * row lights up under the pointer. A table wider than its pane ([minWidth]) scrolls sideways
+ * inside its own frame rather than squeezing every column — on a phone, or a narrow window.
  */
 @Composable
 fun DataTable(
@@ -66,17 +66,18 @@ fun DataTable(
     detailLabel: (row: Int) -> String? = { null },
     cell: @Composable RowScope.(row: Int, column: Int) -> Unit,
 ) {
-    if (!LocalHeyarrPlatform.current.touch) {
-        TableBody(modifier.fillMaxWidth(), touch = false, columns, rowCount, emptyText, detail, detailLabel, cell)
+    val touch = LocalHeyarrPlatform.current.touch
+    if (minWidth == null) {
+        TableBody(modifier.fillMaxWidth(), touch, columns, rowCount, emptyText, detail, detailLabel, cell)
         return
     }
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val available = maxWidth
-        val wide = minWidth != null && minWidth > available
+        val wide = minWidth > available
         val tableWidth = if (wide) minWidth else available
         val frame = if (wide) Modifier.horizontalScroll(rememberScrollState()) else Modifier
         Box(frame.fillMaxWidth()) {
-            TableBody(Modifier.width(tableWidth), touch = true, columns, rowCount, emptyText, detail, detailLabel, cell)
+            TableBody(Modifier.width(tableWidth), touch, columns, rowCount, emptyText, detail, detailLabel, cell)
         }
     }
 }

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.ui.Experience
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.desktop.ui.railSection
 import one.rarebit.heyarr.ui.components.ArchiveMark
 import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.HeyarrIcons
@@ -54,21 +55,21 @@ data class NavItem(val route: Route, val label: String, val icon: ImageVector, v
 /** Connection status and the action that opens its details sheet. */
 data class NavConnectionInfo(val state: Connection, val detail: String?, val onOpen: () -> Unit)
 
+/** The consumer half of the rail: the three ways in, and search. Home is the mark at the top. */
 val CONSUME_ITEMS = listOf(
     NavItem(Route.Consume(Experience.WATCH), "Watch", HeyarrIcons.Watch, "Ctrl 1"),
     NavItem(Route.Consume(Experience.LISTEN), "Listen", HeyarrIcons.Listen, "Ctrl 2"),
     NavItem(Route.Consume(Experience.READ), "Read", HeyarrIcons.Read, "Ctrl 3"),
+    NavItem(Route.Search, "Search", HeyarrIcons.Search, "Ctrl+F"),
 )
 
 /**
- * The manage half of the rail, as the brief lists it. Home is the mark at the top; Cast is not a
- * destination of its own but where "Play on…" and the now-playing bar lead (Route.NowPlaying).
+ * Below the rule: Manage, the one door to the curator workspace (missing, downloads, the full
+ * library, sources), and Settings. Cast is not a destination of its own but where "Play on…" and
+ * the now-playing bar lead (Route.NowPlaying).
  */
 val NAV_ITEMS = listOf(
-    NavItem(Route.Search, "Search", HeyarrIcons.Search, "Ctrl+F"),
-    NavItem(Route.Library, "Library", HeyarrIcons.Library),
-    NavItem(Route.Missing, "Missing", HeyarrIcons.Missing, "Ctrl 4"),
-    NavItem(Route.Sources, "Sources", HeyarrIcons.Sources),
+    NavItem(Route.Manage, "Manage", HeyarrIcons.Manage, "Ctrl 4"),
     NavItem(Route.Settings, "Settings", HeyarrIcons.Settings, "Ctrl ,"),
 )
 
@@ -111,21 +112,14 @@ fun SideNav(current: Route, onGo: (Route) -> Unit, connection: NavConnectionInfo
             ) {
                 Spacer(Modifier.height(if (compact) 6.dp else 14.dp))
                 for (item in CONSUME_ITEMS) {
-                    RailItem(item, active = current.section == item.route.section, compact = compact) {
-                        onGo(item.route)
-                    }
+                    RailItem(item, active = isActive(current, item), compact = compact) { onGo(item.route) }
                 }
                 EditorialRule(
                     Modifier.padding(horizontal = 14.dp, vertical = if (compact) 4.dp else 8.dp),
                     dashed = true,
                 )
                 for (item in NAV_ITEMS) {
-                    val selected = when {
-                        current == Route.Discover -> item.route == Route.Search
-                        current.section == item.route.section -> true
-                        else -> false
-                    }
-                    RailItem(item, active = selected, compact = compact) { onGo(item.route) }
+                    RailItem(item, active = isActive(current, item), compact = compact) { onGo(item.route) }
                 }
             }
         }
@@ -133,6 +127,10 @@ fun SideNav(current: Route, onGo: (Route) -> Unit, connection: NavConnectionInfo
         Box(Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(Tokens.hairline).background(Tokens.border))
     }
 }
+
+/** Discover is search's other scope; every curator screen (and a work opened from one) lights Manage. */
+internal fun isActive(current: Route, item: NavItem): Boolean =
+    if (current == Route.Discover) item.route == Route.Search else current.railSection == item.route.railSection
 
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.

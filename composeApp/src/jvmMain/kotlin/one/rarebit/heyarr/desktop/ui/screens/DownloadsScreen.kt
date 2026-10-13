@@ -47,7 +47,7 @@ class DownloadsState {
 }
 
 /**
- * Library → Downloads: what heyarr is doing about the wants right now. Two tables —
+ * Manage → Downloads: what heyarr is doing about the wants right now. Two tables —
  * the wants in flight (`GET /desired`: acquisition state, phase, whether a download
  * client holds it, the node's own detail line) and the job queue (`GET /jobs`: type,
  * state, attempts, last error). Honest about the limit: the node reports STATE, not a
@@ -112,8 +112,11 @@ fun DownloadsScreen(
                         TableColumn("Phase", width = 110.dp),
                         TableColumn("Client", width = 80.dp),
                         TableColumn("Detail", 2.4f),
-                        TableColumn("", width = 130.dp, alignEnd = true),
+                        TableColumn("", width = 176.dp, alignEnd = true),
                     ),
+                    // Fixed columns take ~560 dp with gaps and padding; below this the table scrolls
+                    // sideways rather than squeezing the want and its detail to nothing.
+                    minWidth = 860.dp,
                     rowCount = inFlight.size,
                     emptyText = "Nothing in flight — every want is satisfied.",
                 ) { r, c ->
@@ -157,7 +160,7 @@ fun DownloadsScreen(
                                         }
                                     }
                                 }
-                            }, icon = HeyarrIcons.Search, compact = true)
+                            }, compact = true)
                         }
                     }
                 }

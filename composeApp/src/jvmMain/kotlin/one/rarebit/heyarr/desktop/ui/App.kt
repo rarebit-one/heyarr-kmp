@@ -75,6 +75,9 @@ import one.rarebit.heyarr.desktop.ui.screens.HomeScreen
 import one.rarebit.heyarr.desktop.ui.screens.HomeState
 import one.rarebit.heyarr.desktop.ui.screens.LibraryScreen
 import one.rarebit.heyarr.desktop.ui.screens.LibraryState
+import one.rarebit.heyarr.desktop.ui.screens.ManageDownloads
+import one.rarebit.heyarr.desktop.ui.screens.ManageFrame
+import one.rarebit.heyarr.desktop.ui.screens.ManageOverview
 import one.rarebit.heyarr.desktop.ui.screens.MissingScreen
 import one.rarebit.heyarr.desktop.ui.screens.MissingState
 import one.rarebit.heyarr.desktop.ui.screens.NowPlayingScreen
@@ -132,7 +135,6 @@ fun App(
     initialQuery: String? = null,
     /** Preview/test seam: open the connection sheet at once. */
     initialConnectionSheet: Boolean = false,
-    initialLibraryTab: Int = 0,
     /** Offscreen renderer seam: real transport remains disabled by PlaybackHost in headless mode. */
     initialAudioQueue: List<Route.Player> = emptyList(),
     /** Called when the player wants the window fullscreen (Main flips the WindowState placement). */
@@ -169,7 +171,7 @@ fun App(
     val nav = remember { Nav(initialRoute) }
     val search = remember { SearchController(scope, { session.api }, session::noteTransportFailure) }
     val home = remember { HomeState() }
-    val library = remember { LibraryState().apply { tab = initialLibraryTab } }
+    val library = remember { LibraryState() }
     val shelves = remember { Experience.entries.associateWith { LibraryState() } }
     var consuming by remember { mutableStateOf(initialRoute is Route.Consume) }
     val missing = remember { MissingState() }
@@ -349,7 +351,7 @@ fun App(
                         }
 
                         mod && e.key == Key.Four -> {
-                            nav.go(Route.Missing)
+                            nav.go(Route.Manage)
                             true
                         }
 
@@ -449,6 +451,10 @@ fun App(
                                     want = WantRequest(id, title, type = type)
                                 }
                             }
+                            // The empty "Want by title" sheet, from Missing and the Manage overview.
+                            val onWantByTitle: () -> Unit = {
+                                if (session.isGuest) showSignIn = true else want = WantRequest(null, "")
+                            }
                             val onWantTitle: WantByTitle = { title, year, type ->
                                 if (session.isGuest) {
                                     showSignIn = true
@@ -493,24 +499,31 @@ fun App(
                                             searchFocus,
                                         )
 
-                                        Route.Library -> LibraryScreen(session, library, ::go, onWant)
+                                        Route.Manage -> ManageFrame(r, ::go) {
+                                            ManageOverview(session, ::go, onWantByTitle)
+                                        }
 
-                                        Route.Missing -> MissingScreen(session, missing, ::go, onWantTitle = {
-                                            if (session.isGuest) {
-                                                showSignIn =
-                                                    true
-                                            } else {
-                                                want = WantRequest(null, "")
-                                            }
-                                        })
+                                        Route.Library -> ManageFrame(r, ::go) {
+                                            LibraryScreen(session, library, ::go, onWant)
+                                        }
+
+                                        Route.Downloads -> ManageFrame(r, ::go) {
+                                            ManageDownloads(session, library.downloads, ::go)
+                                        }
+
+                                        Route.Missing -> ManageFrame(r, ::go) {
+                                            MissingScreen(session, missing, ::go, onWantTitle = onWantByTitle)
+                                        }
 
                                         Route.NowPlaying -> NowPlayingScreen(session, nowPlaying)
 
                                         Route.Settings -> SettingsScreen(session, settingsState)
 
-                                        Route.Sources -> SourcesScreen(session, settingsState, onSourcesChanged = {
-                                            search.invalidateSources()
-                                        })
+                                        Route.Sources -> ManageFrame(r, ::go) {
+                                            SourcesScreen(session, settingsState, onSourcesChanged = {
+                                                search.invalidateSources()
+                                            })
+                                        }
 
                                         is Route.Detail -> DetailScreen(
                                             session,

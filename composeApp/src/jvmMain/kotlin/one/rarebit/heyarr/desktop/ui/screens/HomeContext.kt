@@ -38,20 +38,12 @@ import one.rarebit.heyarr.ui.components.focusRing
 import one.rarebit.heyarr.ui.theme.Tokens
 
 /**
- * Home's context column: what the collection looks like, and where to go next. Every count is
- * read from the want index (`GET /desired`); none is estimated. A guest has no want index, so the
- * insight is left out rather than shown as zeros.
+ * Home's context column: where to go next. Counts and wants live in Manage, not on the way in to
+ * watching something.
  */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 internal fun HomeContext(session: AppSession, onOpen: (Route) -> Unit) {
-    // Counts only once the want index has answered: before that (or if it failed) the empty
-    // stand-in would read as an authoritative "0 of everything".
-    when {
-        session.isGuest -> Unit
-        session.indexLoaded -> CollectionInsight(session.index, onOpen)
-        session.indexLoading -> ArchiveLoading("Counting the collection…")
-    }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionLabel("Browse")
         DashedDivider()
@@ -59,52 +51,13 @@ internal fun HomeContext(session: AppSession, onOpen: (Route) -> Unit) {
         ContextLink(HeyarrIcons.Listen, "Music, podcasts and audiobooks") { onOpen(Route.Consume(Experience.LISTEN)) }
         ContextLink(HeyarrIcons.Read, "Books and articles") { onOpen(Route.Consume(Experience.READ)) }
         ContextLink(HeyarrIcons.Discover, "Find something new") { onOpen(Route.Discover) }
-    }
-}
-
-/** Works per status across the wants, counted per work as the library grid shows them. */
-internal fun insightCounts(index: LibraryIndex): Map<LibraryStatus, Int> =
-    index.items.mapNotNull { it.workId }.distinct()
-        .groupingBy { index.statusOf(it) }.eachCount()
-
-@Composable
-@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-private fun CollectionInsight(index: LibraryIndex, onOpen: (Route) -> Unit) {
-    val counts = remember(index) { insightCounts(index) }
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionLabel("Collection insight")
-        DashedDivider()
-        InsightRow(LibraryStatus.IN_LIBRARY, counts[LibraryStatus.IN_LIBRARY] ?: 0, "held as wanted", Tokens.accent) {
-            onOpen(Route.Library)
-        }
-        InsightRow(LibraryStatus.WANTED, counts[LibraryStatus.WANTED] ?: 0, "being acquired", Tokens.ochre) {
-            onOpen(Route.Missing)
-        }
-        InsightRow(LibraryStatus.MISSING, counts[LibraryStatus.MISSING] ?: 0, "nothing acceptable yet", Tokens.danger) {
-            onOpen(Route.Missing)
-        }
+        if (!session.isGuest) ContextLink(HeyarrIcons.Manage, "Manage the collection") { onOpen(Route.Manage) }
     }
 }
 
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-private fun InsightRow(status: LibraryStatus, count: Int, caption: String, tone: Color, onClick: () -> Unit) {
-    ContextRow(onClick) {
-        StatusGlyph(status, tone, Modifier.size(10.dp))
-        Column(Modifier.weight(1f)) {
-            Text(count.toString(), style = MaterialTheme.typography.titleLarge, color = Tokens.textPrimary)
-            Text(
-                "${status.label.uppercase()} · $caption",
-                style = MaterialTheme.typography.labelSmall,
-                color = Tokens.textMuted,
-            )
-        }
-    }
-}
-
-@Composable
-@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-private fun ContextLink(icon: ImageVector, label: String, onClick: () -> Unit) {
+internal fun ContextLink(icon: ImageVector, label: String, onClick: () -> Unit) {
     ContextRow(onClick) {
         Icon(icon, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(18.dp))
         Text(
@@ -124,7 +77,7 @@ private fun ContextLink(icon: ImageVector, label: String, onClick: () -> Unit) {
 
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-private fun ContextRow(
+internal fun ContextRow(
     onClick: () -> Unit,
     content: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit,
 ) {

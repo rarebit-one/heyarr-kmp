@@ -46,7 +46,8 @@ fun main(args: Array<String>) {
         "04-detail-movie-missing" to Route.Detail(Fixtures.SINTEL, MediaType.MOVIE, "Sintel", from = "Missing"),
         "05-detail-book" to Route.Detail("w-piranesi", MediaType.BOOK, "Piranesi", from = "Library"),
         "06-library" to Route.Library,
-        "06b-downloads" to Route.Library,
+        "06b-downloads" to Route.Downloads,
+        "06c-manage" to Route.Manage,
         "05b-player" to
             Route.Player(
                 Fixtures.YELLOWSTONE,
@@ -70,8 +71,6 @@ fun main(args: Array<String>) {
                 h,
                 route,
                 query = if (name.endsWith("results")) "dune" else null,
-                downloads =
-                name == "06b-downloads",
             )
         }
     }
@@ -99,7 +98,6 @@ private fun render(
     route: Route,
     query: String? = null,
     connection: Boolean = false,
-    downloads: Boolean = false,
     guest: Boolean = false,
     audio: Boolean = false,
 ) {
@@ -152,7 +150,6 @@ private fun render(
                 externalMetadata = one.rarebit.heyarr.desktop.state.DesktopExternalMetadata.NONE,
                 initialQuery = query,
                 initialConnectionSheet = connection,
-                initialLibraryTab = if (downloads) 1 else 0,
                 nanoClock = { 0L },
                 initialAppearance = Appearance(reduceMotion = true),
                 onSession = { session = it },

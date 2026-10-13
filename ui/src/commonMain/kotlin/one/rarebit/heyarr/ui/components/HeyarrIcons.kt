@@ -42,6 +42,7 @@ object HeyarrIcons {
             "M13.2 8.2l3.6 7.6",
         )
     }
+    val Manage by lazy { line("manage", "M9 3h6v3H9z", "M9 4.5H5V21h14V4.5h-4", "M8 11h8", "M8 14.5h8", "M8 18h5") }
     val Settings by lazy { line("settings", "M4 6h16", "M4 12h16", "M4 18h16", "M8 4.5v3", "M15 10.5v3", "M10 16.5v3") }
     val Home by lazy { line("home", "M4 11l8-7l8 7v9H4z", "M10 20v-5h4v5") }
     val Cast by lazy {

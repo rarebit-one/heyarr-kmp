@@ -71,24 +71,6 @@ internal fun LibraryActions(state: LibraryState, onRefresh: () -> Unit) {
     }
 }
 
-/** Works, or Downloads with a count of what is still in flight. */
-@Composable
-internal fun LibraryTabs(state: LibraryState) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip("Works", state.tab == 0, { state.tab = 0 })
-        FilterChip(
-            "Downloads",
-            state.tab == 1,
-            { state.tab = 1 },
-            count = state.downloads.desired?.count {
-                it.state !=
-                    "FULLY_SATISFIED" &&
-                    it.state != "AVAILABLE"
-            },
-        )
-    }
-}
-
 /** The kind chips: Media (or All, inside an experience), then each kind with its count, in its accent. */
 @Composable
 internal fun KindFilterChips(
@@ -194,7 +176,7 @@ internal fun StatusFilterChips(state: LibraryState) {
 }
 
 /**
- * One filter bar for the library: Works / Downloads, then the media kinds, then status, separated
+ * One filter bar for the library: the media kinds, then status, separated
  * by hairlines and scrolling together on a narrow window, instead of three rows of chips.
  */
 @Composable
@@ -210,11 +192,6 @@ internal fun LibraryFilterBar(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (experience == null) {
-            LibraryTabs(state)
-            if (state.tab == 1) return@Row
-            BarDivider()
-        }
         KindFilterChips(state, all, counts, experience)
         BarDivider()
         StatusFilterChips(state)
