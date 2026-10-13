@@ -205,6 +205,7 @@ fun SecondaryButton(
     enabled: Boolean = true,
     compact: Boolean = false,
     danger: Boolean = false,
+    contentDescription: String? = null,
 ) {
     val touch = LocalHeyarrPlatform.current.touch
     val interaction = remember { MutableInteractionSource() }
@@ -229,6 +230,8 @@ fun SecondaryButton(
                 role = Role.Button,
                 onClick = onClick,
             )
+            // A label that names its target ("Get Dune") where the visible text alone does not.
+            .then(contentDescription?.let { d -> Modifier.semantics { this.contentDescription = d } } ?: Modifier)
             .minTouchHeight(touch, if (compact) 36.dp else 44.dp)
             .padding(horizontal = if (compact) 12.dp else 18.dp, vertical = if (compact) 7.dp else 11.dp),
         verticalAlignment = Alignment.CenterVertically,

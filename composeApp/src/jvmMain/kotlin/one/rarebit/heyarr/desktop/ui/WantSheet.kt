@@ -44,6 +44,7 @@ import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.heyarr.QualityProfile
+import one.rarebit.heyarr.core.heyarr.QualityProfiles
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
@@ -100,31 +101,6 @@ import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 
 /**
- * The profiles worth OFFERING for [type]: every profile whose content_types either
- * names [type] or is empty (heyarr-core: unrestricted — every profile that predates
- * the field, and any an operator deliberately leaves general). This replaced a
- * client-side name-guess ("ebook" must mean books) with the node's own answer, so a
- * node with different profile names still filters correctly and a book want is never
- * offered a video-only profile like "living-room" whose accept gate it can never pass.
- */
-private fun profilesFor(type: MediaType, profiles: List<QualityProfile>): List<QualityProfile> {
-    val api = type.apiName
-    return profiles.filter { it.contentTypes.isEmpty() || (api != null && api in it.contentTypes) }
-}
-
-/**
- * The quality profile the Want sheet pre-selects for [type], from what [profilesFor]
- * offers. "everyday" is preferred when it's in that set (the common video case);
- * otherwise the first offered profile, so the picker is never blank on a node with an
- * unconventional profile set.
- */
-private fun defaultProfileFor(type: MediaType, profiles: List<QualityProfile>): String {
-    val candidates = profilesFor(type, profiles)
-    return candidates.firstOrNull { it.name == "everyday" }?.name
-        ?: candidates.firstOrNull()?.name ?: ""
-}
-
-/**
  * The Want sheet: pick a quality profile (required — "this should exist" with no
  * standard cannot be evaluated), optionally a note, and go. Work-by-id when opened from
  * a card; title + type when opened from Missing for something the library has never seen.
@@ -142,7 +118,9 @@ internal fun WantSheet(session: AppSession, req: WantRequest, onClose: () -> Uni
     // client-side that must not paper over that with a video profile's default). Keyed on
     // `type`, not just session.profiles, so picking a different chip in the by-title flow
     // re-picks the right default rather than leaving a stale video profile selected.
-    var profile by remember(session.profiles, type) { mutableStateOf(defaultProfileFor(type, session.profiles)) }
+    var profile by remember(session.profiles, type) {
+        mutableStateOf(QualityProfiles.defaultFor(type, session.profiles) ?: "")
+    }
     var monitor by remember { mutableStateOf(true) }
     var reason by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
@@ -259,7 +237,7 @@ private fun ProfileChoice(
     profile: String,
     onProfile: (String) -> Unit,
 ) {
-    val offered = profilesFor(type, profiles)
+    val offered = QualityProfiles.offeredFor(type, profiles)
     when {
         // Nothing to choose: either the node has no profiles yet, or exactly
         // one is offered for this type (ADR-0082's book/music case — there is

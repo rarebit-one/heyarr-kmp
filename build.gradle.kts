@@ -88,7 +88,7 @@ allprojects {
 // 0.3.0 (breaking): core's CanonicalLookup.resolveFor returns a Resolution (the canonicals plus a
 // `complete` flag) instead of a bare list, so a caller can tell a failed lookup from "no
 // canonical" (#139); adds clear(). Not kept as an overload: the old shape is the bug.
-val publishedLibraryVersion = "0.3.1"
+val publishedLibraryVersion = "0.3.2"
 
 listOf(":core", ":vault-client").forEach { path ->
     project(path) {
