@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.core.library
 
+import kotlin.concurrent.Volatile
+
 /**
  * The result of a [CanonicalLookup.resolveFor] call.
  *
@@ -21,6 +23,12 @@ data class Resolution(val resolved: List<CatalogWork>, val complete: Boolean)
  */
 class CanonicalLookup {
     private val cache = HashMap<Pair<String, String?>, List<CatalogWork>>()
+
+    // Bumped by clear(). A lookup started before a Refresh can still be in flight when the
+    // cache is cleared; it caches its answer only if no clear() happened in between, so a
+    // slow pre-Refresh response cannot repopulate the cache with stale canonicals (#142,
+    // Codex on #146).
+    @Volatile private var generation = 0
 
     /**
      * Returns the off-page canonical works for any variant in [works] whose canonical
@@ -54,10 +62,11 @@ class CanonicalLookup {
             }
             .distinctBy { it.first }
             .toList()
+        val started = generation
         var anyFailed = false
         val resolved = keys.flatMap { (key, raw) ->
             cache[key] ?: runCatching { lookup(raw, key.second) }
-                .onSuccess { cache[key] = it }
+                .onSuccess { if (generation == started) cache[key] = it }
                 .onFailure { anyFailed = true }
                 .getOrDefault(emptyList())
         }
@@ -70,6 +79,7 @@ class CanonicalLookup {
      * shadowed by stale cache entries (#142).
      */
     fun clear() {
+        generation++
         cache.clear()
     }
 }

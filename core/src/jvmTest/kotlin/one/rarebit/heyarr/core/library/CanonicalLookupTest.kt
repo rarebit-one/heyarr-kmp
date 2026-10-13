@@ -154,4 +154,27 @@ class CanonicalLookupTest {
         }
         assertEquals(2, calls, "after clear(), the key is cold again")
     }
+
+    @Test fun aLookupInFlightAcrossClearIsNotCached() {
+        // A Refresh can clear() while an older resolveFor is still waiting on the node; that
+        // older answer must not land in the refreshed cache (Codex on #146).
+        val lookup = CanonicalLookup()
+        val works: List<CatalogWork> = listOf(TestWork("ys4", "Yellowstone Season 4"))
+        var calls = 0
+        lookup.resolveFor(works) { _, _ ->
+            calls++
+            lookup.clear() // the Refresh lands while this lookup is in flight
+            emptyList()
+        }
+        lookup.resolveFor(works) { _, _ ->
+            calls++
+            emptyList()
+        }
+        assertEquals(2, calls, "the pre-clear answer was not cached")
+        lookup.resolveFor(works) { _, _ ->
+            calls++
+            emptyList()
+        }
+        assertEquals(2, calls, "an answer from the current generation is cached")
+    }
 }
