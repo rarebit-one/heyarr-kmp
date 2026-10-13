@@ -11,12 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.CheckBox
-import androidx.compose.material.icons.rounded.CheckBoxOutlineBlank
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +36,7 @@ import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
 import one.rarebit.heyarr.ui.components.Panel
@@ -143,8 +138,8 @@ fun MissingScreen(
     ) {
         SectionHeader("Missing & wanted", subtitle = "What should exist, and what could be better", trailing = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh)
-                PrimaryButton("Want by title", onWantTitle, icon = Icons.Rounded.Add, compact = true)
+                GhostButton("Refresh", ::load, icon = HeyarrIcons.Refresh)
+                PrimaryButton("Want by title", onWantTitle, icon = HeyarrIcons.Add, compact = true)
             }
         })
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -182,7 +177,7 @@ fun MissingScreen(
                         {
                             session.api?.let { a -> bulk("Search queued") { id -> a.searchReleases(id) } }
                         },
-                        icon = Icons.Rounded.Search,
+                        icon = HeyarrIcons.Search,
                         compact = true,
                         enabled =
                         sel.isNotEmpty() && !state.busy,
@@ -258,7 +253,7 @@ fun MissingScreen(
                         selected = checked,
                         trailing = {
                             IconButtonRound(
-                                if (checked) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
+                                if (checked) HeyarrIcons.CheckBox else HeyarrIcons.CheckBoxBlank,
                                 if (checked) "Deselect ${w.subject}" else "Select ${w.subject}",
                                 {
                                     state.selected =

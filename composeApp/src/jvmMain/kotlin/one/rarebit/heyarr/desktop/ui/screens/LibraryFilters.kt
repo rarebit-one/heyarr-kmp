@@ -14,10 +14,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.GridView
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.ViewList
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -48,6 +44,7 @@ import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.icon
@@ -64,9 +61,9 @@ internal fun LibraryActions(state: LibraryState, onRefresh: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        GhostButton("Refresh", onRefresh, icon = Icons.Rounded.Refresh, enabled = !state.loading)
-        IconButtonRound(Icons.Rounded.GridView, "Grid view", { state.grid = true }, filled = state.grid)
-        IconButtonRound(Icons.Rounded.ViewList, "List view", { state.grid = false }, filled = !state.grid)
+        GhostButton("Refresh", onRefresh, icon = HeyarrIcons.Refresh, enabled = !state.loading)
+        IconButtonRound(HeyarrIcons.GridView, "Grid view", { state.grid = true }, filled = state.grid)
+        IconButtonRound(HeyarrIcons.ListView, "List view", { state.grid = false }, filled = !state.grid)
     }
 }
 

@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.TravelExplore
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +28,7 @@ import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.rememberArtwork
 import one.rarebit.heyarr.desktop.ui.components.MediaRow
 import one.rarebit.heyarr.ui.components.ArchiveLoading
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
@@ -130,7 +128,7 @@ private fun DiscoveryQuery(state: DiscoveryState, onChange: (String) -> Unit, on
         PrimaryButton(
             "Ask the provider",
             onSubmit,
-            icon = Icons.Rounded.TravelExplore,
+            icon = HeyarrIcons.Discover,
             enabled = !state.busy && state.query.isNotBlank(),
         )
     }
@@ -218,7 +216,7 @@ private fun DiscoveryHitRow(session: AppSession, hit: DiscoveryHit, onWantTitle:
             PrimaryButton(
                 "Want",
                 { onWantTitle(hit.title, hit.year, type) },
-                icon = Icons.Rounded.Add,
+                icon = HeyarrIcons.Add,
                 compact = true,
                 contentDescription = "Want ${hit.title}",
             )

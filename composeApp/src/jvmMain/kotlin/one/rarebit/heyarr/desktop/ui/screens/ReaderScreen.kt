@@ -13,11 +13,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.MenuBook
-import androidx.compose.material.icons.rounded.TextDecrease
-import androidx.compose.material.icons.rounded.TextIncrease
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,6 +37,7 @@ import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.library.Epub
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
@@ -123,7 +119,7 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                IconButtonRound(Icons.Rounded.ArrowBack, "Back", onBack)
+                IconButtonRound(HeyarrIcons.Back, "Back", onBack)
                 Column(Modifier.weight(1f)) {
                     Text(
                         book?.title ?: route.title,
@@ -139,11 +135,11 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                         )
                     }
                 }
-                IconButtonRound(Icons.Rounded.TextDecrease, "Decrease reading text size", {
+                IconButtonRound(HeyarrIcons.TextSmaller, "Decrease reading text size", {
                     readingSize =
                         (readingSize - 1).coerceAtLeast(14)
                 }, enabled = readingSize > 14)
-                IconButtonRound(Icons.Rounded.TextIncrease, "Increase reading text size", {
+                IconButtonRound(HeyarrIcons.TextLarger, "Increase reading text size", {
                     readingSize =
                         (readingSize + 1).coerceAtMost(32)
                 }, enabled = readingSize < 32)
@@ -174,7 +170,7 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                             color = Tokens.textMuted,
                             textAlign = TextAlign.Center,
                         )
-                        PrimaryButton("Open externally", ::openExternally, icon = Icons.Rounded.MenuBook)
+                        PrimaryButton("Open externally", ::openExternally, icon = HeyarrIcons.Read)
                     }
 
                     book != null -> {

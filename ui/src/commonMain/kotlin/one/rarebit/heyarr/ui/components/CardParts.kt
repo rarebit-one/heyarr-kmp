@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.ui.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -11,21 +12,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.HelpOutline
-import androidx.compose.material.icons.rounded.MenuBook
-import androidx.compose.material.icons.rounded.Movie
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.Podcasts
-import androidx.compose.material.icons.rounded.RssFeed
-import androidx.compose.material.icons.rounded.Tv
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -43,44 +42,81 @@ import one.rarebit.heyarr.ui.theme.Tokens
 /** The glyph a type's placeholder art shows. */
 @Suppress("DEPRECATION") // the non-AutoMirrored MenuBook / HelpOutline both apps have always drawn
 fun MediaType.icon(): ImageVector = when (this) {
-    MediaType.MOVIE -> Icons.Rounded.Movie
-    MediaType.SERIES -> Icons.Rounded.Tv
-    MediaType.BOOK -> Icons.Rounded.MenuBook
-    MediaType.AUDIOBOOK -> Icons.Rounded.Headphones
-    MediaType.PODCAST -> Icons.Rounded.Podcasts
-    MediaType.MUSIC -> Icons.Rounded.MusicNote
-    MediaType.FEED -> Icons.Rounded.RssFeed
-    MediaType.UNKNOWN -> Icons.Rounded.HelpOutline
+    MediaType.MOVIE -> HeyarrIcons.Film
+    MediaType.SERIES -> HeyarrIcons.Series
+    MediaType.BOOK -> HeyarrIcons.Book
+    MediaType.AUDIOBOOK -> HeyarrIcons.Listen
+    MediaType.PODCAST -> HeyarrIcons.Podcast
+    MediaType.MUSIC -> HeyarrIcons.Music
+    MediaType.FEED -> HeyarrIcons.Feed
+    MediaType.UNKNOWN -> HeyarrIcons.Help
 }
 
-/** Library status as a small pill: In library (accent), Wanted (gold), Missing (danger), Not tracked (muted). */
+/**
+ * A library status as a glyph and a label, with no box. Each status has its own shape — filled
+ * square (in library), open square (wanted), triangle (missing), dashed square (not tracked) —
+ * so it never rests on colour alone. Over artwork it sits on a faint scrim for legibility.
+ */
 @Composable
 fun StatusPill(status: LibraryStatus, modifier: Modifier = Modifier, compact: Boolean = false) {
     val accent = LocalMediaTheme.current.accentGradientEnd
     val touch = LocalHeyarrPlatform.current.touch
-    val (tone, dot) = when (status) {
-        LibraryStatus.IN_LIBRARY -> accent to accent
-        LibraryStatus.WANTED -> Tokens.ratingGold to Tokens.ratingGold
-        LibraryStatus.MISSING -> Tokens.danger to Tokens.danger
-        LibraryStatus.NOT_TRACKED -> Tokens.textMuted to Tokens.textDisabled
+    val tone = when (status) {
+        LibraryStatus.IN_LIBRARY -> accent
+        LibraryStatus.WANTED -> Tokens.ochre
+        LibraryStatus.MISSING -> Tokens.danger
+        LibraryStatus.NOT_TRACKED -> Tokens.textMuted
     }
-    // The phone's pill is a touch taller so the dot-only (compact) form still reads on a card.
+    // The phone's pill is a touch taller so the glyph-only (compact) form still reads on a card.
     val vertical = if (touch) (if (compact) 4.dp else 3.dp) else 2.dp
     Row(
-        modifier.background(Tokens.bgBase.copy(alpha = 0.72f), RectangleShape)
-            .border(Tokens.hairline, tone.copy(alpha = 0.45f), RectangleShape)
-            .padding(horizontal = if (compact) 6.dp else 8.dp, vertical = vertical)
+        modifier.background(Tokens.bgBase.copy(alpha = 0.72f), RoundedCornerShape(Tokens.radiusChip))
+            .padding(horizontal = if (compact) 5.dp else 7.dp, vertical = vertical)
             .semantics { this.contentDescription = "Status: ${status.label}" },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Box(Modifier.size(6.dp).background(dot, RectangleShape))
+        StatusGlyph(status, tone)
         if (!compact) {
             Text(
                 status.label.uppercase(),
                 style = MaterialTheme.typography.labelSmall,
                 color = tone,
                 maxLines = 1,
+            )
+        }
+    }
+}
+
+/** The shape half of [StatusPill], on its own for rows that set the label themselves. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun StatusGlyph(status: LibraryStatus, tone: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(8.dp)) {
+        val stroke = Stroke(width = 1.5.dp.toPx())
+        val dash = 1.5.dp.toPx() // in dp, so the dashed (not tracked) square reads the same at every density
+        val inset = stroke.width / 2f
+        val box = Size(size.width - stroke.width, size.height - stroke.width)
+        when (status) {
+            LibraryStatus.IN_LIBRARY -> drawRect(tone)
+
+            LibraryStatus.WANTED -> drawRect(tone, Offset(inset, inset), box, style = stroke)
+
+            LibraryStatus.MISSING -> drawPath(
+                Path().apply {
+                    moveTo(size.width / 2f, 0f)
+                    lineTo(size.width, size.height)
+                    lineTo(0f, size.height)
+                    close()
+                },
+                tone,
+            )
+
+            LibraryStatus.NOT_TRACKED -> drawRect(
+                tone,
+                Offset(inset, inset),
+                box,
+                style = Stroke(stroke.width, pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash, dash))),
             )
         }
     }

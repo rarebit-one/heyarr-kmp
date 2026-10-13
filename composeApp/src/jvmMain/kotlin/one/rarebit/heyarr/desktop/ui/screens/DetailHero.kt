@@ -5,13 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.MenuBook
-import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +34,7 @@ import one.rarebit.heyarr.desktop.ui.components.Hero
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
@@ -240,7 +234,7 @@ private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, wants: List
         type == MediaType.SERIES && first != null -> PrimaryButton(
             "Play ${first.code ?: ""}".trim(),
             { actions.play(first.asset.blobHash!!, Series.playTitle(work, first), first.asset.id) },
-            icon = Icons.Rounded.PlayArrow,
+            icon = HeyarrIcons.Play,
             enabled = idle,
         )
 
@@ -250,21 +244,21 @@ private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, wants: List
         type == MediaType.BOOK -> PrimaryButton(
             theme.ctaLabel,
             actions::openBook,
-            icon = Icons.Rounded.MenuBook,
+            icon = HeyarrIcons.Read,
             enabled = idle,
         )
 
         type == MediaType.FEED -> PrimaryButton(
             theme.ctaLabel,
             actions::openLocal,
-            icon = Icons.Rounded.OpenInNew,
+            icon = HeyarrIcons.OpenExternal,
             enabled = idle,
         )
 
         else -> PrimaryButton(
             theme.ctaLabel,
             { actions.play(asset.blobHash, work.title, asset.assetId) },
-            icon = Icons.Rounded.PlayArrow,
+            icon = HeyarrIcons.Play,
             enabled = idle,
         )
     }
@@ -278,7 +272,7 @@ private fun NothingHeldAction(actions: HeroActions, wants: List<DesiredItem>, on
         wants.isNotEmpty() -> PrimaryButton(
             "Look for it",
             { actions.lookForIt(wants) },
-            icon = Icons.Rounded.Search,
+            icon = HeyarrIcons.Search,
             enabled = actions.state.busy == null,
         )
 
@@ -287,7 +281,7 @@ private fun NothingHeldAction(actions: HeroActions, wants: List<DesiredItem>, on
         GuestGate.allows(session.mode, Surface.WANT) -> PrimaryButton(
             "Want",
             onWant,
-            icon = Icons.Rounded.Add,
+            icon = HeyarrIcons.Add,
             enabled =
             session.index.statusOf(actions.detail.work.id) == LibraryStatus.NOT_TRACKED,
         )
@@ -311,12 +305,12 @@ private fun HeroSecondaryActions(actions: HeroActions, first: Episode?, onWant: 
     ) {
         SecondaryButton("Play on…", {
             toggleCast(session, actions.state, castId, actions.scope)
-        }, icon = Icons.Rounded.Cast)
+        }, icon = HeyarrIcons.Cast)
     }
     if (status == LibraryStatus.NOT_TRACKED && canWant &&
         (asset != null || type == MediaType.SERIES)
     ) {
-        SecondaryButton("Want", onWant, icon = Icons.Rounded.Add)
+        SecondaryButton("Want", onWant, icon = HeyarrIcons.Add)
     }
 }
 
@@ -367,7 +361,7 @@ private fun CastPicker(session: AppSession, state: DetailState) {
             )
 
             else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (x in r) FilterChip(x.name, false, { playOn(x) }, icon = Icons.Rounded.Cast)
+                for (x in r) FilterChip(x.name, false, { playOn(x) }, icon = HeyarrIcons.Cast)
             }
         }
         GhostButton("Search the network again", {

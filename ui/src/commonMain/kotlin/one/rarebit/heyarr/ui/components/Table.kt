@@ -20,9 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -150,7 +147,7 @@ private fun TableBody(
                     }
                     if (detail != null) {
                         Icon(
-                            if (open) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                            if (open) HeyarrIcons.ExpandLess else HeyarrIcons.ExpandMore,
                             contentDescription = null,
                             tint = Tokens.textMuted,
                             modifier = Modifier.size(18.dp),
@@ -249,7 +246,7 @@ fun Section(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Icon(
-                if (open) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                if (open) HeyarrIcons.ExpandLess else HeyarrIcons.ExpandMore,
                 contentDescription = null,
                 tint = Tokens.textMuted,
                 modifier = Modifier.size(18.dp),

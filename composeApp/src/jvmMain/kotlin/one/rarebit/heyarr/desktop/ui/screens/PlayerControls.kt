@@ -22,21 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.ClosedCaption
-import androidx.compose.material.icons.rounded.Forward10
-import androidx.compose.material.icons.rounded.Fullscreen
-import androidx.compose.material.icons.rounded.FullscreenExit
-import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Replay10
-import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.Stop
-import androidx.compose.material.icons.rounded.VolumeOff
-import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -90,6 +75,7 @@ import one.rarebit.heyarr.desktop.ui.components.VideoSurface
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
@@ -113,7 +99,7 @@ internal fun TrackMenu(ps: PlayerState, p: EmbeddedPlayer) {
         SecondaryButton(
             if (ps.subtitles.isEmpty()) "No captions" else current?.let { trackLabel(it) } ?: "Captions off",
             { open = !open },
-            icon = Icons.Rounded.ClosedCaption,
+            icon = HeyarrIcons.Captions,
             compact = true,
             enabled = ps.subtitles.isNotEmpty() || ps.audio.size > 1,
         )
@@ -235,9 +221,9 @@ internal fun VolumeControl(ps: PlayerState, p: EmbeddedPlayer) {
         if (ps.muted ||
             ps.volume <= 0
         ) {
-            Icons.Rounded.VolumeOff
+            HeyarrIcons.VolumeOff
         } else {
-            Icons.Rounded.VolumeUp
+            HeyarrIcons.Volume
         },
         if (ps.muted) "Unmute (M)" else "Mute (M)",
         { p.toggleMute() },
@@ -283,7 +269,7 @@ internal fun PopoutNotice(modifier: Modifier) {
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Icon(
-            Icons.Rounded.OpenInNew,
+            HeyarrIcons.OpenExternal,
             contentDescription = null,
             tint = Tokens.textMuted,
             modifier = Modifier.size(40.dp),

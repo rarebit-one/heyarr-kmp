@@ -10,12 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +35,7 @@ import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.KeyValue
 import one.rarebit.heyarr.ui.components.Notice
@@ -104,7 +99,7 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
         SectionHeader("Cast / renderer", subtitle = "Live playback reported by each renderer", trailing = {
-            GhostButton("Search the network again", { load(refresh = true) }, icon = Icons.Rounded.Refresh)
+            GhostButton("Search the network again", { load(refresh = true) }, icon = HeyarrIcons.Refresh)
         })
         when {
             state.error != null && state.renderers == null -> ErrorState("Couldn't list renderers", state.error, {
@@ -116,7 +111,7 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
             state.renderers!!.isEmpty() -> EmptyState(
                 "No renderers found",
                 detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again.",
-                icon = Icons.Rounded.Cast,
+                icon = HeyarrIcons.Cast,
             )
 
             else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -124,14 +119,14 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
                     FilterChip(r.name, state.selected?.udn == r.udn, {
                         state.selected = r
                         state.status = null
-                    }, icon = Icons.Rounded.Cast)
+                    }, icon = HeyarrIcons.Cast)
                 }
             }
         }
         state.selected?.let { r -> RendererPanel(r, state, ::control) }
         Notice(
             "Playback position and history are the device's own report, live. heyarr keeps no play history this client can read.",
-            icon = Icons.Rounded.Cast,
+            icon = HeyarrIcons.Cast,
             tone = Tokens.slate,
         )
     }
@@ -212,15 +207,15 @@ private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -> Un
                 modifier = Modifier.weight(1f),
             )
             if (playing) {
-                IconButtonRound(Icons.Rounded.Pause, "Pause", {
+                IconButtonRound(HeyarrIcons.Pause, "Pause", {
                     control("pause")
                 }, enabled = !busy, size = 44.dp, filled = true)
             } else {
-                IconButtonRound(Icons.Rounded.PlayArrow, "Resume", {
+                IconButtonRound(HeyarrIcons.Play, "Resume", {
                     control("resume")
                 }, enabled = !busy, size = 44.dp, filled = true)
             }
-            IconButtonRound(Icons.Rounded.Stop, "Stop", { control("stop") }, enabled = !busy, size = 44.dp)
+            IconButtonRound(HeyarrIcons.Stop, "Stop", { control("stop") }, enabled = !busy, size = 44.dp)
         }
         if (st.elapsedSeconds == 0L &&
             playing

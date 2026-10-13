@@ -24,17 +24,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.HelpOutline
-import androidx.compose.material.icons.rounded.MenuBook
-import androidx.compose.material.icons.rounded.Movie
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.Podcasts
-import androidx.compose.material.icons.rounded.RssFeed
-import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -62,6 +51,7 @@ import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.MetaLine
 import one.rarebit.heyarr.ui.components.Notice
@@ -96,9 +86,9 @@ internal fun CardWantButton(status: LibraryStatus?, onWant: () -> Unit, modifier
             icon = if (status == LibraryStatus.NOT_TRACKED ||
                 status == null
             ) {
-                Icons.Rounded.Add
+                HeyarrIcons.Add
             } else {
-                Icons.Rounded.Check
+                HeyarrIcons.Check
             },
             compact = true,
             enabled =

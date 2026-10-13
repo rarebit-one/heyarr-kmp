@@ -15,14 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.OpenInFull
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.SkipPrevious
-import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -46,6 +38,7 @@ import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.components.ArchiveActivity
 import one.rarebit.heyarr.ui.components.DashedDivider
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PixelCluster
@@ -91,7 +84,7 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
         AudioDockSeek(playback, state, item.assetId)
         AudioDockTransport(playback, state)
         AudioDockVolume(playback, state.volume)
-        GhostButton("Player details", onOpen, icon = Icons.Rounded.OpenInFull)
+        GhostButton("Player details", onOpen, icon = HeyarrIcons.Expand)
         AudioDockQueue(playback, item.assetId)
     }
 }
@@ -106,7 +99,7 @@ private fun AudioDockHeading(companion: Boolean, playback: PlaybackSession) {
             color = Tokens.textPrimary,
             modifier = Modifier.weight(1f).padding(start = 8.dp),
         )
-        IconButtonRound(Icons.Rounded.Close, "Stop audio", playback::stop)
+        IconButtonRound(HeyarrIcons.Close, "Stop audio", playback::stop)
     }
 }
 
@@ -156,14 +149,14 @@ private fun AudioDockTransport(playback: PlaybackSession, state: PlayerState) {
     ) {
         val previous = playback.previousAudio()
         IconButtonRound(
-            Icons.Rounded.SkipPrevious,
+            HeyarrIcons.SkipPrevious,
             "Previous track",
             { previous?.let(playback::play) },
             enabled = previous != null,
             size = 44.dp,
         )
         IconButtonRound(
-            if (state.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause,
+            if (state.paused) HeyarrIcons.Play else HeyarrIcons.Pause,
             if (state.paused) "Play audio" else "Pause audio",
             playback.player::togglePause,
             size = 48.dp,
@@ -171,7 +164,7 @@ private fun AudioDockTransport(playback: PlaybackSession, state: PlayerState) {
         )
         val next = playback.next()
         IconButtonRound(
-            Icons.Rounded.SkipNext,
+            HeyarrIcons.SkipNext,
             "Next track",
             { next?.let(playback::play) },
             enabled = next != null,
@@ -183,7 +176,7 @@ private fun AudioDockTransport(playback: PlaybackSession, state: PlayerState) {
 @Composable
 private fun AudioDockVolume(playback: PlaybackSession, volume: Double) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Rounded.VolumeUp, null, tint = Tokens.textMuted, modifier = Modifier.size(20.dp))
+        Icon(HeyarrIcons.Volume, null, tint = Tokens.textMuted, modifier = Modifier.size(20.dp))
         Slider(
             value = volume.toFloat().coerceIn(0f, 100f),
             onValueChange = { playback.player.setVolume(it.toDouble()) },
@@ -220,6 +213,6 @@ private fun AudioQueueRow(track: Route.Player, playback: PlaybackSession) {
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
-        IconButtonRound(Icons.Rounded.PlayArrow, "Play ${track.subtitle ?: track.title}", { playback.play(track) })
+        IconButtonRound(HeyarrIcons.Play, "Play ${track.subtitle ?: track.title}", { playback.play(track) })
     }
 }

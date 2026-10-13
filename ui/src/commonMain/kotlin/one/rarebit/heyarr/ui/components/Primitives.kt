@@ -31,13 +31,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.ErrorOutline
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -60,10 +53,14 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -72,6 +69,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.ui.theme.HeyarrTextStyles
 import one.rarebit.heyarr.ui.theme.LocalAppearance
 import one.rarebit.heyarr.ui.theme.LocalHeyarrPlatform
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
@@ -418,11 +416,14 @@ fun FilterChip(
 @Composable
 fun MediaBadge(type: MediaType, modifier: Modifier = Modifier) {
     val theme = MediaThemes.of(type)
-    val shape = RoundedCornerShape(Tokens.radiusChip)
-    Box(
-        modifier.background(theme.tint(0.22f), shape).border(Tokens.hairline, theme.accent.copy(alpha = 0.5f), shape)
+    // No border: the media glyph and tracked label carry it, on a faint scrim for use over art.
+    Row(
+        modifier.background(Tokens.bgBase.copy(alpha = 0.72f), RoundedCornerShape(Tokens.radiusChip))
             .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
     ) {
+        Icon(type.icon(), contentDescription = null, tint = theme.accentGradientEnd, modifier = Modifier.size(12.dp))
         Text(
             type.label.uppercase(),
             style = MaterialTheme.typography.labelSmall,
@@ -464,33 +465,65 @@ fun Kbd(text: String, modifier: Modifier = Modifier) {
 
 // ── section header ───────────────────────────────────────────────────────────────
 
-/** A rail/grid header with a light dashed rule, optional icon, subtitle and trailing action. */
+/**
+ * A rail/grid header in the Archive voice: an ochre square and a tracked uppercase label, then a
+ * dashed rule, with an optional media glyph, subtitle and trailing action. Pass
+ * `uppercase = false` when [title] is a name someone chose (a playlist, a device): only fixed UI
+ * strings are set in capitals.
+ */
 @Composable
+@Suppress("FunctionNaming", "LongParameterList") // Compose naming; one optional slot per presentation knob.
 fun SectionHeader(
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     trailing: (@Composable () -> Unit)? = null,
     icon: ImageVector? = null,
+    uppercase: Boolean = true,
 ) {
-    val accent = LocalMediaTheme.current.accent
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (icon != null) Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
-            Text(
-                title,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleLarge,
-                color = Tokens.textPrimary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            if (trailing != null) trailing()
-        }
+        SectionLabel(title, icon = icon, trailing = trailing, uppercase = uppercase)
         if (subtitle != null) {
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
         }
         DashedDivider()
+    }
+}
+
+/** The ochre square and tracked uppercase label that open a section, as in the mockups. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun SectionLabel(
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    trailing: (@Composable () -> Unit)? = null,
+    uppercase: Boolean = true,
+) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Box(Modifier.size(8.dp).background(Tokens.ochre))
+        if (icon != null) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = LocalMediaTheme.current.accent,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        // Shown uppercase, but announced (and matched by UI tests) in its natural case: screen
+        // readers can spell out an all-caps string letter by letter.
+        Text(
+            if (uppercase) text.uppercase() else text,
+            modifier = Modifier.weight(1f).clearAndSetSemantics {
+                this.text = AnnotatedString(text)
+                heading()
+            },
+            style = HeyarrTextStyles.sectionLabel,
+            color = Tokens.textPrimary,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (trailing != null) trailing()
     }
 }
 
@@ -680,7 +713,7 @@ fun SearchEntryButton(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Icon(Icons.Rounded.Search, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(18.dp))
+        Icon(HeyarrIcons.Search, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(18.dp))
         Text(
             label,
             style = MaterialTheme.typography.bodyMedium,
@@ -734,7 +767,7 @@ fun EmptyState(
     title: String,
     modifier: Modifier = Modifier,
     detail: String? = null,
-    icon: ImageVector = Icons.Rounded.Search,
+    icon: ImageVector = HeyarrIcons.Search,
     action: (@Composable () -> Unit)? = null,
     /** A small Archive scene in place of the boxed icon, for a state that fills its pane. */
     vignette: ArchiveVignette? = null,
@@ -811,7 +844,7 @@ fun ErrorState(
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    Icons.Rounded.ErrorOutline,
+                    HeyarrIcons.Error,
                     contentDescription = null,
                     tint = Tokens.danger,
                     modifier = Modifier.size(26.dp),
@@ -837,11 +870,12 @@ fun ErrorState(
 
 /** An inline notice strip (info / warning / danger) for honest states like "discovery needs a metadata provider". */
 @Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 fun Notice(
     text: String,
     modifier: Modifier = Modifier,
     tone: Color = Tokens.warning,
-    icon: ImageVector = Icons.Rounded.Info,
+    icon: ImageVector = HeyarrIcons.Info,
     detail: String? = null,
 ) {
     val shape = RoundedCornerShape(Tokens.radiusInput)
@@ -878,7 +912,7 @@ fun OfflineBanner(
         .border(Tokens.hairline, Tokens.danger.copy(alpha = 0.4f))
         .padding(horizontal = 16.dp, vertical = 8.dp)
     val body: @Composable RowScope.() -> Unit = {
-        Icon(Icons.Rounded.WifiOff, contentDescription = null, tint = Tokens.danger, modifier = Modifier.size(18.dp))
+        Icon(HeyarrIcons.Offline, contentDescription = null, tint = Tokens.danger, modifier = Modifier.size(18.dp))
         Column(Modifier.weight(1f)) {
             Text(text, style = MaterialTheme.typography.labelLarge, color = Tokens.textPrimary)
             if (detail != null) {
@@ -923,10 +957,10 @@ fun OfflineBanner(
 fun ToastCard(toast: Toast, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     val touch = LocalHeyarrPlatform.current.touch
     val (tone, icon) = when (toast.kind) {
-        Toast.Kind.INFO -> Tokens.slate to Icons.Rounded.Info
-        Toast.Kind.SUCCESS -> Tokens.success to Icons.Rounded.CheckCircle
-        Toast.Kind.ERROR -> Tokens.danger to Icons.Rounded.ErrorOutline
-        Toast.Kind.REFUSED -> Tokens.warning to Icons.Rounded.ErrorOutline
+        Toast.Kind.INFO -> Tokens.slate to HeyarrIcons.Info
+        Toast.Kind.SUCCESS -> Tokens.success to HeyarrIcons.Check
+        Toast.Kind.ERROR -> Tokens.danger to HeyarrIcons.Error
+        Toast.Kind.REFUSED -> Tokens.warning to HeyarrIcons.Error
     }
     val shape = RoundedCornerShape(Tokens.radiusCard)
     val description = "${toast.kind.name.lowercase()}: ${toast.title}. ${toast.detail ?: ""}"
@@ -967,6 +1001,6 @@ fun ToastCard(toast: Toast, onDismiss: () -> Unit, modifier: Modifier = Modifier
                 )
             }
         }
-        IconButtonRound(Icons.Rounded.Close, "Dismiss", onDismiss, size = if (touch) 32.dp else 26.dp)
+        IconButtonRound(HeyarrIcons.Close, "Dismiss", onDismiss, size = if (touch) 32.dp else 26.dp)
     }
 }

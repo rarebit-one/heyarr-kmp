@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +29,7 @@ import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.components.Cell
 import one.rarebit.heyarr.ui.components.DataTable
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.Section
@@ -97,7 +95,7 @@ fun DownloadsScreen(
             tone = Tokens.slate,
         )
         Section("Acquiring", subtitle = "${inFlight.size} wants not yet satisfied", trailing = {
-            GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh)
+            GhostButton("Refresh", ::load, icon = HeyarrIcons.Refresh)
         }) {
             when {
                 state.error != null && state.desired == null -> Notice(
@@ -159,7 +157,7 @@ fun DownloadsScreen(
                                         }
                                     }
                                 }
-                            }, icon = Icons.Rounded.Search, compact = true)
+                            }, icon = HeyarrIcons.Search, compact = true)
                         }
                     }
                 }

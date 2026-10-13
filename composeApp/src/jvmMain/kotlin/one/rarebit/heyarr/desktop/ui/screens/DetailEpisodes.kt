@@ -17,15 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.ClosedCaption
-import androidx.compose.material.icons.rounded.Image
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -63,6 +54,7 @@ import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
 import one.rarebit.heyarr.ui.components.Notice
@@ -140,9 +132,9 @@ internal fun EpisodeRow(
 /** Cast to a renderer, or play here. */
 @Composable
 private fun EpisodeActions(label: String, playEnabled: Boolean, onCast: () -> Unit, onPlay: () -> Unit) {
-    IconButtonRound(Icons.Rounded.Cast, "Play $label on a renderer", onCast, size = 34.dp)
+    IconButtonRound(HeyarrIcons.Cast, "Play $label on a renderer", onCast, size = 34.dp)
     IconButtonRound(
-        Icons.Rounded.PlayArrow,
+        HeyarrIcons.Play,
         "Play $label",
         onPlay,
         size = 34.dp,
@@ -189,7 +181,7 @@ private fun EpisodeThumb(art: ImageBitmap?, playOverlay: Boolean) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        Icons.Rounded.PlayArrow,
+                        HeyarrIcons.Play,
                         contentDescription = null,
                         tint = theme.onAccent,
                         modifier = Modifier.size(22.dp),
@@ -251,7 +243,7 @@ private fun EpisodeFileFacts(ep: Episode) {
                 horizontalArrangement = Arrangement.spacedBy(3.dp),
             ) {
                 Icon(
-                    Icons.Rounded.ClosedCaption,
+                    HeyarrIcons.Captions,
                     contentDescription = null,
                     tint = Tokens.textMuted,
                     modifier = Modifier.size(14.dp),
@@ -366,5 +358,5 @@ private fun LookForEpisodeButton(session: AppSession, season: Season, wants: Lis
                 }
             }
         }
-    }, icon = Icons.Rounded.Search, compact = true)
+    }, icon = HeyarrIcons.Search, compact = true)
 }

@@ -8,10 +8,12 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -20,6 +22,7 @@ import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.ui.theme.Tokens
 import kotlin.math.floor
@@ -152,6 +155,68 @@ fun ArchiveActivity(reduceMotion: Boolean, modifier: Modifier = Modifier, color:
                     ),
                 )
             }
+        }
+    }
+}
+
+/** A faint dot grid behind a field, the mockups' "instrument panel" texture. Decorative. */
+fun Modifier.gridField(color: Color = Tokens.accent.copy(alpha = 0.06f), step: Dp = 12.dp): Modifier = drawBehind {
+    val gap = step.toPx()
+    val dot = 1.dp.toPx()
+    var y = gap / 2f
+    while (y < size.height) {
+        var x = gap / 2f
+        while (x < size.width) {
+            drawRect(color, Offset(x, y), Size(dot, dot))
+            x += gap
+        }
+        y += gap
+    }
+}
+
+/** A thin band of scan lines, for the edge of a hero or a header strip. Decorative. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun ScanStrip(modifier: Modifier = Modifier, color: Color = Tokens.accent) {
+    Canvas(modifier.height(6.dp)) {
+        val line = 1.dp.toPx()
+        var y = 0f
+        var alpha = 0.35f
+        while (y < size.height) {
+            drawRect(color.copy(alpha = alpha), Offset(0f, y), Size(size.width, line))
+            y += line * 2
+            alpha *= 0.6f
+        }
+    }
+}
+
+/**
+ * A small cluster of pixel bars, the "signal" ornament beside companion audio and section
+ * headers. It is decoration, never a level meter: it shows no measured value. It moves only
+ * when [reduceMotion] is off.
+ */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun SignalBars(reduceMotion: Boolean, modifier: Modifier = Modifier, color: Color = Tokens.accent, bars: Int = 5) {
+    val phase = if (reduceMotion) {
+        0f
+    } else {
+        val transition = rememberInfiniteTransition(label = "signal bars")
+        val value by transition.animateFloat(
+            0f,
+            1f,
+            infiniteRepeatable(tween(2400, easing = LinearEasing)),
+            label = "signal phase",
+        )
+        value
+    }
+    Canvas(modifier.size(width = (bars * 4).dp, height = 14.dp)) {
+        val unit = size.width / (bars * 2 - 1)
+        for (i in 0 until bars) {
+            val wave = kotlin.math.sin((phase * 2f + i / bars.toFloat()) * kotlin.math.PI.toFloat() * 2f)
+            val level = 0.35f + 0.65f * ((wave + 1f) / 2f) * (if (reduceMotion) (i % 3 + 1) / 3f else 1f)
+            val h = (size.height * level / unit).toInt().coerceAtLeast(1) * unit
+            drawRect(color.copy(alpha = 0.85f), Offset(i * unit * 2, size.height - h), Size(unit, h))
         }
     }
 }
