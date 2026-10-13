@@ -247,7 +247,7 @@ private fun MissingRow(w: Want, checked: Boolean, state: MissingState, onOpen: (
         w.subject,
         MediaType.UNKNOWN,
         onOpen = {
-            w.workId?.let { onOpen(detailRoute(it, MediaType.UNKNOWN, w.title, from = "Missing")) }
+            w.workId?.let { onOpen(detailRoute(it, MediaType.UNKNOWN, w.title, from = "Missing", curate = true)) }
         },
         subtitle = listOfNotNull(
             w.context,
