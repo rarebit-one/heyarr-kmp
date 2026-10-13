@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -177,8 +178,12 @@ fun DetailScreen(
     }
 
     MediaScope(type) {
+        // One scroll position per view: switching to Manage starts at its header, not wherever the
+        // (longer) title page had been scrolled to.
+        val listState = remember(route.workId, state.managing) { LazyListState() }
         LazyColumn(
             modifier.fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(horizontal = 32.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
