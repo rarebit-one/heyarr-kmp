@@ -28,6 +28,7 @@ import one.rarebit.heyarr.core.mcp.McpError
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.DiscoveryAnswer
 import one.rarebit.heyarr.core.state.DiscoveryBackend
 import one.rarebit.heyarr.core.state.DiscoveryController
@@ -439,8 +440,21 @@ class AppSession(
      */
     val requestedTitles = mutableStateMapOf<String, Boolean>()
 
+    /**
+     * Keyed by session generation too: after the node or credential changes, an earlier request
+     * (or a late answer to one) no longer matches anything the new identity shows.
+     */
     fun titleKey(title: String, year: Int?, type: MediaType): String =
-        "${type.name}|${title.trim().lowercase()}|${year ?: ""}"
+        "$generation|${type.name}|${title.trim().lowercase()}|${year ?: ""}"
+
+    /**
+     * A catalogued work's availability with no file information to hand, once this client's want
+     * index has answered. A guest has no want index by design, and before it loads every work
+     * reads as untracked — which [Availability.ofCatalogued] would take for "scanned, so held" —
+     * so both stay neutral (null) rather than claim a file.
+     */
+    fun cataloguedAvailability(workId: String): Availability? =
+        if (!isGuest && indexLoaded) Availability.ofCatalogued(index.statusOf(workId)) else null
 
     /** One "Get it": the work (by id, or by title for a discovery hit) and the profile it is wanted at. */
     private class GetItRequest(
@@ -472,6 +486,9 @@ class AppSession(
         }
         if (workId == null) {
             if (ok) requestedTitles[key] = true else requestedTitles.remove(key)
+        } else if (!ok) {
+            // Withdraw this request's optimistic want now: the reload below can fail the same way.
+            index = index.withoutPendingWant(workId)
         }
         // Reload rather than restore a snapshot: another want may have landed meanwhile, and the
         // node's answer is the only truth about this one.

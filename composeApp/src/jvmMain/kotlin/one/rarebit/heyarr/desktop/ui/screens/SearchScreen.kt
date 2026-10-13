@@ -190,7 +190,7 @@ private fun ResultRow(
         is SearchRow.WorkRow -> {
             val hit = row.hit
             val cover by rememberCover(session, row.type, hit.title, hit.artworkPath, hit.year, hit.creator)
-            val availability = Availability.ofCatalogued(session.index.statusOf(hit.workId))
+            val availability = session.cataloguedAvailability(hit.workId)
             MediaRow(
                 title = hit.title, type = row.type, onOpen = onOpen, subtitle = hit.creator,
                 meta = listOf(
@@ -203,7 +203,7 @@ private fun ResultRow(
                 trailing = {
                     // Getting it writes desired state (Surface.WANT, via offersGetIt): a guest is
                     // offered Open instead.
-                    if (availability.offersGetIt(session.mode)) {
+                    if (availability?.offersGetIt(session.mode) == true) {
                         GetItButton({
                             onGetIt(hit.workId, hit.title, row.type)
                         }, primary = true, compact = true, title = hit.title)

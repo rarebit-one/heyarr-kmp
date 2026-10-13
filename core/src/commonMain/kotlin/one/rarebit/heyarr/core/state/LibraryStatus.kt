@@ -61,6 +61,9 @@ class LibraryIndex(val items: List<DesiredItem>) {
         ),
     )
 
+    /** This index without the optimistic want [withPendingWant] added for [workId] — and nothing else. */
+    fun withoutPendingWant(workId: String): LibraryIndex = LibraryIndex(items.filterNot { it.id == "pending:$workId" })
+
     companion object {
         val EMPTY = LibraryIndex(emptyList())
     }

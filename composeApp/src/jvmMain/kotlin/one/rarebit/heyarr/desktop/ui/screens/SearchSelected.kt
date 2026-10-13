@@ -96,7 +96,7 @@ private fun WorkSelection(
 ) {
     val hit = row.hit
     val cover by rememberCover(session, row.type, hit.title, hit.artworkPath, hit.year, hit.creator)
-    val availability = Availability.ofCatalogued(session.index.statusOf(hit.workId))
+    val availability = session.cataloguedAvailability(hit.workId)
     Artwork(
         cover.bitmap,
         row.type,
@@ -125,13 +125,13 @@ private fun WorkSelection(
             overflow = TextOverflow.Ellipsis,
         )
     }
-    AvailabilityMark(availability)
+    availability?.let { AvailabilityMark(it) }
     DashedDivider()
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         if (routeFor(row) != null) {
             PrimaryButton("Open", { onOpen(row) }, icon = HeyarrIcons.Forward, contentDescription = "Open ${hit.title}")
         }
-        if (availability.offersGetIt(session.mode)) {
+        if (availability?.offersGetIt(session.mode) == true) {
             GetItButton({ onGetIt(hit.workId, hit.title, row.type) }, title = hit.title)
         }
     }

@@ -80,7 +80,6 @@ internal fun TypeRail(session: AppSession, t: MediaType, rail: RailState<SearchH
                 hit.year,
                 hit.creator,
             )
-            val status = session.index.statusOf(hit.workId)
             MediaCard(
                 hit.title, MediaType.from(hit.contentType), onOpen = {
                     onOpen(Route.Detail(hit.workId, t, hit.title, from = "Home"))
@@ -91,7 +90,7 @@ internal fun TypeRail(session: AppSession, t: MediaType, rail: RailState<SearchH
                 ),
                 artwork = cover.bitmap,
                 mode = session.mode,
-                availability = Availability.ofCatalogued(status),
+                availability = session.cataloguedAvailability(hit.workId),
                 width = if (MediaThemes.of(t).aspect ==
                     CardAspect.SQUARE
                 ) {
