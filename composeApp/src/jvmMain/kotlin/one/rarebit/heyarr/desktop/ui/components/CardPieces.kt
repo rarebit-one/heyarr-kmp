@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -58,6 +59,7 @@ import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.RailState
 import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.SectionLabel
 import one.rarebit.heyarr.ui.components.Skeleton
 import one.rarebit.heyarr.ui.components.StatusPill
 import one.rarebit.heyarr.ui.components.focusRing
@@ -126,51 +128,49 @@ internal fun CardCaption(title: String, subtitle: String?, meta: List<String?>) 
     }
 }
 
+// The hero scrim's stops: dark at the text column's edge, clear by 70% across.
+private const val HERO_SCRIM_EDGE = 0.94f
+private const val HERO_SCRIM_MID = 0.7f
+private const val HERO_SCRIM_MID_STOP = 0.38f
+private const val HERO_SCRIM_CLEAR_STOP = 0.7f
+private const val HERO_FOOT_FADE = 0.35f
+
 /**
- * The hero's layered scrim — bottom-up darkening, plus a left-to-right one so the text column
- * reads on any art — and the accent line along its bottom edge.
+ * The hero's scrim: darkness from the left edge only, where the text column sits, so the art
+ * reads full-bleed across the rest of the frame; and a soft fade at the foot into the page.
  */
 @Composable
 internal fun BoxScope.HeroScrims() {
-    val theme = LocalMediaTheme.current
-    Box(
-        Modifier.fillMaxSize().background(
-            Brush.verticalGradient(
-                listOf(Color.Transparent, Tokens.bgBase.copy(alpha = 0.55f), Tokens.bgBase.copy(alpha = 0.96f)),
-            ),
-        ),
-    )
     Box(
         Modifier.fillMaxSize().background(
             Brush.horizontalGradient(
-                listOf(Tokens.bgBase.copy(alpha = 0.85f), Tokens.bgBase.copy(alpha = 0.35f), Color.Transparent),
+                0f to Tokens.bgBase.copy(alpha = HERO_SCRIM_EDGE),
+                HERO_SCRIM_MID_STOP to Tokens.bgBase.copy(alpha = HERO_SCRIM_MID),
+                HERO_SCRIM_CLEAR_STOP to Color.Transparent,
             ),
         ),
     )
     Box(
-        Modifier.fillMaxWidth().height(
-            3.dp,
-        ).align(
-            Alignment.BottomStart,
-        ).background(Brush.horizontalGradient(listOf(theme.accent, theme.accentGradientEnd, Color.Transparent))),
+        Modifier.fillMaxWidth().fillMaxHeight(HERO_FOOT_FADE).align(Alignment.BottomStart).background(
+            Brush.verticalGradient(listOf(Color.Transparent, Tokens.bgBase.copy(alpha = HERO_SCRIM_MID))),
+        ),
     )
 }
 
-/** The hero's kicker line: the media badge, optional work context, and the library status. */
+/** The hero's eyebrow: an ochre square and the tracked kicker ("FROM YOUR LIBRARY"), or the media type. */
 @Composable
-internal fun HeroKicker(type: MediaType, kicker: String?, status: LibraryStatus?) {
-    val theme = LocalMediaTheme.current
-    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        MediaBadge(type)
-        if (kicker !=
-            null
-        ) {
-            Text(
-                kicker.uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = theme.accentGradientEnd,
-            )
-        }
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+internal fun HeroKicker(type: MediaType, kicker: String?) {
+    SectionLabel(kicker ?: type.label)
+}
+
+/** Under the title: the media glyph and type, the facts that matter, and the library status, as text not boxes. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+internal fun HeroFacts(type: MediaType, meta: List<String?>, status: LibraryStatus?) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        Icon(type.icon(), contentDescription = null, tint = Tokens.textPrimary, modifier = Modifier.size(16.dp))
+        MetaLine(listOf(type.label.uppercase()) + meta, color = Tokens.textPrimary.copy(alpha = 0.85f))
         if (status != null) StatusPill(status)
     }
 }

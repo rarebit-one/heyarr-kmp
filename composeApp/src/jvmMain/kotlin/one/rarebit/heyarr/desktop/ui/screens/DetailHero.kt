@@ -1,16 +1,26 @@
 package one.rarebit.heyarr.desktop.ui.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -30,7 +40,9 @@ import one.rarebit.heyarr.desktop.library.WorkDetail
 import one.rarebit.heyarr.desktop.music.Track
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.desktop.ui.components.Artwork
 import one.rarebit.heyarr.desktop.ui.components.Hero
+import one.rarebit.heyarr.desktop.ui.components.HeroFacts
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
@@ -39,7 +51,9 @@ import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.SectionLabel
 import one.rarebit.heyarr.ui.components.Skeleton
+import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 
@@ -71,15 +85,17 @@ internal fun DetailHero(
     val actions = HeroActions(session, state, detail, type, scope)
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Hero(
+        IdentityBlock(
             title = work.title,
             type = type,
             meta = heroMeta(detail, type, seasons, state),
             artwork = art,
             status = status,
-            height = 340.dp,
-            primary = { HeroPrimaryAction(actions, first, wants) { onWant(work.id, work.title, type) } },
-            secondary = { HeroSecondaryActions(actions, first) { onWant(work.id, work.title, type) } },
+            synopsis = { SynopsisBlock(detail, type, seasons, state) },
+            actions = {
+                HeroPrimaryAction(actions, first, wants) { onWant(work.id, work.title, type) }
+                HeroSecondaryActions(actions, first) { onWant(work.id, work.title, type) }
+            },
         )
         if (asset == null && type != MediaType.SERIES && type != MediaType.FEED &&
             type != MediaType.PODCAST
@@ -87,7 +103,7 @@ internal fun DetailHero(
             val wantHint = if (wants.isEmpty()) {
                 "not wanted, so nothing is looking for a copy."
             } else {
-                "heyarr is looking. Manage → Releases shows what the indexers found."
+                "heyarr is looking. Releases shows what the indexers found."
             }
             Notice(
                 "Nothing to play yet — $wantHint",
@@ -376,3 +392,74 @@ private fun CastPicker(session: AppSession, state: DetailState) {
         })
     }
 }
+
+/**
+ * A work's identity, first: its art at the art's own shape (a poster stays a poster), then the
+ * eyebrow, the title at display size, the facts, the synopsis and what to do next. On a narrow
+ * window the art stacks above the text instead of squeezing it.
+ */
+@Composable
+@Suppress("FunctionNaming", "LongParameterList") // Compose naming; one slot per part of the block.
+private fun IdentityBlock(
+    title: String,
+    type: MediaType,
+    meta: List<String?>,
+    artwork: ImageBitmap?,
+    status: LibraryStatus?,
+    synopsis: @Composable () -> Unit,
+    actions: @Composable RowScope.() -> Unit,
+) {
+    val aspect = MediaThemes.of(type).aspect
+    val artWidth = when (aspect) {
+        CardAspect.WIDE -> 420.dp
+        CardAspect.POSTER -> 240.dp
+        CardAspect.SQUARE -> 280.dp
+    }
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val stacked = maxWidth < artWidth + IDENTITY_TEXT_MIN
+        val art: @Composable () -> Unit = {
+            Artwork(
+                artwork,
+                type,
+                Modifier.width(artWidth).aspectRatio(aspect.ratio).clip(RoundedCornerShape(Tokens.radiusCard)),
+                contentDescription = "Artwork for $title",
+                seed = title,
+                contentScale = ContentScale.Crop,
+            )
+        }
+        val text: @Composable (Modifier) -> Unit = { m ->
+            Column(m, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                SectionLabel(type.label)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.displayLarge,
+                    color = Tokens.textPrimary,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                HeroFacts(type, meta, status)
+                synopsis()
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    actions()
+                }
+            }
+        }
+        if (stacked) {
+            Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                art()
+                text(Modifier.fillMaxWidth())
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(36.dp)) {
+                art()
+                text(Modifier.weight(1f))
+            }
+        }
+    }
+}
+
+/** Below this width beside the art, the identity block stacks. */
+private val IDENTITY_TEXT_MIN = 360.dp

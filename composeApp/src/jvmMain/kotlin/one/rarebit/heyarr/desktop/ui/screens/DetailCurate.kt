@@ -285,57 +285,47 @@ fun Field(
 }
 
 /**
- * The curation surface as tables, one column, each section collapsible: what each want
- * is measured against and where it stands; every held file with the verdict the profile
- * gave it (rules behind a click); the indexer candidates with Acquire; a release scorer;
- * health; captions and artwork; the works the scanner minted for the same title; the
- * identifiers; the raw file list. Nothing here is paraphrased — rule codes, states and
- * the node's detail lines are shown as sent.
+ * The management half of a work, as the brief splits it: **Releases** (each want's state, the
+ * files held with their verdicts, and the indexer candidates with Acquire), **Rules** (score a
+ * release against the active profile), and **Health** (replicas, captions and artwork, the
+ * works the scanner minted for the same title, identifiers and the raw file list). Nothing here
+ * is paraphrased — rule codes, states and the node's detail lines are shown as sent.
  */
 @Composable
-internal fun CurateTab(
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+internal fun ReleasesTab(session: AppSession, wants: List<DesiredItem>, state: DetailState, reload: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
+        WantsSection(session, wants, state, scope, reload)
+        HeldFilesSection(wants, state)
+        CandidatesSection(session, wants, state, scope, reload)
+    }
+}
+
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+internal fun RulesTab(session: AppSession, wants: List<DesiredItem>) {
+    Section("Rules", subtitle = "Score a release against the active profile") {
+        ExplainPanel(session, wants)
+    }
+}
+
+@Composable
+@Suppress("FunctionNaming", "LongParameterList") // Compose naming; the health sections each need their own slice.
+internal fun HealthTab(
     session: AppSession,
     detail: WorkDetail,
     type: MediaType,
     wants: List<DesiredItem>,
     state: DetailState,
     seasons: List<Season>,
-    reload: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val assets = state.assets.orEmpty()
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
-        // 1. Status
-        WantsSection(session, wants, state, scope, reload)
-
-        // 2. Held files with verdicts
-        HeldFilesSection(wants, state)
-
-        // 3. Releases
-        CandidatesSection(session, wants, state, scope, reload)
-
-        // 4. Rules
-        Section(
-            "Rules",
-            subtitle = "Score a release against the active profile",
-            initiallyOpen = false,
-        ) {
-            ExplainPanel(session, wants)
-        }
-
-        // 5. Health
         HealthSection(session, detail, state, scope)
-
-        // 6. Captions & artwork
         Section("Captions & artwork", initiallyOpen = false) { SidecarsPanel(session, state, seasons, wants) }
-
-        // 7. Also catalogued as
         if (state.variants.isNotEmpty()) VariantsSection(state)
-
-        // 8. Details
         IdentifiersSection(detail, type, state)
-
-        // 9. Files
-        AllFilesSection(assets)
+        AllFilesSection(state.assets.orEmpty())
     }
 }

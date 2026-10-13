@@ -64,6 +64,7 @@ import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.RuleCode
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
+import one.rarebit.heyarr.ui.components.TechnicalDisclosure
 import one.rarebit.heyarr.ui.components.focusRing
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.Tokens
@@ -88,29 +89,20 @@ internal fun SynopsisBlock(detail: WorkDetail, type: MediaType, seasons: List<Se
                     maxLines = 6,
                     overflow = TextOverflow.Ellipsis,
                 )
+                val what = if (ext.imageUrl != null && detail.artworkPath == null) "Synopsis and cover" else "Synopsis"
                 Text(
-                    "Synopsis${if (ext.imageUrl != null && detail.artworkPath == null) " and cover" else ""} via ${ext.source} — not from your library. The node has no metadata provider (TVDB, ADR-0058).",
+                    "$what via ${ext.source}, not from your library.",
                     style = MaterialTheme.typography.labelSmall,
                     color = Tokens.textDisabled,
                 )
             }
 
-            else -> Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(
-                    HeyarrIcons.Info,
-                    contentDescription = null,
-                    tint = Tokens.textDisabled,
-                    modifier = Modifier.size(14.dp),
-                )
-                Text(
-                    "No synopsis — the node has no metadata provider and no public source knew this title. Titles, seasons and episodes below come from the files themselves.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Tokens.textMuted,
-                )
-            }
+            // Why there is no synopsis is a technical detail, not something to read before the title.
+            else -> TechnicalDisclosure(
+                "The node has no metadata provider and no public source knew this title. Titles, " +
+                    "seasons and episodes come from the files themselves.",
+                label = "No synopsis",
+            )
         }
     }
 }

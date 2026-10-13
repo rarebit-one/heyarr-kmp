@@ -266,11 +266,10 @@ private fun SpotlightBlock(
             )
             val status = session.index.statusOf(work.id)
             Hero(
-                title = work.title, type = type, kicker = "Featured from your library",
+                title = work.title, type = type, kicker = "From your library",
                 meta = listOf(
                     work.year?.toString(),
                     work.artist ?: work.author,
-                    work.kind,
                 ),
                 artwork = cover.bitmap, status = status,
                 description = cover.external?.synopsis?.let {
