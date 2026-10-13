@@ -85,7 +85,10 @@ allprojects {
 // VaultObjects.put and the sync engine push conditionally and re-seal once on
 // change_key_epoch_mismatch. Not kept as an overload: a delegating 3-argument default would let
 // an implementer drop the epoch silently, i.e. fail open.
-val publishedLibraryVersion = "0.2.2"
+// 0.3.0 (breaking): core's CanonicalLookup.resolveFor returns a Resolution (the canonicals plus a
+// `complete` flag) instead of a bare list, so a caller can tell a failed lookup from "no
+// canonical" (#139); adds clear(). Not kept as an overload: the old shape is the bug.
+val publishedLibraryVersion = "0.3.0"
 
 listOf(":core", ":vault-client").forEach { path ->
     project(path) {
