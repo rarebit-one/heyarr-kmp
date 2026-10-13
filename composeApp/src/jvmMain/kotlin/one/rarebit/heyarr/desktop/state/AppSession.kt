@@ -193,6 +193,10 @@ class AppSession(
     var indexLoading: Boolean by mutableStateOf(false)
         private set
 
+    /** Whether [index] holds a real answer from the node, rather than the empty stand-in before the first load. */
+    var indexLoaded: Boolean by mutableStateOf(false)
+        private set
+
     var profiles: List<QualityProfile> by mutableStateOf(emptyList())
         private set
 
@@ -220,6 +224,7 @@ class AppSession(
         if (otherNode) {
             profiles = emptyList()
             index = LibraryIndex.EMPTY
+            indexLoaded = false
             generation++
         }
         refreshIndex()
@@ -236,6 +241,7 @@ class AppSession(
     fun reauthenticated() {
         profiles = emptyList()
         index = LibraryIndex.EMPTY
+        indexLoaded = false
         generation++
         connection = if (config.baseUrl.isBlank()) Connection.UNCONFIGURED else Connection.UNKNOWN
         refreshIndex()
@@ -339,18 +345,23 @@ class AppSession(
         // asking for it would only earn a 403. Guests browse without it.
         if (isGuest) {
             index = LibraryIndex.EMPTY
+            indexLoaded = false
             profiles = emptyList()
             return
         }
         val a = api ?: run {
             index = LibraryIndex.EMPTY
+            indexLoaded = false
             return
         }
         scope.launch {
             indexLoading = true
             val result = io { a.desired() }
             indexLoading = false
-            result.onSuccess { index = LibraryIndex(it) }
+            result.onSuccess {
+                index = LibraryIndex(it)
+                indexLoaded = true
+            }
         }
         if (profiles.isEmpty()) scope.launch { io { a.qualityProfiles() }.onSuccess { profiles = it } }
     }

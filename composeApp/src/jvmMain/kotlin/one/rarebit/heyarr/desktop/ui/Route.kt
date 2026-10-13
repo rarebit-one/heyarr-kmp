@@ -19,6 +19,7 @@ sealed interface Route {
     data object Search : Route
     data object Library : Route
     data object Missing : Route
+    data object Sources : Route
     data object NowPlaying : Route
     data object Settings : Route
 
@@ -84,3 +85,10 @@ class Nav(start: Route = Route.Consume(Experience.WATCH)) {
         }
     }
 }
+
+/**
+ * Whether the shell shows its one search entry over this route: browse screens only. Search has
+ * its own field, and the player and reader keep their surface to themselves.
+ */
+val Route.showsSearchEntry: Boolean
+    get() = this != Route.Search && this != Route.Discover && this !is Route.Player && this !is Route.Reader

@@ -56,18 +56,14 @@ class SettingsState {
  * `unfollow`), peers (`get_peer_status`, `sync_peer`) and appearance.
  */
 @Composable
-fun SettingsScreen(
-    session: AppSession,
-    state: SettingsState,
-    onSourcesChanged: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun SettingsScreen(session: AppSession, state: SettingsState, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     fun load() {
         val a = session.api ?: return
-        // Followed sources and peers are enrolled surfaces; a guest cannot read them.
+        // Peers are an enrolled surface; a guest cannot read them. Followed sources moved to
+        // their own screen ([SourcesScreen]).
         if (session.isGuest) return
-        scope.launch { session.io { a.followed() }.onSuccess { state.followed = it } }
         scope.launch { session.io { a.peers() }.onSuccess { state.peers = it } }
     }
     LaunchedEffect(session.config) { load() }
@@ -82,21 +78,15 @@ fun SettingsScreen(
         item { one.rarebit.heyarr.desktop.ui.EnrolPanel(session) }
         if (session.isGuest) {
             item {
-                Panel("Followed sources & peers") {
+                Panel("Peers") {
                     Notice(
-                        "Sign in to follow sources and manage peers.",
-                        detail = "Following, wants and peer sync are enrolled-only. Add a bearer token above to sign in.",
+                        "Sign in to manage peers.",
+                        detail = "Peer sync is enrolled-only. Add a bearer token above to sign in.",
                         tone = Tokens.slate,
                     )
                 }
             }
         } else {
-            item {
-                FollowedPanel(session, state, {
-                    load()
-                    onSourcesChanged()
-                })
-            }
             item { PeersPanel(session, state) }
         }
         item { AppearancePanel(session) }
