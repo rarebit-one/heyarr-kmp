@@ -74,6 +74,7 @@ internal fun LazyListScope.manageView(
     onBack: () -> Unit,
     onRemove: () -> Unit,
     onReloadWants: () -> Unit,
+    onRetry: () -> Unit,
 ) {
     val detail = m.state.detail
     val direct = m.route.curate
@@ -91,7 +92,7 @@ internal fun LazyListScope.manageView(
                     120.dp,
                 )
             } else {
-                ErrorState("Couldn't load this work", m.state.detailError, onRetry = null)
+                ErrorState("Couldn't load this work", m.state.detailError, onRetry = onRetry)
             }
         }
         return

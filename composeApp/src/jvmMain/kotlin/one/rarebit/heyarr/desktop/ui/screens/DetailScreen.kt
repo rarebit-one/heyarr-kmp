@@ -163,7 +163,12 @@ fun DetailScreen(
     bindNavigation(state, route, onOpen)
     LaunchedEffect(route.workId) { load() }
     // Each visit opens where its route says: a title from a shelf, Manage from Downloads or Missing.
-    LaunchedEffect(route) { state.managing = route.curate }
+    LaunchedEffect(route) {
+        state.managing = route.curate
+        // A visit straight into Manage (from Downloads or Missing) starts on Releases, wherever this
+        // work's Manage view was last left.
+        if (route.curate) state.tab = DetailTab.RELEASES
+    }
     LaunchedEffect(wants.map { it.id }) { loadWants() }
     LoadDetailExtras(session, state, route.workId, detail, type)
 
@@ -189,7 +194,7 @@ fun DetailScreen(
         ) {
             val model = DetailModel(session, route, state, type, wants, seasons)
             if (state.managing) {
-                manageView(model, onBack, { confirmRemoval = true }, ::loadWants)
+                manageView(model, onBack, { confirmRemoval = true }, ::loadWants, ::load)
             } else {
                 titlePage(model, onBack, onGetIt, ::load)
             }
