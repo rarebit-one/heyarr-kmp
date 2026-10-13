@@ -4,6 +4,8 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.feeds.FollowedSource
 import one.rarebit.heyarr.core.feeds.FollowedSourcesJson
 import one.rarebit.heyarr.core.heyarr.*
+import one.rarebit.heyarr.core.heyarr.SidecarAction
+import one.rarebit.heyarr.core.heyarr.SidecarResult
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.mcp.DiscoveryJson
 import one.rarebit.heyarr.core.mcp.Explanation
@@ -386,6 +388,39 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
             else -> McpResult.Refused(
                 Problem.message(resp.body, resp.status, "want season"),
                 "POST /desired",
+                resp.status,
+            )
+        }
+    }
+
+    /**
+     * One of the node's work-scoped caption or cover levers ([SidecarAction]). The node answers
+     * with its own counts; a refusal (no provider configured, a scope it will not take) comes back
+     * with the node's wording.
+     */
+    fun sidecar(action: SidecarAction, workId: String, language: String? = null): McpResult<SidecarResult> {
+        val resp = try {
+            http.post(
+                "$baseUrl${action.path}",
+                action.body(workId, language),
+                "application/json",
+                credential.asHeader(),
+            )
+        } catch (e: IOException) {
+            throw McpTransportException("heyarr is unreachable: ${e.message}", e)
+        }
+        return when (resp.status) {
+            200, 202 -> McpResult.Ok(SidecarResult.parse(action, resp.body, language))
+
+            401, 403 -> throw McpTransportException(
+                "heyarr refused the credential (HTTP ${resp.status})",
+                null,
+                resp.status,
+            )
+
+            else -> McpResult.Refused(
+                Problem.message(resp.body, resp.status, action.label),
+                "POST ${action.path}",
                 resp.status,
             )
         }

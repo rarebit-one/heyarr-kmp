@@ -33,8 +33,10 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.DesiredItem
+import one.rarebit.heyarr.core.heyarr.SidecarAction
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.Explanation
@@ -62,6 +64,9 @@ import one.rarebit.heyarr.ui.components.RejectedBy
 import one.rarebit.heyarr.ui.components.RuleCode
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.Section
+import one.rarebit.heyarr.ui.components.SidecarActions
+import one.rarebit.heyarr.ui.components.SidecarOptions
+import one.rarebit.heyarr.ui.components.SidecarOutcome
 import one.rarebit.heyarr.ui.components.Skeleton
 import one.rarebit.heyarr.ui.components.StatusPill
 import one.rarebit.heyarr.ui.components.TableColumn
@@ -71,7 +76,10 @@ import one.rarebit.heyarr.ui.theme.Tokens
 
 /** Manage → captions and artwork: what is held per episode, and the honest limits of what the node can fetch. */
 @Composable
-private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List<Season>, wants: List<DesiredItem>) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List<Season>, type: MediaType) {
+    val scope = rememberCoroutineScope()
+    val runner = remember(state.workId) { SidecarRunner() }
     val assets = state.assets.orEmpty()
     val subs = assets.filter { Series.isSubtitle(it) }
     val art = assets.filter { it.role == "artwork" }
@@ -120,9 +128,11 @@ private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List
                 )
             }
         }
-        Notice(
-            "heyarr's tool surface has no caption or artwork search yet: sidecars arrive with a release or a scan. Asking the indexers again (Releases) is the only fetch this node can queue.",
-            tone = Tokens.slate,
+        SidecarActions(
+            sidecarOptions(type, session),
+            busy = runner.busy,
+            outcome = runner.outcome,
+            onAction = { action, language -> runner.run(session, scope, state.workId, action, language) },
         )
     }
 }
@@ -323,9 +333,39 @@ internal fun HealthTab(
     val scope = rememberCoroutineScope()
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         HealthSection(session, detail, state, scope)
-        Section("Captions & artwork", initiallyOpen = false) { SidecarsPanel(session, state, seasons, wants) }
+        Section("Captions & artwork", initiallyOpen = false) { SidecarsPanel(session, state, seasons, type) }
         if (state.variants.isNotEmpty()) VariantsSection(state)
         IdentifiersSection(detail, type, state)
         AllFilesSection(state.assets.orEmpty())
+    }
+}
+
+/** Captions for film and series, a cover lookup for music and books; writes need an enrolled session. */
+private fun sidecarOptions(type: MediaType, session: AppSession) = SidecarOptions(
+    video = type == MediaType.MOVIE || type == MediaType.SERIES,
+    enrichable = type == MediaType.MUSIC || type == MediaType.BOOK,
+    canWrite = !session.isGuest,
+)
+
+/** One work's caption/cover request in flight, and what the node answered last. */
+private class SidecarRunner {
+    var busy by mutableStateOf(false)
+    var outcome by mutableStateOf<SidecarOutcome?>(null)
+
+    fun run(session: AppSession, scope: CoroutineScope, workId: String, action: SidecarAction, language: String?) {
+        val api = session.api ?: return
+        busy = true
+        scope.launch {
+            outcome = session.io { api.sidecar(action, workId, language) }.fold(
+                onSuccess = { r ->
+                    when (r) {
+                        is McpResult.Ok -> SidecarOutcome(r.value.message, refused = false)
+                        is McpResult.Refused -> SidecarOutcome(r.message, refused = true)
+                    }
+                },
+                onFailure = { SidecarOutcome(it.message ?: "Couldn't reach heyarr", refused = true) },
+            )
+            busy = false
+        }
     }
 }

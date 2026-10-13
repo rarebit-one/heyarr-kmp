@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.DesiredItem
+import one.rarebit.heyarr.core.heyarr.SidecarAction
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.AssetVerdict
@@ -65,6 +66,9 @@ import one.rarebit.heyarr.ui.components.ReasonList
 import one.rarebit.heyarr.ui.components.RejectedBy
 import one.rarebit.heyarr.ui.components.RuleCode
 import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.SidecarActions
+import one.rarebit.heyarr.ui.components.SidecarOptions
+import one.rarebit.heyarr.ui.components.SidecarOutcome
 import one.rarebit.heyarr.ui.components.Section
 import one.rarebit.heyarr.ui.components.Skeleton
 import one.rarebit.heyarr.ui.components.StatusPill
@@ -73,9 +77,11 @@ import one.rarebit.heyarr.ui.components.verdictColor
 import one.rarebit.heyarr.ui.theme.LocalHeyarrPlatform
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 
-/** Curate → captions and artwork: what is held per episode, and the honest limits of what the node can fetch. */
+/** Curate → captions and artwork: what is held per episode, and the node's levers to fetch more. */
 @Composable
-private fun SidecarsPanel(state: DetailState, seasons: List<Season>) {
+private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List<Season>, type: MediaType) {
+    val scope = rememberCoroutineScope()
+    val runner = remember(state.workId) { SidecarRunner() }
     val assets = state.assets.orEmpty()
     val subs = assets.filter { Series.isSubtitle(it) }
     val art = assets.filter { it.role == "artwork" }
@@ -124,11 +130,42 @@ private fun SidecarsPanel(state: DetailState, seasons: List<Season>) {
                 )
             }
         }
-        Notice(
-            "heyarr's tool surface has no caption or artwork search yet: sidecars arrive with a release or a scan. " +
-                "Asking the indexers again (Releases) is the only fetch this node can queue.",
-            tone = Tokens.slate,
+        SidecarActions(
+            sidecarOptions(type, session),
+            busy = runner.busy,
+            outcome = runner.outcome,
+            onAction = { action, language -> runner.run(session, scope, state.workId, action, language) },
         )
+    }
+}
+
+/** Captions for anything with video; a cover lookup where the node enriches (music and books). */
+private fun sidecarOptions(type: MediaType, session: AppSession) = SidecarOptions(
+    video = type == MediaType.MOVIE || type == MediaType.SERIES,
+    enrichable = type == MediaType.MUSIC || type == MediaType.BOOK,
+    canWrite = !session.isGuest,
+)
+
+/** One sidecar request at a time, and the last answer, for the panel to show. */
+private class SidecarRunner {
+    var busy by mutableStateOf(false)
+    var outcome by mutableStateOf<SidecarOutcome?>(null)
+
+    fun run(session: AppSession, scope: CoroutineScope, workId: String, action: SidecarAction, language: String?) {
+        busy = true
+        outcome = null
+        scope.launch {
+            session.io { session.api.sidecar(action, workId, language) }.fold(
+                onSuccess = { r ->
+                    outcome = when (r) {
+                        is McpResult.Ok -> SidecarOutcome(r.value.message, refused = false)
+                        is McpResult.Refused -> SidecarOutcome(r.message, refused = true)
+                    }
+                },
+                onFailure = { e -> outcome = SidecarOutcome(e.message ?: "heyarr did not answer.", refused = true) },
+            )
+            busy = false
+        }
     }
 }
 
@@ -313,7 +350,7 @@ internal fun CurateTab(
         HealthSection(session, work.blobHash, state, scope)
 
         // 6. Captions & artwork
-        Section("Captions & artwork", initiallyOpen = false) { SidecarsPanel(state, seasons) }
+        Section("Captions & artwork", initiallyOpen = false) { SidecarsPanel(session, state, seasons, type) }
 
         // 7. Also catalogued as
         if (state.variants.isNotEmpty()) {

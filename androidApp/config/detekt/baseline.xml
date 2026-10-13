@@ -63,7 +63,7 @@
     <ID>FunctionNaming:DetailCurate.kt$@Composable internal fun CurateTab( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, onOpen: (Route) -&gt; Unit, reload: () -&gt; Unit, )</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable private fun ExplainPanel(session: AppSession, wants: List&lt;DesiredItem&gt;)</ID>
     <ID>FunctionNaming:DetailCurate.kt$@Composable private fun ExplainVerdict(result: McpResult&lt;Explanation?&gt;?)</ID>
-    <ID>FunctionNaming:DetailCurate.kt$@Composable private fun SidecarsPanel(state: DetailState, seasons: List&lt;Season&gt;)</ID>
+    <ID>FunctionNaming:DetailCurate.kt$@Composable private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List&lt;Season&gt;, type: MediaType)</ID>
     <ID>FunctionNaming:DetailHero.kt$@Composable internal fun DetailHero( session: AppSession, work: Work, type: MediaType, wants: List&lt;DesiredItem&gt;, state: DetailState, seasons: List&lt;Season&gt;, art: String?, play: DetailPlayback, onWant: (String, String) -&gt; Unit, )</ID>
     <ID>FunctionNaming:DetailHero.kt$@Composable private fun HeroPrimary( h: HeroWork, wants: List&lt;DesiredItem&gt;, play: DetailPlayback, onWant: (String, String) -&gt; Unit, scope: CoroutineScope, )</ID>
     <ID>FunctionNaming:DetailScreen.kt$@Composable fun DetailScreen( session: AppSession, route: Route.Detail, state: DetailState, play: DetailPlayback, onBack: () -&gt; Unit, onOpen: (Route) -&gt; Unit, onWant: (String, String) -&gt; Unit, modifier: Modifier = Modifier, personal: DetailPersonal = DetailPersonal(), )</ID>

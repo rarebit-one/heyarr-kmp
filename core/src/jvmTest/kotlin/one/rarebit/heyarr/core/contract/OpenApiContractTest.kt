@@ -35,6 +35,11 @@ class OpenApiContractTest {
             "CapabilitiesJson" to listOf("GET /api/v1/capabilities"),
             "LibraryInfoJson" to listOf("GET /api/v1/libraries"),
             "JobJson" to listOf("GET /api/v1/jobs"),
+            "SidecarResult" to listOf(
+                "POST /api/v1/subtitles/backfill",
+                "POST /api/v1/subtitles/want",
+                "POST /api/v1/enrich/backfill",
+            ),
             "ContinueJson" to listOf("GET /api/v1/consumption/continue"),
             "FollowedSourcesJson" to listOf("GET /api/v1/followed-sources", "GET /api/v1/followed-sources/{id}"),
             "FollowedItemsJson" to listOf("GET /api/v1/followed-sources/{id}/items"),
