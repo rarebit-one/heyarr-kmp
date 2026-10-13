@@ -17,7 +17,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.Explore
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.ReportProblem
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
@@ -30,9 +31,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.mobile.nav.Route
+import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.theme.HeyarrTheme
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.ui.components.DashedDivider
+import one.rarebit.heyarr.ui.components.SectionHeader
 
 private data class ManageDestination(
     val route: Route,
@@ -41,7 +44,10 @@ private data class ManageDestination(
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
 )
 
-/** Task-oriented mobile entry point for infrequent management destinations. */
+/**
+ * The curator workspace's door: wants, downloads, the full catalogue, renderers and settings —
+ * everything the browsing tabs leave out, one tap from the Manage tab.
+ */
 @Composable
 fun ManageScreen(onOpen: (Route) -> Unit, modifier: Modifier = Modifier) {
     val destinations = listOf(
@@ -51,7 +57,18 @@ fun ManageScreen(onOpen: (Route) -> Unit, modifier: Modifier = Modifier) {
             "Triage missing titles and upgrades",
             Icons.Rounded.ReportProblem,
         ),
-        ManageDestination(Route.Discover, "Discover", "Ask the node's configured providers", Icons.Rounded.Explore),
+        ManageDestination(
+            Route.Downloads,
+            "Downloads",
+            "What heyarr is fetching now, and the job queue",
+            Icons.Rounded.Download,
+        ),
+        ManageDestination(
+            Route.AllWorks,
+            "All works",
+            "Every catalogued work, filterable by want status",
+            Icons.Rounded.GridView,
+        ),
         ManageDestination(
             Route.Cast,
             "Cast / renderer",
@@ -74,7 +91,7 @@ fun ManageScreen(onOpen: (Route) -> Unit, modifier: Modifier = Modifier) {
             Column(verticalArrangement = Arrangement.spacedBy(Tokens.s2)) {
                 Text("Manage", style = MaterialTheme.typography.headlineMedium, color = Tokens.textPrimary)
                 Text(
-                    "Library care and node settings",
+                    "What heyarr keeps, fetches and follows",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Tokens.textMuted,
                 )
@@ -83,6 +100,23 @@ fun ManageScreen(onOpen: (Route) -> Unit, modifier: Modifier = Modifier) {
         items(destinations) { destination ->
             ManageRow(destination, onOpen)
         }
+    }
+}
+
+/** Manage → Downloads: the wants in flight and the job queue, on a page of its own. */
+@Composable
+fun ManageDownloads(
+    session: AppSession,
+    state: DownloadsState,
+    onOpen: (Route) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier.fillMaxSize().padding(horizontal = Tokens.screenPadding).padding(top = Tokens.s4),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        SectionHeader("Downloads", subtitle = "What heyarr is fetching right now")
+        DownloadsScreen(session, state, onOpen)
     }
 }
 

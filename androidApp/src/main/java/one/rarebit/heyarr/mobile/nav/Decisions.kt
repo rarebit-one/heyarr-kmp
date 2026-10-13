@@ -34,18 +34,18 @@ object Decisions {
     fun section(route: Route?): NavSection? = when (route) {
         Route.Home -> NavSection.HOME
 
-        Route.Search -> NavSection.SEARCH
+        Route.Search, Route.Discover -> NavSection.SEARCH
 
         Route.Library, Route.Playlists, is Route.Playlist -> NavSection.LIBRARY
 
-        Route.Manage, Route.Discover, Route.Missing, Route.Cast,
+        Route.Manage, Route.Missing, Route.Downloads, Route.AllWorks, Route.Cast,
         Route.Settings, Route.Telemetry, Route.Device,
         -> NavSection.MANAGE
 
         is Route.Detail -> when (route.from) {
             "Home" -> NavSection.HOME
-            "Discover", "Missing", "Cast", "Settings" -> NavSection.MANAGE
-            "Search" -> NavSection.SEARCH
+            "Missing", "Downloads", "All works", "Cast", "Settings" -> NavSection.MANAGE
+            "Search", "Discover" -> NavSection.SEARCH
             else -> NavSection.LIBRARY
         }
 

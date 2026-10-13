@@ -45,12 +45,18 @@ class DecisionsTest {
     @Test fun aDetailLightsTheSectionItWasOpenedFrom() {
         assertEquals(NavSection.HOME, Decisions.section(Route.Home))
         assertEquals(NavSection.MANAGE, Decisions.section(Route.Manage))
-        assertEquals(NavSection.MANAGE, Decisions.section(Route.Discover))
+        // Discover is search's other door; Downloads and All works live in Manage.
+        assertEquals(NavSection.SEARCH, Decisions.section(Route.Discover))
+        assertEquals(NavSection.MANAGE, Decisions.section(Route.Downloads))
+        assertEquals(NavSection.MANAGE, Decisions.section(Route.AllWorks))
         assertEquals(NavSection.MANAGE, Decisions.section(Route.Missing))
         assertEquals(NavSection.MANAGE, Decisions.section(Route.Telemetry))
         assertEquals(NavSection.LIBRARY, Decisions.section(Route.Playlists))
         assertEquals(NavSection.SEARCH, Decisions.section(detailRoute("w", MediaType.MOVIE, "T", from = "Search")))
-        assertEquals(NavSection.LIBRARY, Decisions.section(detailRoute("w", MediaType.MOVIE, "T", from = "Downloads")))
+        assertEquals(NavSection.MANAGE, Decisions.section(detailRoute("w", MediaType.MOVIE, "T", from = "Downloads")))
+        assertEquals(NavSection.MANAGE, Decisions.section(detailRoute("w", MediaType.MOVIE, "T", from = "All works")))
+        assertEquals(NavSection.SEARCH, Decisions.section(detailRoute("w", MediaType.MOVIE, "T", from = "Discover")))
+        assertEquals(NavSection.LIBRARY, Decisions.section(detailRoute("w", MediaType.MOVIE, "T", from = "Library")))
         assertNull(Decisions.section(Route.Player))
         for (s in NavSection.entries) assertEquals(s, Decisions.section(Decisions.routeOf(s)))
     }

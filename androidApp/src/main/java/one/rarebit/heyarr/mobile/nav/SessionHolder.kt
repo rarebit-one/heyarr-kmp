@@ -38,6 +38,9 @@ class SessionHolder(env: ApiEnv, settings: SettingsStore, external: ExternalMeta
     val search = SearchController(viewModelScope, { session.api }, session::noteTransportFailure)
     val home = HomeState()
     val library = LibraryState()
+
+    /** Manage → All works: the full catalogue, paged on its own so the shelf's filters stay put. */
+    val allWorks = LibraryState()
     val missing = MissingState()
     val cast = CastState()
     val settingsState = SettingsState()

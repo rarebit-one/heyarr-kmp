@@ -64,9 +64,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.theme.Tokens
+import one.rarebit.heyarr.ui.components.AvailabilityMark
 import one.rarebit.heyarr.ui.components.CornerBracket
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.MetaLine
@@ -151,7 +153,8 @@ data class CardAction(val label: String, val icon: ImageVector? = null, val onCl
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-@Suppress("LongParameterList", "CyclomaticComplexMethod") // One reusable card maps independent media and action state.
+// One reusable card maps independent media, state and action slots.
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 fun MediaCard(
     title: String,
     type: MediaType,
@@ -162,6 +165,11 @@ fun MediaCard(
     artwork: String? = null,
     status: LibraryStatus? = null,
     onWant: (() -> Unit)? = null,
+    /**
+     * The consumer face: when set, the card shows [AvailabilityMark] (nothing at all for a work that
+     * is ready) instead of [status], and its menu offers [onWant] as "Get it", only while gettable.
+     */
+    availability: Availability? = null,
     /** The card width; null fills the parent (a grid cell). */
     width: Dp? = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth,
     showBadge: Boolean = true,
@@ -172,7 +180,10 @@ fun MediaCard(
     val interaction = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(Tokens.radiusCard)
     var menuOpen by remember { mutableStateOf(false) }
-    val wantable = onWant != null && (status == null || status == LibraryStatus.NOT_TRACKED)
+    val wantable = onWant != null && when {
+        availability != null -> availability == Availability.GETTABLE
+        else -> status == null || status == LibraryStatus.NOT_TRACKED
+    }
     val hasMenu = wantable || actions.isNotEmpty()
     Box(if (width != null) modifier.width(width) else modifier) {
         Column(
@@ -199,9 +210,8 @@ fun MediaCard(
                 )
                 .semantics {
                     this.contentDescription =
-                        "${type.label}: $title${status?.let {
-                            ", ${it.label}"
-                        } ?: ""}${if (hasMenu) ". Long press for actions" else ""}"
+                        "${type.label}: $title${stateLabel(availability, status)}" +
+                        if (hasMenu) ". Long press for actions" else ""
                 },
         ) {
             CardArtBox(
@@ -210,12 +220,23 @@ fun MediaCard(
                 type,
             ) {
                 if (showBadge) MediaBadge(type, Modifier.align(Alignment.TopStart).padding(8.dp))
-                if (status != null) StatusPill(status, Modifier.align(Alignment.TopEnd).padding(8.dp), compact = true)
+                val corner = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                when {
+                    availability != null -> AvailabilityMark(availability, corner, compact = true)
+                    status != null -> StatusPill(status, corner, compact = true)
+                }
             }
             CardCaption(title, subtitle, meta)
         }
         if (hasMenu) {
-            CardMenu(menuOpen, { menuOpen = false }, onOpen, if (wantable) onWant else null, actions)
+            CardMenu(
+                menuOpen,
+                { menuOpen = false },
+                onOpen,
+                if (wantable) onWant else null,
+                actions,
+                wantLabel = if (availability != null) "Get it" else "Want",
+            )
         }
     }
 }
@@ -232,8 +253,16 @@ fun MediaCardSkeleton(aspect: CardAspect = CardAspect.POSTER, width: Dp = Tokens
     }
 }
 
+/** The state a card or row reads out: availability when given (silent when ready), else the want status. */
+private fun stateLabel(availability: Availability?, status: LibraryStatus?): String = when {
+    availability != null -> if (availability == Availability.READY) "" else ", ${availability.label}"
+    status != null -> ", ${status.label}"
+    else -> ""
+}
+
 /** A compact list row (search results, missing list): art thumb, title, meta, badge, status, trailing action. */
 @Composable
+@Suppress("LongParameterList") // One reusable row maps independent media, state and action slots.
 fun MediaRow(
     title: String,
     type: MediaType,
@@ -245,6 +274,8 @@ fun MediaRow(
     status: LibraryStatus? = null,
     selected: Boolean = false,
     trailing: (@Composable () -> Unit)? = null,
+    /** The consumer face: when set, the row shows [AvailabilityMark] (nothing when ready) instead of [status]. */
+    availability: Availability? = null,
 ) = MediaScope(type) {
     val theme = LocalMediaTheme.current
     val interaction = remember { MutableInteractionSource() }
@@ -259,7 +290,7 @@ fun MediaRow(
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen)
             .semantics {
                 this.contentDescription =
-                    "${type.label}: $title${status?.let { ", ${it.label}" } ?: ""}${if (selected) ", selected" else ""}"
+                    "${type.label}: $title${stateLabel(availability, status)}${if (selected) ", selected" else ""}"
             }
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -294,7 +325,10 @@ fun MediaRow(
             }
             MetaLine(meta)
         }
-        if (status != null) StatusPill(status, compact = true)
+        when {
+            availability != null -> AvailabilityMark(availability, compact = true)
+            status != null -> StatusPill(status, compact = true)
+        }
         if (trailing != null) trailing()
     }
 }
@@ -356,6 +390,7 @@ fun <T> Rail(
  * the badge follow the type.
  */
 @Composable
+@Suppress("LongParameterList", "LongMethod") // One reusable hero maps independent media, state and action slots.
 fun Hero(
     title: String,
     type: MediaType,
@@ -365,6 +400,8 @@ fun Hero(
     description: String? = null,
     artwork: String? = null,
     status: LibraryStatus? = null,
+    /** The consumer face: when set, shown instead of [status] (nothing when ready). */
+    availability: Availability? = null,
     primary: (@Composable () -> Unit)? = null,
     secondary: (@Composable () -> Unit)? = null,
     height: Dp = 320.dp,
@@ -396,7 +433,10 @@ fun Hero(
                         modifier = Modifier.weight(1f, fill = false),
                     )
                 }
-                if (status != null) StatusPill(status)
+                when {
+                    availability != null -> AvailabilityMark(availability)
+                    status != null -> StatusPill(status)
+                }
             }
             Text(
                 title,

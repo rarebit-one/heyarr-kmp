@@ -28,22 +28,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.CanonicalLookup
 import one.rarebit.heyarr.core.library.Resolution
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.SearchHit
-import one.rarebit.heyarr.core.mcp.Want
-import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.catalog.Artwork
-import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Work
+import one.rarebit.heyarr.mobile.library.availability
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
-import one.rarebit.heyarr.mobile.search.FollowedSource
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.CardAction
@@ -119,9 +115,6 @@ class HomeState {
             RailState.Loading
         },
     )
-    var missing by mutableStateOf<RailState<Want>>(RailState.Loading)
-    var upgrades by mutableStateOf<RailState<Want>>(RailState.Loading)
-    var followed by mutableStateOf<RailState<FollowedSource>>(RailState.Loading)
     var loadedOnce = false
 
     // Holds a lookup cache for off-page canonicals (#134); lives here so it
@@ -146,10 +139,9 @@ data class PersonalRows(
  * Home / Discover — a media-mixed spotlight over themed rails, ported from
  * heyarr-desktop's `HomeScreen`. Spotlight and "Recently added" come from the works
  * list (recent first, artwork preferred); the per-type rails from `search_content` by
- * content type; "Wanted but
- * missing" and "Could be better" from `get_missing_content` / `get_upgrade_candidates`;
- * "Following" from `list_followed`. Starred is this phone's decrypted personal state,
- * labelled as such, and absent without a device key.
+ * content type — only what can be played. Wants, upgrades and followed sources live in
+ * Manage, not on the way in to watching something. Starred is this phone's decrypted
+ * personal state, labelled as such, and absent without a device key.
  */
 @Composable
 @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod") // Compose the independent archive rails.
@@ -157,7 +149,6 @@ fun HomeScreen(
     session: AppSession,
     state: HomeState,
     onOpen: (Route) -> Unit,
-    onWant: (String, String) -> Unit,
     modifier: Modifier = Modifier,
     personal: PersonalRows = PersonalRows(),
     /** Raise the "Sign in to save" upgrade — shown on the guest banner. */
@@ -189,7 +180,9 @@ fun HomeScreen(
                     }
                 }.getOrElse { Resolution(emptyList(), complete = false) }
                 val variantIds = Variants.variantIds(works + resolution.resolved)
-                return works.filter { it.id !in variantIds } to resolution.complete
+                // Only what can be played counts, so the quotas page on until the rails can fill with it:
+                // a work a want created before anything arrived has no file.
+                return works.filter { it.id !in variantIds && it.isPlayable } to resolution.complete
             }
             var cursor: String? = null
             val accumulated = mutableListOf<Work>()
@@ -232,7 +225,6 @@ fun HomeScreen(
                 state.byType = state.byType + (t to r)
             }
         }
-        loadOwnerRails(session, a, state, scope)
     }
 
     LaunchedEffect(Unit) { if (!state.loadedOnce) load() }
@@ -284,7 +276,7 @@ fun HomeScreen(
             StatusMark(label, tone, Modifier.padding(horizontal = Tokens.screenPadding))
         }
         item {
-            Box(Modifier.padding(horizontal = Tokens.screenPadding)) { SpotlightBlock(session, state, onOpen, onWant) }
+            Box(Modifier.padding(horizontal = Tokens.screenPadding)) { SpotlightBlock(session, state, onOpen) }
         }
         if (personal.starred.isNotEmpty()) {
             item {
@@ -299,7 +291,8 @@ fun HomeScreen(
                     },
                     trailing = personal.onOpenPlaylists?.let { f -> @Composable { GhostButton("Playlists", f) } },
                 ) { w ->
-                    WorkCard(session, w, onOpen, onWant, actionsFor(w), from = "Home")
+                    // Starred works come from the single-work endpoint, which carries no file embed.
+                    WorkCard(session, w, onOpen, actionsFor(w), from = "Home", listed = false)
                 }
             }
         }
@@ -307,7 +300,7 @@ fun HomeScreen(
             Rail("Recently catalogued", state.recent, emptyText = "Nothing added yet.", trailing = {
                 GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh)
             }, key = { it.id }) { w ->
-                WorkCard(session, w, onOpen, onWant, actionsFor(w), from = "Home")
+                WorkCard(session, w, onOpen, actionsFor(w), from = "Home")
             }
         }
         for (t in MediaType.SEARCHABLE) {
@@ -332,105 +325,16 @@ fun HomeScreen(
                             meta = listOf(
                                 hit.year?.toString(),
                             ),
-                            artwork = cover.url, status = session.index.statusOf(hit.workId),
-                            onWant = {
-                                onWant(hit.workId, hit.title)
-                            }, width = if (square) Tokens.squareWidth else Tokens.posterWidth, showBadge = false,
-                        )
-                    }
-                }
-            }
-        }
-        if (!session.isGuest) {
-            item {
-                WantRail(
-                    "Wanted but missing",
-                    state.missing,
-                    onOpen,
-                    subtitle = "Wants nothing acceptable has satisfied yet",
-                    emptyText = "Nothing is missing — every want is satisfied.",
-                )
-            }
-        }
-        if (!session.isGuest) {
-            item {
-                WantRail(
-                    "Could be better",
-                    state.upgrades,
-                    onOpen,
-                    subtitle = "Satisfied and monitored; a better release may still turn up",
-                    emptyText = "No upgrade candidates.",
-                )
-            }
-        }
-        if (!session.isGuest) {
-            item {
-                MediaScope(MediaType.PODCAST) {
-                    Rail(
-                        "Following",
-                        state.followed,
-                        subtitle = "Standing subscriptions the node polls",
-                        emptyText = "You follow nothing yet — add a feed or TVDB series in Settings.",
-                        skeletonAspect = CardAspect.SQUARE,
-                        skeletonWidth = Tokens.squareWidth,
-                        key = { it.id },
-                    ) { s ->
-                        val type = MediaType.from(s.type)
-                        val cover by rememberCover(session, type, s.title, null, feedRef = s.feedRef)
-                        MediaCard(
-                            s.title,
-                            type,
-                            onOpen = {
-                                s.workId?.let { onOpen(detailRoute(it, type, s.title, from = "Home")) }
-                            },
-                            subtitle = s.feedRef,
-                            meta = listOf("${s.itemsArchived ?: 0}/${s.itemsKnown ?: 0} archived", s.health),
                             artwork = cover.url,
-                            width = Tokens.squareWidth,
+                            availability = session.cataloguedAvailability(hit.workId),
+                            width = if (square) Tokens.squareWidth else Tokens.posterWidth,
+                            showBadge = false,
                         )
                     }
                 }
             }
         }
         item { Spacer(Modifier.height(16.dp)) }
-    }
-}
-
-/**
- * The want index (Missing / Could-be-better) and followed sources
- * are enrolled-only surfaces (GuestGate): a guest would only earn a 403, so skip them
- * and leave the rails empty (they hide themselves) rather than showing an error.
- */
-private fun loadOwnerRails(session: AppSession, a: HeyarrApi, state: HomeState, scope: CoroutineScope) {
-    if (session.isGuest) {
-        state.missing = RailState.Loaded(emptyList())
-        state.upgrades = RailState.Loaded(emptyList())
-        state.followed = RailState.Loaded(emptyList())
-    } else {
-        scope.launch {
-            state.missing =
-                session.io {
-                    a.missing(40)
-                }.fold(onSuccess = {
-                    RailState.Loaded(it)
-                }, onFailure = { RailState.Failed(it.message ?: "failed") })
-        }
-        scope.launch {
-            state.upgrades =
-                session.io {
-                    a.upgradeCandidates(40)
-                }.fold(onSuccess = {
-                    RailState.Loaded(it)
-                }, onFailure = { RailState.Failed(it.message ?: "failed") })
-        }
-        scope.launch {
-            state.followed =
-                session.io {
-                    a.followed()
-                }.fold(onSuccess = {
-                    RailState.Loaded(it)
-                }, onFailure = { RailState.Failed(it.message ?: "failed") })
-        }
     }
 }
 
@@ -448,14 +352,19 @@ private fun GuestBanner(onSignIn: () -> Unit) {
     }
 }
 
+/**
+ * A work's card. [listed] is a row of the works listing, whose `primary_asset` embed says whether
+ * it has a file; a work from anywhere else reads its availability from the catalogue instead.
+ */
 @Composable
+@Suppress("LongParameterList") // The card's work, its menu actions and where it was opened from.
 private fun WorkCard(
     session: AppSession,
     w: Work,
     onOpen: (Route) -> Unit,
-    onWant: (String, String) -> Unit,
     actions: List<CardAction>,
     from: String,
+    listed: Boolean = true,
 ) {
     val type = MediaType.from(w.kind)
     val status = session.index.statusOf(w.id)
@@ -476,22 +385,20 @@ private fun WorkCard(
         w.artist ?: w.author,
     )
     MediaCard(
-        w.title, type, onOpen = { onOpen(detailRoute(w.id, type, w.title, from = from)) },
+        w.title,
+        type,
+        onOpen = { onOpen(detailRoute(w.id, type, w.title, from = from)) },
         subtitle =
         w.artist ?: w.author,
-        meta = listOf(w.year?.toString()), artwork = cover.url, status = status, onWant = {
-            onWant(w.id, w.title)
-        }, actions = actions,
+        meta = listOf(w.year?.toString()),
+        artwork = cover.url,
+        availability = if (listed) w.availability(status) else session.cataloguedAvailability(w.id),
+        actions = actions,
     )
 }
 
 @Composable
-private fun SpotlightBlock(
-    session: AppSession,
-    state: HomeState,
-    onOpen: (Route) -> Unit,
-    onWant: (String, String) -> Unit,
-) {
+private fun SpotlightBlock(session: AppSession, state: HomeState, onOpen: (Route) -> Unit) {
     when (val s = state.spotlight) {
         RailState.Loading -> HeroSkeleton()
 
@@ -504,7 +411,7 @@ private fun SpotlightBlock(
                 null
             ) {
                 Notice(
-                    "The library is empty. Want something from Search, or scan a library root on the node.",
+                    "Nothing to play yet. Find something in Search and choose Get it.",
                     icon = Icons.Rounded.Info,
                 )
                 return
@@ -518,15 +425,16 @@ private fun SpotlightBlock(
                 work.year,
                 work.artist ?: work.author,
             )
-            val status = session.index.statusOf(work.id)
             Hero(
-                title = work.title, type = type, kicker = "Featured from your library",
+                title = work.title,
+                type = type,
+                kicker = "Featured from your library",
                 meta = listOf(
                     work.year?.toString(),
                     work.artist ?: work.author,
                     work.kind,
                 ),
-                artwork = cover.url, status = status,
+                artwork = cover.url,
                 description =
                 work.synopsis?.take(220)
                     ?: cover.external?.synopsis?.let {
@@ -540,40 +448,9 @@ private fun SpotlightBlock(
                     }, icon = Icons.Rounded.PlayArrow)
                 },
                 secondary = {
-                    if (status ==
-                        LibraryStatus.NOT_TRACKED
-                    ) {
-                        SecondaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add)
-                    }
                     if (s.items.size > 1) GhostButton("Next", { i = (i + 1) % s.items.size })
                 },
             )
         }
-    }
-}
-
-@Composable
-private fun WantRail(
-    title: String,
-    state: RailState<Want>,
-    onOpen: (Route) -> Unit,
-    subtitle: String,
-    emptyText: String,
-) {
-    Rail(title, state, subtitle = subtitle, emptyText = emptyText, key = { it.desiredItemId }) { w ->
-        val status = LibraryStatus.ofState(w.state)
-        MediaCard(
-            w.title,
-            MediaType.UNKNOWN,
-            onOpen = {
-                w.workId?.let { onOpen(detailRoute(it, MediaType.UNKNOWN, w.title, from = "Missing")) }
-            },
-            subtitle = w.qualityProfile?.let {
-                "profile: $it"
-            },
-            meta = listOf(w.state.lowercase().replace('_', ' ')),
-            status = status,
-            showBadge = false,
-        )
     }
 }
