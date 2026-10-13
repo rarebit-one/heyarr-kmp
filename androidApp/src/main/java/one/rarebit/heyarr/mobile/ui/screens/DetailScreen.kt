@@ -2,6 +2,7 @@
 
 package one.rarebit.heyarr.mobile.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -35,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -262,8 +264,17 @@ fun DetailScreen(
         }
     }
     LaunchedEffect(route.workId) { if (state.detail == null) load() }
-    // Each visit opens where its route says: the title page, or Manage from Missing or Downloads.
-    LaunchedEffect(route) { state.tab = if (route.curate) DetailTab.CURATE else DetailTab.WATCH }
+    // Each new visit opens where its route says: the title page, or Manage from Missing or Downloads.
+    // Saved with the destination, so a rotation keeps whichever view the person had chosen since.
+    var opened by rememberSaveable(route.workId) { mutableStateOf(false) }
+    LaunchedEffect(route) {
+        if (!opened) {
+            state.tab = if (route.curate) DetailTab.CURATE else DetailTab.WATCH
+            opened = true
+        }
+    }
+    // Back from a Manage view opened off the title page returns to the title page, as the top bar does.
+    BackHandler(enabled = state.tab == DetailTab.CURATE && !route.curate) { state.tab = DetailTab.WATCH }
     LaunchedEffect(wants.map { it.id }) { loadWants() }
     DetailSideLoads(session, route.workId, state, type)
 
@@ -278,8 +289,11 @@ fun DetailScreen(
     )
 
     MediaScope(type) {
-        // One scroll position per view, so switching to Manage starts at its top.
-        val listState = remember(route.workId, state.tab) { LazyListState() }
+        // One scroll position per view, kept for each: Manage starts at its top, and the title page
+        // is where it was left when you come back.
+        val titleList = rememberLazyListState()
+        val manageList = rememberLazyListState()
+        val listState = if (state.tab == DetailTab.WATCH) titleList else manageList
         LazyColumn(
             modifier.fillMaxSize(),
             state = listState,

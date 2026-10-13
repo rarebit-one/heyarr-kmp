@@ -551,6 +551,7 @@ fun HeyarrNavHost(
                                         onWant = onWant,
                                         modifier = content,
                                         personal = detailPersonal,
+                                        onGetIt = onGetIt,
                                     )
                                 }
                                 composable<Route.Playlists> {
