@@ -107,6 +107,7 @@ data class SidecarResult(
         get() = when (action) {
             SidecarAction.EXTRACT_CAPTIONS -> when {
                 queued > 0 -> "Extracting embedded captions from ${plural(queued, "video")}."
+                candidates > 0 -> "Caption extraction is already queued for every video here."
                 else -> "No video here is missing captions to extract."
             }
 
@@ -121,6 +122,7 @@ data class SidecarResult(
 
             SidecarAction.FETCH_COVER -> when {
                 queued > 0 -> "Looking up a cover and canonical id."
+                candidates > 0 -> "A cover lookup is already queued for this work."
                 else -> "This work already has a cover and a canonical id."
             }
         }

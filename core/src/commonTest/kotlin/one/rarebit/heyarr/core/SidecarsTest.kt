@@ -48,6 +48,18 @@ class SidecarsTest {
     }
 
     @Test
+    fun candidatesWithNothingQueuedAreAlreadyPendingNotDone() {
+        assertEquals(
+            "Caption extraction is already queued for every video here.",
+            SidecarResult.parse(SidecarAction.EXTRACT_CAPTIONS, """{"candidates":2,"enqueued":0}""").message,
+        )
+        assertEquals(
+            "A cover lookup is already queued for this work.",
+            SidecarResult.parse(SidecarAction.FETCH_COVER, """{"candidates":1,"enqueued":0}""").message,
+        )
+    }
+
+    @Test
     fun guestsGetCaptionsButNotCoverLookups() {
         assertTrue(SidecarAction.FETCH_CAPTIONS.allowedFor(ClientMode.GUEST))
         assertTrue(SidecarAction.EXTRACT_CAPTIONS.allowedFor(ClientMode.GUEST))
