@@ -145,6 +145,7 @@ internal fun CardCaption(title: String, subtitle: String?, meta: List<String?>) 
  * Each closes the menu first.
  */
 @Composable
+@Suppress("LongParameterList") // The menu takes the card's actions and their labels as given.
 internal fun CardMenu(
     expanded: Boolean,
     onDismiss: () -> Unit,

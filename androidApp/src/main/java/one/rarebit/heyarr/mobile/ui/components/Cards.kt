@@ -153,7 +153,8 @@ data class CardAction(val label: String, val icon: ImageVector? = null, val onCl
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-@Suppress("LongParameterList", "CyclomaticComplexMethod") // One reusable card maps independent media and action state.
+// One reusable card maps independent media, state and action slots.
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 fun MediaCard(
     title: String,
     type: MediaType,
@@ -389,7 +390,7 @@ fun <T> Rail(
  * the badge follow the type.
  */
 @Composable
-@Suppress("LongParameterList") // One reusable hero maps independent media, state and action slots.
+@Suppress("LongParameterList", "LongMethod") // One reusable hero maps independent media, state and action slots.
 fun Hero(
     title: String,
     type: MediaType,
