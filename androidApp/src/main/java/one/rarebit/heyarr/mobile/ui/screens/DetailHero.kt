@@ -1,3 +1,5 @@
+@file:Suppress("FunctionNaming")
+
 package one.rarebit.heyarr.mobile.ui.screens
 
 import androidx.compose.foundation.background
@@ -18,7 +20,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Cast
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlaylistAdd
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material3.Icon
@@ -50,24 +50,19 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.Candidate
-import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.ExternalId
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.Replica
 import one.rarebit.heyarr.core.mcp.Satisfaction
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.ExternalEpisode
 import one.rarebit.heyarr.core.state.ExternalMeta
-import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.MetaKey
-import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
-import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.library.Season
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
@@ -84,6 +79,7 @@ import one.rarebit.heyarr.mobile.ui.components.HeroSkeleton
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GetItButton
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
@@ -130,9 +126,17 @@ private class HeroWork(
     /** The file "Play on…" would cast: a series' first playable episode, else the primary file. */
     val castId = if (type == MediaType.SERIES) first?.asset?.id else work.primaryAssetId
 
-    /** A single-file work with no bytes held — the hero says why there is nothing to play. */
-    val nothingToPlay = hash == null && type != MediaType.SERIES && type != MediaType.FEED &&
-        type != MediaType.PODCAST && type != MediaType.MUSIC
+    /**
+     * What this work is to someone who came to play it: ready once there is anything to play, else
+     * its want's state. A feed's archive is its own, so it reads from the catalogue (neutral for a
+     * guest and before the want index answers).
+     */
+    val availability: Availability? = if (type == MediaType.FEED || type == MediaType.PODCAST) {
+        session.cataloguedAvailability(work.id)
+    } else {
+        val playable = hash != null || first != null || audioTracks.isNotEmpty() || readable != null
+        Availability.of(status, playable)
+    }
 
     /** Play the series' first playable episode. */
     fun playFirst(play: DetailPlayback) {
@@ -173,7 +177,7 @@ private fun heroMeta(work: Work, type: MediaType, seasons: List<Season>, state: 
             if (state.assets !=
                 null
             ) {
-                "$held episodes held"
+                "$held episodes"
             } else {
                 null
             },
@@ -200,20 +204,19 @@ private fun heroMeta(work: Work, type: MediaType, seasons: List<Season>, state: 
 }
 
 @Composable
+@Suppress("LongParameterList") // The hero reads the work, its loaded state and the phone's players.
 internal fun DetailHero(
     session: AppSession,
     work: Work,
     type: MediaType,
-    wants: List<DesiredItem>,
     state: DetailState,
     seasons: List<Season>,
     art: String?,
     play: DetailPlayback,
-    onWant: (String, String) -> Unit,
+    onGetIt: (String, String, MediaType) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val h = HeroWork(session, work, type, state, seasons, art)
-    val hash = h.hash
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Hero(
@@ -221,9 +224,9 @@ internal fun DetailHero(
             type = type,
             meta = heroMeta(work, type, seasons, state),
             artwork = art,
-            status = h.status,
+            availability = h.availability,
             height = 300.dp,
-            primary = { HeroPrimary(h, wants, play, onWant, scope) },
+            primary = { HeroPrimary(h, play) { onGetIt(work.id, work.title, type) } },
             secondary = {
                 val castId = h.castId
                 if (castId != null && type != MediaType.BOOK &&
@@ -233,36 +236,16 @@ internal fun DetailHero(
                         toggleCast(session, state, castId, scope)
                     }, icon = Icons.Rounded.Cast)
                 }
-                if (h.status == LibraryStatus.NOT_TRACKED &&
-                    (hash != null || type == MediaType.SERIES)
-                ) {
-                    SecondaryButton("Want", { onWant(work.id, work.title) }, icon = Icons.Rounded.Add)
-                }
             },
         )
-        if (h.nothingToPlay) {
-            val explanation = if (wants.isEmpty()) {
-                "not wanted, so nothing is looking for a copy."
-            } else {
-                "heyarr is looking. Manage → Releases shows what the indexers found."
-            }
-            Notice(
-                "Nothing to play yet — $explanation",
-            )
-        }
+        notHeldNote(h.availability)?.let { Notice(it, tone = Tokens.slate) }
         CastPicker(session, state)
     }
 }
 
-/** The hero's one primary action: play, listen or read what is held — else look for it, or want it. */
+/** The hero's one primary action: play, listen or read what is held — else Get it, or its progress in Manage. */
 @Composable
-private fun HeroPrimary(
-    h: HeroWork,
-    wants: List<DesiredItem>,
-    play: DetailPlayback,
-    onWant: (String, String) -> Unit,
-    scope: CoroutineScope,
-) {
+private fun HeroPrimary(h: HeroWork, play: DetailPlayback, onGetIt: () -> Unit) {
     val type = h.type
     val work = h.work
     val theme = MediaThemes.of(type)
@@ -291,19 +274,7 @@ private fun HeroPrimary(
                 play.playAudio(work, h.audioTracks, 0)
             }, icon = Icons.Rounded.Headphones)
 
-        h.hash == null && wants.isNotEmpty() -> PrimaryButton("Look for it", {
-            lookForIt(h.session, h.state, wants.first(), scope)
-        }, icon = Icons.Rounded.Search, enabled = idle)
-
-        h.hash == null -> PrimaryButton(
-            "Want",
-            {
-                onWant(work.id, work.title)
-            },
-            icon = Icons.Rounded.Add,
-            enabled =
-            h.status == LibraryStatus.NOT_TRACKED,
-        )
+        h.hash == null -> NothingHeldAction(h, onGetIt)
 
         // Reached only past the `hash == null` branches above.
         h.isFeed ->
@@ -322,21 +293,24 @@ private fun albumIcon(type: MediaType): ImageVector = if (type ==
     Icons.Rounded.PlayArrow
 }
 
-/** Nothing held but a want exists: ask the indexers now rather than on the schedule. */
-private fun lookForIt(session: AppSession, state: DetailState, w: DesiredItem, scope: CoroutineScope) {
-    scope.launch {
-        state.busy = "search"
-        session.io { session.api.searchReleases(w.id) }.onSuccess { r ->
-            when (r) {
-                is McpResult.Ok -> session.toast(
-                    Toast.Kind.INFO,
-                    "Search queued",
-                    "An indexer can take thirty seconds to answer; open Manage → Releases in a moment.",
-                )
+/** The primary CTA when this work holds no file: Get it, or — when heyarr is already on it — its progress in Manage. */
+@Composable
+private fun NothingHeldAction(h: HeroWork, onGetIt: () -> Unit) {
+    val availability = h.availability
+    when {
+        availability?.offersGetIt(h.session.mode) == true -> GetItButton(onGetIt, primary = true, title = h.work.title)
 
-                is McpResult.Refused -> session.refused(r)
-            }
-        }
-        state.busy = null
+        availability == Availability.ON_ITS_WAY || availability == Availability.NOT_AVAILABLE ->
+            SecondaryButton("See progress", { h.state.tab = DetailTab.CURATE }, icon = Icons.Rounded.OpenInNew)
+
+        // Guest, nothing to play and nothing to ask for: no primary CTA.
+        else -> Unit
     }
+}
+
+/** A plain line under the hero for a work with nothing to play yet; null when it plays, or Get it says enough. */
+private fun notHeldNote(availability: Availability?): String? = when (availability) {
+    Availability.ON_ITS_WAY -> "Nothing to play yet — heyarr is getting a copy."
+    Availability.NOT_AVAILABLE -> "Nothing to play yet — no acceptable copy has turned up. See progress for why."
+    else -> null
 }

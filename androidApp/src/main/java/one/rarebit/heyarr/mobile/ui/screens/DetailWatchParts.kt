@@ -72,10 +72,10 @@ import one.rarebit.heyarr.mobile.ui.components.Artwork
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
+import one.rarebit.heyarr.ui.components.MetaLine
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
-import one.rarebit.heyarr.ui.components.RuleCode
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.focusRing
@@ -336,17 +336,9 @@ private fun EpisodeFacts(ep: Episode, ext: ExternalEpisode?) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        for (tag in Series.qualityTags(ep.asset)) RuleCode(tag, tone = Tokens.textMuted)
-        // A second release of the same episode folds under this row (core `Series.fold`);
-        // say so rather than list it as an episode of its own.
-        if (ep.copies.isNotEmpty()) RuleCode("${ep.fileCount} FILES", tone = Tokens.textMuted)
-        ep.asset.sizeBytes?.let {
-            Text(
-                WorkAsset.formatBytes(it),
-                style = MaterialTheme.typography.labelSmall,
-                color = Tokens.textMuted,
-            )
-        }
+        // Quality and size as plain facts. A second release of the same episode folds under this
+        // row (core `Series.fold`); Manage lists the copies.
+        MetaLine(Series.qualityTags(ep.asset) + listOfNotNull(ep.asset.sizeBytes?.let { WorkAsset.formatBytes(it) }))
         if (ep.subtitles.isNotEmpty()) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

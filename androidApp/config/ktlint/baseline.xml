@@ -57,8 +57,8 @@
         <error line="249" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/DetailWatch.kt">
-        <error line="174" column="121" source="standard:max-line-length" />
-        <error line="213" column="121" source="standard:max-line-length" />
+        <error line="147" column="121" source="standard:max-line-length" />
+        <error line="186" column="121" source="standard:max-line-length" />
         <error line="285" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/HomeScreen.kt">

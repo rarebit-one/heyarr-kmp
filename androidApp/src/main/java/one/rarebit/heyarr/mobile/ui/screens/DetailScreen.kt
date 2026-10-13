@@ -1,10 +1,8 @@
+@file:Suppress("FunctionNaming")
+
 package one.rarebit.heyarr.mobile.ui.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,9 +11,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
@@ -25,12 +23,10 @@ import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -42,12 +38,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -92,14 +82,13 @@ import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.Skeleton
-import one.rarebit.heyarr.ui.components.focusRing
-import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 
-/** The two faces of a work: what you came to watch, and the tooling that keeps it that way. */
-enum class DetailTab(val label: String) { WATCH("Overview"), CURATE("Manage") }
+/** The two faces of a work: its title page (what you came for), and its Manage view (the tooling behind it). */
+enum class DetailTab(val label: String) { WATCH("Title page"), CURATE("Manage") }
 
 /** Everything the detail screen loads for one work, each piece independently. */
 class DetailState(val workId: String) {
@@ -188,8 +177,9 @@ internal fun AssetPersonalActions(personal: DetailPersonal, assetId: String, tit
  * when the node has one (a public source's, labelled, when it has not; an honest line
  * when neither knows), and the thing itself — seasons and episodes with their
  * thumbnails for a series, tracks for an album, the file for a film, the archive for a
- * feed. **Manage** keeps every technical surface — status, held files with verdicts,
- * indexer candidates, scoring, health, captions and artwork, variants — one tab away.
+ * feed — with no want state, scores or rule codes on the way. **Manage** (the top bar's
+ * button) is the same work's curator view — status, held files with verdicts, indexer
+ * candidates, scoring, health, captions and artwork, variants — without the hero in front.
  */
 @Composable
 fun DetailScreen(
@@ -202,6 +192,8 @@ fun DetailScreen(
     onWant: (String, String) -> Unit,
     modifier: Modifier = Modifier,
     personal: DetailPersonal = DetailPersonal(),
+    /** "Get it" for a work nothing holds: a one-click want, or the Want sheet when no profile fits. */
+    onGetIt: (String, String, MediaType) -> Unit = { id, title, _ -> onWant(id, title) },
 ) {
     val scope = rememberCoroutineScope()
     val wants: List<DesiredItem> = session.index.wantsFor(route.workId)
@@ -267,10 +259,9 @@ fun DetailScreen(
             }
         }
     }
-    LaunchedEffect(route.workId) {
-        if (route.curate) state.tab = DetailTab.CURATE
-        if (state.detail == null) load()
-    }
+    LaunchedEffect(route.workId) { if (state.detail == null) load() }
+    // Each visit opens where its route says: the title page, or Manage from Missing or Downloads.
+    LaunchedEffect(route) { state.tab = if (route.curate) DetailTab.CURATE else DetailTab.WATCH }
     LaunchedEffect(wants.map { it.id }) { loadWants() }
     DetailSideLoads(session, route.workId, state, type)
 
@@ -285,22 +276,25 @@ fun DetailScreen(
     )
 
     MediaScope(type) {
+        // One scroll position per view, so switching to Manage starts at its top.
+        val listState = remember(route.workId, state.tab) { LazyListState() }
         LazyColumn(
             modifier.fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(horizontal = Tokens.screenPadding, vertical = Tokens.s3),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            item { DetailTopBar(route.from, state, onBack) }
-            item {
-                when {
-                    state.loading && detail == null -> HeroSkeleton(300.dp)
-                    detail == null -> ErrorState("Couldn't load this work", state.detailError, onRetry = ::load)
-                    else -> DetailHero(session, detail, type, wants, state, seasons, cover.url, play, onWant)
+            item { DetailTopBar(route, state, onBack) }
+            if (state.tab == DetailTab.WATCH) {
+                item {
+                    when {
+                        state.loading && detail == null -> HeroSkeleton(300.dp)
+                        detail == null -> ErrorState("Couldn't load this work", state.detailError, onRetry = ::load)
+                        else -> DetailHero(session, detail, type, state, seasons, cover.url, play, onGetIt)
+                    }
                 }
-            }
-            if (detail != null) {
-                item { SynopsisBlock(detail, state, cover.url != null && detail.artworkPath == null) }
-                if (state.tab == DetailTab.WATCH) {
+                if (detail != null) {
+                    item { SynopsisBlock(detail, state, cover.url != null && detail.artworkPath == null) }
                     when (type) {
                         MediaType.SERIES -> item {
                             SeasonsBlock(session, detail, seasons, state, wants, play, cover.url)
@@ -316,8 +310,25 @@ fun DetailScreen(
 
                         else -> item { FileBlock(detail, state) }
                     }
-                } else {
-                    item { CurateTab(session, detail, type, wants, state, seasons, onOpen, ::loadWants) }
+                }
+            } else {
+                item {
+                    SectionHeader(
+                        "Manage “${detail?.title ?: route.title ?: "this title"}”",
+                        subtitle = "Status, releases, rules and health",
+                    )
+                }
+                when {
+                    state.loading && detail == null -> item { HeroSkeleton(120.dp) }
+                    detail == null -> item {
+                        ErrorState("Couldn't load this work", state.detailError, onRetry = ::load)
+                    }
+                    else -> {
+                        if (type == MediaType.SERIES && !session.isGuest) {
+                            item { SeasonWants(session, detail, seasons, wants, state) }
+                        }
+                        item { CurateTab(session, detail, type, wants, state, seasons, onOpen, ::loadWants) }
+                    }
                 }
             }
             item { Spacer(Modifier.height(24.dp)) }
@@ -354,58 +365,54 @@ private fun rememberSeasons(state: DetailState, type: MediaType): List<Season> =
     }
 }
 
-/** Back to where the work was opened from, and the Watch / Curate switch. */
+/**
+ * Back, and the door to the other view. On the title page: back to where the work was opened
+ * from, and Manage. In Manage opened from the title page: back to it. In Manage opened straight
+ * from Missing or Downloads: back there, and Title page.
+ */
 @Composable
-private fun DetailTopBar(from: String, state: DetailState, onBack: () -> Unit) {
+private fun DetailTopBar(route: Route.Detail, state: DetailState, onBack: () -> Unit) {
+    val managing = state.tab == DetailTab.CURATE
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        GhostButton(from, onBack, icon = Icons.Rounded.ArrowBack)
+        if (managing && !route.curate) {
+            GhostButton(state.detail?.title ?: route.title ?: "Title page", {
+                state.tab = DetailTab.WATCH
+            }, icon = Icons.Rounded.ArrowBack)
+        } else {
+            GhostButton(route.from, onBack, icon = Icons.Rounded.ArrowBack)
+        }
         Spacer(Modifier.weight(1f))
-        TabSwitch(state.tab, onSelect = { state.tab = it })
+        when {
+            !managing && state.detail != null -> SecondaryButton(
+                "Manage",
+                { state.tab = DetailTab.CURATE },
+                icon = Icons.Rounded.Build,
+                compact = true,
+                contentDescription = "Manage",
+            )
+
+            managing && route.curate -> GhostButton("Title page", { state.tab = DetailTab.WATCH })
+
+            else -> Unit
+        }
     }
 }
 
+/** Want more of a series, a season at a time — the panel the title page used to carry. */
 @Composable
-private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -> Unit) {
-    Row(
-        Modifier.background(
-            Tokens.surface1,
-            RectangleShape,
-        ).border(Tokens.hairline, Tokens.border, RectangleShape).padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        for (t in DetailTab.entries) {
-            val active = t == current
-            val theme = LocalMediaTheme.current
-            val interaction = remember { MutableInteractionSource() }
-            Row(
-                Modifier.focusRing(interaction, RectangleShape).clip(RectangleShape)
-                    .background(if (active) theme.tint(0.22f) else Color.Transparent, RectangleShape)
-                    .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = {
-                        onSelect(t)
-                    })
-                    .semantics { contentDescription = t.label + if (active) ", selected" else "" }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Icon(
-                    if (t ==
-                        DetailTab.WATCH
-                    ) {
-                        Icons.Rounded.PlayArrow
-                    } else {
-                        Icons.Rounded.Build
-                    },
-                    contentDescription = null,
-                    tint = if (active) theme.accentGradientEnd else Tokens.textMuted,
-                    modifier = Modifier.size(14.dp),
-                )
-                Text(
-                    t.label.uppercase(),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (active) Tokens.textPrimary else Tokens.textMuted,
-                )
-            }
+private fun SeasonWants(
+    session: AppSession,
+    work: Work,
+    seasons: List<Season>,
+    wants: List<DesiredItem>,
+    state: DetailState,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SecondaryButton(if (state.wantMenu) "Close" else "Want seasons…", {
+            state.wantMenu = !state.wantMenu
+        }, icon = Icons.Rounded.Add, compact = true)
+        if (state.wantMenu) {
+            WantSeasonsPanel(session, work, allSeasons(seasons, state.externalEpisodes), wants, state)
         }
     }
 }

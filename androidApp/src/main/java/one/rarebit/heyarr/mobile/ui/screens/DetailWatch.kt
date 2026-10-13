@@ -21,16 +21,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,14 +43,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.state.ExternalEpisode
-import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
-import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.heyarr.seriesWantState
 import one.rarebit.heyarr.mobile.library.Episode
 import one.rarebit.heyarr.mobile.library.Season
@@ -71,10 +64,10 @@ import one.rarebit.heyarr.mobile.ui.components.Artwork
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
+import one.rarebit.heyarr.ui.components.MetaLine
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
-import one.rarebit.heyarr.ui.components.RuleCode
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.focusRing
@@ -98,28 +91,14 @@ internal fun SynopsisBlock(work: Work, state: DetailState, coverIsExternal: Bool
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    "Synopsis${if (coverIsExternal) " and cover" else ""} via ${ext.source} — not from your library. The node has no metadata provider (TVDB, ADR-0058).",
+                    "Synopsis${if (coverIsExternal) " and cover" else ""} via ${ext.source}, not from your library.",
                     style = MaterialTheme.typography.labelSmall,
                     color = Tokens.textDisabled,
                 )
             }
 
-            else -> Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Icon(
-                    Icons.Rounded.Info,
-                    contentDescription = null,
-                    tint = Tokens.textDisabled,
-                    modifier = Modifier.size(14.dp),
-                )
-                Text(
-                    "No synopsis — the node has no metadata provider and no public source knew this title. Titles, seasons and episodes below come from the files themselves.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Tokens.textMuted,
-                )
-            }
+            // No synopsis is simply no synopsis on the title page; why is a Manage question.
+            else -> Unit
         }
     }
 }
@@ -156,16 +135,10 @@ internal fun SeasonsBlock(
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         SectionHeader(
             "Episodes",
-            subtitle =
-            "${selected.held} of $known held" + (if (ext.isNotEmpty()) "  ·  calendar via TVmaze" else ""),
-            trailing = {
-                SecondaryButton(if (state.wantMenu) "Close" else "Want more…", {
-                    state.wantMenu = !state.wantMenu
-                }, icon = Icons.Rounded.Add, compact = true)
-            },
+            subtitle = "${selected.held} of $known to watch" +
+                (if (ext.isNotEmpty()) "  ·  calendar via TVmaze" else ""),
         )
         SeasonChips(all, selected, ext, state)
-        if (state.wantMenu) WantSeasonsPanel(session, work, all, wants, state)
         val rows: List<Any> = buildList {
             val byNumber = selected.episodes.associateBy { it.number }
             for (n in 1..known) add(byNumber[n] ?: n)
@@ -195,7 +168,7 @@ internal fun SeasonsBlock(
                         },
                     )
 
-                    is Int -> MissingEpisodeRow(session, selected, row, wants, extForSeason[row])
+                    is Int -> MissingEpisodeRow(selected, row, extForSeason[row])
                 }
             }
         }
@@ -256,15 +229,9 @@ private fun EpisodeRow(
     }
 }
 
-/** A numbered gap in a season: nothing held, and the one honest action — ask the indexers. */
+/** A numbered gap in a season: not available yet. Asking for it is a Manage action. */
 @Composable
-private fun MissingEpisodeRow(
-    session: AppSession,
-    season: Season,
-    number: Int,
-    wants: List<DesiredItem>,
-    ext: ExternalEpisode?,
-) {
+private fun MissingEpisodeRow(season: Season, number: Int, ext: ExternalEpisode?) {
     val code = "S%02dE%02d".format(season.number ?: 0, number)
     Row(
         Modifier.fillMaxWidth().clip(
@@ -274,7 +241,7 @@ private fun MissingEpisodeRow(
             Tokens.border.copy(alpha = 0.6f),
             RoundedCornerShape(Tokens.radiusInput),
         ).padding(8.dp)
-            .semantics { contentDescription = "$code not held" },
+            .semantics { contentDescription = "$code not available yet" },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -282,60 +249,21 @@ private fun MissingEpisodeRow(
             Modifier.width(
                 112.dp,
             ).aspectRatio(16f / 9f).clip(RoundedCornerShape(Tokens.radiusCard)).background(Tokens.surface1),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("not held", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-        }
+        )
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(code, style = MaterialTheme.typography.labelMedium, color = Tokens.textDisabled)
                 Text(
-                    ext?.name ?: "Not held",
+                    ext?.name ?: "Episode $number",
                     style = MaterialTheme.typography.titleSmall,
                     color = Tokens.textDisabled,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Text(
-                if (wants.isEmpty()) {
-                    "Want this series and heyarr will look for it."
-                } else {
-                    "Wanted — heyarr searches on its schedule; ask now to jump the queue."
-                },
-                style = MaterialTheme.typography.labelSmall,
-                color = Tokens.textMuted,
-            )
-        }
-        if (wants.isNotEmpty()) {
-            SearchForEpisodeButton(session, season, wants.first().id, code)
+            Text("Not available yet", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
         }
     }
-}
-
-@Composable
-private fun SearchForEpisodeButton(session: AppSession, season: Season, wantId: String, code: String) {
-    val scope = rememberCoroutineScope()
-    IconButtonRound(
-        Icons.Rounded.Search,
-        "Look for $code now",
-        {
-            scope.launch {
-                session.io { session.api.searchReleases(wantId) }.onSuccess { result ->
-                    when (result) {
-                        is McpResult.Ok -> session.toast(
-                            Toast.Kind.INFO,
-                            "Search queued for ${season.label}",
-                            "Results land under Manage → Releases.",
-                        )
-
-                        is McpResult.Refused -> session.refused(result)
-                    }
-                }
-            }
-        },
-        size = 36.dp,
-    )
 }
 
 @Composable
@@ -431,16 +359,14 @@ internal fun FileBlock(work: Work, state: DetailState) {
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            for (tag in file?.let { Series.qualityTags(it) }.orEmpty()) RuleCode(tag, tone = Tokens.textMuted)
-            work.mime?.let { RuleCode(it, tone = Tokens.textMuted) }
-            file?.sizeBytes?.let {
-                Text(WorkAsset.formatBytes(it), style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-            }
+            // Quality and size as plain facts; the container type and rule codes live in Manage.
+            val size = file?.sizeBytes?.let { WorkAsset.formatBytes(it) }
+            MetaLine(file?.let { Series.qualityTags(it) }.orEmpty() + listOfNotNull(size))
         }
         val subs = state.assets.orEmpty().filter { Series.isSubtitle(it) }
         Text(
             if (subs.isEmpty()) {
-                "No caption files held — captions inside the container still show in the player's CC menu."
+                "No separate captions — any inside the file still show in the player's CC menu."
             } else {
                 "Caption files: " +
                     subs.joinToString(", ") { it.filename?.substringBeforeLast('.')?.substringAfterLast('.') ?: "?" }
