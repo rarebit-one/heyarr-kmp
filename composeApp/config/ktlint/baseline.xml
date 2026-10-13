@@ -73,8 +73,8 @@
         <error line="6" column="1" source="standard:no-wildcard-imports" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/ConnectionPanels.kt">
-        <error line="89" column="121" source="standard:max-line-length" />
-        <error line="141" column="121" source="standard:max-line-length" />
+        <error line="88" column="121" source="standard:max-line-length" />
+        <error line="140" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/components/NowPlayingBar.kt">
         <error line="160" column="121" source="standard:max-line-length" />
@@ -84,10 +84,10 @@
         <error line="188" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/NowPlayingScreen.kt">
-        <error line="118" column="121" source="standard:max-line-length" />
+        <error line="113" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/ui/screens/SettingsScreen.kt">
-        <error line="91" column="121" source="standard:max-line-length" />
+        <error line="88" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/ArchiveExperienceTest.kt">
         <error line="5" column="1" source="standard:no-wildcard-imports" />

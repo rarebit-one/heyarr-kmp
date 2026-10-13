@@ -25,21 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.ClosedCaption
-import androidx.compose.material.icons.rounded.Forward10
-import androidx.compose.material.icons.rounded.Fullscreen
-import androidx.compose.material.icons.rounded.FullscreenExit
-import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Replay10
-import androidx.compose.material.icons.rounded.SkipNext
-import androidx.compose.material.icons.rounded.Stop
-import androidx.compose.material.icons.rounded.VolumeOff
-import androidx.compose.material.icons.rounded.VolumeUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -93,6 +78,7 @@ import one.rarebit.heyarr.desktop.ui.components.VideoSurface
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
@@ -329,24 +315,24 @@ fun PlayerScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    IconButtonRound(Icons.Rounded.Replay10, "Back 10 seconds (←)", { p.seekBy(-10.0) }, size = 36.dp)
+                    IconButtonRound(HeyarrIcons.Back10, "Back 10 seconds (←)", { p.seekBy(-10.0) }, size = 36.dp)
                     IconButtonRound(
-                        if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause,
+                        if (ps.paused) HeyarrIcons.Play else HeyarrIcons.Pause,
                         if (ps.paused) "Play (space)" else "Pause (space)",
                         { p.togglePause() },
                         size = 48.dp,
                         filled = true,
                     )
-                    IconButtonRound(Icons.Rounded.Forward10, "Forward 10 seconds (→)", { p.seekBy(10.0) }, size = 36.dp)
+                    IconButtonRound(HeyarrIcons.Forward10, "Forward 10 seconds (→)", { p.seekBy(10.0) }, size = 36.dp)
                     val next = playback.next()
                     if (next !=
                         null
                     ) {
-                        IconButtonRound(Icons.Rounded.SkipNext, "Next: ${next.subtitle}", {
+                        IconButtonRound(HeyarrIcons.SkipNext, "Next: ${next.subtitle}", {
                             playback.play(next)
                         }, size = 36.dp)
                     }
-                    IconButtonRound(Icons.Rounded.Stop, "Stop and close the player", {
+                    IconButtonRound(HeyarrIcons.Stop, "Stop and close the player", {
                         playback.stop()
                         onBack()
                     }, size = 36.dp)
@@ -362,7 +348,7 @@ fun PlayerScreen(
                     Spacer(Modifier.width(8.dp))
                     VolumeControl(ps, p)
                     IconButtonRound(
-                        if (fullscreen) Icons.Rounded.FullscreenExit else Icons.Rounded.Fullscreen,
+                        if (fullscreen) HeyarrIcons.FullscreenExit else HeyarrIcons.Fullscreen,
                         if (fullscreen) "Exit fullscreen (Esc)" else "Fullscreen (F)",
                         ::toggleFullscreen,
                         size = 40.dp,
@@ -395,7 +381,7 @@ fun PlayerScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        GhostButton("Exit fullscreen", { toggleFullscreen() }, icon = Icons.Rounded.FullscreenExit)
+                        GhostButton("Exit fullscreen", { toggleFullscreen() }, icon = HeyarrIcons.FullscreenExit)
                         Column(Modifier.weight(1f)) {
                             Text(
                                 item.title,
@@ -439,7 +425,7 @@ fun PlayerScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                GhostButton(item.from, onBack, icon = Icons.Rounded.ArrowBack)
+                GhostButton(item.from, onBack, icon = HeyarrIcons.Back)
                 Column(Modifier.weight(1f)) {
                     Text("PLAY HERE · MPV", style = MaterialTheme.typography.labelSmall, color = Tokens.accentGradEnd)
                     Text(
@@ -485,8 +471,8 @@ fun PlayerScreen(
                             }
                         }
                     }
-                }, icon = if (playback.popout) Icons.Rounded.Fullscreen else Icons.Rounded.OpenInNew, compact = true)
-                IconButtonRound(Icons.Rounded.Cast, "Play on a renderer", {
+                }, icon = if (playback.popout) HeyarrIcons.Fullscreen else HeyarrIcons.OpenExternal, compact = true)
+                IconButtonRound(HeyarrIcons.Cast, "Play on a renderer", {
                     state.castOpen = !state.castOpen
                     if (state.renderers ==
                         null
@@ -501,7 +487,7 @@ fun PlayerScreen(
                         }
                     }
                 })
-                IconButtonRound(Icons.Rounded.Fullscreen, "Fullscreen (F)", ::toggleFullscreen, filled = true)
+                IconButtonRound(HeyarrIcons.Fullscreen, "Fullscreen (F)", ::toggleFullscreen, filled = true)
             }
             if (state.castOpen) Box(Modifier.padding(horizontal = 24.dp)) { CastRow(session, state, item) }
 
@@ -567,7 +553,7 @@ fun PlayerScreen(
                         }
                         SecondaryButton("Play next", {
                             playback.play(next)
-                        }, icon = Icons.Rounded.SkipNext, compact = true)
+                        }, icon = HeyarrIcons.SkipNext, compact = true)
                     }
                 }
             }
@@ -744,7 +730,7 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
                             }
                         }
                         cast(false)
-                    }, icon = Icons.Rounded.Cast)
+                    }, icon = HeyarrIcons.Cast)
                 }
             }
         }

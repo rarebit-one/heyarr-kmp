@@ -9,10 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Save
-import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +33,7 @@ import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.KeyValue
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.Notice
@@ -99,7 +96,7 @@ internal fun FollowedPanel(session: AppSession, state: SettingsState, reload: ()
                     state.busy = false
                 }
             },
-            icon = Icons.Rounded.Add,
+            icon = HeyarrIcons.Add,
             compact = true,
             enabled =
             !state.busy && (url.isNotBlank() || tvdb.isNotBlank()) && profile.isNotBlank(),

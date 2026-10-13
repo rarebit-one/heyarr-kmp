@@ -13,9 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -92,6 +89,7 @@ import one.rarebit.heyarr.desktop.ui.screens.WantByTitle
 import one.rarebit.heyarr.desktop.ui.screens.accentHex
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.OfflineBanner
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
@@ -185,7 +183,7 @@ internal fun WantSheet(session: AppSession, req: WantRequest, onClose: () -> Uni
                             busy = false
                         }
                     },
-                    icon = Icons.Rounded.Add,
+                    icon = HeyarrIcons.Add,
                     enabled =
                     !busy && profile.isNotBlank() && (!byTitle || title.isNotBlank()),
                 )

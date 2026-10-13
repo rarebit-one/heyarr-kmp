@@ -5,10 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +31,7 @@ import one.rarebit.heyarr.ui.components.Cell
 import one.rarebit.heyarr.ui.components.DataTable
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.RuleCode
@@ -95,7 +92,7 @@ private fun SearchIndexersButton(session: AppSession, wants: List<DesiredItem>, 
                 }
             }
         }
-    }, icon = Icons.Rounded.Search, compact = true)
+    }, icon = HeyarrIcons.Search, compact = true)
 }
 
 @Composable
@@ -129,7 +126,7 @@ internal fun CandidateCell(cand: Candidate, c: Int, acquireEnabled: Boolean, onA
         4 -> PrimaryButton(
             "Acquire",
             onAcquire,
-            icon = Icons.Rounded.Download,
+            icon = HeyarrIcons.Download,
             compact = true,
             enabled = acquireEnabled,
         )
@@ -170,7 +167,7 @@ private fun VerifyBytesButton(session: AppSession, hash: String, scope: Coroutin
                 }
             }
         }
-    }, icon = Icons.Rounded.Verified, compact = true)
+    }, icon = HeyarrIcons.Verified, compact = true)
 }
 
 @Composable

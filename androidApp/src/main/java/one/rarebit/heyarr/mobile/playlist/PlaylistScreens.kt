@@ -155,6 +155,7 @@ internal fun PlaylistScreen(
                         "Playlist"
                     },
                     subtitle = "${state.items.size} item${if (state.items.size == 1) "" else "s"}",
+                    uppercase = false,
                 )
             }
             when {

@@ -15,16 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Build
-import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.DeleteOutline
-import androidx.compose.material.icons.rounded.MenuBook
-import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -77,6 +67,7 @@ import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
@@ -244,10 +235,10 @@ private fun LoadDetailExtras(
 @Composable
 private fun DetailTopBar(from: String, onBack: () -> Unit, state: DetailState, onRemove: (() -> Unit)?) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        GhostButton(from, onBack, icon = Icons.Rounded.ArrowBack)
+        GhostButton(from, onBack, icon = HeyarrIcons.Back)
         Spacer(Modifier.weight(1f))
         if (onRemove != null) {
-            GhostButton("Remove", onRemove, icon = androidx.compose.material.icons.Icons.Rounded.DeleteOutline)
+            GhostButton("Remove", onRemove, icon = HeyarrIcons.Delete)
         }
         TabSwitch(state.tab, onSelect = { state.tab = it })
     }
@@ -399,9 +390,9 @@ private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -> Unit) {
                     if (t ==
                         DetailTab.WATCH
                     ) {
-                        Icons.Rounded.PlayArrow
+                        HeyarrIcons.Play
                     } else {
-                        Icons.Rounded.Build
+                        HeyarrIcons.Build
                     },
                     contentDescription = null,
                     tint = if (active) theme.accentGradientEnd else Tokens.textMuted,

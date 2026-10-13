@@ -13,14 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Forward10
-import androidx.compose.material.icons.rounded.OpenInFull
-import androidx.compose.material.icons.rounded.Pause
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Replay10
-import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -42,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.PlaybackSession
 import one.rarebit.heyarr.desktop.ui.isListening
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
@@ -154,25 +147,31 @@ fun NowPlayingBar(session: AppSession, onOpen: () -> Unit, modifier: Modifier = 
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                IconButtonRound(Icons.Rounded.Replay10, "Back 10 seconds", {
+                IconButtonRound(HeyarrIcons.Back10, "Back 10 seconds", {
                     playback.player.seekBy(-10.0)
                 }, size = 32.dp)
-                IconButtonRound(if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause, if (ps.paused) "Play" else "Pause", {
-                    playback.player.togglePause()
-                }, size = 40.dp, filled = true)
-                IconButtonRound(Icons.Rounded.Forward10, "Forward 10 seconds", {
+                IconButtonRound(
+                    if (ps.paused) HeyarrIcons.Play else HeyarrIcons.Pause,
+                    if (ps.paused) "Play" else "Pause",
+                    {
+                        playback.player.togglePause()
+                    },
+                    size = 40.dp,
+                    filled = true,
+                )
+                IconButtonRound(HeyarrIcons.Forward10, "Forward 10 seconds", {
                     playback.player.seekBy(10.0)
                 }, size = 32.dp)
                 val next = playback.next()
                 if (next !=
                     null
                 ) {
-                    IconButtonRound(Icons.Rounded.SkipNext, "Next: ${next.subtitle}", {
+                    IconButtonRound(HeyarrIcons.SkipNext, "Next: ${next.subtitle}", {
                         playback.play(next)
                     }, size = 32.dp)
                 }
-                IconButtonRound(Icons.Rounded.OpenInFull, "Open player", onOpen, size = 32.dp)
-                IconButtonRound(Icons.Rounded.Close, "Stop playback", { playback.stop() }, size = 32.dp)
+                IconButtonRound(HeyarrIcons.Expand, "Open player", onOpen, size = 32.dp)
+                IconButtonRound(HeyarrIcons.Close, "Stop playback", { playback.stop() }, size = 32.dp)
             }
         }
     }

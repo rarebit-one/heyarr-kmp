@@ -15,12 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ClosedCaption
-import androidx.compose.material.icons.rounded.Download
-import androidx.compose.material.icons.rounded.Image
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Verified
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -59,6 +53,7 @@ import one.rarebit.heyarr.ui.components.Cell
 import one.rarebit.heyarr.ui.components.DataTable
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
@@ -83,7 +78,7 @@ private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List
     Panel("Captions & artwork") {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(
-                Icons.Rounded.ClosedCaption,
+                HeyarrIcons.Captions,
                 contentDescription = null,
                 tint = Tokens.textMuted,
                 modifier = Modifier.size(16.dp),
@@ -105,7 +100,7 @@ private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(
-                Icons.Rounded.Image,
+                HeyarrIcons.Image,
                 contentDescription = null,
                 tint = Tokens.textMuted,
                 modifier = Modifier.size(16.dp),
@@ -178,7 +173,7 @@ private fun ExplainPanel(session: AppSession, wants: List<DesiredItem>) {
                 session.io { a.explain(profile, listOf(rel)) }.onSuccess { result = it }
                 busy = false
             }
-        }, icon = Icons.Rounded.Verified, compact = true, enabled = !busy && profile.isNotBlank())
+        }, icon = HeyarrIcons.Verified, compact = true, enabled = !busy && profile.isNotBlank())
         ExplainResult(result)
     }
 }

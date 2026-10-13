@@ -21,12 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.TravelExplore
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -72,6 +66,7 @@ import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Kbd
 import one.rarebit.heyarr.ui.components.Notice
@@ -136,8 +131,8 @@ fun SearchScreen(
             focusRequester = focusRequester,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip("Library", !discovering, { discovering = false }, icon = Icons.Rounded.Search)
-            FilterChip("Discover", discovering, { discovering = true }, icon = Icons.Rounded.TravelExplore)
+            FilterChip("Library", !discovering, { discovering = false }, icon = HeyarrIcons.Search)
+            FilterChip("Discover", discovering, { discovering = true }, icon = HeyarrIcons.Discover)
         }
         if (discovering) {
             ProviderSearchPane(session, search.query, onWantTitle)
@@ -158,7 +153,7 @@ fun SearchScreen(
                 action = {
                     SecondaryButton("Discover titles", {
                         discovering = true
-                    }, icon = Icons.Rounded.TravelExplore)
+                    }, icon = HeyarrIcons.Discover)
                 },
             )
 
@@ -197,7 +192,7 @@ private fun ResultRow(
                     ) {
                         PrimaryButton("Want", {
                             onWant(hit.workId, hit.title, row.type)
-                        }, icon = Icons.Rounded.Add, compact = true, contentDescription = "Want ${hit.title}")
+                        }, icon = HeyarrIcons.Add, compact = true, contentDescription = "Want ${hit.title}")
                     } else {
                         SecondaryButton("Open", onOpen, compact = true)
                     }
@@ -261,7 +256,7 @@ private fun SearchBox(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(
-            Icons.Rounded.Search,
+            HeyarrIcons.Search,
             contentDescription = null,
             tint = if (focused) accent else Tokens.textMuted,
             modifier = Modifier.size(20.dp),
@@ -287,7 +282,7 @@ private fun SearchBox(
             )
         }
         if (value.isNotEmpty()) {
-            IconButtonRound(Icons.Rounded.Close, "Clear search", onClear, size = 28.dp)
+            IconButtonRound(HeyarrIcons.Close, "Clear search", onClear, size = 28.dp)
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Kbd("Ctrl+F")
@@ -442,7 +437,7 @@ private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: ()
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    Icons.Rounded.History,
+                    HeyarrIcons.History,
                     contentDescription = null,
                     tint = Tokens.textMuted,
                     modifier = Modifier.size(16.dp),
@@ -481,7 +476,7 @@ private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: 
         item {
             SectionHeader(
                 "Discover",
-                icon = Icons.Rounded.TravelExplore,
+                icon = HeyarrIcons.Discover,
                 subtitle = "Find titles to add — series, movies, books and music the node's metadata providers know " +
                     "about but the library doesn't hold yet.",
             )

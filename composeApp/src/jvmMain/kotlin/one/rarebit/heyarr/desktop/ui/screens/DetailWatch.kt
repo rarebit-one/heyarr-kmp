@@ -17,15 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.ClosedCaption
-import androidx.compose.material.icons.rounded.Image
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -64,6 +55,7 @@ import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
 import one.rarebit.heyarr.ui.components.Notice
@@ -108,7 +100,7 @@ internal fun SynopsisBlock(detail: WorkDetail, type: MediaType, seasons: List<Se
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Icon(
-                    Icons.Rounded.Info,
+                    HeyarrIcons.Info,
                     contentDescription = null,
                     tint = Tokens.textDisabled,
                     modifier = Modifier.size(14.dp),
@@ -164,7 +156,7 @@ internal fun SeasonsBlock(
             trailing = {
                 SecondaryButton(if (state.wantMenu) "Close" else "Want more…", {
                     state.wantMenu = !state.wantMenu
-                }, icon = Icons.Rounded.Add, compact = true)
+                }, icon = HeyarrIcons.Add, compact = true)
             },
         )
         SeasonChips(all, selected, ext) { state.season = it }
@@ -213,7 +205,7 @@ internal fun TracksBlock(session: AppSession, detail: WorkDetail, state: DetailS
             if (playable.isNotEmpty()) {
                 PrimaryButton("Play all", {
                     session.playback.queueAudio(playable)
-                }, icon = Icons.Rounded.PlayArrow, compact = true)
+                }, icon = HeyarrIcons.Play, compact = true)
             }
         })
         if (tracks.isEmpty()) Notice("No audio files held for this work yet.")
@@ -317,7 +309,7 @@ private fun TrackRow(i: Int, t: Track, onPlay: () -> Unit) {
             )
         }
         if (t.isPlayable) {
-            IconButtonRound(Icons.Rounded.PlayArrow, "Play ${t.title}", onPlay, size = 32.dp, filled = true)
+            IconButtonRound(HeyarrIcons.Play, "Play ${t.title}", onPlay, size = 32.dp, filled = true)
         }
     }
 }
@@ -349,7 +341,7 @@ private fun ArchiveItemRow(item: FollowedItem, onOpen: (() -> Unit)?) {
             )
         }
         if (onOpen != null) {
-            SecondaryButton("Open", onOpen, icon = Icons.Rounded.OpenInNew, compact = true)
+            SecondaryButton("Open", onOpen, icon = HeyarrIcons.OpenExternal, compact = true)
         }
     }
 }

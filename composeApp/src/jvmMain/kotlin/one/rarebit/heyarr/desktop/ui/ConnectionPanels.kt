@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,6 +39,7 @@ import one.rarebit.heyarr.core.mcp.PeerStatus
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.KeyValue
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
@@ -66,7 +65,7 @@ internal fun ConnectionPanel(
     val scope = rememberCoroutineScope()
     Panel("Connection", trailing = {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            GhostButton("Refresh", onRefresh, icon = Icons.Rounded.Refresh)
+            GhostButton("Refresh", onRefresh, icon = HeyarrIcons.Refresh)
             GhostButton("Close", onClose)
         }
     }) {

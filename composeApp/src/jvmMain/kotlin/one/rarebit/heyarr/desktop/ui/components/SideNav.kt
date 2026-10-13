@@ -19,17 +19,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.Explore
-import androidx.compose.material.icons.rounded.Headphones
-import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.MenuBook
-import androidx.compose.material.icons.rounded.Movie
-import androidx.compose.material.icons.rounded.ReportProblem
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,6 +42,7 @@ import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.ui.Experience
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.components.EditorialRule
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.focusRing
 import one.rarebit.heyarr.ui.theme.HeyarrFonts
 import one.rarebit.heyarr.ui.theme.Tokens
@@ -64,18 +54,18 @@ data class NavItem(val route: Route, val label: String, val icon: ImageVector, v
 data class NavConnectionInfo(val state: Connection, val detail: String?, val onOpen: () -> Unit)
 
 val CONSUME_ITEMS = listOf(
-    NavItem(Route.Consume(Experience.WATCH), "Watch", Icons.Rounded.Movie, "Ctrl 1"),
-    NavItem(Route.Consume(Experience.LISTEN), "Listen", Icons.Rounded.Headphones, "Ctrl 2"),
-    NavItem(Route.Consume(Experience.READ), "Read", Icons.Rounded.MenuBook, "Ctrl 3"),
+    NavItem(Route.Consume(Experience.WATCH), "Watch", HeyarrIcons.Watch, "Ctrl 1"),
+    NavItem(Route.Consume(Experience.LISTEN), "Listen", HeyarrIcons.Listen, "Ctrl 2"),
+    NavItem(Route.Consume(Experience.READ), "Read", HeyarrIcons.Read, "Ctrl 3"),
 )
 
 val NAV_ITEMS = listOf(
-    NavItem(Route.Home, "Home", Icons.Rounded.Home, "⌃1"),
-    NavItem(Route.Search, "Search", Icons.Rounded.Search, "Ctrl+F"),
-    NavItem(Route.Library, "Library", Icons.Rounded.VideoLibrary, "⌃3"),
-    NavItem(Route.Missing, "Missing", Icons.Rounded.ReportProblem, "⌃4"),
-    NavItem(Route.NowPlaying, "Cast", Icons.Rounded.Cast, "⌃5"),
-    NavItem(Route.Settings, "Settings", Icons.Rounded.Settings, "⌘,"),
+    NavItem(Route.Home, "Home", HeyarrIcons.Home, "⌃1"),
+    NavItem(Route.Search, "Search", HeyarrIcons.Search, "Ctrl+F"),
+    NavItem(Route.Library, "Library", HeyarrIcons.Library, "⌃3"),
+    NavItem(Route.Missing, "Missing", HeyarrIcons.Missing, "⌃4"),
+    NavItem(Route.NowPlaying, "Cast", HeyarrIcons.Cast, "⌃5"),
+    NavItem(Route.Settings, "Settings", HeyarrIcons.Settings, "⌘,"),
 )
 
 /** The rail's uppercase caption style: small sans, tracked. */

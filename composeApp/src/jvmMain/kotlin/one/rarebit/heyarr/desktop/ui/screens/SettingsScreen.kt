@@ -9,10 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Save
-import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +32,7 @@ import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.KeyValue
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.Notice
@@ -126,7 +123,7 @@ private fun ConnectionPanel(session: AppSession) {
                     discovering = false
                     session.toast(Toast.Kind.INFO, "Found via ${found.source.name.lowercase()}", found.baseUrl)
                 }
-            }, icon = Icons.Rounded.Sync, compact = true, enabled = !discovering)
+            }, icon = HeyarrIcons.Sync, compact = true, enabled = !discovering)
             GhostButton("Reset URL", { baseUrl = DesktopConfig.DEFAULT_BASE_URL })
         }
         Field("Bearer token (heyarr_<id>_<secret>) — optional; blank browses as a guest", token, secret = true) {
@@ -136,7 +133,7 @@ private fun ConnectionPanel(session: AppSession) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             PrimaryButton("Save", {
                 session.save(DesktopConfig(baseUrl.trim(), token.trim()))
-            }, icon = Icons.Rounded.Save, compact = true)
+            }, icon = HeyarrIcons.Save, compact = true)
             SecondaryButton("Test connection", {
                 testing = true
                 scope.launch {
@@ -216,7 +213,7 @@ private fun PeersPanel(session: AppSession, state: SettingsState) {
                                         }
                                     }
                                 }
-                            }, icon = Icons.Rounded.Sync, compact = true)
+                            }, icon = HeyarrIcons.Sync, compact = true)
                         }
                     }
                 }

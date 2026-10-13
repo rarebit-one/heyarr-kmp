@@ -8,11 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +36,7 @@ import one.rarebit.heyarr.desktop.ui.components.MediaCard
 import one.rarebit.heyarr.desktop.ui.components.Rail
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.RailState
@@ -102,7 +98,7 @@ fun HomeScreen(
         }
         item {
             WorkRail("Recently catalogued", state.recent, session, onOpen, onWant, trailing = {
-                GhostButton("Refresh", ::load, icon = Icons.Rounded.Refresh)
+                GhostButton("Refresh", ::load, icon = HeyarrIcons.Refresh)
             })
         }
         for (t in MediaType.SEARCHABLE) {
@@ -214,7 +210,7 @@ private fun GuestNotice() {
     Notice(
         "Browsing as a guest — watch and listen freely, no account needed.",
         detail = "Sign in to keep playlists, and want or follow things. Open Settings to sign in.",
-        icon = Icons.Rounded.Info,
+        icon = HeyarrIcons.Info,
         tone = Tokens.slate,
     )
 }
@@ -226,10 +222,10 @@ private fun ConnectFirst(onOpen: (Route) -> Unit, modifier: Modifier) {
         Notice(
             "Connect to heyarr to see your library.",
             detail = "Open Settings and paste the node URL and a bearer token.",
-            icon = Icons.Rounded.Info,
+            icon = HeyarrIcons.Info,
         )
         Spacer(Modifier.height(12.dp))
-        PrimaryButton("Open Settings", { onOpen(Route.Settings) }, icon = Icons.Rounded.Add)
+        PrimaryButton("Open Settings", { onOpen(Route.Settings) }, icon = HeyarrIcons.Add)
     }
 }
 
@@ -253,7 +249,7 @@ private fun SpotlightBlock(
             ) {
                 Notice(
                     "The library is empty. Want something from Search, or scan a library root on the node.",
-                    icon = Icons.Rounded.Info,
+                    icon = HeyarrIcons.Info,
                 )
                 return
             }
@@ -283,13 +279,13 @@ private fun SpotlightBlock(
                     val theme = MediaThemes.of(type)
                     PrimaryButton(theme.ctaLabel, {
                         onOpen(Route.Detail(work.id, type, work.title, from = "Home"))
-                    }, icon = Icons.Rounded.PlayArrow)
+                    }, icon = HeyarrIcons.Play)
                 },
                 secondary = {
                     if (status == LibraryStatus.NOT_TRACKED &&
                         GuestGate.allows(session.mode, Surface.WANT)
                     ) {
-                        SecondaryButton("Want", { onWant(work.id, work.title, type) }, icon = Icons.Rounded.Add)
+                        SecondaryButton("Want", { onWant(work.id, work.title, type) }, icon = HeyarrIcons.Add)
                     }
                     if (s.items.size > 1) GhostButton("Next", { i = (i + 1) % s.items.size })
                 },

@@ -17,15 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Cast
-import androidx.compose.material.icons.rounded.ClosedCaption
-import androidx.compose.material.icons.rounded.Image
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.OpenInNew
-import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -61,6 +52,7 @@ import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
 import one.rarebit.heyarr.ui.components.Notice
@@ -166,7 +158,7 @@ private fun WantSeasonButtons(
                         }
                     }
                 },
-                icon = Icons.Rounded.Add,
+                icon = HeyarrIcons.Add,
                 compact = true,
                 enabled = editionId != null && !already && profile.isNotBlank(),
             )
@@ -200,6 +192,6 @@ private fun WantSeriesButton(session: AppSession, detail: WorkDetail, following:
                     }
                 }
             }
-        }, icon = Icons.Rounded.Add, compact = true, enabled = !following && profile.isNotBlank())
+        }, icon = HeyarrIcons.Add, compact = true, enabled = !following && profile.isNotBlank())
     }
 }
