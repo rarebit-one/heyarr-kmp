@@ -8,21 +8,27 @@ import java.io.File
 
 /**
  * Artwork for previews. When the `heyarr.previewArt` system property names a directory holding
- * `<key>.png|webp|jpg` for a fixture's art key ([FixtureArt.keyOf]), that file is served: fictional
- * posters made for the screenshot suite, so design review sees realistic artwork without shipping
- * anyone's real covers. Otherwise a procedural two-tone composition seeded by the path, so cards
- * still differ.
+ * `<key>.png|webp|jpg` for a fixture's art key ([FixtureArt.keyOf]), or a prefix of it, that
+ * file is served: fictional posters made for the screenshot suite (`scripts/art`), so design
+ * review sees realistic artwork without shipping anyone's real covers. Otherwise a procedural
+ * two-tone composition seeded by the path, so cards still differ.
  */
 object PlaceholderArt {
     private val artDir: File? = System.getProperty("heyarr.previewArt")?.let(::File)?.takeIf { it.isDirectory }
 
     fun bytes(path: String): ByteArray = previewFile(path)?.readBytes() ?: procedural(path)
 
+    // An exact `<key>.ext` wins; otherwise the longest file name that prefixes the key, so one
+    // poster (say `Yellowstone.webp`) can stand in for every episode thumbnail of a series.
     private fun previewFile(path: String): File? {
         val key = FixtureArt.keyOf(path)
-        if (artDir == null || key == null) return null
-        return listOf("png", "webp", "jpg").map { File(artDir, "$key.$it") }.firstOrNull { it.isFile }
+        val files = artDir?.listFiles { f -> f.isFile && f.extension in previewExtensions }.orEmpty()
+        if (key == null) return null
+        return files.firstOrNull { it.nameWithoutExtension == key }
+            ?: files.filter { key.startsWith(it.nameWithoutExtension) }.maxByOrNull { it.nameWithoutExtension.length }
     }
+
+    private val previewExtensions = setOf("png", "webp", "jpg")
 
     private fun procedural(path: String): ByteArray {
         val seed = path.hashCode()

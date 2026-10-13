@@ -62,6 +62,7 @@ import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.ui.components.ArchiveFallbackCover
 import one.rarebit.heyarr.ui.components.CornerBracket
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.MetaLine
@@ -85,17 +86,23 @@ import one.rarebit.heyarr.ui.theme.Tokens
 private const val HERO_CROSSFADE_DURATION_MS = 500
 
 /**
- * Artwork with a blur-up: a restrained archive fallback (type glyph + pixel cluster)
- * shows at once; the decoded bitmap fades over it when it lands. Loading is lazy —
- * see [one.rarebit.heyarr.desktop.state.ArtworkLoader.rememberArtwork] at the call site.
+ * Artwork with a blur-up: an archive fallback shows at once; the decoded bitmap fades over
+ * it when it lands. Loading is lazy — see
+ * [one.rarebit.heyarr.desktop.state.ArtworkLoader.rememberArtwork] at the call site.
+ *
+ * With a [seed] (the work's title or id), the fallback is a generated Archive cover chosen
+ * stably from the seed, under a small media glyph so it never reads as the work's own art.
+ * Without one it is the bare type glyph.
  */
 @Composable
+@Suppress("FunctionNaming", "LongParameterList") // Compose naming; each parameter is an optional presentation knob.
 fun Artwork(
     bitmap: ImageBitmap?,
     type: MediaType,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     glyphSize: Dp = 28.dp,
+    seed: String? = null,
 ) {
     val theme = MediaThemes.of(type)
     val reduce = LocalAppearance.current.reduceMotion
@@ -106,9 +113,18 @@ fun Artwork(
         ),
         contentAlignment = Alignment.Center,
     ) {
-        if (bitmap ==
-            null
-        ) {
+        // The fallback stays under the artwork until its fade-in completes; removing it the moment
+        // the bitmap lands would flash the bare background behind a still-transparent image.
+        val showFallback = bitmap == null || alpha < 1f
+        if (showFallback && seed != null) {
+            ArchiveFallbackCover(theme.aspect, seed, Modifier.fillMaxSize())
+            Icon(
+                type.icon(),
+                contentDescription = null,
+                tint = Tokens.textPrimary.copy(alpha = 0.7f),
+                modifier = Modifier.align(Alignment.BottomStart).padding(10.dp).size(16.dp),
+            )
+        } else if (showFallback) {
             Icon(
                 type.icon(),
                 contentDescription = null,
@@ -192,7 +208,7 @@ fun MediaCard(
             .semantics { this.contentDescription = "${type.label}: $title${status?.let { ", ${it.label}" } ?: ""}" },
     ) {
         Box(Modifier.fillMaxWidth().aspectRatio((aspectOverride ?: theme.aspect).ratio)) {
-            Artwork(artwork, type, Modifier.fillMaxSize(), contentDescription = null)
+            Artwork(artwork, type, Modifier.fillMaxSize(), contentDescription = null, seed = title)
             if (theme.spineShadow) {
                 Box(
                     Modifier.width(
@@ -264,7 +280,7 @@ fun MediaRow(
     ) {
         val thumbW = 52.dp * theme.aspect.ratio
         Box(Modifier.width(thumbW).height(52.dp).clip(RoundedCornerShape(Tokens.radiusCard))) {
-            Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 18.dp)
+            Artwork(artwork, type, Modifier.fillMaxSize(), glyphSize = 18.dp, seed = title)
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -370,7 +386,7 @@ fun Hero(
             height,
         ).clip(shape).background(Tokens.surface1).border(Tokens.hairline, Tokens.border, shape),
     ) {
-        SpotlightArtwork(artwork, type)
+        SpotlightArtwork(artwork, type, title)
         HeroScrims()
         Column(
             Modifier.align(Alignment.BottomStart).padding(28.dp).fillMaxWidth(0.62f),
@@ -407,14 +423,14 @@ fun Hero(
 
 @Composable
 @Suppress("FunctionNaming") // This private helper follows Compose's composable naming convention.
-private fun SpotlightArtwork(artwork: ImageBitmap?, type: MediaType) {
+private fun SpotlightArtwork(artwork: ImageBitmap?, type: MediaType, title: String) {
     val reduceMotion = LocalAppearance.current.reduceMotion
     Crossfade(
         artwork,
         animationSpec = tween(if (reduceMotion) 0 else HERO_CROSSFADE_DURATION_MS),
         label = "spotlight-artwork",
     ) { image ->
-        Artwork(image, type, Modifier.fillMaxSize(), glyphSize = 72.dp)
+        Artwork(image, type, Modifier.fillMaxSize(), glyphSize = 72.dp, seed = title)
     }
 }
 

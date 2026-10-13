@@ -81,6 +81,7 @@ fun AudioDock(session: AppSession, onOpen: () -> Unit, modifier: Modifier = Modi
             playback.type,
             Modifier.fillMaxWidth().aspectRatio(1f),
             contentDescription = "Cover for ${item.title}",
+            seed = item.title,
         )
         Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(item.subtitle ?: item.title, style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)

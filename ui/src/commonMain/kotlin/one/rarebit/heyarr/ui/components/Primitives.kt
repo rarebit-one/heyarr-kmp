@@ -729,30 +729,37 @@ fun Skeleton(modifier: Modifier, shape: Shape = RoundedCornerShape(Tokens.radius
 
 /** Empty state: icon, title, a line of help, optional action. */
 @Composable
+@Suppress("FunctionNaming", "LongParameterList") // Compose naming; an optional slot per presentation knob.
 fun EmptyState(
     title: String,
     modifier: Modifier = Modifier,
     detail: String? = null,
     icon: ImageVector = Icons.Rounded.Search,
     action: (@Composable () -> Unit)? = null,
+    /** A small Archive scene in place of the boxed icon, for a state that fills its pane. */
+    vignette: ArchiveVignette? = null,
 ) {
     Column(
         modifier.fillMaxWidth().padding(Tokens.s8),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Tokens.s2),
     ) {
-        Box(
-            Modifier.size(
-                56.dp,
-            ).background(Tokens.surface2, RectangleShape).border(Tokens.hairline, Tokens.border, RectangleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(icon, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(26.dp))
-            PixelCluster(
-                Modifier.align(Alignment.TopEnd).padding(6.dp).size(14.dp),
-                color = Tokens.accentGradEnd,
-                pattern = 1,
-            )
+        if (vignette != null) {
+            ArchiveVignetteImage(vignette, Modifier.size(width = 192.dp, height = 120.dp))
+        } else {
+            Box(
+                Modifier.size(
+                    56.dp,
+                ).background(Tokens.surface2, RectangleShape).border(Tokens.hairline, Tokens.border, RectangleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(icon, contentDescription = null, tint = Tokens.textMuted, modifier = Modifier.size(26.dp))
+                PixelCluster(
+                    Modifier.align(Alignment.TopEnd).padding(6.dp).size(14.dp),
+                    color = Tokens.accentGradEnd,
+                    pattern = 1,
+                )
+            }
         }
         Spacer(Modifier.height(4.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)
@@ -779,25 +786,37 @@ private fun Modifier.politeLiveRegionIf(touch: Boolean): Modifier {
 
 /** Error state: same shape as empty, red-tinted, with the reason verbatim and a retry. */
 @Composable
-fun ErrorState(title: String, detail: String?, onRetry: (() -> Unit)?, modifier: Modifier = Modifier) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun ErrorState(
+    title: String,
+    detail: String?,
+    onRetry: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    /** A small Archive scene in place of the boxed warning icon, for a failure that fills its pane. */
+    vignette: ArchiveVignette? = null,
+) {
     val touch = LocalHeyarrPlatform.current.touch
     Column(
         modifier.fillMaxWidth().padding(Tokens.s8).politeLiveRegionIf(touch),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(Tokens.s2),
     ) {
-        Box(
-            Modifier.size(56.dp)
-                .background(Tokens.danger.copy(alpha = 0.14f), RectangleShape)
-                .border(Tokens.hairline, Tokens.danger.copy(alpha = 0.5f), RectangleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.Rounded.ErrorOutline,
-                contentDescription = null,
-                tint = Tokens.danger,
-                modifier = Modifier.size(26.dp),
-            )
+        if (vignette != null) {
+            ArchiveVignetteImage(vignette, Modifier.size(width = 192.dp, height = 120.dp))
+        } else {
+            Box(
+                Modifier.size(56.dp)
+                    .background(Tokens.danger.copy(alpha = 0.14f), RectangleShape)
+                    .border(Tokens.hairline, Tokens.danger.copy(alpha = 0.5f), RectangleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Rounded.ErrorOutline,
+                    contentDescription = null,
+                    tint = Tokens.danger,
+                    modifier = Modifier.size(26.dp),
+                )
+            }
         }
         Spacer(Modifier.height(4.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)

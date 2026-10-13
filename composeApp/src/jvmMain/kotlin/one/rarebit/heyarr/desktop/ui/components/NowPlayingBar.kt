@@ -106,6 +106,7 @@ fun NowPlayingBar(session: AppSession, onOpen: () -> Unit, modifier: Modifier = 
                         playback.type,
                         Modifier.width(50.dp).height(50.dp),
                         contentDescription = "Cover for ${item.title}",
+                        seed = item.title,
                     )
                 } else {
                     VideoSurface(
