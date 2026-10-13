@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.heyarr.SidecarAction
+import one.rarebit.heyarr.core.heyarr.SidecarReply
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.Tokens
 
@@ -33,8 +34,27 @@ data class SidecarOptions(val video: Boolean, val enrichable: Boolean, val mode:
     }
 }
 
-/** What the last request came back with, in the node's words or counts, and which endpoint refused it. */
-data class SidecarOutcome(val text: String, val refused: Boolean, val tool: String? = null)
+/** What the last request came back with: the node's words or counts, and for a refusal its endpoint and code. */
+data class SidecarOutcome(val text: String, val refused: Boolean, val tool: String? = null, val code: String? = null) {
+    /** The endpoint and stable code, verbatim, under a refusal; null for a success. */
+    val detail: String?
+        get() = listOfNotNull(tool?.let { "Refused by $it" }, code?.let { "code $it" })
+            .takeIf { it.isNotEmpty() }
+            ?.joinToString(" · ")
+
+    companion object {
+        fun of(reply: SidecarReply) = when (reply) {
+            is SidecarReply.Done -> SidecarOutcome(reply.result.message, refused = false)
+
+            is SidecarReply.Refused -> SidecarOutcome(
+                reply.message,
+                refused = true,
+                tool = reply.tool,
+                code = reply.code,
+            )
+        }
+    }
+}
 
 /**
  * The caption and cover levers for one work (see [SidecarAction]): extract the captions a video
@@ -78,7 +98,7 @@ fun SidecarActions(
             Notice(
                 it.text,
                 tone = if (it.refused) Tokens.danger else Tokens.slate,
-                detail = it.tool?.let { tool -> "Refused by $tool" },
+                detail = it.detail,
             )
         }
     }

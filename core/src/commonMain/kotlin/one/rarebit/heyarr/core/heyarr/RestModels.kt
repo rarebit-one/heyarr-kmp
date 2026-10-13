@@ -146,4 +146,8 @@ object Problem {
         val title = root?.let { JsonScan.stringField(it, "title") }?.takeIf { it.isNotBlank() }
         return detail ?: title ?: "$what failed: HTTP $status"
     }
+
+    /** The stable machine-readable reason some refusals carry alongside `type`, or null. */
+    fun code(body: String): String? =
+        JsonScan.rootObject(body)?.let { JsonScan.stringField(it, "code") }?.takeIf { it.isNotBlank() }
 }

@@ -25,7 +25,7 @@
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/heyarr/HeyarrApi.kt">
         <error line="6" column="1" source="standard:no-wildcard-imports" />
-        <error line="53" column="1" source="standard:kdoc" />
+        <error line="52" column="1" source="standard:kdoc" />
     </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/net/JdkHttpTransport.kt">
         <error line="3" column="1" source="standard:no-wildcard-imports" />

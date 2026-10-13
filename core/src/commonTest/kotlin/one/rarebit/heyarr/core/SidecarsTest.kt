@@ -72,10 +72,18 @@ class SidecarsTest {
         val reply = SidecarClient.reply(
             SidecarAction.FETCH_CAPTIONS,
             403,
-            """{"title":"Forbidden","detail":"this credential lacks the write scope"}""",
+            """{"title":"Forbidden","detail":"this credential lacks the write scope","code":"scope_missing"}""",
             "en",
         )
-        assertEquals(SidecarReply.Refused("this credential lacks the write scope", 403), reply)
+        assertEquals(
+            SidecarReply.Refused(
+                "this credential lacks the write scope",
+                403,
+                tool = "POST /api/v1/subtitles/want",
+                code = "scope_missing",
+            ),
+            reply,
+        )
         assertEquals(
             SidecarReply.Done(SidecarResult(SidecarAction.EXTRACT_CAPTIONS, candidates = 2, queued = 2)),
             SidecarClient.reply(SidecarAction.EXTRACT_CAPTIONS, 202, """{"candidates":2,"enqueued":2}"""),

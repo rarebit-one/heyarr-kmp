@@ -50,7 +50,8 @@ enum class SidecarAction(val path: String, val countKey: String, val label: Stri
 sealed interface SidecarReply {
     data class Done(val result: SidecarResult) : SidecarReply
 
-    data class Refused(val message: String, val status: Int) : SidecarReply
+    /** [tool] names the endpoint that refused; [code] is the Problem's stable reason, verbatim, when it sent one. */
+    data class Refused(val message: String, val status: Int, val tool: String, val code: String? = null) : SidecarReply
 }
 
 /** The one place both clients send a [SidecarAction], so auth and status handling cannot drift. */
@@ -90,7 +91,12 @@ class SidecarClient(private val http: HttpTransport, private val baseUrl: String
                     status,
                 )
 
-                else -> SidecarReply.Refused(Problem.message(body, status, action.label), status)
+                else -> SidecarReply.Refused(
+                    Problem.message(body, status, action.label),
+                    status,
+                    tool = "POST ${action.path}",
+                    code = Problem.code(body),
+                )
             }
     }
 }

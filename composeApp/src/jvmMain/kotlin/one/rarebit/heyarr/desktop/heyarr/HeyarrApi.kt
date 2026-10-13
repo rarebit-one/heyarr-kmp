@@ -7,7 +7,6 @@ import one.rarebit.heyarr.core.heyarr.*
 import one.rarebit.heyarr.core.heyarr.SidecarAction
 import one.rarebit.heyarr.core.heyarr.SidecarClient
 import one.rarebit.heyarr.core.heyarr.SidecarReply
-import one.rarebit.heyarr.core.heyarr.SidecarResult
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.mcp.DiscoveryJson
 import one.rarebit.heyarr.core.mcp.Explanation
@@ -402,11 +401,8 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
      * with its own counts; a refusal (no provider configured, a scope it will not take) comes back
      * with the node's wording.
      */
-    fun sidecar(action: SidecarAction, workId: String, language: String? = null): McpResult<SidecarResult> =
-        when (val reply = sidecars.request(action, workId, language)) {
-            is SidecarReply.Done -> McpResult.Ok(reply.result)
-            is SidecarReply.Refused -> McpResult.Refused(reply.message, "POST ${action.path}", reply.status)
-        }
+    fun sidecar(action: SidecarAction, workId: String, language: String? = null): SidecarReply =
+        sidecars.request(action, workId, language)
 
     // ── telemetry (the connection sheet) ─────────────────────────────────────────
     fun sessionInfo(): SessionInfo? = SessionInfoJson.parse(get("$baseUrl/api/v1/session", "GET /session"))

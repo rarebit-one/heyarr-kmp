@@ -149,12 +149,7 @@ private class SidecarRunner {
         outcome = null
         scope.launch {
             session.io { session.api.sidecar(action, workId, language) }.fold(
-                onSuccess = { r ->
-                    outcome = when (r) {
-                        is McpResult.Ok -> SidecarOutcome(r.value.message, refused = false)
-                        is McpResult.Refused -> SidecarOutcome(r.message, refused = true, tool = r.tool)
-                    }
-                },
+                onSuccess = { outcome = SidecarOutcome.of(it) },
                 onFailure = { e -> outcome = SidecarOutcome(e.message ?: "heyarr did not answer.", refused = true) },
             )
             busy = false
