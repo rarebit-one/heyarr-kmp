@@ -353,7 +353,7 @@ private class SidecarRunner {
                 onSuccess = { r ->
                     when (r) {
                         is McpResult.Ok -> SidecarOutcome(r.value.message, refused = false)
-                        is McpResult.Refused -> SidecarOutcome(r.message, refused = true)
+                        is McpResult.Refused -> SidecarOutcome(r.message, refused = true, tool = r.tool)
                     }
                 },
                 onFailure = { SidecarOutcome(it.message ?: "Couldn't reach heyarr", refused = true) },

@@ -152,7 +152,7 @@ private class SidecarRunner {
                 onSuccess = { r ->
                     outcome = when (r) {
                         is McpResult.Ok -> SidecarOutcome(r.value.message, refused = false)
-                        is McpResult.Refused -> SidecarOutcome(r.message, refused = true)
+                        is McpResult.Refused -> SidecarOutcome(r.message, refused = true, tool = r.tool)
                     }
                 },
                 onFailure = { e -> outcome = SidecarOutcome(e.message ?: "heyarr did not answer.", refused = true) },

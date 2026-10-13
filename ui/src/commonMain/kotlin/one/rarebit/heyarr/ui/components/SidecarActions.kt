@@ -33,8 +33,8 @@ data class SidecarOptions(val video: Boolean, val enrichable: Boolean, val mode:
     }
 }
 
-/** What the last request came back with, in the node's words or counts. */
-data class SidecarOutcome(val text: String, val refused: Boolean)
+/** What the last request came back with, in the node's words or counts, and which endpoint refused it. */
+data class SidecarOutcome(val text: String, val refused: Boolean, val tool: String? = null)
 
 /**
  * The caption and cover levers for one work (see [SidecarAction]): extract the captions a video
@@ -74,7 +74,13 @@ fun SidecarActions(
             )
         }
         if (busy) ArchiveLoading("Asking heyarr…")
-        outcome?.let { Notice(it.text, tone = if (it.refused) Tokens.danger else Tokens.slate) }
+        outcome?.let {
+            Notice(
+                it.text,
+                tone = if (it.refused) Tokens.danger else Tokens.slate,
+                detail = it.tool?.let { tool -> "Refused by $tool" },
+            )
+        }
     }
 }
 
