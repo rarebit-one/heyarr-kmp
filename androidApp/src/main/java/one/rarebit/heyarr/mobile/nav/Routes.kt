@@ -18,10 +18,17 @@ sealed interface Route {
     // ── Top level: Home · Search · Library · Manage ─────────────────────────────
     @Serializable data object Home : Route
 
-    /** Mobile management hub for Missing, Discover, Cast and Settings destinations. */
+    /** The curator workspace's hub: Missing, Downloads, All works, Cast and Settings. */
     @Serializable data object Manage : Route
 
+    /** Find something new: titles the library does not hold, each with Get it. Search's other door. */
     @Serializable data object Discover : Route
+
+    /** Manage → Downloads: the wants in flight and the job queue. */
+    @Serializable data object Downloads : Route
+
+    /** Manage → All works: every catalogued work, with the want-status filter and Want. */
+    @Serializable data object AllWorks : Route
 
     @Serializable data object Search : Route
 

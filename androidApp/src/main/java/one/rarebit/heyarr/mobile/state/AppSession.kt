@@ -2,6 +2,7 @@ package one.rarebit.heyarr.mobile.state
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellationException
@@ -16,15 +17,18 @@ import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.auth.mode
 import one.rarebit.heyarr.core.heyarr.QualityProfile
+import one.rarebit.heyarr.core.heyarr.QualityProfiles
 import one.rarebit.heyarr.core.mcp.McpError
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.DiscoveryAnswer
 import one.rarebit.heyarr.core.state.DiscoveryBackend
 import one.rarebit.heyarr.core.state.DiscoveryController
 import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.core.state.LibraryIndex
 import one.rarebit.heyarr.core.state.Toast
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.settings.SettingsStore
@@ -135,6 +139,9 @@ class AppSession(
     var index: LibraryIndex by mutableStateOf(LibraryIndex.EMPTY)
         private set
     var indexLoading: Boolean by mutableStateOf(false)
+
+    /** True once the want index has answered at least once; before that, every work reads as untracked. */
+    var indexLoaded: Boolean by mutableStateOf(false)
         private set
 
     var profiles: List<QualityProfile> by mutableStateOf(emptyList())
@@ -207,7 +214,10 @@ class AppSession(
             indexLoading = true
             val result = io { api.desired() }
             indexLoading = false
-            result.onSuccess { index = LibraryIndex(it) }
+            result.onSuccess {
+                index = LibraryIndex(it)
+                indexLoaded = true
+            }
         }
         if (profiles.isEmpty()) scope.launch { io { api.qualityProfiles() }.onSuccess { profiles = it } }
     }
@@ -243,6 +253,92 @@ class AppSession(
                 onDone(r)
             }
         }
+    }
+
+    // ── the consumer "Get it" ────────────────────────────────────────────────────
+
+    /**
+     * A catalogued work's availability with no file information to hand, once this client's want
+     * index has answered. A guest has no want index by design, and before it loads every work
+     * reads as untracked — which [Availability.ofCatalogued] would take for "scanned, so held" —
+     * so both stay neutral (null) rather than claim a file.
+     */
+    fun cataloguedAvailability(workId: String): Availability? =
+        if (!isGuest && indexLoaded) Availability.ofCatalogued(index.statusOf(workId)) else null
+
+    /**
+     * Titles asked for by "Get it" this session: false while the request is in flight, true once
+     * the node took it. A discovery hit has no work id the want index could report, so this is
+     * what keeps its button from sending the same want twice. The session is rebuilt for a new
+     * node or credential, so it never carries over.
+     */
+    val requestedTitles = mutableStateMapOf<String, Boolean>()
+
+    fun titleKey(title: String, year: Int?, type: MediaType): String =
+        "${type.name}|${title.trim().lowercase()}|${year ?: ""}"
+
+    /**
+     * The profile a "Get it" wants at: this phone's chosen default when it fits the kind, else the
+     * one the Want sheet would pre-select; null when nothing fits, so the caller opens the sheet.
+     */
+    private fun getItProfile(type: MediaType): String? {
+        if (type.apiName == null) return null
+        val offered = QualityProfiles.offeredFor(type, profiles)
+        return offered.firstOrNull { it.name == defaultProfile }?.name ?: QualityProfiles.defaultFor(type, profiles)
+    }
+
+    /**
+     * The consumer "Get it": a monitored want at [getItProfile], without the sheet. By id for a work
+     * the library knows, by title for a discovery hit. Returns false and does nothing when no
+     * profile fits (or for a guest), so the caller can open the sheet or the sign-in prompt.
+     */
+    fun getIt(workId: String?, title: String, type: MediaType, year: Int? = null): Boolean {
+        val profile = getItProfile(type)?.takeUnless { isGuest } ?: return false
+        val key = titleKey(title, year, type)
+        if (workId != null || key !in requestedTitles) {
+            if (workId != null) {
+                index = index.withPendingWant(workId, profiles.firstOrNull { it.name == profile }?.id)
+            } else {
+                requestedTitles[key] = false
+            }
+            scope.launch { sendGetIt(GetItRequest(workId, title, type, year, profile)) }
+        }
+        return true
+    }
+
+    /** One "Get it": the work (by id, or by title for a discovery hit) and the profile it is wanted at. */
+    private class GetItRequest(
+        val workId: String?,
+        val title: String,
+        val type: MediaType,
+        val year: Int?,
+        val profile: String,
+    )
+
+    private suspend fun sendGetIt(req: GetItRequest) {
+        val workId = req.workId
+        val result = io {
+            if (workId != null) {
+                api.wantWork(workId, req.profile)
+            } else {
+                api.wantTitle(req.title, req.type, req.profile, req.year)
+            }
+        }
+        val ok = result.getOrNull() is McpResult.Ok
+        when (val r = result.getOrNull()) {
+            is McpResult.Ok -> toast(Toast.Kind.SUCCESS, "On its way: “${req.title}”", "heyarr is looking for a copy.")
+            is McpResult.Refused -> refused(r)
+            null -> Unit
+        }
+        if (workId == null) {
+            val key = titleKey(req.title, req.year, req.type)
+            if (ok) requestedTitles[key] = true else requestedTitles.remove(key)
+        } else if (!ok) {
+            // Withdraw this request's optimistic want now: the reload below can fail the same way.
+            index = index.withoutPendingWant(workId)
+        }
+        // Reload rather than restore a snapshot: another want may have landed meanwhile.
+        refreshIndex()
     }
 
     // ── errors → toasts ──────────────────────────────────────────────────────────

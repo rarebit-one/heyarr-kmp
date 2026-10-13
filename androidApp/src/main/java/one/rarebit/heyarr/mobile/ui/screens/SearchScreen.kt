@@ -49,8 +49,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.mcp.EpisodeHit
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.DiscoveryAnswer
-import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.SearchFilter
 import one.rarebit.heyarr.core.state.SearchGrouping
 import one.rarebit.heyarr.core.state.SearchRow
@@ -83,11 +83,16 @@ import one.rarebit.heyarr.ui.theme.MediaScope
  * `SearchScreen`). Recent searches are local to this phone and say so.
  */
 @Composable
+// Compose naming; the screen takes its content and its navigation as callbacks.
+@Suppress("FunctionNaming", "LongParameterList", "CyclomaticComplexMethod")
 fun SearchScreen(
     session: AppSession,
     search: SearchController,
     onOpen: (Route) -> Unit,
-    onWant: (workId: String, title: String) -> Unit,
+    /** "Get it" for a work the library knows: a one-click want, or the Want sheet when no profile fits. */
+    onGetIt: (workId: String, title: String, type: MediaType) -> Unit,
+    onWantTitle: (String, Int?, MediaType?) -> Unit,
+    onGetItTitle: GetItByTitle,
     onPlayEpisode: (EpisodeHit) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -131,9 +136,9 @@ fun SearchScreen(
             search.isIdle -> IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = {
                 session.recent.clear()
                 recent = emptyList()
-            })
+            }, onDiscover = { onOpen(Route.Discover) })
 
-            SearchGrouping.empty(sections) -> NoResultsPane(session, search.query)
+            SearchGrouping.empty(sections) -> NoResultsPane(session, search.query, onWantTitle, onGetItTitle)
 
             else -> LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -169,7 +174,7 @@ fun SearchScreen(
                             }
                         }
 
-                        is Segment.Loaded -> loadedSegment(session, seg, ::open, onWant, onPlayEpisode)
+                        is Segment.Loaded -> loadedSegment(session, seg, ::open, onGetIt, onPlayEpisode)
                     }
                 }
             }
@@ -181,12 +186,12 @@ private fun LazyListScope.loadedSegment(
     session: AppSession,
     segment: Segment.Loaded,
     open: (SearchRow) -> Unit,
-    onWant: (workId: String, title: String) -> Unit,
+    onGetIt: (workId: String, title: String, type: MediaType) -> Unit,
     onPlayEpisode: (EpisodeHit) -> Unit,
 ) {
     items(segment.rows, key = { it.key }) { row ->
         Column {
-            ResultRow(session, row, onOpen = { open(row) }, onWant = onWant, onPlayEpisode = onPlayEpisode)
+            ResultRow(session, row, onOpen = { open(row) }, onGetIt = onGetIt, onPlayEpisode = onPlayEpisode)
             if (row.key != segment.rows.lastOrNull()?.key) {
                 EditorialRule(Modifier.padding(start = 60.dp, end = 8.dp), dashed = true)
             }
@@ -195,23 +200,25 @@ private fun LazyListScope.loadedSegment(
 }
 
 @Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 private fun ResultRow(
     session: AppSession,
     row: SearchRow,
     onOpen: () -> Unit,
-    onWant: (String, String) -> Unit,
+    onGetIt: (String, String, MediaType) -> Unit,
     onPlayEpisode: (EpisodeHit) -> Unit,
 ) {
     when (row) {
-        is SearchRow.WorkRow -> WorkResultRow(session, row, onOpen, onWant)
+        is SearchRow.WorkRow -> WorkResultRow(session, row, onOpen, onGetIt)
 
         is SearchRow.EpisodeRow -> MediaRow(
             title = row.hit.title,
             type = row.type,
             onOpen = onOpen,
             subtitle = row.hit.workTitle,
-            meta = listOf(row.hit.kind, if (row.hit.blobHash != null) "file held" else "no file"),
-            status = if (row.hit.blobHash != null) LibraryStatus.IN_LIBRARY else null,
+            meta = listOf(row.hit.kind),
+            // No file says nothing about a want (a followed source projects items nobody asked for).
+            availability = Availability.READY.takeIf { row.hit.blobHash != null },
             trailing = {
                 if (row.hit.blobHash !=
                     null
@@ -236,7 +243,7 @@ private fun ResultRow(
                     row.source.health,
                 ),
                 artwork = cover.url,
-                status = LibraryStatus.IN_LIBRARY,
+                availability = Availability.READY,
             )
         }
     }
@@ -262,17 +269,18 @@ private fun SearchFilterChips(search: SearchController) {
     }
 }
 
-/** A work hit: cover, meta, library status, and Want while it is not tracked. */
+/** A work hit: cover, meta, its availability, and Get it while nothing holds or wants it. */
 @Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 private fun WorkResultRow(
     session: AppSession,
     row: SearchRow.WorkRow,
     onOpen: () -> Unit,
-    onWant: (String, String) -> Unit,
+    onGetIt: (String, String, MediaType) -> Unit,
 ) {
     val hit = row.hit
     val cover by rememberCover(session, row.type, hit.title, hit.artworkPath, hit.year, hit.creator)
-    val status = session.index.statusOf(hit.workId)
+    val availability = session.cataloguedAvailability(hit.workId)
     MediaRow(
         title = hit.title,
         type = row.type,
@@ -285,13 +293,11 @@ private fun WorkResultRow(
             hit.attributes["series"],
         ),
         artwork = cover.url,
-        status = status,
+        availability = availability,
         trailing = {
-            if (status ==
-                LibraryStatus.NOT_TRACKED
-            ) {
-                IconButtonRound(Icons.Rounded.Add, "Want ${hit.title}", {
-                    onWant(hit.workId, hit.title)
+            if (availability?.offersGetIt(session.mode) == true) {
+                IconButtonRound(Icons.Rounded.Add, "Get ${hit.title}", {
+                    onGetIt(hit.workId, hit.title, row.type)
                 }, size = 36.dp)
             }
         },
@@ -341,13 +347,16 @@ private fun SearchBox(value: String, onValueChange: (String) -> Unit, onSubmit: 
 }
 
 @Composable
-private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: () -> Unit) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: () -> Unit, onDiscover: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (recent.isEmpty()) {
             EmptyState(
                 "Search everything at once",
-                detail = "Movies, series, music and books come from the library; podcasts and feeds from what you " +
-                    "follow. Results appear per type as each answer lands.",
+                detail = "Movies, series, music and books in your library, and the podcasts and feeds you follow.",
+                action = {
+                    SecondaryButton("Find something new", onDiscover, icon = Icons.Rounded.TravelExplore)
+                },
             )
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -378,10 +387,15 @@ private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: ()
     }
 }
 
-/** No library match: offer the honest next step — ask the metadata provider, quoting its refusal when there is none. */
+/** No library match: look further, and Get what turns up — quoting the node's refusal when there is one. */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-private fun NoResultsPane(session: AppSession, query: String) {
+private fun NoResultsPane(
+    session: AppSession,
+    query: String,
+    onWantTitle: (String, Int?, MediaType?) -> Unit,
+    onGetItTitle: GetItByTitle,
+) {
     val discovery by session.discoveryController.state.collectAsState()
     LaunchedEffect(session) { session.discoveryController.loadForGeneration(0) }
     LaunchedEffect(query) { session.discoveryController.updateQuery(query) }
@@ -408,28 +422,13 @@ private fun NoResultsPane(session: AppSession, query: String) {
 
             is DiscoveryAnswer.Hits -> if (answer.values.isEmpty()) {
                 Text(
-                    "The provider found nothing for “$query”.",
+                    "Nothing found for “$query”.",
                     color = Tokens.textMuted,
                     style = MaterialTheme.typography.bodyMedium,
                 )
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    for (hit in answer.values) {
-                        MediaRow(
-                            hit.title,
-                            MediaType.from(hit.type),
-                            onOpen = {
-                            },
-                            subtitle = hit.overview,
-                            meta = listOf(
-                                hit.year?.toString(),
-                                hit.tvdbId?.let {
-                                    "tvdb $it"
-                                },
-                            ),
-                            status = LibraryStatus.NOT_TRACKED,
-                        )
-                    }
+                    for (hit in answer.values) DiscoveryHitRow(session, hit, onWantTitle, onGetItTitle)
                 }
             }
         }
@@ -440,12 +439,11 @@ private fun NoResultsPane(session: AppSession, query: String) {
 @Suppress("FunctionNaming") // Private Compose helper.
 private fun NoResultsEmptyState(query: String, busy: Boolean, onAsk: () -> Unit) {
     EmptyState(
-        "Nothing in the library matches “$query”",
-        detail = "Search matches titles the library already knows. To bring in something new, ask " +
-            "the metadata provider or Want it by title from the Missing screen.",
+        "Nothing in your library matches “$query”",
+        detail = "Look further: films, series, books and music you don't have yet.",
         action = {
             SecondaryButton(
-                "Ask the metadata provider",
+                "Look further",
                 icon = Icons.Rounded.TravelExplore,
                 enabled = !busy,
                 onClick = onAsk,

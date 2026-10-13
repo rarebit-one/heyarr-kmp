@@ -1,6 +1,8 @@
 package one.rarebit.heyarr.mobile.library
 
 import one.rarebit.heyarr.core.library.CatalogWork
+import one.rarebit.heyarr.core.state.Availability
+import one.rarebit.heyarr.core.state.LibraryStatus
 
 /**
  * A library entry as browsed from heyarr's native resources API
@@ -92,3 +94,9 @@ data class Work(
         return key?.let { artworkSizes[it] } ?: artworkPath
     }
 }
+
+/**
+ * A listed work's availability. The listing carries its `primary_asset` embed, so a work with
+ * nothing to play (one a want created before anything arrived) reads from its want status.
+ */
+fun Work.availability(status: LibraryStatus): Availability = Availability.of(status, playable = isPlayable)

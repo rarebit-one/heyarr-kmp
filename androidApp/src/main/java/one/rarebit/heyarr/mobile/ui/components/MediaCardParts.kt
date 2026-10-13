@@ -151,6 +151,7 @@ internal fun CardMenu(
     onOpen: () -> Unit,
     onWant: (() -> Unit)?,
     actions: List<CardAction>,
+    wantLabel: String = "Want",
 ) {
     val theme = LocalMediaTheme.current
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss, modifier = Modifier.background(Tokens.surface3)) {
@@ -162,7 +163,7 @@ internal fun CardMenu(
         })
         if (onWant != null) {
             DropdownMenuItem(text = {
-                Text("Want", color = Tokens.textPrimary)
+                Text(wantLabel, color = Tokens.textPrimary)
             }, leadingIcon = { Icon(Icons.Rounded.Add, null, tint = theme.accentGradientEnd) }, onClick = {
                 onDismiss()
                 onWant()

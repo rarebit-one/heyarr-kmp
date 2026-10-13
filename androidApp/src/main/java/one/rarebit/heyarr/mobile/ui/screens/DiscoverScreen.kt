@@ -5,7 +5,6 @@ package one.rarebit.heyarr.mobile.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.heyarr.ProviderInfo
@@ -27,22 +25,23 @@ import one.rarebit.heyarr.core.state.DiscoveryAnswer
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.theme.Tokens
-import one.rarebit.heyarr.mobile.ui.components.MediaRow
 import one.rarebit.heyarr.ui.components.ArchiveLoading
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.Field
-import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
-import one.rarebit.heyarr.ui.components.StatusMark
 import one.rarebit.heyarr.ui.components.TechnicalDisclosure
 
-/** Provider discovery uses only provider capabilities and hits actually returned by the node. */
+/**
+ * Find something new: titles the node's metadata providers know that the library does not hold,
+ * each with Get it. Only provider capabilities and hits the node actually returned are shown.
+ */
 @Composable
 @Suppress("LongMethod", "CyclomaticComplexMethod") // This route owns progressive discovery states and grouped results.
 fun DiscoverScreen(
     session: AppSession,
     onWantTitle: (title: String, year: Int?, type: MediaType?) -> Unit,
+    onGetItTitle: GetItByTitle,
     modifier: Modifier = Modifier,
 ) {
     val discovery by session.discoveryController.state.collectAsState()
@@ -54,7 +53,7 @@ fun DiscoverScreen(
         verticalArrangement = Arrangement.spacedBy(Tokens.s3),
     ) {
         item {
-            SectionHeader("Discover", subtitle = "Ask the node's configured providers")
+            SectionHeader("Find something new", subtitle = "Films, series, books and music you don't have yet")
         }
         item {
             ProviderSummary(discovery.providers, discovery.providerError)
@@ -65,11 +64,11 @@ fun DiscoverScreen(
                     "Title to look for",
                     discovery.query,
                     Modifier.fillMaxWidth(),
-                    placeholder = "Search the metadata catalogue",
+                    placeholder = "A title",
                     onChange = session.discoveryController::updateQuery,
                 )
                 PrimaryButton(
-                    "Search providers",
+                    "Look",
                     session.discoveryController::submit,
                     modifier = Modifier.fillMaxWidth(),
                     icon = Icons.Rounded.TravelExplore,
@@ -78,7 +77,7 @@ fun DiscoverScreen(
             }
         }
         if (discovery.busy) {
-            item { ArchiveLoading("Asking the node's providers…") }
+            item { ArchiveLoading("Looking…") }
         }
         discovery.error?.let { error ->
             item {
@@ -133,7 +132,7 @@ fun DiscoverScreen(
                 } else {
                     item {
                         Text(
-                            "Returned by a configured provider. This does not confirm that a release is available.",
+                            "Get one and heyarr looks for a copy — finding it here doesn't mean a copy exists yet.",
                             style = MaterialTheme.typography.bodySmall,
                             color = Tokens.textMuted,
                         )
@@ -147,32 +146,7 @@ fun DiscoverScreen(
                             val hit = group[index]
                             "discover:${type.name}:${hit.externalId ?: "${hit.title}-$index"}"
                         }) { index ->
-                            val hit = group[index]
-                            val hitType = MediaType.from(hit.type)
-                            MediaRow(
-                                title = hit.title,
-                                type = hitType,
-                                onOpen = {
-                                    onWantTitle(hit.title, hit.year, hitType.takeIf { it != MediaType.UNKNOWN })
-                                },
-                                subtitle = hit.overview,
-                                meta = listOfNotNull(
-                                    hit.year?.toString(),
-                                    hit.source?.let { source ->
-                                        hit.externalId?.let { id -> "$source $id" }
-                                    },
-                                ),
-                                artwork = hit.posterUrl,
-                                trailing = {
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        MediaBadge(hitType)
-                                        StatusMark("Discoverable", Tokens.accent)
-                                    }
-                                },
-                            )
+                            DiscoveryHitRow(session, group[index], onWantTitle, onGetItTitle)
                         }
                     }
                 }

@@ -50,6 +50,7 @@ import one.rarebit.heyarr.core.library.CanonicalLookup
 import one.rarebit.heyarr.core.library.CatalogWork
 import one.rarebit.heyarr.core.library.Resolution
 import one.rarebit.heyarr.core.library.Variants
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
@@ -58,6 +59,7 @@ import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.LibraryPager
 import one.rarebit.heyarr.mobile.library.Work
+import one.rarebit.heyarr.mobile.library.availability
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.nav.detailRoute
 import one.rarebit.heyarr.mobile.state.AppSession
@@ -86,6 +88,9 @@ import one.rarebit.heyarr.ui.components.verdictColor
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 
+/** What a want is getting: counted on the shelf as "on the way", never shown as a work to play. */
+private val COMING = setOf(Availability.ON_ITS_WAY, Availability.NOT_AVAILABLE)
+
 /** A pseudo-kind for the default filter: the media kinds, no feeds or documents. */
 val MEDIA = MediaType.UNKNOWN
 private val MEDIA_KINDS =
@@ -100,7 +105,6 @@ private const val NEAR_END_ITEMS = 8
 private const val MIN_FILTERED_TO_STOP_PAGING = 24
 
 class LibraryState {
-    var tab by mutableStateOf(0)
     val downloads = DownloadsState()
     var works by mutableStateOf<List<Work>?>(null)
     var error by mutableStateOf<String?>(null)
@@ -132,12 +136,14 @@ class LibraryState {
 }
 
 /**
- * Library — everything the node catalogues, filterable by media type and by the
- * want-derived status, in a grid or list (ported from heyarr-desktop's `LibraryScreen`),
- * with a Downloads tab (the wants in flight and the job queue) and, on an enrolled
- * phone, this device's decrypted playlists.
+ * Library — what you can play, by media type, in a grid or list (ported from
+ * heyarr-desktop's `LibraryScreen`), with this device's decrypted playlists on an enrolled
+ * phone and a quiet count of what is still on the way. With [curator] it is Manage → All
+ * works instead: everything the node catalogues, with the want-derived status filter and Want.
  */
 @Composable
+// Compose naming; one screen serves the shelf and Manage → All works, with its paging states.
+@Suppress("FunctionNaming", "LongMethod", "LongParameterList", "CyclomaticComplexMethod")
 fun LibraryScreen(
     session: AppSession,
     state: LibraryState,
@@ -145,6 +151,7 @@ fun LibraryScreen(
     onWant: (String, String) -> Unit,
     modifier: Modifier = Modifier,
     onPlaylists: (() -> Unit)? = null,
+    curator: Boolean = false,
 ) {
     val scope = rememberCoroutineScope()
 
@@ -245,7 +252,13 @@ fun LibraryScreen(
     val variants = remember(state.works, state.resolvedCanonicals) {
         Variants.variantIds(state.works.orEmpty() + state.resolvedCanonicals)
     }
-    val all = state.works.orEmpty().filter { it.id !in variants }
+    val catalogued = state.works.orEmpty().filter { it.id !in variants }
+    // The shelf is for playing: only works with a file. What a want is still getting is counted
+    // (never for a guest, whose want index is empty by design) and lives in Manage → Downloads.
+    val availabilityOf: (Work) -> Availability = { it.availability(session.index.statusOf(it.id)) }
+    val all = if (curator) catalogued else catalogued.filter { availabilityOf(it) == Availability.READY }
+    val pending = if (curator || session.isGuest) 0 else catalogued.count { availabilityOf(it) in COMING }
+    val from = if (curator) "All works" else "Library"
     val counts = all.groupingBy { MediaType.from(it.kind) }.eachCount()
     val filtered = all.filter { w ->
         // MEDIA is MediaType.UNKNOWN standing in for "the media kinds"; never let it reach
@@ -256,7 +269,7 @@ fun LibraryScreen(
             MEDIA -> MediaType.from(w.kind) in MEDIA_KINDS
             else -> MediaType.from(w.kind) == state.type
         }
-        kindMatches && (state.status == null || session.index.statusOf(w.id) == state.status)
+        kindMatches && (!curator || state.status == null || session.index.statusOf(w.id) == state.status)
     }
 
     Column(
@@ -264,7 +277,7 @@ fun LibraryScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         SectionHeader(
-            "Library",
+            if (curator) "All works" else "Library",
             icon = Icons.Rounded.GridView,
             subtitle = if (state.works ==
                 null
@@ -288,23 +301,15 @@ fun LibraryScreen(
                 }
             },
         )
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip("Works", state.tab == 0, { state.tab = 0 })
-            FilterChip(
-                "Downloads",
-                state.tab == 1,
-                { state.tab = 1 },
-                count = state.downloads.desired?.count {
-                    it.state !=
-                        "FULLY_SATISFIED" &&
-                        it.state != "AVAILABLE"
-                },
-            )
-            if (onPlaylists != null) FilterChip("Playlists", false, onPlaylists)
-        }
-        if (state.tab == 1) {
-            DownloadsScreen(session, state.downloads, onOpen)
-            return@Column
+        if (!curator && (onPlaylists != null || pending > 0)) {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (onPlaylists != null) FilterChip("Playlists", false, onPlaylists)
+                if (pending > 0) GhostButton("$pending on the way", { onOpen(Route.Downloads) })
+            }
         }
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
@@ -352,20 +357,8 @@ fun LibraryScreen(
             }
             FilterChip("Everything", state.type == null, { state.type = null }, count = all.size.takeIf { it > 0 })
         }
-        Row(
-            Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Status", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
-            FilterChip("Any", state.status == null, { state.status = null })
-            for (s in LibraryStatus.entries) {
-                FilterChip(s.label, state.status == s, {
-                    state.status =
-                        if (state.status == s) null else s
-                })
-            }
-        }
+        // Want status is a curator filter: All works has it, the shelf does not.
+        if (curator) StatusFilterRow(state)
 
         // Scroll-position sentinels: trigger [loadMore] when the grid or list is NEAR_END_ITEMS items
         // from the end. Using `derivedStateOf` avoids recomposition on every scroll event
@@ -419,8 +412,12 @@ fun LibraryScreen(
             }
 
             filtered.isEmpty() -> EmptyState(
-                if (all.isEmpty()) "The library is empty" else "Nothing matches these filters",
-                detail = libraryEmptyDetail(all.isEmpty()),
+                when {
+                    all.isNotEmpty() -> "Nothing matches these filters"
+                    curator -> "The library is empty"
+                    else -> "Nothing to play yet"
+                },
+                detail = libraryEmptyDetail(all.isEmpty(), curator),
             )
 
             state.grid -> BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -454,18 +451,20 @@ fun LibraryScreen(
                             w.year,
                             w.artist ?: w.author,
                         )
+                        val status = session.index.statusOf(w.id)
                         MediaCard(
-                            w.title, type, onOpen = {
-                                onOpen(detailRoute(w.id, type, w.title, from = "Library"))
-                            },
-                            subtitle =
-                            w.artist ?: w.author,
-                            meta = listOf(
-                                w.year?.toString(),
-                            ),
-                            artwork = cover.url, status = session.index.statusOf(w.id), onWant = {
-                                onWant(w.id, w.title)
-                            }, width = null, modifier = Modifier.fillMaxWidth(),
+                            w.title,
+                            type,
+                            onOpen = { onOpen(detailRoute(w.id, type, w.title, from = from)) },
+                            subtitle = w.artist ?: w.author,
+                            meta = listOf(w.year?.toString()),
+                            artwork = cover.url,
+                            // The shelf shows the consumer face; All works keeps the want status and Want.
+                            status = status.takeIf { curator },
+                            onWant = if (curator) ({ onWant(w.id, w.title) }) else null,
+                            availability = w.availability(status).takeUnless { curator },
+                            width = null,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
@@ -490,14 +489,12 @@ fun LibraryScreen(
                     MediaRow(
                         w.title,
                         type,
-                        onOpen = {
-                            onOpen(detailRoute(w.id, type, w.title, from = "Library"))
-                        },
-                        subtitle =
-                        w.artist ?: w.author,
+                        onOpen = { onOpen(detailRoute(w.id, type, w.title, from = from)) },
+                        subtitle = w.artist ?: w.author,
                         meta = listOf(w.year?.toString(), w.recency?.take(10)),
                         artwork = cover.url,
-                        status = session.index.statusOf(w.id),
+                        status = session.index.statusOf(w.id).takeIf { curator },
+                        availability = w.availability(session.index.statusOf(w.id)).takeUnless { curator },
                     )
                 }
             }
@@ -505,10 +502,31 @@ fun LibraryScreen(
     }
 }
 
-private fun libraryEmptyDetail(libraryIsEmpty: Boolean): String = if (libraryIsEmpty) {
-    "Scan a library root on the node, or Want something and let heyarr find it."
-} else {
-    "Clear a filter to see more."
+
+/** The want-status filter, for Manage → All works. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun StatusFilterRow(state: LibraryState) {
+    Row(
+        Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("Status", style = MaterialTheme.typography.labelMedium, color = Tokens.textMuted)
+        FilterChip("Any", state.status == null, { state.status = null })
+        for (s in LibraryStatus.entries) {
+            FilterChip(s.label, state.status == s, {
+                state.status =
+                    if (state.status == s) null else s
+            })
+        }
+    }
+}
+
+private fun libraryEmptyDetail(libraryIsEmpty: Boolean, curator: Boolean): String = when {
+    !libraryIsEmpty -> "Clear a filter to see more."
+    curator -> "Scan a library root on the node, or Want something and let heyarr find it."
+    else -> "Find something in Search and choose Get it; it appears here once heyarr has a copy."
 }
 
 class DownloadsState {

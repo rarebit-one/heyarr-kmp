@@ -77,8 +77,10 @@ import one.rarebit.heyarr.mobile.ui.screens.DetailPersonal
 import one.rarebit.heyarr.mobile.ui.screens.DetailPlayback
 import one.rarebit.heyarr.mobile.ui.screens.DetailScreen
 import one.rarebit.heyarr.mobile.ui.screens.DiscoverScreen
+import one.rarebit.heyarr.mobile.ui.screens.GetItByTitle
 import one.rarebit.heyarr.mobile.ui.screens.HomeScreen
 import one.rarebit.heyarr.mobile.ui.screens.LibraryScreen
+import one.rarebit.heyarr.mobile.ui.screens.ManageDownloads
 import one.rarebit.heyarr.mobile.ui.screens.ManageScreen
 import one.rarebit.heyarr.mobile.ui.screens.MissingScreen
 import one.rarebit.heyarr.mobile.ui.screens.PersonalRows
@@ -202,6 +204,8 @@ fun HeyarrNavHost(
             d.hasRoute(Route.Home::class) -> Route.Home
             d.hasRoute(Route.Manage::class) -> Route.Manage
             d.hasRoute(Route.Discover::class) -> Route.Discover
+            d.hasRoute(Route.Downloads::class) -> Route.Downloads
+            d.hasRoute(Route.AllWorks::class) -> Route.AllWorks
             d.hasRoute(Route.Search::class) -> Route.Search
             d.hasRoute(Route.Library::class) -> Route.Library
             d.hasRoute(Route.Missing::class) -> Route.Missing
@@ -281,6 +285,22 @@ fun HeyarrNavHost(
             signInPrompt = "want"
         } else {
             want = WantRequest(null, title, year, type)
+        }
+    }
+    // The consumer "Get it": a one-click want at this phone's default profile when it fits the kind,
+    // or the Want sheet when nothing fits. Same guest choke point as Want.
+    val onGetIt: (String, String, MediaType) -> Unit = { id, title, type ->
+        if (session.isGuest) {
+            signInPrompt = "want"
+        } else if (!session.getIt(id, title, type)) {
+            want = WantRequest(id, title)
+        }
+    }
+    val onGetItTitle: GetItByTitle = { title, year, type ->
+        if (session.isGuest) {
+            signInPrompt = "want"
+        } else if (!session.getIt(null, title, type, year)) {
+            want = WantRequest(null, title, year, type.takeIf { it != MediaType.UNKNOWN })
         }
     }
     val play = DetailPlayback(
@@ -396,7 +416,6 @@ fun HeyarrNavHost(
                                         session,
                                         holder.home,
                                         ::open,
-                                        onWant,
                                         modifier = content,
                                         personal = personalRows,
                                         onSignInToSave = onSignInToSave,
@@ -406,10 +425,16 @@ fun HeyarrNavHost(
                                     ManageScreen(::open, modifier = content)
                                 }
                                 composable<Route.Discover> {
-                                    DiscoverScreen(session, onWantTitle, modifier = content)
+                                    DiscoverScreen(session, onWantTitle, onGetItTitle, modifier = content)
+                                }
+                                composable<Route.Downloads> {
+                                    ManageDownloads(session, holder.library.downloads, ::open, modifier = content)
+                                }
+                                composable<Route.AllWorks> {
+                                    LibraryScreen(session, holder.allWorks, ::open, onWant, modifier = content, curator = true)
                                 }
                                 composable<Route.Search> {
-                                    SearchScreen(session, holder.search, ::open, onWant, onPlayEpisode = { ep ->
+                                    SearchScreen(session, holder.search, ::open, onGetIt, onWantTitle, onGetItTitle, onPlayEpisode = { ep ->
                                         ep.blobHash?.let {
                                             audio.stop()
                                             vm.playback.playFile(
