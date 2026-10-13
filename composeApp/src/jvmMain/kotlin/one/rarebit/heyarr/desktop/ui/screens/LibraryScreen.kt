@@ -70,7 +70,6 @@ internal val MEDIA_KINDS =
 class LibraryState {
     /** The session generation this state was loaded for. */
     var generation = -1
-    var tab by mutableStateOf(0)
     val downloads = DownloadsState()
     var works by mutableStateOf<List<Work>?>(null)
     var error by mutableStateOf<String?>(null)
@@ -135,10 +134,6 @@ fun LibraryScreen(
             trailing = { LibraryActions(state, ::load) },
         )
         LibraryFilterBar(state, all, counts, experience)
-        if (experience == null && state.tab == 1) {
-            DownloadsScreen(session, state.downloads, onOpen)
-            return@Column
-        }
         when {
             state.error != null && state.works == null -> ErrorState("Couldn't load the library", state.error, ::load)
 

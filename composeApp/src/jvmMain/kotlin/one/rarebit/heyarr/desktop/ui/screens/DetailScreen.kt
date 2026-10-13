@@ -78,6 +78,7 @@ import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.Skeleton
+import one.rarebit.heyarr.ui.components.UnderlineTabs
 import one.rarebit.heyarr.ui.components.focusRing
 import one.rarebit.heyarr.ui.theme.HeyarrTextStyles
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
@@ -381,32 +382,7 @@ private fun loadWantDetails(session: AppSession, state: DetailState, wants: List
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 private fun TabStrip(current: DetailTab, onSelect: (DetailTab) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
-            for (t in DetailTab.entries) {
-                val active = t == current
-                val interaction = remember { MutableInteractionSource() }
-                Column(
-                    Modifier.focusRing(interaction, RectangleShape)
-                        .clickable(interactionSource = interaction, indication = null, role = Role.Tab) { onSelect(t) }
-                        .semantics {
-                            contentDescription = t.label
-                            selected = active
-                        }
-                        .padding(top = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        t.label.uppercase(),
-                        style = HeyarrTextStyles.sectionLabel,
-                        color = if (active) Tokens.accent else Tokens.textMuted,
-                    )
-                    Box(Modifier.width(24.dp).height(2.dp).background(if (active) Tokens.accent else Color.Transparent))
-                }
-            }
-        }
-        DashedDivider()
-    }
+    UnderlineTabs(DetailTab.entries.map { it.label }, current.ordinal, { onSelect(DetailTab.entries[it]) })
 }
 
 /** Open the embedded player on one asset of this work. */

@@ -17,9 +17,28 @@ sealed interface Route {
     data object Home : Route
     data object Discover : Route
     data object Search : Route
-    data object Library : Route
-    data object Missing : Route
-    data object Sources : Route
+
+    // The curator workspace: every section shares the Manage rail item, and moving between
+    // sections replaces the last one rather than stacking (see [Nav.go]).
+    data object Manage : Route {
+        override val section: String get() = MANAGE
+    }
+
+    data object Missing : Route {
+        override val section: String get() = MANAGE
+    }
+
+    data object Downloads : Route {
+        override val section: String get() = MANAGE
+    }
+
+    data object Library : Route {
+        override val section: String get() = MANAGE
+    }
+
+    data object Sources : Route {
+        override val section: String get() = MANAGE
+    }
     data object NowPlaying : Route
     data object Settings : Route
 
@@ -60,6 +79,18 @@ sealed interface Route {
         override val section: String get() = from
     }
 }
+
+/** The rail section every curator screen belongs to. */
+const val MANAGE = "Manage"
+
+/**
+ * The rail item a route lights: its own section, except that a work opened from a curator
+ * screen (its `from` names that screen) still belongs to Manage.
+ */
+val Route.railSection: String
+    get() = if (section in MANAGE_FROM) MANAGE else section
+
+private val MANAGE_FROM = setOf(MANAGE, "Library", "Missing", "Downloads", "Sources")
 
 /** A tiny back-stack router: `go` pushes, `back` pops, section routes replace their own kind. */
 class Nav(start: Route = Route.Consume(Experience.WATCH)) {
