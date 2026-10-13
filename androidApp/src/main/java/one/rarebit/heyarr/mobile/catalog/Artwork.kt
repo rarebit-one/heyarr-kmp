@@ -21,8 +21,27 @@ object Artwork {
      */
     const val CARD_ARTWORK_DP = 140
 
+    /**
+     * On-screen width, in dp, of a wide-aspect card (movie, series, video) in a rail:
+     * `MediaCard` draws those at 280 dp, twice [CARD_ARTWORK_DP], so sizing them as a poster
+     * card asked for a bucket smaller than drawn (#142).
+     */
+    const val WIDE_CARD_ARTWORK_DP = 280
+
     /** Nominal on-screen width, in dp, of a full-width hero: Home's spotlight, a detail backdrop. */
     const val HERO_ARTWORK_DP = 360
+
+    /**
+     * The width, in dp, of one column of an `Adaptive(minCellDp)` grid laid out across
+     * [availableDp] with [spacingDp] between columns — the same arithmetic Compose's
+     * `GridCells.Adaptive` / `StaggeredGridCells.Adaptive` use. A grid cell can be far wider
+     * than its card's nominal width (one 280 dp column fills a phone), so the grid sizes its
+     * artwork from this rather than from a constant (#142).
+     */
+    fun adaptiveCellDp(availableDp: Int, minCellDp: Int, spacingDp: Int): Int {
+        val count = maxOf((availableDp + spacingDp) / (minCellDp + spacingDp), 1)
+        return (availableDp - spacingDp * (count - 1)) / count
+    }
 
     fun posterUrl(baseUrl: String, work: Work): String = posterUrl(baseUrl, work.id, work.artworkPath)
 

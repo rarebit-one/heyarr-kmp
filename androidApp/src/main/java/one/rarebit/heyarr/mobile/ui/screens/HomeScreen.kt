@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.CanonicalLookup
+import one.rarebit.heyarr.core.library.Resolution
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.core.mcp.Want
@@ -96,6 +97,19 @@ internal fun quotasMet(works: List<Work>): Boolean {
         eligible.size >= RECENT_QUOTA
 }
 
+/**
+ * True when the home paging loop should stop fetching pages.
+ *
+ * Hard stops ([worksPage] null, [cursor] null, [pages] cap) always apply.
+ * The [quotasMet] shortcut fires **only when [complete] is true** — when a canonical lookup
+ * failed, some variants may still be visible and the canonical that would collapse them
+ * may appear on a later page, so we must keep paging (#139).
+ *
+ * Pure helper so it can be unit-tested on plain JVM without Compose.
+ */
+internal fun loadDone(worksPage: Any?, cursor: String?, pages: Int, complete: Boolean, quotasMet: Boolean): Boolean =
+    worksPage == null || cursor == null || pages >= HOME_PAGE_CAP || (complete && quotasMet)
+
 /** Everything the Home screen shows, loaded rail by rail so a slow one never blanks the page. */
 class HomeState {
     var spotlight by mutableStateOf<RailState<Work>>(RailState.Loading)
@@ -152,6 +166,9 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
 
     fun load() {
+        // Clear any stale canonicals from a previous load so a rescan's added/removed works
+        // are reflected immediately rather than being shadowed by the old cache (#142).
+        state.canonicalLookup.clear()
         val a = session.api
         state.loadedOnce = true
         scope.launch {
@@ -161,14 +178,18 @@ fun HomeScreen(
             // Off-page canonicals are resolved before every quota check, so a page heavy with
             // season variants doesn't stop the paging early (Codex on #138). The lookup caches
             // per (base, kind), so re-resolving as pages accumulate costs no extra request.
-            suspend fun visible(works: List<Work>): List<Work> {
-                val canonicals = session.io {
+            //
+            // The early-stop fires only when the last resolveFor call was complete (no lookup
+            // failed). An incomplete pass means a variant's canonical is unknown, so it stays
+            // visible and the quota may be falsely satisfied (#139).
+            suspend fun visible(works: List<Work>): Pair<List<Work>, Boolean> {
+                val resolution = session.io {
                     state.canonicalLookup.resolveFor(works) { q, kind ->
                         a.worksMatching(LibraryClient.variantQuery(q, null), kind)
                     }
-                }.getOrElse { emptyList() }
-                val variantIds = Variants.variantIds(works + canonicals)
-                return works.filter { it.id !in variantIds }
+                }.getOrElse { Resolution(emptyList(), complete = false) }
+                val variantIds = Variants.variantIds(works + resolution.resolved)
+                return works.filter { it.id !in variantIds } to resolution.complete
             }
             var cursor: String? = null
             val accumulated = mutableListOf<Work>()
@@ -186,8 +207,9 @@ fun HomeScreen(
                     cursor = it.nextCursor
                 }
                 pages++
-                shown = visible(accumulated)
-                done = worksPage == null || cursor == null || pages >= HOME_PAGE_CAP || quotasMet(shown)
+                val (visibleWorks, complete) = visible(accumulated)
+                shown = visibleWorks
+                done = loadDone(worksPage, cursor, pages, complete, quotasMet(shown))
             }
             val err = pageError
             if (accumulated.isEmpty() && err != null) {
@@ -437,11 +459,19 @@ private fun WorkCard(
 ) {
     val type = MediaType.from(w.kind)
     val status = session.index.statusOf(w.id)
+    // Wide-aspect types (MOVIE, SERIES, VIDEO) render at 280 dp; poster types render at
+    // CARD_ARTWORK_DP. Request the matching bucket to avoid a blurry downscale at 2× density
+    // (ADR-0109, #142).
+    val artworkDp = if (MediaThemes.of(type).aspect == CardAspect.WIDE) {
+        Artwork.WIDE_CARD_ARTWORK_DP
+    } else {
+        Artwork.CARD_ARTWORK_DP
+    }
     val cover by rememberCover(
         session,
         type,
         w.title,
-        w.artworkForDp(Artwork.CARD_ARTWORK_DP),
+        w.artworkForDp(artworkDp),
         w.year,
         w.artist ?: w.author,
     )
