@@ -322,9 +322,11 @@ fun DetailScreen(
                 }
                 when {
                     state.loading && detail == null -> item { HeroSkeleton(120.dp) }
+
                     detail == null -> item {
                         ErrorState("Couldn't load this work", state.detailError, onRetry = ::load)
                     }
+
                     else -> {
                         if (type == MediaType.SERIES && !session.isGuest) {
                             item { SeasonWants(session, detail, seasons, wants, state) }
