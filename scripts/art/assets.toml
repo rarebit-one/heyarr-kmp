@@ -1,0 +1,236 @@
+# The Archive illustration set, generated with Codex image generation (see README.md).
+#
+# Each [[asset]] is one image. Its prompt is the source of truth: the checked-in WebP is
+# reproducible from it with `scripts/art/art.py build <id>`. Two styles exist:
+#
+#   pixel     — chrome art (postcards, fallback covers, vignettes). Snapped to a real pixel
+#               grid and remapped to the palette below, so it sits in the token colours.
+#   painterly — fictional fixture posters for the screenshot harness only. Never shipped.
+#
+# Every prompt must stay original: no text, no logos, no people's likenesses, and nothing
+# from a film, game or franchise.
+
+# Token colours plus an extended art ramp. Pixel assets are remapped to exactly these.
+palette = [
+  "#0A1410", "#0E1A15", "#111E18", "#172620", "#1E2F27", "#24382E", "#2C3D35",
+  "#2E7D5B", "#3F8F6B", "#5BAE88", "#7EE0B3", "#B8E8CF", "#E6EBD7", "#F2E3C4",
+  "#F4B860", "#C9893A",
+]
+
+[style.pixel]
+preamble = """
+An original retro-futurist pixel-art illustration. Chunky, clearly visible square pixels on a
+coarse grid, no anti-aliasing, no dithering noise, flat colour areas. Palette strictly limited
+to deep forest black #0A1410, dark greens #111E18 #1E2F27 #2E7D5B, pale mint #7EE0B3, chalk
+#E6EBD7, and a single warm ochre accent #F4B860 used sparingly (one window light, one beacon).
+Calm, quiet, slightly mysterious mood, like a postcard from a remote research outpost. No text,
+no letters, no numbers, no logos, no people, no franchise symbols or recognisable designs.
+"""
+
+[style.painterly]
+preamble = """
+Original cinematic key art, painterly and atmospheric, rich full colour, soft volumetric
+light, film-still composition. No text, no title, no letters, no logos, no watermark, no
+recognisable people or likenesses, nothing from an existing film, show or game.
+"""
+
+# ── ambient postcards: Home context column, empty states, missing-art hero ────────────────
+
+[[asset]]
+id = "archive_postcard_moon"
+style = "pixel"
+aspect = "16:9"
+grid = [160, 90]
+out = [640, 360]
+dest = "ui/src/commonMain/composeResources/drawable/archive_postcard_moon.webp"
+prompt = "A pale full moon low over a ridge of dark pine silhouettes, a small observatory dome on a hill with one warm window light, a still lake reflecting the moon, a thin mist band, faint starfield."
+
+[[asset]]
+id = "archive_postcard_station"
+style = "pixel"
+aspect = "16:9"
+grid = [160, 90]
+out = [640, 360]
+dest = "ui/src/commonMain/composeResources/drawable/archive_postcard_station.webp"
+prompt = "A small research station of low modular buildings on rolling desert dunes at night, a tall thin antenna mast with one warm beacon light, a large pale planet rising over the horizon, sparse stars."
+
+[[asset]]
+id = "archive_postcard_tower"
+style = "pixel"
+aspect = "16:9"
+grid = [160, 90]
+out = [640, 360]
+dest = "ui/src/commonMain/composeResources/drawable/archive_postcard_tower.webp"
+prompt = "A lattice signal tower on a grassy hilltop at dusk, faint concentric signal rings in the sky above it, layered pine ridges fading into mist below, a crescent moon, a few stars."
+
+[[asset]]
+id = "archive_postcard_coast"
+style = "pixel"
+aspect = "16:9"
+grid = [160, 90]
+out = [640, 360]
+dest = "ui/src/commonMain/composeResources/drawable/archive_postcard_coast.webp"
+prompt = "A small cliff-top observatory beside a calm night sea, a single warm lit window, a thin crescent moon, gentle horizontal wave lines, distant rocky islands, a quiet starfield."
+
+# ── fallback covers: Artwork() when a work has none, picked by a hash of its id ───────────
+
+[[asset]]
+id = "archive_cover_wide_1"
+style = "pixel"
+aspect = "16:9"
+grid = [160, 90]
+out = [480, 270]
+dest = "ui/src/commonMain/composeResources/drawable/archive_cover_wide_1.webp"
+prompt = "A simple, sparse composition: a ringed planet hanging over a flat dark horizon, low hills, faint stars. Lots of empty dark sky, minimal detail, so text can sit over it."
+
+[[asset]]
+id = "archive_cover_wide_2"
+style = "pixel"
+aspect = "16:9"
+grid = [160, 90]
+out = [480, 270]
+dest = "ui/src/commonMain/composeResources/drawable/archive_cover_wide_2.webp"
+prompt = "A simple, sparse composition: a mountain ridge silhouette under soft horizontal aurora bands in mint and green, dark foreground. Minimal detail, generous dark space."
+
+[[asset]]
+id = "archive_cover_wide_3"
+style = "pixel"
+aspect = "16:9"
+grid = [160, 90]
+out = [480, 270]
+dest = "ui/src/commonMain/composeResources/drawable/archive_cover_wide_3.webp"
+prompt = "A simple, sparse composition: a single tall dark standing stone in low fog on a plain, a pale moon behind thin clouds. Minimal detail, generous dark space."
+
+[[asset]]
+id = "archive_cover_poster_1"
+style = "pixel"
+aspect = "2:3"
+grid = [80, 120]
+out = [320, 480]
+dest = "ui/src/commonMain/composeResources/drawable/archive_cover_poster_1.webp"
+prompt = "A tall portrait composition: a slender lighthouse-like tower on a rock under a large pale moon, one warm light at its top, calm dark water at the bottom. Minimal detail."
+
+[[asset]]
+id = "archive_cover_poster_2"
+style = "pixel"
+aspect = "2:3"
+grid = [80, 120]
+out = [320, 480]
+dest = "ui/src/commonMain/composeResources/drawable/archive_cover_poster_2.webp"
+prompt = "A tall portrait composition: a narrow canyon of dark green cliffs with a thin waterfall of pale mist, a sliver of starry sky at the top. Minimal detail."
+
+[[asset]]
+id = "archive_cover_poster_3"
+style = "pixel"
+aspect = "2:3"
+grid = [80, 120]
+out = [320, 480]
+dest = "ui/src/commonMain/composeResources/drawable/archive_cover_poster_3.webp"
+prompt = "A tall portrait composition: a single desert dune ridge curving up the frame under a crescent moon, a small warm campfire light far away. Minimal detail."
+
+[[asset]]
+id = "archive_cover_square_1"
+style = "pixel"
+aspect = "1:1"
+grid = [96, 96]
+out = [384, 384]
+dest = "ui/src/commonMain/composeResources/drawable/archive_cover_square_1.webp"
+prompt = "A square composition: a radio telescope dish on a hill pointing at a starry sky, faint signal rings, pine silhouettes. Minimal detail."
+
+[[asset]]
+id = "archive_cover_square_2"
+style = "pixel"
+aspect = "1:1"
+grid = [96, 96]
+out = [384, 384]
+dest = "ui/src/commonMain/composeResources/drawable/archive_cover_square_2.webp"
+prompt = "A square composition: a small cabin by a forest pond at night, one warm window, the moon reflected in still water. Minimal detail."
+
+[[asset]]
+id = "archive_cover_square_3"
+style = "pixel"
+aspect = "1:1"
+grid = [96, 96]
+out = [384, 384]
+dest = "ui/src/commonMain/composeResources/drawable/archive_cover_square_3.webp"
+prompt = "A square composition: soft horizontal sound-wave-like ridges of hills receding into mist, a low pale sun, a few birds as single pixels. Minimal detail."
+
+# ── vignettes: EmptyState / ErrorState / refusal states ──────────────────────────────────
+
+[[asset]]
+id = "archive_vignette_empty"
+style = "pixel"
+aspect = "16:10"
+grid = [120, 75]
+out = [360, 225]
+dest = "ui/src/commonMain/composeResources/drawable/archive_vignette_empty.webp"
+prompt = "A small still life: an open, empty archive drawer of a filing cabinet with a single small glowing card inside, on a dark ground. Tiny, iconic, centred, lots of dark space around it."
+
+[[asset]]
+id = "archive_vignette_signal"
+style = "pixel"
+aspect = "16:10"
+grid = [120, 75]
+out = [360, 225]
+dest = "ui/src/commonMain/composeResources/drawable/archive_vignette_signal.webp"
+prompt = "A small still life: a small radio dish on a hill under heavy low clouds, no stars visible, a single faint broken signal arc. Tiny, iconic, centred, lots of dark space around it."
+
+[[asset]]
+id = "archive_vignette_search"
+style = "pixel"
+aspect = "16:10"
+grid = [120, 75]
+out = [360, 225]
+dest = "ui/src/commonMain/composeResources/drawable/archive_vignette_search.webp"
+prompt = "A small still life: a brass telescope on a tripod pointing at a scattered field of stars, one star brighter in warm ochre. Tiny, iconic, centred, lots of dark space around it."
+
+# ── fixture posters: screenshot harness only (composeApp/preview-art), never shipped ──────
+# File names are the fixture art keys (FixtureArt): a work id, or a prefix of an episode key.
+
+[[asset]]
+id = "fixture_series_ranch"
+style = "painterly"
+aspect = "16:9"
+out = [960, 540]
+dest = "composeApp/preview-art/01a032b6-6594-782c-9952-52c8526dde13.webp"
+prompt = "A vast high-country ranch valley at golden hour, a long fence line, a lone weathered barn, dramatic clouds over distant mountains."
+
+[[asset]]
+id = "fixture_series_episode"
+style = "painterly"
+aspect = "16:9"
+out = [960, 540]
+dest = "composeApp/preview-art/Yellowstone.webp"
+prompt = "A dusty gravel road through tall grassland at dusk, a pickup truck's distant headlights, storm light breaking over the hills."
+
+[[asset]]
+id = "fixture_movie_arches"
+style = "painterly"
+aspect = "16:9"
+out = [960, 540]
+dest = "composeApp/preview-art/w-dune.webp"
+prompt = "Enormous wind-carved red rock arches on an empty plain under a huge low orange sun, a thin road leading into haze, heat shimmer."
+
+[[asset]]
+id = "fixture_series_greenhouse"
+style = "painterly"
+aspect = "16:9"
+out = [960, 540]
+dest = "composeApp/preview-art/w-severance.webp"
+prompt = "A glass research greenhouse on a frozen plateau at night, rows of plants under warm lamps inside, snow drifting past, a cold blue sky with faint aurora."
+
+# ── app icon explorations: review only, never written into the repo ──────────────────────
+
+[[asset]]
+id = "review_icon_1"
+style = "pixel"
+aspect = "1:1"
+review = true
+prompt = "An app icon: a chunky cream pixel letter H with one ochre pixel accent at its lower right corner, centred on a deep forest-green square with a faint dot grid. Flat, crisp, no other text."
+
+[[asset]]
+id = "review_icon_2"
+style = "pixel"
+aspect = "1:1"
+review = true
+prompt = "An app icon: a cream pixel letter H inside thin mint corner brackets, small pixel glyph clusters in two corners, on a deep forest-green square. Flat, crisp, no other text."
