@@ -114,6 +114,9 @@ fun DownloadsScreen(
                         TableColumn("Detail", 2.4f),
                         TableColumn("", width = 176.dp, alignEnd = true),
                     ),
+                    // Fixed columns take ~560 dp with gaps and padding; below this the table scrolls
+                    // sideways rather than squeezing the want and its detail to nothing.
+                    minWidth = 860.dp,
                     rowCount = inFlight.size,
                     emptyText = "Nothing in flight — every want is satisfied.",
                 ) { r, c ->
