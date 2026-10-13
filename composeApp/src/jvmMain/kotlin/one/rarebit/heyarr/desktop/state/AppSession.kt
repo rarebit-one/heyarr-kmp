@@ -2,6 +2,7 @@ package one.rarebit.heyarr.desktop.state
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellationException
@@ -22,10 +23,12 @@ import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.discovery.NodeDiscovery
 import one.rarebit.heyarr.core.heyarr.QualityProfile
+import one.rarebit.heyarr.core.heyarr.QualityProfiles
 import one.rarebit.heyarr.core.mcp.McpError
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.DiscoveryAnswer
 import one.rarebit.heyarr.core.state.DiscoveryBackend
 import one.rarebit.heyarr.core.state.DiscoveryController
@@ -33,6 +36,7 @@ import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.core.state.LibraryIndex
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.state.ToastAction
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.device.DesktopDeviceEnroller
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DevicePairingSteps
@@ -405,6 +409,90 @@ class AppSession(
                 onDone(r)
             }
         }
+    }
+
+    /**
+     * The consumer "Get it": a monitored want at the profile the Want sheet would pre-select,
+     * without the sheet. By id for a work the library knows, by title for a discovery hit.
+     * Returns false and does nothing when no profile fits the kind (a book on a video-only
+     * node), so the caller can open the sheet and let the person choose; [onManage] is the
+     * toast's way into Manage to follow it.
+     */
+    fun getIt(workId: String?, title: String, type: MediaType, year: Int? = null, onManage: () -> Unit): Boolean {
+        val profile = QualityProfiles.defaultFor(type, profiles)?.takeUnless { isGuest } ?: return false
+        val a = api
+        val key = titleKey(title, year, type)
+        if (a != null && (workId != null || key !in requestedTitles)) {
+            if (workId != null) {
+                index = index.withPendingWant(workId, profiles.firstOrNull { it.name == profile }?.id)
+            } else {
+                requestedTitles[key] = false
+            }
+            scope.launch { sendGetIt(a, GetItRequest(workId, title, type, year, profile), onManage) }
+        }
+        return true
+    }
+
+    /**
+     * Titles asked for by "Get it" this session: false while the request is in flight, true once
+     * the node took it. A discovery hit has no work id the want index could report, so this is
+     * what keeps its button from sending the same want twice.
+     */
+    val requestedTitles = mutableStateMapOf<String, Boolean>()
+
+    /**
+     * Keyed by session generation too: after the node or credential changes, an earlier request
+     * (or a late answer to one) no longer matches anything the new identity shows.
+     */
+    fun titleKey(title: String, year: Int?, type: MediaType): String =
+        "$generation|${type.name}|${title.trim().lowercase()}|${year ?: ""}"
+
+    /**
+     * A catalogued work's availability with no file information to hand, once this client's want
+     * index has answered. A guest has no want index by design, and before it loads every work
+     * reads as untracked — which [Availability.ofCatalogued] would take for "scanned, so held" —
+     * so both stay neutral (null) rather than claim a file.
+     */
+    fun cataloguedAvailability(workId: String): Availability? =
+        if (!isGuest && indexLoaded) Availability.ofCatalogued(index.statusOf(workId)) else null
+
+    /** One "Get it": the work (by id, or by title for a discovery hit) and the profile it is wanted at. */
+    private class GetItRequest(
+        val workId: String?,
+        val title: String,
+        val type: MediaType,
+        val year: Int?,
+        val profile: String,
+    )
+
+    private suspend fun sendGetIt(a: HeyarrApi, req: GetItRequest, onManage: () -> Unit) {
+        val (workId, title) = req.workId to req.title
+        val key = titleKey(title, req.year, req.type)
+        val result = io {
+            if (workId != null) a.wantWork(workId, req.profile) else a.wantTitle(title, req.type, req.profile, req.year)
+        }
+        val ok = result.getOrNull() is McpResult.Ok
+        when (val r = result.getOrNull()) {
+            is McpResult.Ok -> toast(
+                Toast.Kind.SUCCESS,
+                "On its way: “$title”",
+                "heyarr is looking for a copy.",
+                action = ToastAction("Manage") { onManage() },
+            )
+
+            is McpResult.Refused -> refused(r)
+
+            null -> Unit
+        }
+        if (workId == null) {
+            if (ok) requestedTitles[key] = true else requestedTitles.remove(key)
+        } else if (!ok) {
+            // Withdraw this request's optimistic want now: the reload below can fail the same way.
+            index = index.withoutPendingWant(workId)
+        }
+        // Reload rather than restore a snapshot: another want may have landed meanwhile, and the
+        // node's answer is the only truth about this one.
+        refreshIndex()
     }
 
     // ── errors → toasts ──────────────────────────────────────────────────────────

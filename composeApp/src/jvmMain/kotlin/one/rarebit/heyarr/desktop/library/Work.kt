@@ -1,6 +1,8 @@
 package one.rarebit.heyarr.desktop.library
 
 import one.rarebit.heyarr.core.library.CatalogWork
+import one.rarebit.heyarr.core.state.Availability
+import one.rarebit.heyarr.core.state.LibraryStatus
 
 /**
  * A library entry as browsed from heyarr's native resources API (`GET /api/v1/works`,
@@ -24,6 +26,11 @@ data class Work(
     val updatedAt: String? = null,
     /** The `artwork` embed's content path when the listing was asked for it (`include=artwork`). */
     val artworkPath: String? = null,
+    /**
+     * Whether the work holds a file a tap would play (the `primary_asset` embed, `include=primary_asset`);
+     * null when the listing did not say. A work a want created before anything arrived has none.
+     */
+    val playable: Boolean? = null,
 ) : CatalogWork {
     /** The timestamp "recent first" orders on: last touched, else created. */
     val recency: String? get() = updatedAt ?: createdAt
@@ -36,3 +43,7 @@ data class Work(
             kind,
         ).joinToString(" · ")
 }
+
+/** A listed work's availability: its file decides when the listing said; otherwise its catalogue status. */
+fun Work.availability(status: LibraryStatus): Availability =
+    playable?.let { Availability.of(status, playable = it) } ?: Availability.ofCatalogued(status)

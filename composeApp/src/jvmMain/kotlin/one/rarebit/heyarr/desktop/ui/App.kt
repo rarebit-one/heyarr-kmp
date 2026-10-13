@@ -451,6 +451,22 @@ fun App(
                                     want = WantRequest(id, title, type = type)
                                 }
                             }
+                            // The consumer "Get it": a one-click want at the default profile, or the
+                            // Want sheet when no profile fits the kind. Same guest choke point.
+                            val onGetIt: (String, String, MediaType) -> Unit = { id, title, type ->
+                                if (session.isGuest) {
+                                    showSignIn = true
+                                } else if (!session.getIt(id, title, type) { nav.go(Route.Downloads) }) {
+                                    want = WantRequest(id, title, type = type)
+                                }
+                            }
+                            val onGetItTitle: WantByTitle = { title, year, type ->
+                                if (session.isGuest) {
+                                    showSignIn = true
+                                } else if (!session.getIt(null, title, type, year) { nav.go(Route.Downloads) }) {
+                                    want = WantRequest(null, title, year, type)
+                                }
+                            }
                             // The empty "Want by title" sheet, from Missing and the Manage overview.
                             val onWantByTitle: () -> Unit = {
                                 if (session.isGuest) showSignIn = true else want = WantRequest(null, "")
@@ -478,14 +494,15 @@ fun App(
                                             experience = r.experience,
                                         )
 
-                                        Route.Home -> HomeScreen(session, home, ::go, onWant)
+                                        Route.Home -> HomeScreen(session, home, ::go)
 
                                         Route.Discover -> SearchScreen(
                                             session,
                                             search,
                                             ::go,
-                                            onWant,
+                                            onGetIt,
                                             onWantTitle,
+                                            onGetItTitle,
                                             searchFocus,
                                             initialDiscover = true,
                                         )
@@ -494,8 +511,9 @@ fun App(
                                             session,
                                             search,
                                             ::go,
-                                            onWant,
+                                            onGetIt,
                                             onWantTitle,
+                                            onGetItTitle,
                                             searchFocus,
                                         )
 

@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.heyarr.ProviderInfo
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.DiscoveryAnswer
 import one.rarebit.heyarr.core.state.DiscoveryState
 import one.rarebit.heyarr.core.state.LibraryStatus
@@ -28,6 +29,8 @@ import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.rememberArtwork
 import one.rarebit.heyarr.desktop.ui.components.MediaRow
 import one.rarebit.heyarr.ui.components.ArchiveLoading
+import one.rarebit.heyarr.ui.components.GetItButton
+import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
@@ -54,7 +57,12 @@ internal data class DiscoveryResultModel(
  */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-fun DiscoverScreen(session: AppSession, onWantTitle: WantByTitle, modifier: Modifier = Modifier) {
+fun DiscoverScreen(
+    session: AppSession,
+    onWantTitle: WantByTitle,
+    onGetItTitle: WantByTitle,
+    modifier: Modifier = Modifier,
+) {
     val discovery by session.discoveryController.state.collectAsState()
     LaunchedEffect(session.generation) {
         session.discoveryController.loadForGeneration(session.generation)
@@ -75,6 +83,7 @@ fun DiscoverScreen(session: AppSession, onWantTitle: WantByTitle, modifier: Modi
             DiscoveryResults(
                 DiscoveryResultModel(session, query, discovery.result, discovery.busy, discovery.error),
                 onWantTitle,
+                onGetItTitle,
             )
         }
     }
@@ -137,7 +146,7 @@ private fun DiscoveryQuery(state: DiscoveryState, onChange: (String) -> Unit, on
 /** The answer to one `discover_content` call: a refusal quoted verbatim, nothing, or hits that can be Wanted. */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-internal fun DiscoveryResults(model: DiscoveryResultModel, onWantTitle: WantByTitle) {
+internal fun DiscoveryResults(model: DiscoveryResultModel, onWantTitle: WantByTitle, onGetItTitle: WantByTitle) {
     val session = model.session
     val query = model.query
     val result = model.result
@@ -145,7 +154,7 @@ internal fun DiscoveryResults(model: DiscoveryResultModel, onWantTitle: WantByTi
     val error = model.error
     when (result) {
         null -> if (busy) {
-            ArchiveLoading("Asking the metadata provider…")
+            ArchiveLoading("Looking…")
         } else if (error != null) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Notice("Discovery could not complete.", tone = Tokens.danger)
@@ -164,7 +173,7 @@ internal fun DiscoveryResults(model: DiscoveryResultModel, onWantTitle: WantByTi
             TechnicalDisclosure("${result.error.tool} (code ${result.error.code}): ${result.error.message}")
         }
 
-        is DiscoveryAnswer.Hits -> DiscoverySuccess(session, query, result.values, onWantTitle)
+        is DiscoveryAnswer.Hits -> DiscoverySuccess(session, query, result.values, onWantTitle, onGetItTitle)
     }
 }
 
@@ -175,10 +184,11 @@ private fun DiscoverySuccess(
     query: String,
     hits: List<DiscoveryHit>,
     onWantTitle: WantByTitle,
+    onGetItTitle: WantByTitle,
 ) {
     if (hits.isEmpty()) {
         Text(
-            "The provider found nothing for “$query”.",
+            "Nothing found for “$query”.",
             color = Tokens.textMuted,
             style = MaterialTheme.typography.bodyMedium,
         )
@@ -186,40 +196,53 @@ private fun DiscoverySuccess(
     }
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
-            "${hits.size} from the provider — Want one to have the node look for it.",
+            "${hits.size} found — Get one and heyarr looks for a copy.",
             style = MaterialTheme.typography.labelMedium,
             color = Tokens.textMuted,
         )
-        for (hit in hits) DiscoveryHitRow(session, hit, onWantTitle)
+        for (hit in hits) DiscoveryHitRow(session, hit, onWantTitle, onGetItTitle)
     }
 }
 
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-private fun DiscoveryHitRow(session: AppSession, hit: DiscoveryHit, onWantTitle: WantByTitle) {
-    // Provider kinds map each result to the right media type and Want request payload.
+private fun DiscoveryHitRow(
+    session: AppSession,
+    hit: DiscoveryHit,
+    onWantTitle: WantByTitle,
+    onGetItTitle: WantByTitle,
+) {
+    // Provider kinds map each result to the right media type and want request payload.
     val type = MediaType.from(hit.type)
-    val idLine = hit.tvdbId?.let { "tvdb $it" }
-        ?: hit.source?.let { source -> hit.externalId?.let { id -> "$source $id" } }
     // The poster URL is hosted by the metadata provider and fetched as external artwork,
     // without attaching the node's credential; the artwork loader caches it for repeat searches.
     val art by session.artwork.rememberArtwork(hit.posterUrl)
+    // Asked for this session: on its way, and no second request.
+    val requested = session.titleKey(hit.title, hit.year, type) in session.requestedTitles
+    val availability = if (requested) Availability.ON_ITS_WAY else Availability.GETTABLE
     MediaRow(
         hit.title,
         type,
+        // Not in the library, so there is no page to open: a click offers the full Want sheet.
         onOpen = { onWantTitle(hit.title, hit.year, type) },
         subtitle = hit.overview,
-        meta = listOf(hit.year?.toString(), idLine),
+        meta = listOf(hit.year?.toString()),
         artwork = art,
-        status = LibraryStatus.NOT_TRACKED,
+        availability = availability,
         trailing = {
-            PrimaryButton(
-                "Want",
-                { onWantTitle(hit.title, hit.year, type) },
-                icon = HeyarrIcons.Add,
-                compact = true,
-                contentDescription = "Want ${hit.title}",
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                if (requested) {
+                    Unit
+                } else if (availability.offersGetIt(session.mode)) {
+                    GhostButton("Options…", { onWantTitle(hit.title, hit.year, type) })
+                    GetItButton({
+                        onGetItTitle(hit.title, hit.year, type)
+                    }, primary = true, compact = true, title = hit.title)
+                } else {
+                    // A guest is offered the same door; the shell turns it into "Sign in to save".
+                    GetItButton({ onGetItTitle(hit.title, hit.year, type) }, compact = true, title = hit.title)
+                }
+            }
         },
     )
 }

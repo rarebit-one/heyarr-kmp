@@ -40,9 +40,11 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.Variants
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.library.Work
+import one.rarebit.heyarr.desktop.library.availability
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.ui.Experience
 import one.rarebit.heyarr.desktop.ui.Route
@@ -54,6 +56,7 @@ import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
+import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.icon
@@ -61,6 +64,9 @@ import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
+
+/** What a want is getting: shown on a shelf as "on the way", never as a work to play. */
+private val COMING = setOf(Availability.ON_ITS_WAY, Availability.NOT_AVAILABLE)
 
 /** A pseudo-kind for the default filter: the four media kinds, no feeds or documents. */
 val MEDIA = MediaType.UNKNOWN
@@ -110,8 +116,15 @@ fun LibraryScreen(
         it.id !in variants &&
             (experience == null || MediaType.from(it.kind) in experience.kinds)
     }
-    val counts = all.groupingBy { MediaType.from(it.kind) }.eachCount()
-    val filtered = filterWorks(all, state, experience) { session.index.statusOf(it) }
+    // A shelf (Watch / Listen / Read) is for playing: only works with something to play. What a
+    // want has asked for but not yet got is counted, and lives in Manage → Downloads.
+    val shelf = experience != null
+    val availabilityOf: (Work) -> Availability = { it.availability(session.index.statusOf(it.id)) }
+    val browsable = if (shelf) all.filter { availabilityOf(it) == Availability.READY } else all
+    // Only what a want is actually getting counts as on the way; a guest has no want index to say.
+    val pending = if (shelf && !session.isGuest) all.count { availabilityOf(it) in COMING } else 0
+    val counts = browsable.groupingBy { MediaType.from(it.kind) }.eachCount()
+    val filtered = filterWorks(browsable, state, experience) { session.index.statusOf(it) }
 
     val openWork: (Work) -> Unit = { w ->
         onOpen(Route.Detail(w.id, MediaType.from(w.kind), w.title, from = experience?.title ?: "Library"))
@@ -124,16 +137,10 @@ fun LibraryScreen(
         SectionHeader(
             experience?.title ?: "Library",
             icon = (experience?.kinds?.firstOrNull() ?: MediaType.MOVIE).icon(),
-            subtitle = if (state.works ==
-                null
-            ) {
-                null
-            } else {
-                "${filtered.size} of ${all.size} works"
-            },
-            trailing = { LibraryActions(state, ::load) },
+            subtitle = state.works?.let { "${filtered.size} of ${browsable.size} works" },
+            trailing = { LibraryTrailing(state, pending, { onOpen(Route.Downloads) }, ::load) },
         )
-        LibraryFilterBar(state, all, counts, experience)
+        LibraryFilterBar(state, browsable, counts, experience)
         when {
             state.error != null && state.works == null -> ErrorState("Couldn't load the library", state.error, ::load)
 
@@ -142,22 +149,33 @@ fun LibraryScreen(
                 experience?.kinds?.firstOrNull() ?: state.type ?: MediaType.BOOK,
             )
 
-            filtered.isEmpty() -> EmptyState(
-                if (all.isEmpty()) "The library is empty" else "Nothing matches these filters",
-                detail = libraryEmptyDetail(all.isEmpty()),
+            filtered.isEmpty() -> libraryEmpty(browsable.isEmpty(), experience).let { (title, detail) ->
+                EmptyState(title, detail = detail)
+            }
+
+            state.grid -> LibraryGrid(
+                session,
+                filtered,
+                gridCell(state, experience),
+                openWork,
+                onWant.takeUnless {
+                    shelf
+                },
             )
 
-            state.grid -> LibraryGrid(session, filtered, gridCell(state, experience), openWork, onWant)
-
-            else -> LibraryList(session, filtered, openWork)
+            else -> LibraryList(session, filtered, openWork, shelf)
         }
     }
 }
 
-private fun libraryEmptyDetail(libraryIsEmpty: Boolean): String = if (libraryIsEmpty) {
-    "Scan a library root on the node, or Want something and let heyarr find it."
-} else {
-    "Clear a filter to see more."
+/** The empty state's title and detail: filters hiding works, an empty shelf, or an empty library. */
+private fun libraryEmpty(libraryIsEmpty: Boolean, experience: Experience?): Pair<String, String> = when {
+    !libraryIsEmpty -> "Nothing matches these filters" to "Clear a filter to see more."
+
+    experience != null -> "Nothing here to ${experience.title.lowercase()} yet" to
+        "Search for something and choose Get it, and it appears here once heyarr has a copy."
+
+    else -> "The library is empty" to "Scan a library root on the node, or Want something and let heyarr find it."
 }
 
 /** Load (or reload) every work the node catalogues. */
@@ -219,12 +237,14 @@ private fun LibrarySkeleton(cell: Dp, aspectOf: MediaType) {
 }
 
 @Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 private fun LibraryGrid(
     session: AppSession,
     works: List<Work>,
     cell: Dp,
     onOpenWork: (Work) -> Unit,
-    onWant: (String, String, MediaType) -> Unit,
+    /** Want on hover, for Manage → Library; null on a shelf, which shows the consumer face instead. */
+    onWant: ((String, String, MediaType) -> Unit)?,
 ) {
     // Group by card shape when the shelf mixes them, so wide, poster and square cards each fill
     // their own rows instead of leaving holes between them.
@@ -265,9 +285,11 @@ private fun GridCard(
     session: AppSession,
     w: Work,
     onOpenWork: (Work) -> Unit,
-    onWant: (String, String, MediaType) -> Unit,
+    onWant: ((String, String, MediaType) -> Unit)?,
 ) {
     val type = MediaType.from(w.kind)
+    val status = session.index.statusOf(w.id)
+    val shelf = onWant == null
     val cover by rememberCover(session, type, w.title, w.artworkPath, w.year, w.artist ?: w.author)
     MediaCard(
         w.title,
@@ -276,15 +298,18 @@ private fun GridCard(
         subtitle = w.artist ?: w.author,
         meta = listOf(w.year?.toString()),
         artwork = cover.bitmap,
-        status = session.index.statusOf(w.id),
-        onWant = { onWant(w.id, w.title, type) },
+        // A shelf shows the consumer face; Manage → Library keeps the want status and Want.
+        status = status.takeUnless { shelf },
+        onWant = onWant?.let { want -> { want(w.id, w.title, type) } },
         mode = session.mode,
+        availability = w.availability(status).takeIf { shelf },
         width = null,
     )
 }
 
 @Composable
-private fun LibraryList(session: AppSession, works: List<Work>, onOpenWork: (Work) -> Unit) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun LibraryList(session: AppSession, works: List<Work>, onOpenWork: (Work) -> Unit, shelf: Boolean) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         contentPadding = PaddingValues(bottom = 32.dp),
@@ -305,7 +330,8 @@ private fun LibraryList(session: AppSession, works: List<Work>, onOpenWork: (Wor
                     w.recency?.take(10),
                 ),
                 artwork = cover.bitmap,
-                status = session.index.statusOf(w.id),
+                status = session.index.statusOf(w.id).takeUnless { shelf },
+                availability = w.availability(session.index.statusOf(w.id)).takeIf { shelf },
             )
         }
     }

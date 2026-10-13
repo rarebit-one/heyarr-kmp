@@ -51,7 +51,18 @@ object Fixtures {
         work("w-ys-s4", "series", "Yellowstone Season 4 Mp4", null),
     )
 
-    fun worksList() = """{"items":[${works.joinToString(",")}],"next_cursor":null}"""
+    /** Works a want created that nothing has satisfied yet: listed, but with no file to play. */
+    private val UNHELD = setOf(SINTEL, "w-piranesi", "w-kid-a")
+
+    /** The listing with its `primary_asset` embed (`include=primary_asset`): null for a work holding no file. */
+    fun worksList(): String {
+        val rows = works.map { w ->
+            val id = JsonScan.stringField(w, "id")
+            val asset = if (id in UNHELD) "null" else """{"asset_id":"as-$id","blob_hash":"$HASH"}"""
+            w.trimEnd().removeSuffix("}") + ""","primary_asset":$asset}"""
+        }
+        return """{"items":[${rows.joinToString(",")}],"next_cursor":null}"""
+    }
 
     fun searchContent(query: String?, type: String?): String {
         val q = query?.lowercase().orEmpty()

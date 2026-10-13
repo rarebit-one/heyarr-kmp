@@ -29,6 +29,7 @@ import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.feeds.FollowedSource
 import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.core.mcp.Want
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
@@ -54,13 +55,8 @@ import one.rarebit.heyarr.ui.theme.Tokens
 
 /** One media type's rail, in that type's accent. */
 @Composable
-internal fun TypeRail(
-    session: AppSession,
-    t: MediaType,
-    rail: RailState<SearchHit>,
-    onOpen: (Route) -> Unit,
-    onWant: (String, String, MediaType) -> Unit,
-) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+internal fun TypeRail(session: AppSession, t: MediaType, rail: RailState<SearchHit>, onOpen: (Route) -> Unit) {
     MediaScope(t) {
         Rail(
             if (t == MediaType.BOOK) "For reading" else t.plural,
@@ -84,7 +80,6 @@ internal fun TypeRail(
                 hit.year,
                 hit.creator,
             )
-            val status = session.index.statusOf(hit.workId)
             MediaCard(
                 hit.title, MediaType.from(hit.contentType), onOpen = {
                     onOpen(Route.Detail(hit.workId, t, hit.title, from = "Home"))
@@ -93,10 +88,9 @@ internal fun TypeRail(
                 meta = listOf(
                     hit.year?.toString(),
                 ),
-                artwork = cover.bitmap, status = status,
-                onWant = {
-                    onWant(hit.workId, hit.title, t)
-                }, mode = session.mode,
+                artwork = cover.bitmap,
+                mode = session.mode,
+                availability = session.cataloguedAvailability(hit.workId),
                 width = if (MediaThemes.of(t).aspect ==
                     CardAspect.SQUARE
                 ) {
@@ -105,37 +99,6 @@ internal fun TypeRail(
                     Tokens.posterWidth
                 },
                 showBadge = false,
-            )
-        }
-    }
-}
-
-/** Standing subscriptions the node polls. */
-@Composable
-internal fun FollowingRail(session: AppSession, followed: RailState<FollowedSource>, onOpen: (Route) -> Unit) {
-    MediaScope(MediaType.PODCAST) {
-        Rail(
-            "Following",
-            followed,
-            subtitle = "Standing subscriptions the node polls",
-            emptyText = "You follow nothing yet — add a feed or TVDB series in Settings.",
-            skeletonAspect = CardAspect.SQUARE,
-            skeletonWidth = Tokens.squareWidth,
-            key = { it.id },
-        ) { s ->
-            val cover by rememberCover(session, MediaType.from(s.type), s.title, null, feedRef = s.feedRef)
-            MediaCard(
-                s.title,
-                MediaType.from(s.type),
-                onOpen = {
-                    s.workId?.let {
-                        onOpen(Route.Detail(it, MediaType.from(s.type), s.title, from = "Home"))
-                    }
-                },
-                subtitle = s.feedRef,
-                meta = listOf("${s.itemsArchived}/${s.itemsKnown} archived", s.health),
-                artwork = cover.bitmap,
-                width = Tokens.squareWidth,
             )
         }
     }

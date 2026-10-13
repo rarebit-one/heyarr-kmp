@@ -49,6 +49,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.SearchFilter
 import one.rarebit.heyarr.core.state.SearchGrouping
@@ -69,6 +70,7 @@ import one.rarebit.heyarr.ui.components.ArchiveVignette
 import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GetItButton
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
@@ -91,12 +93,17 @@ import one.rarebit.heyarr.ui.theme.Tokens
  * lands the focus here. Recent searches are local to this machine and say so.
  */
 @Composable
+// Compose naming; a screen or row takes its content and callbacks as parameters.
+@Suppress("FunctionNaming", "LongParameterList")
 fun SearchScreen(
     session: AppSession,
     search: SearchController,
     onOpen: (Route) -> Unit,
-    onWant: (workId: String, title: String, type: MediaType) -> Unit,
+    /** "Get it" for a work the library knows: a one-click want, or the Want sheet when no profile fits. */
+    onGetIt: (workId: String, title: String, type: MediaType) -> Unit,
     onWantTitle: WantByTitle,
+    /** "Get it" for a discovery hit, by title. */
+    onGetItTitle: WantByTitle,
     focusRequester: FocusRequester,
     modifier: Modifier = Modifier,
     initialDiscover: Boolean = false,
@@ -136,12 +143,12 @@ fun SearchScreen(
         )
         SearchFilterBar(discovering, { discovering = it }, search, sections)
         if (discovering) {
-            ProviderSearchPane(session, search.query, onWantTitle)
+            ProviderSearchPane(session, search.query, onWantTitle, onGetItTitle)
             return@Column
         }
         if (!search.isIdle) {
             ContextPane {
-                SelectedResult(session, search.selectedRow(), rows.firstOrNull(), ::open, onWant)
+                SelectedResult(session, search.selectedRow(), rows.firstOrNull(), ::open, onGetIt)
             }
         }
         when {
@@ -163,7 +170,7 @@ fun SearchScreen(
                 },
             )
 
-            else -> SearchResults(session, search, listState, ::open, onWant)
+            else -> SearchResults(session, search, listState, ::open, onGetIt)
         }
     }
 }
@@ -175,7 +182,7 @@ private fun ResultRow(
     row: SearchRow,
     selected: Boolean,
     onOpen: () -> Unit,
-    onWant: (String, String, MediaType) -> Unit,
+    onGetIt: (String, String, MediaType) -> Unit,
     /** The trailing Open button: always opens, even where a click on the row only selects it. */
     onOpenNow: () -> Unit = onOpen,
 ) {
@@ -183,7 +190,7 @@ private fun ResultRow(
         is SearchRow.WorkRow -> {
             val hit = row.hit
             val cover by rememberCover(session, row.type, hit.title, hit.artworkPath, hit.year, hit.creator)
-            val status = session.index.statusOf(hit.workId)
+            val availability = session.cataloguedAvailability(hit.workId)
             MediaRow(
                 title = hit.title, type = row.type, onOpen = onOpen, subtitle = hit.creator,
                 meta = listOf(
@@ -192,16 +199,14 @@ private fun ResultRow(
                     hit.attributes["album"],
                     hit.attributes["series"],
                 ),
-                artwork = cover.bitmap, status = status, selected = selected,
+                artwork = cover.bitmap, availability = availability, selected = selected,
                 trailing = {
-                    // Want writes desired state (enrolled-only Surface.WANT): hide it for a
-                    // guest — GuestGate is the single source of truth — and fall back to Open.
-                    if (status == LibraryStatus.NOT_TRACKED &&
-                        GuestGate.allows(session.mode, Surface.WANT)
-                    ) {
-                        PrimaryButton("Want", {
-                            onWant(hit.workId, hit.title, row.type)
-                        }, icon = HeyarrIcons.Add, compact = true, contentDescription = "Want ${hit.title}")
+                    // Getting it writes desired state (Surface.WANT, via offersGetIt): a guest is
+                    // offered Open instead.
+                    if (availability?.offersGetIt(session.mode) == true) {
+                        GetItButton({
+                            onGetIt(hit.workId, hit.title, row.type)
+                        }, primary = true, compact = true, title = hit.title)
                     } else {
                         SecondaryButton("Open", onOpenNow, compact = true)
                     }
@@ -214,8 +219,10 @@ private fun ResultRow(
             type = row.type,
             onOpen = onOpen,
             subtitle = row.hit.workTitle,
-            meta = listOf(row.hit.kind, if (row.hit.blobHash != null) "file held" else "no file"),
-            status = if (row.hit.blobHash != null) LibraryStatus.IN_LIBRARY else null,
+            meta = listOf(row.hit.kind),
+            // No file says nothing about a want (a followed source projects items nobody asked for):
+            // neutral, not "not available".
+            availability = Availability.READY.takeIf { row.hit.blobHash != null },
             selected = selected,
         )
 
@@ -236,7 +243,7 @@ private fun ResultRow(
                     row.source.health?.let { "health $it" },
                 ),
                 artwork = cover.bitmap,
-                status = LibraryStatus.IN_LIBRARY,
+                availability = Availability.READY,
                 selected = selected,
             )
         }
@@ -364,12 +371,13 @@ private fun SearchFilterChips(search: SearchController, sections: List<SearchSec
 
 /** The results, a header per media section, streamed in as each segment lands; ↑/↓ selection is by flattened index. */
 @Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 private fun SearchResults(
     session: AppSession,
     search: SearchController,
     listState: LazyListState,
     onOpenRow: (SearchRow) -> Unit,
-    onWant: (String, String, MediaType) -> Unit,
+    onGetIt: (String, String, MediaType) -> Unit,
 ) {
     val sections = search.sections
     val wide = hasContextColumn
@@ -415,7 +423,7 @@ private fun SearchResults(
                                 // and a second click on the selected row opens it; without one, a
                                 // click opens straight away.
                                 if (wide && i != search.selected) search.selected = i else onOpenRow(row)
-                            }, onWant = onWant, onOpenNow = { onOpenRow(row) })
+                            }, onGetIt = onGetIt, onOpenNow = { onOpenRow(row) })
                             if (row.key != seg.rows.lastOrNull()?.key) {
                                 EditorialRule(Modifier.padding(start = 60.dp, end = 8.dp), dashed = true)
                             }
@@ -497,7 +505,13 @@ private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: ()
 
 /** Metadata discovery shares the query but keeps provider answers separate from owned works. */
 @Composable
-private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: WantByTitle) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun ProviderSearchPane(
+    session: AppSession,
+    query: String,
+    onWantTitle: WantByTitle,
+    onGetItTitle: WantByTitle,
+) {
     val discovery by session.discoveryController.state.collectAsState()
     LaunchedEffect(query, session.generation) {
         session.discoveryController.loadForGeneration(session.generation)
@@ -509,13 +523,12 @@ private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: 
             SectionHeader(
                 "Discover",
                 icon = HeyarrIcons.Discover,
-                subtitle = "Find titles to add — series, movies, books and music the node's metadata providers know " +
-                    "about but the library doesn't hold yet.",
+                subtitle = "Films, series, books and music you don't have yet — Get one and heyarr finds a copy.",
             )
         }
         item {
             if (query.isBlank()) {
-                Text("Enter a title above to explore the metadata catalogue.", color = Tokens.textMuted)
+                Text("Type a title above to find something new.", color = Tokens.textMuted)
             } else {
                 DiscoveryResults(
                     DiscoveryResultModel(
@@ -526,6 +539,7 @@ private fun ProviderSearchPane(session: AppSession, query: String, onWantTitle: 
                         discovery.error,
                     ),
                     onWantTitle,
+                    onGetItTitle,
                 )
             }
         }

@@ -45,9 +45,19 @@ class WorksJsonTest {
     }
 
     @Test
+    fun aListedWorkIsPlayableOnlyWithAPrimaryAsset() {
+        val held = """{"id":"a","title":"Held","primary_asset":{"asset_id":"x"}}"""
+        val wanted = """{"id":"b","title":"Wanted","primary_asset":null}"""
+        val body = """{"items":[$held,$wanted]}"""
+        val works = WorksJson.parse(body)
+        assertEquals(listOf(true, false), works.map { it.playable })
+        assertNull(WorksJson.parseOne("""{"id":"a","title":"Held"}""")!!.playable)
+    }
+
+    @Test
     fun urlBuilderAddsLimitAndCursor() {
         assertEquals(
-            "https://h.example/api/v1/works?limit=200&include=artwork",
+            "https://h.example/api/v1/works?limit=200&include=artwork,primary_asset",
             LibraryClient.worksUrl("https://h.example/", null),
         )
         assertTrue(LibraryClient.worksUrl("https://h.example", "c/d").endsWith("&cursor=c%2Fd"))

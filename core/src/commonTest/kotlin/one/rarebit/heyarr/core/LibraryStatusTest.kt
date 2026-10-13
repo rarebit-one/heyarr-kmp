@@ -43,5 +43,8 @@ class LibraryStatusTest {
         assertEquals(LibraryStatus.WANTED, optimistic.statusOf("w-blue"))
         // The original is untouched — that is what rollback restores.
         assertEquals(LibraryStatus.NOT_TRACKED, index.statusOf("w-blue"))
+        // Withdrawing it removes only that optimistic entry.
+        assertEquals(LibraryStatus.NOT_TRACKED, optimistic.withoutPendingWant("w-blue").statusOf("w-blue"))
+        assertEquals(index.items, optimistic.withoutPendingWant("w-blue").items)
     }
 }
