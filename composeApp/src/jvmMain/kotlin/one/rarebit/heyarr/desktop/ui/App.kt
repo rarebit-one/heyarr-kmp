@@ -86,6 +86,7 @@ import one.rarebit.heyarr.desktop.ui.screens.ReaderScreen
 import one.rarebit.heyarr.desktop.ui.screens.SearchScreen
 import one.rarebit.heyarr.desktop.ui.screens.SettingsScreen
 import one.rarebit.heyarr.desktop.ui.screens.SettingsState
+import one.rarebit.heyarr.desktop.ui.screens.SourcesScreen
 import one.rarebit.heyarr.desktop.ui.screens.WantByTitle
 import one.rarebit.heyarr.desktop.ui.screens.accentHex
 import one.rarebit.heyarr.ui.components.GhostButton
@@ -173,6 +174,7 @@ fun App(
     var consuming by remember { mutableStateOf(initialRoute is Route.Consume) }
     val missing = remember { MissingState() }
     val nowPlaying = remember { NowPlayingState() }
+    val contextPane = remember { ContextPaneState() }
     val settingsState = remember { SettingsState() }
     val details = remember { mutableStateMapOf<String, DetailState>() }
     val playerScreen = remember { PlayerScreenState() }
@@ -382,6 +384,10 @@ fun App(
             ) {
                 BoxWithConstraints(Modifier.fillMaxSize()) {
                     val audioDock = showAudioDock(playback.type, playback.active, maxWidth.value, fullscreen)
+                    // The context column needs a wide window, and gives way to the audio dock and to
+                    // the full-surface consume screens (player, reader).
+                    val contextColumn = !fullscreen && !audioDock && maxWidth >= CONTEXT_COLUMN_MIN_WINDOW &&
+                        current !is Route.Player && current !is Route.Reader
                     Row(Modifier.fillMaxSize()) {
                         if (!fullscreen) {
                             SideNav(
@@ -399,7 +405,9 @@ fun App(
                             )
                         }
                         Column(Modifier.weight(1f).fillMaxHeight()) {
-                            if (!fullscreen && current != Route.Search && current != Route.Discover) {
+                            // One search entry, on browse screens only: Search has its own field, and
+                            // the player and reader keep their surface to themselves.
+                            if (!fullscreen && current.showsSearchEntry) {
                                 SearchEntryButton(
                                     ::openSearch,
                                     Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 8.dp),
@@ -450,78 +458,86 @@ fun App(
                                 }
                             }
                             Box(Modifier.weight(1f)) {
-                                when (val r = current) {
-                                    is Route.Consume -> LibraryScreen(
-                                        session,
-                                        shelves.getValue(r.experience),
-                                        ::go,
-                                        onWant,
-                                        experience = r.experience,
-                                    )
+                                CompositionLocalProvider(
+                                    LocalContextPane provides contextPane.takeIf {
+                                        contextColumn
+                                    },
+                                ) {
+                                    when (val r = current) {
+                                        is Route.Consume -> LibraryScreen(
+                                            session,
+                                            shelves.getValue(r.experience),
+                                            ::go,
+                                            onWant,
+                                            experience = r.experience,
+                                        )
 
-                                    Route.Home -> HomeScreen(session, home, ::go, onWant)
+                                        Route.Home -> HomeScreen(session, home, ::go, onWant)
 
-                                    Route.Discover -> SearchScreen(
-                                        session,
-                                        search,
-                                        ::go,
-                                        onWant,
-                                        onWantTitle,
-                                        searchFocus,
-                                        initialDiscover = true,
-                                    )
+                                        Route.Discover -> SearchScreen(
+                                            session,
+                                            search,
+                                            ::go,
+                                            onWant,
+                                            onWantTitle,
+                                            searchFocus,
+                                            initialDiscover = true,
+                                        )
 
-                                    Route.Search -> SearchScreen(
-                                        session,
-                                        search,
-                                        ::go,
-                                        onWant,
-                                        onWantTitle,
-                                        searchFocus,
-                                    )
+                                        Route.Search -> SearchScreen(
+                                            session,
+                                            search,
+                                            ::go,
+                                            onWant,
+                                            onWantTitle,
+                                            searchFocus,
+                                        )
 
-                                    Route.Library -> LibraryScreen(session, library, ::go, onWant)
+                                        Route.Library -> LibraryScreen(session, library, ::go, onWant)
 
-                                    Route.Missing -> MissingScreen(session, missing, ::go, onWantTitle = {
-                                        if (session.isGuest) {
-                                            showSignIn =
-                                                true
-                                        } else {
-                                            want = WantRequest(null, "")
-                                        }
-                                    })
+                                        Route.Missing -> MissingScreen(session, missing, ::go, onWantTitle = {
+                                            if (session.isGuest) {
+                                                showSignIn =
+                                                    true
+                                            } else {
+                                                want = WantRequest(null, "")
+                                            }
+                                        })
 
-                                    Route.NowPlaying -> NowPlayingScreen(session, nowPlaying)
+                                        Route.NowPlaying -> NowPlayingScreen(session, nowPlaying)
 
-                                    Route.Settings -> SettingsScreen(session, settingsState, onSourcesChanged = {
-                                        search.invalidateSources()
-                                    })
+                                        Route.Settings -> SettingsScreen(session, settingsState)
 
-                                    is Route.Detail -> DetailScreen(
-                                        session,
-                                        r,
-                                        details.getOrPut(r.workId) {
-                                            DetailState(r.workId)
-                                        },
-                                        onBack = nav::back,
-                                        onOpen = ::go,
-                                        onWant = onWant,
-                                    )
+                                        Route.Sources -> SourcesScreen(session, settingsState, onSourcesChanged = {
+                                            search.invalidateSources()
+                                        })
 
-                                    is Route.Player -> PlayerScreen(
-                                        session,
-                                        r,
-                                        playerScreen,
-                                        fullscreen = fullscreen,
-                                        onFullscreen = ::setFullscreen,
-                                        onBack = {
-                                            if (fullscreen) setFullscreen(false)
-                                            nav.back()
-                                        },
-                                        onOpen = ::go,
-                                    )
+                                        is Route.Detail -> DetailScreen(
+                                            session,
+                                            r,
+                                            details.getOrPut(r.workId) {
+                                                DetailState(r.workId)
+                                            },
+                                            onBack = nav::back,
+                                            onOpen = ::go,
+                                            onWant = onWant,
+                                        )
 
-                                    is Route.Reader -> ReaderScreen(session, r, onBack = nav::back)
+                                        is Route.Player -> PlayerScreen(
+                                            session,
+                                            r,
+                                            playerScreen,
+                                            fullscreen = fullscreen,
+                                            onFullscreen = ::setFullscreen,
+                                            onBack = {
+                                                if (fullscreen) setFullscreen(false)
+                                                nav.back()
+                                            },
+                                            onOpen = ::go,
+                                        )
+
+                                        is Route.Reader -> ReaderScreen(session, r, onBack = nav::back)
+                                    }
                                 }
                             }
                             if (playback.active && current !is Route.Player && !fullscreen &&
@@ -536,6 +552,8 @@ fun App(
                                 onOpen = { playback.current?.let { nav.go(it) } },
                                 companion = current is Route.Reader,
                             )
+                        } else if (contextColumn) {
+                            contextPane.content?.let { ContextColumn(it) }
                         }
                     }
                 }

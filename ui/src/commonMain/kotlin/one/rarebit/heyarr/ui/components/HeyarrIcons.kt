@@ -92,6 +92,7 @@ object HeyarrIcons {
     val Add by lazy { line("add", "M12 5v14", "M5 12h14") }
     val Close by lazy { line("close", "M6 6l12 12", "M18 6L6 18") }
     val Back by lazy { line("back", "M19 12H5", "M11 6l-6 6l6 6") }
+    val Forward by lazy { line("forward", "M5 12h14", "M13 6l6 6l-6 6") }
     val ExpandMore by lazy { line("expand_more", "M6 9l6 6l6-6") }
     val ExpandLess by lazy { line("expand_less", "M6 15l6-6l6 6") }
     val More by lazy { solid("more", "M4 11h2.5v2.5H4z", "M10.75 11h2.5v2.5h-2.5z", "M17.5 11H20v2.5h-2.5z") }

@@ -8,7 +8,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,7 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -26,7 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.sp
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.ui.Experience
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.ui.components.ArchiveMark
 import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.focusRing
@@ -59,174 +60,183 @@ val CONSUME_ITEMS = listOf(
     NavItem(Route.Consume(Experience.READ), "Read", HeyarrIcons.Read, "Ctrl 3"),
 )
 
+/**
+ * The manage half of the rail, as the brief lists it. Home is the mark at the top; Cast is not a
+ * destination of its own but where "Play on…" and the now-playing bar lead (Route.NowPlaying).
+ */
 val NAV_ITEMS = listOf(
-    NavItem(Route.Home, "Home", HeyarrIcons.Home, "⌃1"),
     NavItem(Route.Search, "Search", HeyarrIcons.Search, "Ctrl+F"),
-    NavItem(Route.Library, "Library", HeyarrIcons.Library, "⌃3"),
-    NavItem(Route.Missing, "Missing", HeyarrIcons.Missing, "⌃4"),
-    NavItem(Route.NowPlaying, "Cast", HeyarrIcons.Cast, "⌃5"),
-    NavItem(Route.Settings, "Settings", HeyarrIcons.Settings, "⌘,"),
+    NavItem(Route.Library, "Library", HeyarrIcons.Library),
+    NavItem(Route.Missing, "Missing", HeyarrIcons.Missing, "Ctrl 4"),
+    NavItem(Route.Sources, "Sources", HeyarrIcons.Sources),
+    NavItem(Route.Settings, "Settings", HeyarrIcons.Settings, "Ctrl ,"),
 )
+
+/** Below this height the rail drops its captions so every destination stays on screen. */
+private val COMPACT_RAIL_HEIGHT = 640.dp
 
 /** The rail's uppercase caption style: small sans, tracked. */
 private val RAIL_LABEL: androidx.compose.ui.text.TextStyle
     @Composable get() = androidx.compose.ui.text.TextStyle(
         fontFamily = HeyarrFonts.rubik,
-        fontSize = 9.5.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.9.sp,
+        fontSize = 10.sp,
+        fontWeight = FontWeight.Medium,
+        letterSpacing = 1.4.sp,
         lineHeight = 12.sp,
     )
 
 /**
- * The left rail: a logo, then each destination as an icon over an uppercase caption,
- * and the connection at the foot. One width at every window size. The active item
- * gets a tinted tile in the accent of the media in focus.
+ * The left rail: a tool selector rather than a sidebar. The mark (Home) and a connection glyph
+ * sit at the top; each destination is an icon over an uppercase caption. Only the active item
+ * gets a field — a faint mint tile and a marker — so the rail stays quiet. In a short window the
+ * captions drop and every destination still fits, instead of scrolling out of reach.
  */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 fun SideNav(current: Route, onGo: (Route) -> Unit, connection: NavConnectionInfo, modifier: Modifier = Modifier) {
-    Column(
-        modifier.fillMaxHeight().width(
-            Tokens.navWidth,
-        ).background(Tokens.surface1).padding(vertical = 14.dp, horizontal = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        one.rarebit.heyarr.ui.components.ArchiveMark(Modifier.padding(4.dp))
+    BoxWithConstraints(modifier.fillMaxHeight().width(Tokens.navWidth).background(Tokens.bgBase)) {
+        val compact = maxHeight < COMPACT_RAIL_HEIGHT
         Column(
-            Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+            Modifier.fillMaxHeight().fillMaxWidth().padding(vertical = 14.dp, horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 0.dp else 2.dp),
         ) {
-            Spacer(Modifier.height(8.dp))
-            for (item in CONSUME_ITEMS) {
-                RailItem(item, active = current.section == item.route.section, accent = Tokens.accent) {
-                    onGo(item.route)
+            // Section, not route equality: a work opened from Home still belongs to Home.
+            HomeMark(current.section == Route.Home.section) { onGo(Route.Home) }
+            ConnectionGlyph(connection)
+            Column(
+                Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(if (compact) 0.dp else 4.dp),
+            ) {
+                Spacer(Modifier.height(if (compact) 6.dp else 14.dp))
+                for (item in CONSUME_ITEMS) {
+                    RailItem(item, active = current.section == item.route.section, compact = compact) {
+                        onGo(item.route)
+                    }
                 }
-            }
-            Spacer(Modifier.height(4.dp))
-            EditorialRule(Modifier.padding(horizontal = 10.dp), dashed = true)
-            Spacer(Modifier.height(4.dp))
-            for (item in NAV_ITEMS) {
-                val selected = when {
-                    current == Route.Discover -> item.route == Route.Search
-                    current.section == item.route.section -> true
-                    else -> false
-                }
-                RailItem(item, active = selected, accent = Tokens.accent) {
-                    onGo(item.route)
+                EditorialRule(
+                    Modifier.padding(horizontal = 14.dp, vertical = if (compact) 4.dp else 8.dp),
+                    dashed = true,
+                )
+                for (item in NAV_ITEMS) {
+                    val selected = when {
+                        current == Route.Discover -> item.route == Route.Search
+                        current.section == item.route.section -> true
+                        else -> false
+                    }
+                    RailItem(item, active = selected, compact = compact) { onGo(item.route) }
                 }
             }
         }
-        ConnectionTile(connection.state, connection.detail, connection.onOpen)
+        // A hairline between the rail and the workspace, instead of a filled rail panel.
+        Box(Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(Tokens.hairline).background(Tokens.border))
     }
 }
 
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-private fun RailItem(item: NavItem, active: Boolean, accent: Color, onClick: () -> Unit) {
+private fun HomeMark(active: Boolean, onClick: () -> Unit) {
     val interaction = remember { MutableInteractionSource() }
-    val hovered by interaction.collectIsHoveredAsState()
-    val shape = RectangleShape
-    val tile = when {
-        active -> accent.copy(alpha = 0.1f)
-        hovered -> Tokens.surface2
-        else -> Color.Transparent
-    }
-    val fg = when {
-        active -> Tokens.accentGradEnd
-        hovered -> Tokens.textPrimary
-        else -> Tokens.textMuted
-    }
-    Column(
-        Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(Tokens.radiusButton))
-            .hoverable(interaction)
-            .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = onClick)
+    Box(
+        Modifier.focusRing(interaction, RectangleShape)
+            .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
             .semantics {
-                this.contentDescription = item.label
-                this.selected = active
+                contentDescription = "Home"
+                selected = active
             }
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
+            .padding(6.dp),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(
-            Modifier.size(38.dp).focusRing(
-                interaction,
-                shape,
-            ).background(
-                tile,
-                shape,
-            ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(item.icon, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))
-            if (active) {
-                Box(Modifier.align(Alignment.CenterStart).width(2.dp).height(14.dp).background(accent))
-            }
-        }
-        Text(
-            item.label.uppercase(),
-            style = RAIL_LABEL,
-            color = if (active) Tokens.accentGradEnd else Tokens.textMuted,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-            softWrap = false,
-        )
+        ArchiveMark()
     }
 }
 
 @Composable
-private fun ConnectionTile(connection: Connection, detail: String?, onClick: () -> Unit) {
-    val (tone, label) = when (connection) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun RailItem(item: NavItem, active: Boolean, compact: Boolean, onClick: () -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
+    val fg = when {
+        active -> Tokens.accent
+        hovered -> Tokens.textPrimary
+        else -> Tokens.textMuted
+    }
+    Box(
+        Modifier.fillMaxWidth()
+            .focusRing(interaction, RectangleShape)
+            .background(if (active) Tokens.accent.copy(alpha = 0.08f) else Color.Transparent)
+            .hoverable(interaction)
+            .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = onClick)
+            .semantics {
+                contentDescription = item.label + (item.hint?.let { " ($it)" } ?: "")
+                selected = active
+            },
+    ) {
+        if (active) {
+            Box(
+                Modifier.align(
+                    Alignment.CenterStart,
+                ).width(2.dp).height(if (compact) 20.dp else 28.dp).background(Tokens.accent),
+            )
+        }
+        Column(
+            Modifier.fillMaxWidth().padding(vertical = if (compact) 8.dp else 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(item.icon, contentDescription = null, tint = fg, modifier = Modifier.size(22.dp))
+            if (!compact) {
+                Text(
+                    item.label.uppercase(),
+                    style = RAIL_LABEL,
+                    color = fg,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    softWrap = false,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The connection as one small glyph under the mark: its tone and shape say the state, and it
+ * opens the connection sheet. Latency and the host live in that sheet, not in the rail, where
+ * they were clipped in a narrow window.
+ */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun ConnectionGlyph(connection: NavConnectionInfo) {
+    val (tone, label) = when (connection.state) {
         Connection.ONLINE -> Tokens.success to "Online"
         Connection.OFFLINE -> Tokens.danger to "Offline"
         Connection.UNAUTHORIZED -> Tokens.warning to "Refused"
-        Connection.UNCONFIGURED -> Tokens.textDisabled to "Set up"
+        Connection.UNCONFIGURED -> Tokens.textDisabled to "Not set up"
         Connection.UNKNOWN -> Tokens.textDisabled to "Connecting"
     }
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
-    Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(Tokens.radiusButton))
-            .background(if (hovered) Tokens.surface2 else Color.Transparent, RoundedCornerShape(Tokens.radiusButton))
+    Row(
+        Modifier.focusRing(interaction, RectangleShape)
             .hoverable(interaction)
-            .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
-            .semantics {
-                this.contentDescription =
-                    "heyarr connection: $label${detail?.let { ", $it" } ?: ""}. Open connection details"
-            }
-            .padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(
-            Modifier.size(
-                36.dp,
-            ).focusRing(
-                interaction,
-                RectangleShape,
-            ).background(
-                Tokens.surface2,
-                RectangleShape,
-            ).border(Tokens.hairline, tone.copy(alpha = 0.6f), RectangleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Box(Modifier.size(10.dp).background(tone, RectangleShape))
-        }
-        Text(label.uppercase(), style = RAIL_LABEL, color = tone, maxLines = 1, softWrap = false)
-        if (detail !=
-            null
-        ) {
-            Text(
-                detail.substringBefore(" ·"),
-                style = RAIL_LABEL.copy(letterSpacing = 0.2.sp, fontWeight = FontWeight.Normal),
-                color = Tokens.textDisabled,
-                maxLines = 1,
-                softWrap = false,
+            .clickable(
+                interactionSource = interaction,
+                indication = null,
+                role = Role.Button,
+                onClick = connection.onOpen,
             )
-        }
+            .semantics {
+                contentDescription =
+                    "heyarr connection: $label${connection.detail?.let { ", $it" } ?: ""}. Open connection details"
+            }
+            .padding(horizontal = 6.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        // Online is solid; every other state is an outline, so the glyph does not rest on colour alone.
+        val glyph = Modifier.size(7.dp)
+        Box(if (connection.state == Connection.ONLINE) glyph.background(tone) else glyph.border(1.5.dp, tone))
+        Box(Modifier.size(width = 10.dp, height = 2.dp).background(tone.copy(alpha = if (hovered) 0.9f else 0.5f)))
     }
 }

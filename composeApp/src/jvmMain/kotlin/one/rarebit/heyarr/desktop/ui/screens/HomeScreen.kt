@@ -29,6 +29,7 @@ import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.library.Work
 import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.desktop.ui.ContextPane
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Hero
 import one.rarebit.heyarr.desktop.ui.components.HeroSkeleton
@@ -86,6 +87,7 @@ fun HomeScreen(
         ConnectFirst(onOpen, modifier)
         return
     }
+    ContextPane { HomeContext(session, onOpen) }
 
     LazyColumn(
         modifier.fillMaxSize(),
