@@ -58,6 +58,7 @@ import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
+import one.rarebit.heyarr.ui.components.MetaLine
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
@@ -97,12 +98,8 @@ internal fun SynopsisBlock(detail: WorkDetail, type: MediaType, seasons: List<Se
                 )
             }
 
-            // Why there is no synopsis is a technical detail, not something to read before the title.
-            else -> TechnicalDisclosure(
-                "The node has no metadata provider and no public source knew this title. Titles, " +
-                    "seasons and episodes come from the files themselves.",
-                label = "No synopsis",
-            )
+            // No synopsis is simply no synopsis on the title page; why is a Manage question.
+            else -> Unit
         }
     }
 }
@@ -121,15 +118,8 @@ internal fun SeasonsBlock(
         MediaRowSkeleton(5)
         return
     }
-    // The calendar: the library's seasons, plus any TVmaze knows that the library has never seen.
     val ext = state.externalEpisodes
-    val extSeasons = ext.map { it.season }.distinct().filter { n -> seasons.none { it.number == n } }.sorted()
-    val all: List<Season> = (seasons + extSeasons.map { Season(it, emptyList()) }).sortedWith(
-        compareBy({
-            it.number ==
-                null
-        }, { if (it.number == 0) Int.MAX_VALUE else it.number ?: 0 }),
-    )
+    val all = calendarSeasons(seasons, state)
     if (all.isEmpty()) {
         val lookingHint = if (wants.isNotEmpty()) " heyarr is looking — Manage → Releases shows what it found." else ""
         Notice(
@@ -144,15 +134,9 @@ internal fun SeasonsBlock(
         SectionHeader(
             "Episodes",
             subtitle =
-            "${selected.held} of $known held" + (if (ext.isNotEmpty()) "  ·  calendar via TVmaze" else ""),
-            trailing = {
-                SecondaryButton(if (state.wantMenu) "Close" else "Want more…", {
-                    state.wantMenu = !state.wantMenu
-                }, icon = HeyarrIcons.Add, compact = true)
-            },
+            "${selected.held} of $known to watch" + (if (ext.isNotEmpty()) "  ·  calendar via TVmaze" else ""),
         )
         SeasonChips(all, selected, ext) { state.season = it }
-        if (state.wantMenu) WantSeasonsPanel(session, detail, all, wants)
         val rows: List<Any> = buildList {
             val byNumber = selected.episodes.associateBy { it.number }
             for (n in 1..known) add(byNumber[n] ?: n)
@@ -162,7 +146,7 @@ internal fun SeasonsBlock(
             for (row in rows) {
                 when (row) {
                     is CoreEpisode<*> -> EpisodeRow(session, detail, row.desktop(), state, extForSeason[row.number])
-                    is Int -> MissingEpisodeRow(session, selected, row, wants, state, extForSeason[row])
+                    is Int -> MissingEpisodeRow(session, selected, row, extForSeason[row])
                 }
             }
         }
@@ -368,21 +352,15 @@ internal fun FileBlock(session: AppSession, detail: WorkDetail, state: DetailSta
     val asset = detail.primaryAsset ?: return
     val file = state.assets?.firstOrNull { it.blobHash == asset.blobHash }
     Panel("This copy") {
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            for (tag in file?.let { Series.qualityTags(it) }.orEmpty()) RuleCode(tag, tone = Tokens.textMuted)
-            asset.mime?.let { RuleCode(it, tone = Tokens.textMuted) }
-            asset.sizeBytes?.let {
-                Text(
-                    PrimaryAsset.formatBytes(it),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Tokens.textMuted,
-                )
-            }
-        }
+        // Quality and size as plain facts; the container type and rule codes live in Manage → Health.
+        MetaLine(
+            file?.let { Series.qualityTags(it) }.orEmpty() +
+                listOfNotNull(asset.sizeBytes?.let { PrimaryAsset.formatBytes(it) }),
+        )
         val subs = state.assets.orEmpty().filter { Series.isSubtitle(it) }
         Text(
             if (subs.isEmpty()) {
-                "No captions held."
+                "No captions."
             } else {
                 "Captions: " +
                     subs.joinToString(", ") {

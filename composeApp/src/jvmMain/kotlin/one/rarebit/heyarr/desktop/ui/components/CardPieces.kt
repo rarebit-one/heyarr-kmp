@@ -170,10 +170,10 @@ internal fun HeroKicker(type: MediaType, kicker: String?) {
 /** Under the title: the media glyph and type, the facts that matter, and the library status, as text not boxes. */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-internal fun HeroFacts(type: MediaType, meta: List<String?>, status: LibraryStatus?) {
+internal fun HeroFacts(type: MediaType, meta: List<String?>, availability: Availability?) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Icon(type.icon(), contentDescription = null, tint = Tokens.textPrimary, modifier = Modifier.size(16.dp))
         MetaLine(listOf(type.label.uppercase()) + meta, color = Tokens.textPrimary.copy(alpha = 0.85f))
-        if (status != null) StatusPill(status)
+        if (availability != null) AvailabilityMark(availability)
     }
 }

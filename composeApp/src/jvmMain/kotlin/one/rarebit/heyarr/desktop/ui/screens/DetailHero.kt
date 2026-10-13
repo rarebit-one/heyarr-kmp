@@ -29,6 +29,7 @@ import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.mcp.Renderer
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
@@ -45,6 +46,7 @@ import one.rarebit.heyarr.desktop.ui.components.Hero
 import one.rarebit.heyarr.desktop.ui.components.HeroFacts
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.FilterChip
+import one.rarebit.heyarr.ui.components.GetItButton
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.Notice
@@ -59,15 +61,12 @@ import one.rarebit.heyarr.ui.theme.Tokens
 
 /** The detail screen's header: the art, the facts that matter for this kind of work, and what to do next. */
 @Composable
-internal fun DetailHero(
-    session: AppSession,
-    detail: WorkDetail,
-    type: MediaType,
-    wants: List<DesiredItem>,
-    state: DetailState,
-    seasons: List<Season>,
-    onWant: (String, String, MediaType) -> Unit,
-) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+internal fun DetailHero(m: DetailModel, detail: WorkDetail, onGetIt: (String, String, MediaType) -> Unit) {
+    val session = m.session
+    val type = m.type
+    val state = m.state
+    val seasons = m.seasons
     val scope = rememberCoroutineScope()
     val cover by rememberCover(
         session,
@@ -80,6 +79,11 @@ internal fun DetailHero(
     val art = cover.bitmap
     val status = session.index.statusOf(detail.work.id)
     val asset = detail.primaryAsset
+    // A feed's archive is its own; anything else is ready once there is a file to play.
+    val availability = when (type) {
+        MediaType.FEED, MediaType.PODCAST -> Availability.ofCatalogued(status)
+        else -> Availability.of(status, playable = asset != null || seasons.any { it.held > 0 })
+    }
     val work = detail.work
     val first = Series.firstPlayable(seasons)
     val actions = HeroActions(session, state, detail, type, scope)
@@ -90,25 +94,14 @@ internal fun DetailHero(
             type = type,
             meta = heroMeta(detail, type, seasons, state),
             artwork = art,
-            status = status,
+            availability = availability,
             synopsis = { SynopsisBlock(detail, type, seasons, state) },
             actions = {
-                HeroPrimaryAction(actions, first, wants) { onWant(work.id, work.title, type) }
-                HeroSecondaryActions(actions, first) { onWant(work.id, work.title, type) }
+                HeroPrimaryAction(actions, first, availability) { onGetIt(work.id, work.title, type) }
+                HeroSecondaryActions(actions, first)
             },
         )
-        if (asset == null && type != MediaType.SERIES && type != MediaType.FEED &&
-            type != MediaType.PODCAST
-        ) {
-            val wantHint = if (wants.isEmpty()) {
-                "not wanted, so nothing is looking for a copy."
-            } else {
-                "heyarr is looking. Releases shows what the indexers found."
-            }
-            Notice(
-                "Nothing to play yet — $wantHint",
-            )
-        }
+        notHeldNote(availability)?.let { Notice(it, tone = Tokens.slate) }
         CastPicker(session, state)
     }
 }
@@ -131,7 +124,7 @@ private fun heroMeta(detail: WorkDetail, type: MediaType, seasons: List<Season>,
             if (state.assets !=
                 null
             ) {
-                "$held episodes held"
+                "$held episodes"
             } else {
                 null
             },
@@ -180,26 +173,6 @@ private class HeroActions(
         playLocal(session, state, blobHash, label, scope, assetId = assetId, type = type)
     }
 
-    fun lookForIt(wants: List<DesiredItem>) {
-        val a = session.api ?: return
-        val w = wants.first()
-        scope.launch {
-            state.busy = "search"
-            session.io { a.searchReleases(w.id) }.onSuccess { r ->
-                when (r) {
-                    is McpResult.Ok -> session.toast(
-                        Toast.Kind.INFO,
-                        "Search queued",
-                        "An indexer can take thirty seconds to answer; open Manage → Releases in a moment.",
-                    )
-
-                    is McpResult.Refused -> session.refused(r)
-                }
-            }
-            state.busy = null
-        }
-    }
-
     fun openLocal() {
         val a = detail.primaryAsset ?: return
         scope.launch {
@@ -238,7 +211,8 @@ private class HeroActions(
 
 /** The hero's one primary call to action: play, look for a copy, want it — or nothing, for a guest. */
 @Composable
-private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, wants: List<DesiredItem>, onWant: () -> Unit) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, availability: Availability, onGetIt: () -> Unit) {
     val session = actions.session
     val state = actions.state
     val type = actions.type
@@ -254,8 +228,8 @@ private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, wants: List
             enabled = idle,
         )
 
-        // Nothing held: look for a copy, want it, or (a guest) no primary CTA at all.
-        asset == null -> NothingHeldAction(actions, wants, onWant)
+        // Nothing held: get it, follow its progress in Manage, or (a guest) no primary CTA at all.
+        asset == null -> NothingHeldAction(actions, availability, onGetIt)
 
         type == MediaType.BOOK -> PrimaryButton(
             theme.ctaLabel,
@@ -280,41 +254,36 @@ private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, wants: List
     }
 }
 
-/** The primary CTA when this work holds no file: look for a copy if it is wanted, otherwise offer Want. */
+/** The primary CTA when this work holds no file: Get it, or — when heyarr is already on it — its progress in Manage. */
 @Composable
-private fun NothingHeldAction(actions: HeroActions, wants: List<DesiredItem>, onWant: () -> Unit) {
-    val session = actions.session
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun NothingHeldAction(actions: HeroActions, availability: Availability, onGetIt: () -> Unit) {
     when {
-        wants.isNotEmpty() -> PrimaryButton(
-            "Look for it",
-            { actions.lookForIt(wants) },
-            icon = HeyarrIcons.Search,
-            enabled = actions.state.busy == null,
-        )
+        availability.offersGetIt(actions.session.mode) ->
+            GetItButton(onGetIt, primary = true, title = actions.detail.work.title)
 
-        // Wanting is an enrolled-only surface; a guest never sees the Want CTA (GuestGate is the
-        // single source of truth) — they can still browse and play whatever holds a file.
-        GuestGate.allows(session.mode, Surface.WANT) -> PrimaryButton(
-            "Want",
-            onWant,
-            icon = HeyarrIcons.Add,
-            enabled =
-            session.index.statusOf(actions.detail.work.id) == LibraryStatus.NOT_TRACKED,
-        )
+        availability == Availability.ON_ITS_WAY || availability == Availability.NOT_AVAILABLE ->
+            SecondaryButton("See progress", { actions.state.managing = true }, icon = HeyarrIcons.Forward)
 
-        // Guest, nothing to play and no want affordance to offer: no primary CTA.
+        // Guest, nothing to play and nothing to ask for: no primary CTA.
         else -> Unit
     }
 }
 
-/** The hero's secondary actions: cast it to a renderer, and Want it when nothing measures it yet. */
+/** A plain line under the hero for a work with nothing to play yet; null when it plays, or Get it says enough. */
+private fun notHeldNote(availability: Availability): String? = when (availability) {
+    Availability.ON_ITS_WAY -> "Nothing to play yet — heyarr is getting a copy."
+    Availability.NOT_AVAILABLE -> "Nothing to play yet — no acceptable copy has turned up. See progress for why."
+    else -> null
+}
+
+/** The hero's secondary action: cast it to a renderer. */
 @Composable
-private fun HeroSecondaryActions(actions: HeroActions, first: Episode?, onWant: () -> Unit) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun HeroSecondaryActions(actions: HeroActions, first: Episode?) {
     val session = actions.session
     val type = actions.type
     val asset = actions.detail.primaryAsset
-    val status = session.index.statusOf(actions.detail.work.id)
-    val canWant = GuestGate.allows(session.mode, Surface.WANT)
     val castId = if (type == MediaType.SERIES) (first?.asset?.id) else asset?.assetId
     if (castId != null && type != MediaType.BOOK &&
         type != MediaType.FEED
@@ -322,11 +291,6 @@ private fun HeroSecondaryActions(actions: HeroActions, first: Episode?, onWant: 
         SecondaryButton("Play on…", {
             toggleCast(session, actions.state, castId, actions.scope)
         }, icon = HeyarrIcons.Cast)
-    }
-    if (status == LibraryStatus.NOT_TRACKED && canWant &&
-        (asset != null || type == MediaType.SERIES)
-    ) {
-        SecondaryButton("Want", onWant, icon = HeyarrIcons.Add)
     }
 }
 
@@ -405,7 +369,7 @@ private fun IdentityBlock(
     type: MediaType,
     meta: List<String?>,
     artwork: ImageBitmap?,
-    status: LibraryStatus?,
+    availability: Availability?,
     synopsis: @Composable () -> Unit,
     actions: @Composable RowScope.() -> Unit,
 ) {
@@ -437,7 +401,7 @@ private fun IdentityBlock(
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
-                HeroFacts(type, meta, status)
+                HeroFacts(type, meta, availability)
                 synopsis()
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),

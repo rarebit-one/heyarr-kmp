@@ -57,6 +57,7 @@ import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.MediaRowSkeleton
+import one.rarebit.heyarr.ui.components.MetaLine
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
@@ -226,17 +227,9 @@ private fun EpisodeInfo(ep: Episode, ext: ExternalEpisode?, modifier: Modifier) 
 @Composable
 private fun EpisodeFileFacts(ep: Episode) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        for (tag in Series.qualityTags(ep.asset)) RuleCode(tag, tone = Tokens.textMuted)
-        // A second release of the same episode folds under this row (core `Series.fold`);
-        // say so rather than list it as an episode of its own.
-        if (ep.copies.isNotEmpty()) RuleCode("${ep.fileCount} FILES", tone = Tokens.textMuted)
-        ep.asset.sizeBytes?.let {
-            Text(
-                PrimaryAsset.formatBytes(it),
-                style = MaterialTheme.typography.labelSmall,
-                color = Tokens.textMuted,
-            )
-        }
+        // Quality and size as plain facts. A second release of the same episode folds under this
+        // row (core `Series.fold`); Manage → Health lists the copies.
+        MetaLine(Series.qualityTags(ep.asset) + listOfNotNull(ep.asset.sizeBytes?.let { PrimaryAsset.formatBytes(it) }))
         if (ep.subtitles.isNotEmpty()) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -257,7 +250,7 @@ private fun EpisodeFileFacts(ep: Episode) {
         }
         if (!ep.isPlayable) {
             Text(
-                "file missing since ${ep.asset.missingSince?.take(10)}",
+                "unavailable since ${ep.asset.missingSince?.take(10)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = Tokens.danger,
             )
@@ -265,17 +258,10 @@ private fun EpisodeFileFacts(ep: Episode) {
     }
 }
 
-/** A numbered gap in a season: nothing held, and the one honest action — ask the indexers. */
+/** A numbered gap in a season: not available yet. Asking for it is a Manage action. */
 @Composable
-internal fun MissingEpisodeRow(
-    session: AppSession,
-    season: Season,
-    number: Int,
-    wants: List<DesiredItem>,
-    state: DetailState,
-    ext: ExternalEpisode? = null,
-) {
-    val scope = rememberCoroutineScope()
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+internal fun MissingEpisodeRow(session: AppSession, season: Season, number: Int, ext: ExternalEpisode? = null) {
     val code = "S%02dE%02d".format(season.number ?: 0, number)
     val extThumb by androidx.compose.runtime.produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         null,
@@ -292,7 +278,7 @@ internal fun MissingEpisodeRow(
             Tokens.border.copy(alpha = 0.6f),
             RoundedCornerShape(Tokens.radiusInput),
         ).padding(8.dp)
-            .semantics { contentDescription = "$code not held" },
+            .semantics { contentDescription = "$code not available yet" },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -300,20 +286,15 @@ internal fun MissingEpisodeRow(
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text(code, style = MaterialTheme.typography.labelMedium, color = Tokens.textDisabled)
-                Text(ext?.name ?: "Not held", style = MaterialTheme.typography.titleMedium, color = Tokens.textDisabled)
+                Text(
+                    ext?.name ?: "Episode $number",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Tokens.textDisabled,
+                )
                 ext?.airdate?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textDisabled) }
             }
-            Text(
-                if (wants.isEmpty()) {
-                    "Want this series and heyarr will look for it."
-                } else {
-                    "Wanted — heyarr searches on its schedule; ask now to jump the queue."
-                },
-                style = MaterialTheme.typography.labelSmall,
-                color = Tokens.textMuted,
-            )
+            Text("Not available yet", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
         }
-        if (wants.isNotEmpty()) LookForEpisodeButton(session, season, wants, scope)
     }
 }
 
@@ -338,25 +319,4 @@ private fun MissingEpisodeThumb(art: ImageBitmap?) {
         }
         Text("not held", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
     }
-}
-
-/** Ask the indexers now for a season's gap, rather than waiting for heyarr's schedule. */
-@Composable
-private fun LookForEpisodeButton(session: AppSession, season: Season, wants: List<DesiredItem>, scope: CoroutineScope) {
-    SecondaryButton("Look for it", {
-        val a = session.api ?: return@SecondaryButton
-        scope.launch {
-            session.io { a.searchReleases(wants.first().id) }.onSuccess { r ->
-                when (r) {
-                    is McpResult.Ok -> session.toast(
-                        Toast.Kind.INFO,
-                        "Search queued for ${season.label}",
-                        "Results land under Manage → Releases.",
-                    )
-
-                    is McpResult.Refused -> session.refused(r)
-                }
-            }
-        }
-    }, icon = HeyarrIcons.Search, compact = true)
 }
