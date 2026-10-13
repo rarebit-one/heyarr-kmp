@@ -106,7 +106,7 @@ class ReaderActivity : FragmentActivity() {
         val container = FrameLayout(this).apply { id = R.id.reader_container }
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(android.graphics.Color.parseColor("#101815"))
+            setBackgroundColor(android.graphics.Color.parseColor("#0A1410")) // Tokens.bgBase
         }
         root.addView(container, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         root.addView(
@@ -125,8 +125,8 @@ class ReaderActivity : FragmentActivity() {
         setContentView(root)
         val status = TextView(this).apply {
             text = "Opening…"
-            setTextColor(android.graphics.Color.parseColor("#E5E9DC"))
-            setBackgroundColor(android.graphics.Color.parseColor("#101815"))
+            setTextColor(android.graphics.Color.parseColor("#E6EBD7")) // Tokens.textPrimary
+            setBackgroundColor(android.graphics.Color.parseColor("#0A1410")) // Tokens.bgBase
             setPadding(
                 READER_STATUS_PADDING_PX,
                 READER_STATUS_PADDING_PX,

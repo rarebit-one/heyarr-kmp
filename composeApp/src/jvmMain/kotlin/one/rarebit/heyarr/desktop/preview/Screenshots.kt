@@ -18,6 +18,7 @@ import one.rarebit.heyarr.desktop.state.ArtworkLoader
 import one.rarebit.heyarr.desktop.ui.App
 import one.rarebit.heyarr.desktop.ui.Experience
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.ui.theme.Appearance
 import org.jetbrains.skia.EncodedImageFormat
 import java.io.File
 
@@ -87,6 +88,7 @@ fun main(args: Array<String>) {
     render(File(out, "13-audio-compact.png"), 760, 620, Route.Consume(Experience.READ), audio = true)
     render(File(out, "15-home-wide.png"), 1600, 1000, Route.Home)
     render(File(out, "15-search-wide.png"), 1600, 1000, Route.Search, query = "dune")
+    renderLaptopWidth(out)
     println("wrote ${out.listFiles()?.size ?: 0} screenshots to $out")
 }
 
@@ -111,7 +113,10 @@ private fun render(
                 uiScale = 1f,
             ),
         )
-    val art = ArtworkLoader({ "" }, { "" }, fetcher = { PlaceholderArt.bytes(it) })
+    // A throwaway disk cache: the loader reads its cache before the fetcher, so pointing it at
+    // the user's real artwork cache made screenshots depend on whatever that machine had seen.
+    val art = ArtworkLoader({ "" }, { "" }, cacheDir = previewCacheDir, fetcher = { PlaceholderArt.bytes(it) })
+    var session: one.rarebit.heyarr.desktop.state.AppSession? = null
     ImageComposeScene(width = width, height = height, density = Density(1f)).use { scene ->
         scene.setContent {
             App(
@@ -148,25 +153,79 @@ private fun render(
                 initialQuery = query,
                 initialConnectionSheet = connection,
                 initialLibraryTab = if (downloads) 1 else 0,
+                nanoClock = { 0L },
+                initialAppearance = Appearance(reduceMotion = true),
+                onSession = { session = it },
             )
         }
-        saveScreenshot(scene, art, ScreenshotTarget(file, width, height, route))
+        saveScreenshot(scene, art, ScreenshotTarget(file, width, height, route)) {
+            session?.connection != one.rarebit.heyarr.desktop.state.Connection.UNKNOWN
+        }
     }
+}
+
+/** A common laptop width, where the redesign's context column first fits beside content. */
+@Suppress("MagicNumber") // Window sizes in px.
+private fun renderLaptopWidth(out: File) {
+    render(File(out, "16-home-1440.png"), 1440, 900, Route.Home)
+    render(
+        File(out, "16-detail-1440.png"),
+        1440,
+        900,
+        Route.Detail(Fixtures.YELLOWSTONE, MediaType.SERIES, "Yellowstone", from = "Home"),
+    )
+}
+
+private const val SETTLE_STEP_MS = 150L
+private const val SETTLE_MIN_TICKS = 10
+private const val SETTLE_STABLE_TICKS = 10
+private const val SETTLE_MAX_TICKS = 120
+private const val NANOS_PER_MS = 1_000_000L
+
+private fun pixelHash(image: org.jetbrains.skia.Image): Int {
+    val bytes = image.peekPixels()?.buffer?.bytes ?: image.encodeToData(EncodedImageFormat.PNG)?.bytes
+    return bytes?.contentHashCode() ?: 0
+}
+
+private val previewCacheDir: File by lazy {
+    java.nio.file.Files.createTempDirectory("heyarr-preview-art").toFile().also { it.deleteOnExit() }
 }
 
 private data class ScreenshotTarget(val file: File, val width: Int, val height: Int, val route: Route)
 
-private fun saveScreenshot(scene: ImageComposeScene, art: ArtworkLoader, target: ScreenshotTarget) {
-    // Let effects (fixture fetches on IO) land: render, wait, re-render until quiet.
-    var image = scene.render(System.nanoTime())
-    repeat(30) {
-        Thread.sleep(150)
-        if (scene.hasInvalidations()) image = scene.render(System.nanoTime())
+private fun saveScreenshot(
+    scene: ImageComposeScene,
+    art: ArtworkLoader,
+    target: ScreenshotTarget,
+    probed: () -> Boolean,
+) {
+    // Let effects (fixture fetches on IO, the first liveness probe) land, then capture once
+    // the first probe has answered ([probed]) and the frame has stopped changing. Every tick
+    // renders, because the scene's dispatcher only runs queued coroutine continuations during
+    // render(); a fixed tick count raced those continuations and caught the connection tile
+    // half-settled on some runs. Frames are stamped with a synthetic clock rather than
+    // System.nanoTime() and previews run with reduced motion, so animations land on the same
+    // phase. Slow IO can still occasionally finish after the frame settles; a rerun differs
+    // only where that load landed.
+    var frameNanos = 0L
+    var image = scene.render(frameNanos)
+    var last = pixelHash(image)
+    var stable = 0
+    var ticks = 0
+    fun settled() = ticks >= SETTLE_MIN_TICKS && stable >= SETTLE_STABLE_TICKS
+    while (ticks < SETTLE_MAX_TICKS && !settled()) {
+        Thread.sleep(SETTLE_STEP_MS)
+        frameNanos += SETTLE_STEP_MS * NANOS_PER_MS
+        image = scene.render(frameNanos)
+        val hash = pixelHash(image)
+        // Stability only counts once the probe has answered, so the captured frame is one
+        // rendered after the answer rather than one the answer arrived just behind.
+        if (hash == last && probed()) stable++ else stable = 0
+        last = hash
+        ticks++
     }
-    Thread.sleep(400)
-    image = scene.render(System.nanoTime())
-    val artPath = "/api/v1/blobs/${Fixtures.HASH}/content"
-    System.err.println("  artwork cached for fixture hash: ${art.peek(artPath) != null}")
+    if (!settled()) System.err.println("  WARNING: ${target.file.name} never settled")
+    System.err.println("  hero artwork loaded: ${art.peek(FixtureArt.path(Fixtures.YELLOWSTONE)) != null}")
     val png = image.encodeToData(EncodedImageFormat.PNG) ?: error("encode failed")
     target.file.writeBytes(png.bytes)
     println("rendered ${target.file.name} (${target.width}x${target.height}, ${target.route})")

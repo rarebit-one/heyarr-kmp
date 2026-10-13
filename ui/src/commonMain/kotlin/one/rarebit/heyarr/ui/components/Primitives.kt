@@ -140,8 +140,9 @@ fun Modifier.interactiveSurface(interaction: MutableInteractionSource, shape: Sh
 // ── buttons ──────────────────────────────────────────────────────────────────────
 
 /**
- * The primary CTA: a flat rectangular control with an icon (Play ▸, Add +).
- * Disabled controls use a dimmed surface and text.
+ * The primary CTA: a flat Pale Mint control with an icon (Play ▸, Add +). It is the same mint
+ * for every media type, so the main action reads the same on a book as on a film; the media
+ * accent stays on badges and glyphs. Disabled controls use a dimmed surface and text.
  */
 @Composable
 fun PrimaryButton(
@@ -154,16 +155,15 @@ fun PrimaryButton(
     contentDescription: String = label,
 ) {
     val touch = LocalHeyarrPlatform.current.touch
-    val theme = LocalMediaTheme.current
     val interaction = remember { MutableInteractionSource() }
     val active by interaction.collectIsActiveAsState(touch)
-    val shape = RectangleShape
+    val shape = RoundedCornerShape(Tokens.radiusButton)
     val bg = when {
         !enabled -> Tokens.surface2
-        active -> theme.accentHover
-        else -> theme.ctaGradientStart
+        active -> Tokens.accentHover
+        else -> Tokens.accent
     }
-    val fg = if (enabled) theme.onAccent else Tokens.textDisabled
+    val fg = if (enabled) Tokens.bgBase else Tokens.textDisabled
     Row(
         modifier
             .focusRing(interaction, shape, inset = 2.dp)
@@ -211,7 +211,7 @@ fun SecondaryButton(
     val touch = LocalHeyarrPlatform.current.touch
     val interaction = remember { MutableInteractionSource() }
     val active by interaction.collectIsActiveAsState(touch)
-    val shape = RectangleShape
+    val shape = RoundedCornerShape(Tokens.radiusButton)
     val fg = when {
         !enabled -> Tokens.textDisabled
         danger -> Tokens.danger
@@ -298,29 +298,30 @@ fun IconButtonRound(
     filled: Boolean = false,
 ) {
     val touch = LocalHeyarrPlatform.current.touch
-    val theme = LocalMediaTheme.current
     val interaction = remember { MutableInteractionSource() }
     val active by interaction.collectIsActiveAsState(touch)
+    val shape = RoundedCornerShape(Tokens.radiusButton)
+    // A filled icon button is a primary action (play/pause), so it takes the same mint as PrimaryButton.
     val bg = when {
-        filled && enabled -> theme.accent
+        filled && enabled -> if (active) Tokens.accentHover else Tokens.accent
         active && enabled -> Tokens.surface3
         else -> Tokens.surface2
     }
     val fg = when {
         !enabled -> Tokens.textDisabled
-        filled -> theme.onAccent
+        filled -> Tokens.bgBase
         else -> Tokens.textPrimary
     }
     Box(
         modifier
-            .focusRing(interaction, RectangleShape, inset = 2.dp)
+            .focusRing(interaction, shape, inset = 2.dp)
             .then(
                 if (touch) Modifier.defaultMinSize(minWidth = 44.dp, minHeight = 44.dp) else Modifier,
             )
             .size(size)
-            .clip(RectangleShape)
-            .background(bg, RectangleShape)
-            .border(Tokens.hairline, if (filled) Color.Transparent else Tokens.border, RectangleShape)
+            .clip(shape)
+            .background(bg, shape)
+            .border(Tokens.hairline, if (filled) Color.Transparent else Tokens.border, shape)
             .hoverableUnless(touch, interaction)
             .clickable(
                 interactionSource = interaction,
@@ -667,10 +668,10 @@ fun SearchEntryButton(
     val hovered by interaction.collectIsHoveredAsState()
     Row(
         modifier.fillMaxWidth()
-            .focusRing(interaction, RectangleShape, inset = 2.dp)
-            .clip(RectangleShape)
+            .focusRing(interaction, RoundedCornerShape(Tokens.radiusInput), inset = 2.dp)
+            .clip(RoundedCornerShape(Tokens.radiusInput))
             .background(if (hovered && !LocalHeyarrPlatform.current.touch) Tokens.surface2 else Tokens.surface1)
-            .border(Tokens.hairline, Tokens.border, RectangleShape)
+            .border(Tokens.hairline, Tokens.border, RoundedCornerShape(Tokens.radiusInput))
             .hoverableUnless(LocalHeyarrPlatform.current.touch, interaction)
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label }

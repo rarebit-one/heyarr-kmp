@@ -5,6 +5,7 @@ import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
+import kotlin.math.pow
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -15,12 +16,12 @@ class MediaThemeTest {
     @Test
     fun accentsAndAspectsMatchTheTable() {
         val expect = mapOf(
-            MediaType.MOVIE to Triple(Color(0xFF599C7B), CardAspect.WIDE, "Play"),
-            MediaType.SERIES to Triple(Color(0xFF78A58B), CardAspect.WIDE, "Play"),
-            MediaType.BOOK to Triple(Color(0xFFC7B66D), CardAspect.POSTER, "Read"),
-            MediaType.AUDIOBOOK to Triple(Color(0xFF6FA58C), CardAspect.SQUARE, "Listen"),
-            MediaType.PODCAST to Triple(Color(0xFF8DAE8D), CardAspect.SQUARE, "Play episode"),
-            MediaType.MUSIC to Triple(Color(0xFF83A876), CardAspect.SQUARE, "Play"),
+            MediaType.MOVIE to Triple(Color(0xFF7EE0B3), CardAspect.WIDE, "Play"),
+            MediaType.SERIES to Triple(Color(0xFF8FD6C0), CardAspect.WIDE, "Play"),
+            MediaType.BOOK to Triple(Color(0xFFF4B860), CardAspect.POSTER, "Read"),
+            MediaType.AUDIOBOOK to Triple(Color(0xFF9CD9B0), CardAspect.SQUARE, "Listen"),
+            MediaType.PODCAST to Triple(Color(0xFFC4D98C), CardAspect.SQUARE, "Play episode"),
+            MediaType.MUSIC to Triple(Color(0xFFA8DC8A), CardAspect.SQUARE, "Play"),
         )
         for ((type, e) in expect) {
             val t = MediaThemes.of(type)
@@ -82,5 +83,25 @@ class MediaThemeTest {
         for (t in MediaThemes.all.values) {
             assertTrue(ratio(t.accentHover, Tokens.surface3) >= 3.0, "${t.type.name} focus ring")
         }
+    }
+
+    /** The palette is tuned by eye against the mockups; this keeps it legible (WCAG AA). */
+    @Test
+    fun textAndActionsMeetAaContrast() {
+        fun channel(v: Float): Double = if (v <= 0.03928f) v / 12.92 else ((v + 0.055) / 1.055).pow(2.4)
+        fun lum(c: Color): Double = 0.2126 * channel(c.red) + 0.7152 * channel(c.green) + 0.0722 * channel(c.blue)
+        fun ratio(a: Color, b: Color): Double {
+            val (hi, lo) = listOf(lum(a), lum(b)).sortedDescending()
+            return (hi + 0.05) / (lo + 0.05)
+        }
+        for (surface in listOf(Tokens.bgBase, Tokens.surface1, Tokens.surface2, Tokens.surface3)) {
+            assertTrue(ratio(Tokens.textPrimary, surface) >= 4.5, "text on $surface")
+            assertTrue(ratio(Tokens.textMuted, surface) >= 4.5, "muted text on $surface")
+        }
+        // The primary action's label on its fill, at rest and active.
+        assertTrue(ratio(Tokens.bgBase, Tokens.accent) >= 4.5)
+        assertTrue(ratio(Tokens.bgBase, Tokens.accentHover) >= 4.5)
+        // Media accents as non-text marks (badges, focus rings) on the ground: 3:1.
+        for (t in MediaThemes.all.values) assertTrue(ratio(t.accent, Tokens.bgBase) >= 3.0, t.type.name)
     }
 }

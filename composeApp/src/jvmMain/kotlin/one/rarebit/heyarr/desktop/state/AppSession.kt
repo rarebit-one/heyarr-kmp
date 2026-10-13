@@ -94,6 +94,8 @@ class AppSession(
      * ([one.rarebit.heyarr.desktop.MainKt]) turns it on.
      */
     enableDeviceEnrol: Boolean = false,
+    /** Times the liveness probe; previews pin it so the rail's latency reads the same on every render. */
+    private val nanoClock: () -> Long = System::nanoTime,
 ) {
     /** This desktop's device keys (sealed signing seed + enc key + admission), or null in previews/tests. */
     val deviceKeyring: DesktopDeviceKeyring? = if (enableDeviceEnrol) DesktopDeviceKeyring() else null
@@ -272,14 +274,14 @@ class AppSession(
             connection = Connection.UNCONFIGURED
             return
         }
-        val t0 = System.nanoTime()
+        val t0 = nanoClock()
         var status = attempt(a)
         if (status == 0) {
             transport.reset()
             status = attempt(a)
         }
         probes++
-        lastLatencyMs = (System.nanoTime() - t0) / 1_000_000
+        lastLatencyMs = (nanoClock() - t0) / 1_000_000
         connection = Connection.fromProbe(status)
         when (status) {
             200 -> {
