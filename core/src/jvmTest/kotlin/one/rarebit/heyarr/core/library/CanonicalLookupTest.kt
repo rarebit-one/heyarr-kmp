@@ -2,6 +2,7 @@ package one.rarebit.heyarr.core.library
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CanonicalLookupTest {
@@ -52,7 +53,7 @@ class CanonicalLookupTest {
 
     @Test fun emptyWorksReturnsEmpty() {
         val lookup = CanonicalLookup()
-        assertTrue(lookup.resolveFor(emptyList()) { _, _ -> emptyList() }.isEmpty())
+        assertTrue(lookup.resolveFor(emptyList()) { _, _ -> emptyList() }.resolved.isEmpty())
     }
 
     @Test fun nonVariantTitlesAreSkipped() {
@@ -105,13 +106,52 @@ class CanonicalLookupTest {
             calls++
             error("timeout")
         }
-        assertTrue(first.isEmpty(), "a failure yields nothing this time")
+        assertTrue(first.resolved.isEmpty(), "a failure yields nothing this time")
         val canon = TestWork("ys", "Yellowstone")
         val second = lookup.resolveFor(works) { _, _ ->
             calls++
             listOf(canon)
         }
         assertEquals(2, calls, "the failed key is looked up again")
-        assertEquals(listOf<CatalogWork>(canon), second)
+        assertEquals(listOf<CatalogWork>(canon), second.resolved)
+    }
+
+    @Test fun incompleteResolutionFlagWhenLookupFails() {
+        // complete=false when any lookup throws; complete=true when all succeed (#139).
+        val lookup = CanonicalLookup()
+        val works: List<CatalogWork> = listOf(TestWork("ys4", "Yellowstone Season 4"))
+        val failing = lookup.resolveFor(works) { _, _ -> error("timeout") }
+        assertFalse(failing.complete, "a failed lookup must mark the resolution incomplete")
+        val succeeding = lookup.resolveFor(works) { _, _ -> emptyList() }
+        assertTrue(succeeding.complete, "a successful lookup must mark the resolution complete")
+    }
+
+    @Test fun emptyWorksResolutionIsComplete() {
+        // No lookups are needed for an empty list, so complete must be true.
+        val result = CanonicalLookup().resolveFor(emptyList()) { _, _ -> emptyList() }
+        assertTrue(result.complete, "no-op resolution must be complete")
+    }
+
+    @Test fun clearEmptiesTheCache() {
+        // After clear(), a previously-cached key must trigger a fresh lookup call (#142).
+        val lookup = CanonicalLookup()
+        val works: List<CatalogWork> = listOf(TestWork("ys4", "Yellowstone Season 4"))
+        var calls = 0
+        lookup.resolveFor(works) { _, _ ->
+            calls++
+            emptyList()
+        }
+        assertEquals(1, calls, "first call populates the cache")
+        lookup.resolveFor(works) { _, _ ->
+            calls++
+            emptyList()
+        }
+        assertEquals(1, calls, "second call is served from cache")
+        lookup.clear()
+        lookup.resolveFor(works) { _, _ ->
+            calls++
+            emptyList()
+        }
+        assertEquals(2, calls, "after clear(), the key is cold again")
     }
 }

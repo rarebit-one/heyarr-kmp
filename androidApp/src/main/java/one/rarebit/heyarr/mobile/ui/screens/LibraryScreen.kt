@@ -4,6 +4,7 @@ package one.rarebit.heyarr.mobile.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -47,6 +48,7 @@ import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.heyarr.JobInfo
 import one.rarebit.heyarr.core.library.CanonicalLookup
 import one.rarebit.heyarr.core.library.CatalogWork
+import one.rarebit.heyarr.core.library.Resolution
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
@@ -169,6 +171,9 @@ fun LibraryScreen(
     // Reset to page 1 and fetch the first (small) page. Clears the current list so the
     // skeleton shows while loading. Triggered by the Refresh button and on first visit.
     fun load() {
+        // Drop cached canonical lookups so a rescan that adds or removes a canonical is
+        // reflected immediately and never shadowed by stale entries (#142).
+        state.canonicalLookup.clear()
         state.loading = true
         state.error = null
         state.works = null
@@ -227,11 +232,13 @@ fun LibraryScreen(
     // whose canonical is not in the loaded page are suppressed correctly (#134).
     LaunchedEffect(state.works) {
         val works = state.works ?: return@LaunchedEffect
+        // Propagate only the resolved list; the complete flag is informational here —
+        // Library has no paging quota that needs it (unlike Home's loadDone gate).
         val resolved = session.io {
             state.canonicalLookup.resolveFor(works) { q, kind ->
                 session.api.worksMatching(LibraryClient.variantQuery(q, null), kind)
             }
-        }.getOrElse { emptyList() }
+        }.getOrElse { Resolution(emptyList(), complete = false) }.resolved
         state.resolvedCanonicals = resolved
     }
 
@@ -416,45 +423,51 @@ fun LibraryScreen(
                 detail = libraryEmptyDetail(all.isEmpty()),
             )
 
-            state.grid -> LazyVerticalStaggeredGrid(
-                StaggeredGridCells.Adaptive(
-                    if (state.type == MediaType.MOVIE ||
-                        state.type == MediaType.SERIES
-                    ) {
-                        280.dp
-                    } else {
-                        Tokens.posterWidth
-                    },
-                ),
-                state = gridState,
-                horizontalArrangement = Arrangement.spacedBy(Tokens.s3),
-                verticalItemSpacing = Tokens.s3,
-                contentPadding = PaddingValues(bottom = 32.dp),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                items(filtered, key = { it.id }) { w ->
-                    val type = MediaType.from(w.kind)
-                    val cover by rememberCover(
-                        session,
-                        type,
-                        w.title,
-                        w.artworkForDp(Artwork.CARD_ARTWORK_DP),
-                        w.year,
-                        w.artist ?: w.author,
-                    )
-                    MediaCard(
-                        w.title, type, onOpen = {
-                            onOpen(detailRoute(w.id, type, w.title, from = "Library"))
-                        },
-                        subtitle =
-                        w.artist ?: w.author,
-                        meta = listOf(
-                            w.year?.toString(),
-                        ),
-                        artwork = cover.url, status = session.index.statusOf(w.id), onWant = {
-                            onWant(w.id, w.title)
-                        }, width = null, modifier = Modifier.fillMaxWidth(),
-                    )
+            state.grid -> BoxWithConstraints(Modifier.fillMaxSize()) {
+                val minCell = if (state.type == MediaType.MOVIE || state.type == MediaType.SERIES) {
+                    280.dp
+                } else {
+                    Tokens.posterWidth
+                }
+                // Every card fills its cell, whatever its aspect, so the cell's width is what
+                // the artwork is drawn at (#142).
+                val cellDp = Artwork.adaptiveCellDp(
+                    maxWidth.value.toInt(),
+                    minCell.value.toInt(),
+                    Tokens.s3.value.toInt(),
+                )
+                LazyVerticalStaggeredGrid(
+                    StaggeredGridCells.Adaptive(minCell),
+                    state = gridState,
+                    horizontalArrangement = Arrangement.spacedBy(Tokens.s3),
+                    verticalItemSpacing = Tokens.s3,
+                    contentPadding = PaddingValues(bottom = 32.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(filtered, key = { it.id }) { w ->
+                        val type = MediaType.from(w.kind)
+                        val cover by rememberCover(
+                            session,
+                            type,
+                            w.title,
+                            w.artworkForDp(cellDp),
+                            w.year,
+                            w.artist ?: w.author,
+                        )
+                        MediaCard(
+                            w.title, type, onOpen = {
+                                onOpen(detailRoute(w.id, type, w.title, from = "Library"))
+                            },
+                            subtitle =
+                            w.artist ?: w.author,
+                            meta = listOf(
+                                w.year?.toString(),
+                            ),
+                            artwork = cover.url, status = session.index.statusOf(w.id), onWant = {
+                                onWant(w.id, w.title)
+                            }, width = null, modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
 
