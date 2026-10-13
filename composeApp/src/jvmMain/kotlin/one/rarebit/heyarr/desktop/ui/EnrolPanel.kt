@@ -43,9 +43,15 @@ fun EnrolPanel(session: AppSession) {
     val keyring = session.deviceKeyring
     if (coordinator == null || keyring == null) {
         Panel("This device (Voidbind)") {
+            // Say what is true of this session: a token user is signed in, not browsing as a guest.
             Text(
-                "Device sign-in runs in the packaged desktop app. You are browsing as a guest; " +
-                    "paste a bearer token in the connection panel above to save wants and follows.",
+                if (session.isGuest) {
+                    "Device sign-in runs in the packaged desktop app. You are browsing as a guest; " +
+                        "paste a bearer token in the connection panel above to save wants and follows."
+                } else {
+                    "Device sign-in runs in the packaged desktop app. This copy is signed in with the " +
+                        "bearer token above."
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = Tokens.textMuted,
             )

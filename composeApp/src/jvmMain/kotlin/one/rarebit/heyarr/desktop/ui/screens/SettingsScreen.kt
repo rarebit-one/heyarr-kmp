@@ -41,6 +41,7 @@ import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.Skeleton
+import one.rarebit.heyarr.ui.components.TechnicalDisclosure
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
@@ -148,11 +149,7 @@ private fun ConnectionPanel(session: AppSession) {
             if (session.isGuest) "guest — browse & play only" else "enrolled — token presented",
             valueColor = if (session.isGuest) Tokens.textMuted else Tokens.success,
         )
-        Text(
-            "On a trusted network you browse and play as a guest with no token. Add a bearer token to sign in and save wants, follows and your place. Saved to ~/.config/heyarr-desktop/config.json (0600); the token is a secret. Prefer device sign-in? Use “Sign in to save” below to pair this desktop with Voidbind — the primary, offline credential.",
-            style = MaterialTheme.typography.bodySmall,
-            color = Tokens.textDisabled,
-        )
+        TokenHelp()
     }
 }
 
@@ -282,4 +279,20 @@ private fun AccentPreview() {
             }
         }
     }
+}
+
+/** What a token is for, with where it is kept behind a disclosure rather than in the main copy. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun TokenHelp() {
+    Text(
+        "On a trusted network you can browse and play as a guest. Add a bearer token to save wants " +
+            "and follows, or pair this desktop with Voidbind under This device.",
+        style = MaterialTheme.typography.bodySmall,
+        color = Tokens.textMuted,
+    )
+    TechnicalDisclosure(
+        "The token is saved to ~/.config/heyarr-desktop/config.json with mode 0600. Treat it as a secret.",
+        label = "Where the token is kept",
+    )
 }

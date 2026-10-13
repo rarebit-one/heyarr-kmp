@@ -1,13 +1,17 @@
 package one.rarebit.heyarr.desktop.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -93,7 +97,7 @@ internal fun KindFilterChips(
     counts: Map<MediaType, Int>,
     experience: Experience?,
 ) {
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         FilterChip(
             if (experience ==
                 null
@@ -175,7 +179,6 @@ internal fun ExtraKindChips(state: LibraryState, counts: Map<MediaType, Int>, to
 @Composable
 internal fun StatusFilterChips(state: LibraryState) {
     Row(
-        Modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -188,4 +191,38 @@ internal fun StatusFilterChips(state: LibraryState) {
             })
         }
     }
+}
+
+/**
+ * One filter bar for the library: Works / Downloads, then the media kinds, then status, separated
+ * by hairlines and scrolling together on a narrow window, instead of three rows of chips.
+ */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+internal fun LibraryFilterBar(
+    state: LibraryState,
+    all: List<Work>,
+    counts: Map<MediaType, Int>,
+    experience: Experience?,
+) {
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (experience == null) {
+            LibraryTabs(state)
+            if (state.tab == 1) return@Row
+            BarDivider()
+        }
+        KindFilterChips(state, all, counts, experience)
+        BarDivider()
+        StatusFilterChips(state)
+    }
+}
+
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun BarDivider() {
+    Box(Modifier.padding(horizontal = 6.dp).width(Tokens.hairline).height(20.dp).background(Tokens.border))
 }

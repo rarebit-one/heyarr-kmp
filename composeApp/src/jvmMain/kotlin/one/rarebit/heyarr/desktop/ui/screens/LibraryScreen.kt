@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
@@ -56,7 +57,9 @@ import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.icon
+import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.ui.theme.MediaScope
+import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 
 /** A pseudo-kind for the default filter: the four media kinds, no feeds or documents. */
@@ -131,13 +134,11 @@ fun LibraryScreen(
             },
             trailing = { LibraryActions(state, ::load) },
         )
-        if (experience == null) LibraryTabs(state)
+        LibraryFilterBar(state, all, counts, experience)
         if (experience == null && state.tab == 1) {
             DownloadsScreen(session, state.downloads, onOpen)
             return@Column
         }
-        KindFilterChips(state, all, counts, experience)
-        StatusFilterChips(state)
         when {
             state.error != null && state.works == null -> ErrorState("Couldn't load the library", state.error, ::load)
 
@@ -230,6 +231,10 @@ private fun LibraryGrid(
     onOpenWork: (Work) -> Unit,
     onWant: (String, String, MediaType) -> Unit,
 ) {
+    // Group by card shape when the shelf mixes them, so wide, poster and square cards each fill
+    // their own rows instead of leaving holes between them.
+    val groups = works.groupBy { MediaThemes.of(MediaType.from(it.kind)).aspect }
+        .toSortedMap(compareBy { SHELF_ORDER.indexOf(it) })
     LazyVerticalStaggeredGrid(
         StaggeredGridCells.Adaptive(cell),
         horizontalArrangement = Arrangement.spacedBy(Tokens.gridGap),
@@ -237,22 +242,50 @@ private fun LibraryGrid(
         contentPadding = PaddingValues(bottom = 32.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        items(works, key = { it.id }) { w ->
-            val type = MediaType.from(w.kind)
-            val cover by rememberCover(session, type, w.title, w.artworkPath, w.year, w.artist ?: w.author)
-            MediaCard(
-                w.title, type, onOpen = {
-                    onOpenWork(w)
-                }, subtitle = w.artist ?: w.author,
-                meta = listOf(
-                    w.year?.toString(),
-                ),
-                artwork = cover.bitmap, status = session.index.statusOf(w.id), onWant = {
-                    onWant(w.id, w.title, type)
-                }, mode = session.mode, width = null,
-            )
+        for ((aspect, group) in groups) {
+            if (groups.size > 1) {
+                item(key = "h:$aspect", span = StaggeredGridItemSpan.FullLine) {
+                    SectionHeader(groupHeading(group), Modifier.padding(top = 8.dp))
+                }
+            }
+            items(group, key = { it.id }) { w -> GridCard(session, w, onOpenWork, onWant) }
         }
     }
+}
+
+/** Films and series first, as on Home; then books; then music and audio. */
+private val SHELF_ORDER = listOf(CardAspect.WIDE, CardAspect.POSTER, CardAspect.SQUARE)
+
+/**
+ * A shape group's heading, named by the media actually in it ("Films · Series", "Music · Feeds"):
+ * in Everything, feeds and documents share the square shape with music, so the shape alone
+ * would mislabel them.
+ */
+private fun groupHeading(group: List<Work>): String =
+    group.map { MediaType.from(it.kind) }.distinct().sortedBy { it.ordinal }.joinToString(" · ") { it.plural }
+
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun GridCard(
+    session: AppSession,
+    w: Work,
+    onOpenWork: (Work) -> Unit,
+    onWant: (String, String, MediaType) -> Unit,
+) {
+    val type = MediaType.from(w.kind)
+    val cover by rememberCover(session, type, w.title, w.artworkPath, w.year, w.artist ?: w.author)
+    MediaCard(
+        w.title,
+        type,
+        onOpen = { onOpenWork(w) },
+        subtitle = w.artist ?: w.author,
+        meta = listOf(w.year?.toString()),
+        artwork = cover.bitmap,
+        status = session.index.statusOf(w.id),
+        onWant = { onWant(w.id, w.title, type) },
+        mode = session.mode,
+        width = null,
+    )
 }
 
 @Composable

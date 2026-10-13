@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.desktop.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -32,6 +33,8 @@ import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.MediaRow
+import one.rarebit.heyarr.ui.components.ArchiveVignette
+import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
@@ -142,66 +145,29 @@ fun MissingScreen(
                 PrimaryButton("Want by title", onWantTitle, icon = HeyarrIcons.Add, compact = true)
             }
         })
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
             FilterChip("Missing", state.tab == 0, { state.tab = 0 }, count = state.missing?.size)
             FilterChip("Could be better", state.tab == 1, { state.tab = 1 }, count = state.upgrades?.size)
-        }
-        if (list != null && list.isNotEmpty()) {
-            Panel("Bulk actions", trailing = {
-                GhostButton(
-                    if (sel.size ==
-                        list.size
-                    ) {
-                        "Select none"
-                    } else {
-                        "Select all"
-                    },
-                    {
-                        state.selected =
-                            if (sel.size == list.size) emptySet() else list.map { it.desiredItemId }.toSet()
-                    },
-                )
-            }) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        "${sel.size} selected",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Tokens.textMuted,
-                        modifier = Modifier.padding(end = 8.dp),
-                    )
-                    SecondaryButton(
-                        "Search indexers now",
-                        {
-                            session.api?.let { a -> bulk("Search queued") { id -> a.searchReleases(id) } }
-                        },
-                        icon = HeyarrIcons.Search,
-                        compact = true,
-                        enabled =
-                        sel.isNotEmpty() && !state.busy,
-                    )
-                    SecondaryButton(
-                        "Monitor on",
-                        {
-                            session.api?.let { a -> bulk("Monitoring on") { id -> a.monitor(id, true) } }
-                        },
-                        compact = true,
-                        enabled =
-                        sel.isNotEmpty() && !state.busy,
-                    )
-                    SecondaryButton(
-                        "Monitor off",
-                        {
-                            session.api?.let { a -> bulk("Monitoring off") { id -> a.monitor(id, false) } }
-                        },
-                        compact = true,
-                        enabled =
-                        sel.isNotEmpty() && !state.busy,
-                    )
-                }
+            Spacer(Modifier.weight(1f))
+            if (list != null && list.isNotEmpty()) {
+                GhostButton(if (sel.size == list.size) "Select none" else "Select all", {
+                    state.selected = if (sel.size == list.size) emptySet() else list.map { it.desiredItemId }.toSet()
+                })
             }
+        }
+        // The bulk bar appears only once something is selected, so triage starts with the list.
+        if (sel.isNotEmpty()) {
+            BulkBar(
+                count = sel.size,
+                busy = state.busy,
+                onSearch = { session.api?.let { a -> bulk("Search queued") { id -> a.searchReleases(id) } } },
+                onMonitor = { on ->
+                    session.api?.let { a ->
+                        bulk(if (on) "Monitoring on" else "Monitoring off") { id -> a.monitor(id, on) }
+                    }
+                },
+                onClear = { state.selected = emptySet() },
+            )
         }
         when {
             state.error != null && list == null -> ErrorState("Couldn't load wants", state.error, ::load)
@@ -216,6 +182,7 @@ fun MissingScreen(
                 } else {
                     "Nothing to upgrade"
                 },
+                vignette = ArchiveVignette.EMPTY,
                 detail = if (state.tab ==
                     0
                 ) {
@@ -231,6 +198,9 @@ fun MissingScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 items(list, key = { it.desiredItemId }) { w ->
+                    if (w.desiredItemId != list.first().desiredItemId) {
+                        EditorialRule(Modifier.padding(start = 60.dp, end = 8.dp), dashed = true)
+                    }
                     val checked = w.desiredItemId in sel
                     MediaRow(
                         w.subject,
@@ -272,5 +242,29 @@ fun MissingScreen(
                 item { Spacer(Modifier.height(16.dp)) }
             }
         }
+    }
+}
+
+/** The selection's actions, on a raised strip that only exists while something is selected. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun BulkBar(
+    count: Int,
+    busy: Boolean,
+    onSearch: () -> Unit,
+    onMonitor: (Boolean) -> Unit,
+    onClear: () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().background(Tokens.surface2).padding(horizontal = 14.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text("$count selected", style = MaterialTheme.typography.labelMedium, color = Tokens.textPrimary)
+        Spacer(Modifier.weight(1f))
+        SecondaryButton("Search now", onSearch, icon = HeyarrIcons.Search, compact = true, enabled = !busy)
+        SecondaryButton("Monitor", { onMonitor(true) }, compact = true, enabled = !busy)
+        SecondaryButton("Unmonitor", { onMonitor(false) }, compact = true, enabled = !busy)
+        GhostButton("Clear", onClear)
     }
 }
