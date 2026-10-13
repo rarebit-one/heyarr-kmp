@@ -487,7 +487,6 @@ fun PlayerScreen(
                         }
                     }
                 })
-                IconButtonRound(HeyarrIcons.Fullscreen, "Fullscreen (F)", ::toggleFullscreen, filled = true)
             }
             if (state.castOpen) Box(Modifier.padding(horizontal = 24.dp)) { CastRow(session, state, item) }
 
