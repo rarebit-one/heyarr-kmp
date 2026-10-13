@@ -182,6 +182,8 @@ internal fun AssetPersonalActions(personal: DetailPersonal, assetId: String, tit
  * candidates, scoring, health, captions and artwork, variants — without the hero in front.
  */
 @Composable
+// One screen, two views of a work, each with its own loads and callbacks.
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 fun DetailScreen(
     session: AppSession,
     route: Route.Detail,
