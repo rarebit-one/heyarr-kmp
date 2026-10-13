@@ -217,6 +217,9 @@ private fun DiscoveryHitRow(
     // The poster URL is hosted by the metadata provider and fetched as external artwork,
     // without attaching the node's credential; the artwork loader caches it for repeat searches.
     val art by session.artwork.rememberArtwork(hit.posterUrl)
+    // Asked for this session: on its way, and no second request.
+    val requested = session.titleKey(hit.title, hit.year, type) in session.requestedTitles
+    val availability = if (requested) Availability.ON_ITS_WAY else Availability.GETTABLE
     MediaRow(
         hit.title,
         type,
@@ -225,10 +228,12 @@ private fun DiscoveryHitRow(
         subtitle = hit.overview,
         meta = listOf(hit.year?.toString()),
         artwork = art,
-        availability = Availability.GETTABLE,
+        availability = availability,
         trailing = {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (Availability.GETTABLE.offersGetIt(session.mode)) {
+                if (requested) {
+                    Unit
+                } else if (availability.offersGetIt(session.mode)) {
                     GhostButton("Options…", { onWantTitle(hit.title, hit.year, type) })
                     GetItButton({
                         onGetItTitle(hit.title, hit.year, type)

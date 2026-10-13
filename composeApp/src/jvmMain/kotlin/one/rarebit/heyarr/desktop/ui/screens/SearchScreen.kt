@@ -220,7 +220,9 @@ private fun ResultRow(
             onOpen = onOpen,
             subtitle = row.hit.workTitle,
             meta = listOf(row.hit.kind),
-            availability = if (row.hit.blobHash != null) Availability.READY else Availability.NOT_AVAILABLE,
+            // No file says nothing about a want (a followed source projects items nobody asked for):
+            // neutral, not "not available".
+            availability = Availability.READY.takeIf { row.hit.blobHash != null },
             selected = selected,
         )
 

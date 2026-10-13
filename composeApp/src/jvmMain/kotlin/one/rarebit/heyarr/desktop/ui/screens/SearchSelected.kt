@@ -71,7 +71,7 @@ internal fun SelectedResult(
                 is SearchRow.EpisodeRow -> PlainSelection(
                     row,
                     listOfNotNull(row.hit.workTitle, row.hit.kind),
-                    if (row.hit.blobHash != null) Availability.READY else Availability.NOT_AVAILABLE,
+                    Availability.READY.takeIf { row.hit.blobHash != null },
                     onOpen,
                 )
 
@@ -142,7 +142,7 @@ private fun WorkSelection(
 private fun PlainSelection(
     row: SearchRow,
     meta: List<String>,
-    availability: Availability,
+    availability: Availability?,
     onOpen: (SearchRow) -> Unit,
 ) {
     MediaBadge(row.type)
@@ -154,7 +154,7 @@ private fun PlainSelection(
         overflow = TextOverflow.Ellipsis,
     )
     MetaLine(meta, maxLines = 2)
-    AvailabilityMark(availability)
+    availability?.let { AvailabilityMark(it) }
     DashedDivider()
     // An episode or source with no work behind it has no page to open; offer nothing rather than a dead button.
     if (routeFor(row) != null) {

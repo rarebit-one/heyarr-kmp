@@ -2,6 +2,7 @@ package one.rarebit.heyarr.desktop.state
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellationException
@@ -419,42 +420,62 @@ class AppSession(
     fun getIt(workId: String?, title: String, type: MediaType, year: Int? = null, onManage: () -> Unit): Boolean {
         val profile = QualityProfiles.defaultFor(type, profiles)?.takeUnless { isGuest } ?: return false
         val a = api
-        val before = index
-        if (a != null && workId != null) {
-            index = index.withPendingWant(workId, profiles.firstOrNull { it.name == profile }?.id)
-        }
-        if (a != null) {
-            scope.launch {
-                io {
-                    if (workId != null) {
-                        a.wantWork(workId, profile)
-                    } else {
-                        a.wantTitle(title, type, profile, year)
-                    }
-                }.fold(
-                    onSuccess = { r ->
-                        when (r) {
-                            is McpResult.Ok -> {
-                                toast(
-                                    Toast.Kind.SUCCESS,
-                                    "On its way: “$title”",
-                                    "heyarr is looking for a copy.",
-                                    action = ToastAction("Manage") { onManage() },
-                                )
-                                refreshIndex()
-                            }
-
-                            is McpResult.Refused -> {
-                                index = before
-                                refused(r)
-                            }
-                        }
-                    },
-                    onFailure = { index = before },
-                )
+        val key = titleKey(title, year, type)
+        if (a != null && (workId != null || key !in requestedTitles)) {
+            if (workId != null) {
+                index = index.withPendingWant(workId, profiles.firstOrNull { it.name == profile }?.id)
+            } else {
+                requestedTitles[key] = false
             }
+            scope.launch { sendGetIt(a, GetItRequest(workId, title, type, year, profile), onManage) }
         }
         return true
+    }
+
+    /**
+     * Titles asked for by "Get it" this session: false while the request is in flight, true once
+     * the node took it. A discovery hit has no work id the want index could report, so this is
+     * what keeps its button from sending the same want twice.
+     */
+    val requestedTitles = mutableStateMapOf<String, Boolean>()
+
+    fun titleKey(title: String, year: Int?, type: MediaType): String =
+        "${type.name}|${title.trim().lowercase()}|${year ?: ""}"
+
+    /** One "Get it": the work (by id, or by title for a discovery hit) and the profile it is wanted at. */
+    private class GetItRequest(
+        val workId: String?,
+        val title: String,
+        val type: MediaType,
+        val year: Int?,
+        val profile: String,
+    )
+
+    private suspend fun sendGetIt(a: HeyarrApi, req: GetItRequest, onManage: () -> Unit) {
+        val (workId, title) = req.workId to req.title
+        val key = titleKey(title, req.year, req.type)
+        val result = io {
+            if (workId != null) a.wantWork(workId, req.profile) else a.wantTitle(title, req.type, req.profile, req.year)
+        }
+        val ok = result.getOrNull() is McpResult.Ok
+        when (val r = result.getOrNull()) {
+            is McpResult.Ok -> toast(
+                Toast.Kind.SUCCESS,
+                "On its way: “$title”",
+                "heyarr is looking for a copy.",
+                action = ToastAction("Manage") { onManage() },
+            )
+
+            is McpResult.Refused -> refused(r)
+
+            null -> Unit
+        }
+        if (workId == null) {
+            if (ok) requestedTitles[key] = true else requestedTitles.remove(key)
+        }
+        // Reload rather than restore a snapshot: another want may have landed meanwhile, and the
+        // node's answer is the only truth about this one.
+        refreshIndex()
     }
 
     // ── errors → toasts ──────────────────────────────────────────────────────────

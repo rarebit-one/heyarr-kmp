@@ -65,6 +65,9 @@ import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 
+/** What a want is getting: shown on a shelf as "on the way", never as a work to play. */
+private val COMING = setOf(Availability.ON_ITS_WAY, Availability.NOT_AVAILABLE)
+
 /** A pseudo-kind for the default filter: the four media kinds, no feeds or documents. */
 val MEDIA = MediaType.UNKNOWN
 internal val MEDIA_KINDS =
@@ -116,11 +119,10 @@ fun LibraryScreen(
     // A shelf (Watch / Listen / Read) is for playing: only works with something to play. What a
     // want has asked for but not yet got is counted, and lives in Manage → Downloads.
     val shelf = experience != null
-    val (browsable, pending) = if (shelf) {
-        all.partition { it.availability(session.index.statusOf(it.id)) == Availability.READY }
-    } else {
-        all to emptyList()
-    }
+    val availabilityOf: (Work) -> Availability = { it.availability(session.index.statusOf(it.id)) }
+    val browsable = if (shelf) all.filter { availabilityOf(it) == Availability.READY } else all
+    // Only what a want is actually getting counts as on the way; a guest has no want index to say.
+    val pending = if (shelf && !session.isGuest) all.count { availabilityOf(it) in COMING } else 0
     val counts = browsable.groupingBy { MediaType.from(it.kind) }.eachCount()
     val filtered = filterWorks(browsable, state, experience) { session.index.statusOf(it) }
 
@@ -136,7 +138,7 @@ fun LibraryScreen(
             experience?.title ?: "Library",
             icon = (experience?.kinds?.firstOrNull() ?: MediaType.MOVIE).icon(),
             subtitle = state.works?.let { "${filtered.size} of ${browsable.size} works" },
-            trailing = { LibraryTrailing(state, pending.size, { onOpen(Route.Downloads) }, ::load) },
+            trailing = { LibraryTrailing(state, pending, { onOpen(Route.Downloads) }, ::load) },
         )
         LibraryFilterBar(state, browsable, counts, experience)
         when {
