@@ -22,12 +22,12 @@ data class Resolution(val resolved: List<CatalogWork>, val complete: Boolean)
  * pair at a time and caches the result for the lifetime of the screen.
  */
 class CanonicalLookup {
-    private val cache = HashMap<Pair<String, String?>, List<CatalogWork>>()
+    // Each entry is stamped with the generation it was looked up in, and only entries from
+    // the current generation are read. clear() bumps the generation, so a lookup that
+    // started before a Refresh and lands after it is written under the old stamp and never
+    // served: no lock needed around the check and the write (#142, Codex on #146).
+    private val cache = HashMap<Pair<String, String?>, Pair<Int, List<CatalogWork>>>()
 
-    // Bumped by clear(). A lookup started before a Refresh can still be in flight when the
-    // cache is cleared; it caches its answer only if no clear() happened in between, so a
-    // slow pre-Refresh response cannot repopulate the cache with stale canonicals (#142,
-    // Codex on #146).
     @Volatile private var generation = 0
 
     /**
@@ -65,10 +65,11 @@ class CanonicalLookup {
         val started = generation
         var anyFailed = false
         val resolved = keys.flatMap { (key, raw) ->
-            cache[key] ?: runCatching { lookup(raw, key.second) }
-                .onSuccess { if (generation == started) cache[key] = it }
-                .onFailure { anyFailed = true }
-                .getOrDefault(emptyList())
+            cache[key]?.takeIf { it.first == started }?.second
+                ?: runCatching { lookup(raw, key.second) }
+                    .onSuccess { cache[key] = started to it }
+                    .onFailure { anyFailed = true }
+                    .getOrDefault(emptyList())
         }
         return Resolution(resolved, complete = !anyFailed)
     }
