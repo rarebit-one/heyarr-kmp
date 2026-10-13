@@ -70,7 +70,14 @@ fun GetItButton(
             contentDescription = description,
         )
     } else {
-        SecondaryButton(GET_IT, onClick, modifier, icon = HeyarrIcons.Add, compact = compact)
+        SecondaryButton(
+            GET_IT,
+            onClick,
+            modifier,
+            icon = HeyarrIcons.Add,
+            compact = compact,
+            contentDescription = description,
+        )
     }
 }
 
