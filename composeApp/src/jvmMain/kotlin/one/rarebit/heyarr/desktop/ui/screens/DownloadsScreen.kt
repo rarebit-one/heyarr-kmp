@@ -112,7 +112,7 @@ fun DownloadsScreen(
                         TableColumn("Phase", width = 110.dp),
                         TableColumn("Client", width = 80.dp),
                         TableColumn("Detail", 2.4f),
-                        TableColumn("", width = 210.dp, alignEnd = true),
+                        TableColumn("", width = 176.dp, alignEnd = true),
                     ),
                     rowCount = inFlight.size,
                     emptyText = "Nothing in flight — every want is satisfied.",
@@ -157,7 +157,7 @@ fun DownloadsScreen(
                                         }
                                     }
                                 }
-                            }, icon = HeyarrIcons.Search, compact = true)
+                            }, compact = true)
                         }
                     }
                 }
