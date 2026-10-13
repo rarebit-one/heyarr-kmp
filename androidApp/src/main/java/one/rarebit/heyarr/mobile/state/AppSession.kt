@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -28,9 +29,37 @@ import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.settings.SettingsStore
 import one.rarebit.heyarr.ui.theme.Appearance
+import one.rarebit.voidwhichbinds.AuthenticationRequiredException
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
-enum class Connection { UNKNOWN, ONLINE, OFFLINE, UNAUTHORIZED }
+enum class Connection {
+    UNKNOWN,
+    ONLINE,
+    OFFLINE,
+    UNAUTHORIZED,
+
+    /**
+     * The device signing key's post-authentication window has lapsed (see `BiometricGate`),
+     * so signing refused before any request left the phone. The user re-authenticates
+     * locally (biometric / PIN) and retries. This is not a network problem.
+     */
+    SIGNING_FAILED,
+    ;
+
+    companion object {
+        /**
+         * Maps one liveness probe's HTTP status to a [Connection] state.
+         * [status] is the HTTP status, or 0 when the transport could not connect at all.
+         * A refused credential is not "offline" — mirrors the desktop AppSession contract.
+         */
+        @Suppress("MagicNumber")
+        fun fromProbe(status: Int): Connection = when (status) {
+            200 -> ONLINE
+            401, 403 -> UNAUTHORIZED
+            else -> OFFLINE
+        }
+    }
+}
 
 /**
  * App-wide state every signed-in screen shares — ported from heyarr-desktop's
@@ -129,16 +158,27 @@ class AppSession(
 
     suspend fun probe() {
         val t0 = System.nanoTime()
-        val ok = withContext(Dispatchers.IO) { runCatching { api.ping() }.getOrDefault(false) }
+        val result = withContext(Dispatchers.IO) {
+            try {
+                Connection.fromProbe(api.ping())
+            } catch (_: AuthenticationRequiredException) {
+                // Signing refused before the request was made: tell the user to
+                // re-authenticate, not to check their network.
+                Connection.SIGNING_FAILED
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                Connection.OFFLINE
+            }
+        }
         probes++
         lastLatencyMs = (System.nanoTime() - t0) / 1_000_000
-        if (ok) {
+        if (result == Connection.ONLINE) {
             lastOkAt = System.currentTimeMillis()
-            connection = Connection.ONLINE
         } else {
             failures++
-            connection = Connection.OFFLINE
         }
+        connection = result
     }
 
     /** Called by any screen whose call died on the transport — flips the banner immediately. */

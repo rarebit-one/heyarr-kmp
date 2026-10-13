@@ -384,11 +384,17 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
         get("$baseUrl/api/v1/desired/${enc(desiredItemId)}/candidates", "GET /desired/{id}/candidates"),
     )
 
-    /** A cheap liveness probe for the offline banner: one authenticated page of one work. */
-    fun ping(): Boolean = try {
-        http.get("$baseUrl/api/v1/works?limit=1", credential.asHeader()).status == 200
-    } catch (e: IOException) {
-        false
+    /**
+     * A cheap liveness probe for the offline banner: one authenticated page of one work.
+     * Returns the HTTP status; 0 when the transport could not connect at all. A local
+     * signing failure ([one.rarebit.voidwhichbinds.AuthenticationRequiredException]) is not
+     * caught here — callers that need to distinguish it must catch it themselves.
+     * A refused credential is not "offline" — matches the desktop AppSession contract.
+     */
+    fun ping(): Int = try {
+        http.get("$baseUrl/api/v1/works?limit=1", credential.asHeader()).status
+    } catch (_: IOException) {
+        0
     }
 
     // ── plumbing ─────────────────────────────────────────────────────────────────
