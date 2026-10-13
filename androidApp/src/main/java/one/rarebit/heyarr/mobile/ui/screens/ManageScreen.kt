@@ -105,7 +105,12 @@ fun ManageScreen(onOpen: (Route) -> Unit, modifier: Modifier = Modifier) {
 
 /** Manage → Downloads: the wants in flight and the job queue, on a page of its own. */
 @Composable
-fun ManageDownloads(session: AppSession, state: DownloadsState, onOpen: (Route) -> Unit, modifier: Modifier = Modifier) {
+fun ManageDownloads(
+    session: AppSession,
+    state: DownloadsState,
+    onOpen: (Route) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier.fillMaxSize().padding(horizontal = Tokens.screenPadding).padding(top = Tokens.s4),
         verticalArrangement = Arrangement.spacedBy(12.dp),

@@ -431,21 +431,37 @@ fun HeyarrNavHost(
                                     ManageDownloads(session, holder.library.downloads, ::open, modifier = content)
                                 }
                                 composable<Route.AllWorks> {
-                                    LibraryScreen(session, holder.allWorks, ::open, onWant, modifier = content, curator = true)
+                                    LibraryScreen(
+                                        session,
+                                        holder.allWorks,
+                                        ::open,
+                                        onWant,
+                                        modifier = content,
+                                        curator = true,
+                                    )
                                 }
                                 composable<Route.Search> {
-                                    SearchScreen(session, holder.search, ::open, onGetIt, onWantTitle, onGetItTitle, onPlayEpisode = { ep ->
-                                        ep.blobHash?.let {
-                                            audio.stop()
-                                            vm.playback.playFile(
-                                                "${ep.workTitle ?: ""} — ${ep.title}".trimStart(' ', '—'),
-                                                ep.assetId ?: ep.id,
-                                                it,
-                                                ep.mime,
-                                                ep.contentType ?: "series",
-                                            )
-                                        }
-                                    }, modifier = content)
+                                    SearchScreen(
+                                        session,
+                                        holder.search,
+                                        ::open,
+                                        onGetIt,
+                                        onWantTitle,
+                                        onGetItTitle,
+                                        onPlayEpisode = { ep ->
+                                            ep.blobHash?.let {
+                                                audio.stop()
+                                                vm.playback.playFile(
+                                                    "${ep.workTitle ?: ""} — ${ep.title}".trimStart(' ', '—'),
+                                                    ep.assetId ?: ep.id,
+                                                    it,
+                                                    ep.mime,
+                                                    ep.contentType ?: "series",
+                                                )
+                                            }
+                                        },
+                                        modifier = content,
+                                    )
                                 }
                                 composable<Route.Library> {
                                     LibraryScreen(
