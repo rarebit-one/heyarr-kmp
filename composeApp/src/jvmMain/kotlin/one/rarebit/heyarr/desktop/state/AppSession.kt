@@ -22,6 +22,7 @@ import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.discovery.NodeDiscovery
 import one.rarebit.heyarr.core.heyarr.QualityProfile
+import one.rarebit.heyarr.core.heyarr.QualityProfiles
 import one.rarebit.heyarr.core.mcp.McpError
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
@@ -33,6 +34,7 @@ import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.core.state.LibraryIndex
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.state.ToastAction
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.device.DesktopDeviceEnroller
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DevicePairingSteps
@@ -405,6 +407,54 @@ class AppSession(
                 onDone(r)
             }
         }
+    }
+
+    /**
+     * The consumer "Get it": a monitored want at the profile the Want sheet would pre-select,
+     * without the sheet. By id for a work the library knows, by title for a discovery hit.
+     * Returns false and does nothing when no profile fits the kind (a book on a video-only
+     * node), so the caller can open the sheet and let the person choose; [onManage] is the
+     * toast's way into Manage to follow it.
+     */
+    fun getIt(workId: String?, title: String, type: MediaType, year: Int? = null, onManage: () -> Unit): Boolean {
+        val profile = QualityProfiles.defaultFor(type, profiles)?.takeUnless { isGuest } ?: return false
+        val a = api
+        val before = index
+        if (a != null && workId != null) {
+            index = index.withPendingWant(workId, profiles.firstOrNull { it.name == profile }?.id)
+        }
+        if (a != null) {
+            scope.launch {
+                io {
+                    if (workId != null) {
+                        a.wantWork(workId, profile)
+                    } else {
+                        a.wantTitle(title, type, profile, year)
+                    }
+                }.fold(
+                    onSuccess = { r ->
+                        when (r) {
+                            is McpResult.Ok -> {
+                                toast(
+                                    Toast.Kind.SUCCESS,
+                                    "On its way: “$title”",
+                                    "heyarr is looking for a copy.",
+                                    action = ToastAction("Manage") { onManage() },
+                                )
+                                refreshIndex()
+                            }
+
+                            is McpResult.Refused -> {
+                                index = before
+                                refused(r)
+                            }
+                        }
+                    },
+                    onFailure = { index = before },
+                )
+            }
+        }
+        return true
     }
 
     // ── errors → toasts ──────────────────────────────────────────────────────────

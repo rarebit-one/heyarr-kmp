@@ -44,6 +44,7 @@ import one.rarebit.heyarr.ui.theme.Tokens
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 internal fun HomeContext(session: AppSession, onOpen: (Route) -> Unit) {
+    OnItsWay(session, onOpen)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionLabel("Browse")
         DashedDivider()
@@ -52,6 +53,35 @@ internal fun HomeContext(session: AppSession, onOpen: (Route) -> Unit) {
         ContextLink(HeyarrIcons.Read, "Books and articles") { onOpen(Route.Consume(Experience.READ)) }
         ContextLink(HeyarrIcons.Discover, "Find something new") { onOpen(Route.Discover) }
         if (!session.isGuest) ContextLink(HeyarrIcons.Manage, "Manage the collection") { onOpen(Route.Manage) }
+    }
+}
+
+/**
+ * What heyarr is still getting, as one line into Manage → Downloads. Counted from the want index
+ * once it has answered, and left out at zero: nothing coming needs no announcement.
+ */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun OnItsWay(session: AppSession, onOpen: (Route) -> Unit) {
+    if (session.isGuest || !session.indexLoaded) return
+    val counts = remember(session.index) { insightCounts(session.index) }
+    val coming = (counts[LibraryStatus.WANTED] ?: 0) + (counts[LibraryStatus.MISSING] ?: 0)
+    if (coming == 0) return
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionLabel("On the way")
+        DashedDivider()
+        ContextLink(
+            HeyarrIcons.Download,
+            if (coming ==
+                1
+            ) {
+                "1 title heyarr is getting"
+            } else {
+                "$coming titles heyarr is getting"
+            },
+        ) {
+            onOpen(Route.Downloads)
+        }
     }
 }
 

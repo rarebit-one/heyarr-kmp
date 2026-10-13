@@ -29,6 +29,13 @@ class AvailabilityTest {
     }
 
     @Test
+    fun aCataloguedWorkNoWantNamesWasScannedSoIsReady() {
+        assertEquals(Availability.READY, Availability.ofCatalogued(LibraryStatus.NOT_TRACKED))
+        assertEquals(Availability.ON_ITS_WAY, Availability.ofCatalogued(LibraryStatus.WANTED))
+        assertEquals(Availability.NOT_AVAILABLE, Availability.ofCatalogued(LibraryStatus.MISSING))
+    }
+
+    @Test
     fun anUnknownStateIsNeverReady() {
         assertEquals(Availability.ON_ITS_WAY, Availability.of(LibraryStatus.ofState("SOMETHING_NEW")))
     }

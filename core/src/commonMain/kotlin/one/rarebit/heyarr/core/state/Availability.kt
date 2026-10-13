@@ -36,5 +36,13 @@ enum class Availability(val label: String) {
             status == LibraryStatus.MISSING -> NOT_AVAILABLE
             else -> GETTABLE
         }
+
+        /**
+         * A work the library catalogues, with no file information to hand (a search hit, a type
+         * rail). The catalog only holds works a scan or a want put there, so one that no want
+         * names came from a scan and is held; a want's own state decides the rest.
+         */
+        fun ofCatalogued(status: LibraryStatus): Availability =
+            of(status, playable = status == LibraryStatus.NOT_TRACKED)
     }
 }

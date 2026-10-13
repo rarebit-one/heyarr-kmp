@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.SearchRow
 import one.rarebit.heyarr.core.theme.MediaType
@@ -22,8 +23,10 @@ import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.ui.components.Artwork
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
 import one.rarebit.heyarr.ui.components.ArchiveVignette
+import one.rarebit.heyarr.ui.components.AvailabilityMark
 import one.rarebit.heyarr.ui.components.DashedDivider
 import one.rarebit.heyarr.ui.components.EmptyState
+import one.rarebit.heyarr.ui.components.GetItButton
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.MetaLine
@@ -38,7 +41,7 @@ import one.rarebit.heyarr.ui.theme.Tokens
 /**
  * Search's context column: the result the keyboard or a click has selected, large enough to
  * decide on without leaving the list. Everything shown comes from the hit itself and the want
- * index; Open goes to the work, Want writes desired state (hidden for a guest, as in the list).
+ * index; Open goes to the work, and Get it (for a work nothing holds) asks heyarr for a copy.
  */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
@@ -47,7 +50,7 @@ internal fun SelectedResult(
     selected: SearchRow?,
     top: SearchRow?,
     onOpen: (SearchRow) -> Unit,
-    onWant: (String, String, MediaType) -> Unit,
+    onGetIt: (String, String, MediaType) -> Unit,
 ) {
     // Until something is selected, the pane previews the top result rather than sitting empty.
     val row = selected ?: top
@@ -63,19 +66,19 @@ internal fun SelectedResult(
     MediaScope(row.type) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             when (row) {
-                is SearchRow.WorkRow -> WorkSelection(session, row, onOpen, onWant)
+                is SearchRow.WorkRow -> WorkSelection(session, row, onOpen, onGetIt)
 
                 is SearchRow.EpisodeRow -> PlainSelection(
                     row,
                     listOfNotNull(row.hit.workTitle, row.hit.kind),
-                    if (row.hit.blobHash != null) LibraryStatus.IN_LIBRARY else null,
+                    if (row.hit.blobHash != null) Availability.READY else Availability.NOT_AVAILABLE,
                     onOpen,
                 )
 
                 is SearchRow.SourceRow -> PlainSelection(
                     row,
                     listOfNotNull(row.source.type?.replace('_', ' '), "${row.source.itemsArchived} archived"),
-                    LibraryStatus.IN_LIBRARY,
+                    Availability.READY,
                     onOpen,
                 )
             }
@@ -89,11 +92,11 @@ private fun WorkSelection(
     session: AppSession,
     row: SearchRow.WorkRow,
     onOpen: (SearchRow) -> Unit,
-    onWant: (String, String, MediaType) -> Unit,
+    onGetIt: (String, String, MediaType) -> Unit,
 ) {
     val hit = row.hit
     val cover by rememberCover(session, row.type, hit.title, hit.artworkPath, hit.year, hit.creator)
-    val status = session.index.statusOf(hit.workId)
+    val availability = Availability.ofCatalogued(session.index.statusOf(hit.workId))
     Artwork(
         cover.bitmap,
         row.type,
@@ -122,21 +125,26 @@ private fun WorkSelection(
             overflow = TextOverflow.Ellipsis,
         )
     }
-    StatusPill(status)
+    AvailabilityMark(availability)
     DashedDivider()
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
         if (routeFor(row) != null) {
             PrimaryButton("Open", { onOpen(row) }, icon = HeyarrIcons.Forward, contentDescription = "Open ${hit.title}")
         }
-        if (status == LibraryStatus.NOT_TRACKED && GuestGate.allows(session.mode, Surface.WANT)) {
-            SecondaryButton("Want", { onWant(hit.workId, hit.title, row.type) }, icon = HeyarrIcons.Add)
+        if (availability.offersGetIt(session.mode)) {
+            GetItButton({ onGetIt(hit.workId, hit.title, row.type) }, title = hit.title)
         }
     }
 }
 
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-private fun PlainSelection(row: SearchRow, meta: List<String>, status: LibraryStatus?, onOpen: (SearchRow) -> Unit) {
+private fun PlainSelection(
+    row: SearchRow,
+    meta: List<String>,
+    availability: Availability,
+    onOpen: (SearchRow) -> Unit,
+) {
     MediaBadge(row.type)
     Text(
         row.title,
@@ -146,7 +154,7 @@ private fun PlainSelection(row: SearchRow, meta: List<String>, status: LibrarySt
         overflow = TextOverflow.Ellipsis,
     )
     MetaLine(meta, maxLines = 2)
-    status?.let { StatusPill(it) }
+    AvailabilityMark(availability)
     DashedDivider()
     // An episode or source with no work behind it has no page to open; offer nothing rather than a dead button.
     if (routeFor(row) != null) {

@@ -71,6 +71,16 @@ internal fun LibraryActions(state: LibraryState, onRefresh: () -> Unit) {
     }
 }
 
+/** The header's trailing controls: a way to what is still on its way (on a shelf), then view and refresh. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+internal fun LibraryTrailing(state: LibraryState, pending: Int, onPending: () -> Unit, onRefresh: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        if (pending > 0) GhostButton("$pending on the way", onPending, icon = HeyarrIcons.Forward)
+        LibraryActions(state, onRefresh)
+    }
+}
+
 /** The kind chips: Media (or All, inside an experience), then each kind with its count, in its accent. */
 @Composable
 internal fun KindFilterChips(
@@ -193,8 +203,11 @@ internal fun LibraryFilterBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         KindFilterChips(state, all, counts, experience)
-        BarDivider()
-        StatusFilterChips(state)
+        // Want status is a curator filter: Manage → Library has it, a shelf does not.
+        if (experience == null) {
+            BarDivider()
+            StatusFilterChips(state)
+        }
     }
 }
 

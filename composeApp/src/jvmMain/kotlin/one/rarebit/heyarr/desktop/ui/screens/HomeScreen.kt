@@ -24,6 +24,7 @@ import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.feeds.FollowedSource
 import one.rarebit.heyarr.core.mcp.SearchHit
 import one.rarebit.heyarr.core.mcp.Want
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
@@ -57,26 +58,18 @@ class HomeState {
             RailState.Loading
         },
     )
-    var missing by mutableStateOf<RailState<Want>>(RailState.Loading)
-    var upgrades by mutableStateOf<RailState<Want>>(RailState.Loading)
-    var followed by mutableStateOf<RailState<FollowedSource>>(RailState.Loading)
     var loadedOnce = false
 }
 
 /**
- * Home — a media-mixed spotlight over themed rails. Spotlight and "Recently
- * added" come from the works list (recent first, artwork preferred); the per-type rails
- * from `search_content` by content type; "Wanted but missing" and "Could be better"
- * from `get_missing_content` / `get_upgrade_candidates`; "Following" from `list_followed`.
+ * Home — a media-mixed spotlight over themed rails, for watching, listening and reading.
+ * Spotlight and "Recently catalogued" come from the works list (recent first), holding only
+ * what can be played; the per-type rails from `search_content` by content type. Wants,
+ * upgrades and followed sources live in Manage, not here.
  */
 @Composable
-fun HomeScreen(
-    session: AppSession,
-    state: HomeState,
-    onOpen: (Route) -> Unit,
-    onWant: (String, String, MediaType) -> Unit,
-    modifier: Modifier = Modifier,
-) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+fun HomeScreen(session: AppSession, state: HomeState, onOpen: (Route) -> Unit, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
 
     fun load() = loadHome(session, state, scope)
@@ -94,44 +87,17 @@ fun HomeScreen(
         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(36.dp),
     ) {
-        item { SpotlightBlock(session, state, onOpen, onWant) }
+        item { SpotlightBlock(session, state, onOpen) }
         if (session.isGuest) {
             item { GuestNotice() }
         }
         item {
-            WorkRail("Recently catalogued", state.recent, session, onOpen, onWant, trailing = {
+            WorkRail("Recently catalogued", state.recent, session, onOpen, trailing = {
                 GhostButton("Refresh", ::load, icon = HeyarrIcons.Refresh)
             })
         }
         for (t in MediaType.SEARCHABLE) {
-            item { TypeRail(session, t, state.byType[t] ?: RailState.Loading, onOpen, onWant) }
-        }
-        if (!session.isGuest) {
-            item {
-                WantRail(
-                    "Wanted but missing",
-                    state.missing,
-                    session,
-                    onOpen,
-                    subtitle = "Wants nothing acceptable has satisfied yet",
-                    emptyText = "Nothing is missing — every want is satisfied.",
-                )
-            }
-        }
-        if (!session.isGuest) {
-            item {
-                WantRail(
-                    "Could be better",
-                    state.upgrades,
-                    session,
-                    onOpen,
-                    subtitle = "Satisfied and monitored; a better release may still turn up",
-                    emptyText = "No upgrade candidates.",
-                )
-            }
-        }
-        if (!session.isGuest) {
-            item { FollowingRail(session, state.followed, onOpen) }
+            item { TypeRail(session, t, state.byType[t] ?: RailState.Loading, onOpen) }
         }
         item { Spacer(Modifier.height(24.dp)) }
     }
@@ -145,7 +111,8 @@ private fun loadHome(session: AppSession, state: HomeState, scope: CoroutineScop
         session.io { a.works() }.fold(
             onSuccess = { all ->
                 val variants = one.rarebit.heyarr.core.library.Variants.variantIds(all)
-                val works = all.filter { it.id !in variants }
+                // Only what can be played: a work a want created before anything arrived has no file.
+                val works = all.filter { it.id !in variants && it.playable != false }
                 state.recent = RailState.Loaded(works.filter { it.kind != "document" }.take(24))
                 state.spotlight =
                     RailState.Loaded(works.filter { it.kind != "document" && it.kind != "unknown" }.take(6))
@@ -164,44 +131,6 @@ private fun loadHome(session: AppSession, state: HomeState, scope: CoroutineScop
                 RailState.Loaded(it.works)
             }, onFailure = { RailState.Failed(it.message ?: "failed") })
             state.byType = state.byType + (t to r)
-        }
-    }
-    loadPersonalRails(session, state, a, scope)
-}
-
-/** The personal rails: missing, upgrades and followed sources. */
-private fun loadPersonalRails(session: AppSession, state: HomeState, a: HeyarrApi, scope: CoroutineScope) {
-    // Missing / upgrades / following are enrolled-only, personal surfaces —
-    // a guest cannot read them (they 403). Skip the calls and leave the rails empty so
-    // they simply don't render; the guest sees a "Sign in to save" affordance instead.
-    if (session.isGuest) {
-        state.missing = RailState.Loaded(emptyList())
-        state.upgrades = RailState.Loaded(emptyList())
-        state.followed = RailState.Loaded(emptyList())
-    } else {
-        scope.launch {
-            state.missing =
-                session.io {
-                    a.missing(40)
-                }.fold(onSuccess = {
-                    RailState.Loaded(it)
-                }, onFailure = { RailState.Failed(it.message ?: "failed") })
-        }
-        scope.launch {
-            state.upgrades =
-                session.io {
-                    a.upgradeCandidates(40)
-                }.fold(onSuccess = {
-                    RailState.Loaded(it)
-                }, onFailure = { RailState.Failed(it.message ?: "failed") })
-        }
-        scope.launch {
-            state.followed =
-                session.io {
-                    a.followed()
-                }.fold(onSuccess = {
-                    RailState.Loaded(it)
-                }, onFailure = { RailState.Failed(it.message ?: "failed") })
         }
     }
 }
@@ -232,12 +161,8 @@ private fun ConnectFirst(onOpen: (Route) -> Unit, modifier: Modifier) {
 }
 
 @Composable
-private fun SpotlightBlock(
-    session: AppSession,
-    state: HomeState,
-    onOpen: (Route) -> Unit,
-    onWant: (String, String, MediaType) -> Unit,
-) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun SpotlightBlock(session: AppSession, state: HomeState, onOpen: (Route) -> Unit) {
     when (val s = state.spotlight) {
         RailState.Loading -> HeroSkeleton()
 
@@ -264,14 +189,15 @@ private fun SpotlightBlock(
                 work.year,
                 work.artist ?: work.author,
             )
-            val status = session.index.statusOf(work.id)
             Hero(
-                title = work.title, type = type, kicker = "From your library",
+                title = work.title,
+                type = type,
+                kicker = "From your library",
                 meta = listOf(
                     work.year?.toString(),
                     work.artist ?: work.author,
                 ),
-                artwork = cover.bitmap, status = status,
+                artwork = cover.bitmap,
                 description = cover.external?.synopsis?.let {
                     it.take(220) +
                         (cover.external?.source?.let { s -> "  ·  via $s" } ?: "")
@@ -283,11 +209,6 @@ private fun SpotlightBlock(
                     }, icon = HeyarrIcons.Play)
                 },
                 secondary = {
-                    if (status == LibraryStatus.NOT_TRACKED &&
-                        GuestGate.allows(session.mode, Surface.WANT)
-                    ) {
-                        SecondaryButton("Want", { onWant(work.id, work.title, type) }, icon = HeyarrIcons.Add)
-                    }
                     if (s.items.size > 1) GhostButton("Next", { i = (i + 1) % s.items.size })
                 },
             )
@@ -296,52 +217,26 @@ private fun SpotlightBlock(
 }
 
 @Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 private fun WorkRail(
     title: String,
     state: RailState<Work>,
     session: AppSession,
     onOpen: (Route) -> Unit,
-    onWant: (String, String, MediaType) -> Unit,
     trailing: (@Composable () -> Unit)? = null,
 ) {
     Rail(title, state, emptyText = "Nothing added yet.", trailing = trailing, key = { it.id }) { w ->
         val type = MediaType.from(w.kind)
-        val status = session.index.statusOf(w.id)
         val cover by rememberCover(session, type, w.title, w.artworkPath, w.year, w.artist ?: w.author)
         MediaCard(
-            w.title, type, onOpen = { onOpen(Route.Detail(w.id, type, w.title, from = "Home")) },
-            subtitle =
-            w.artist ?: w.author,
-            meta = listOf(w.year?.toString()), artwork = cover.bitmap, status = status, onWant = {
-                onWant(w.id, w.title, type)
-            }, mode = session.mode,
-        )
-    }
-}
-
-@Composable
-private fun WantRail(
-    title: String,
-    state: RailState<Want>,
-    session: AppSession,
-    onOpen: (Route) -> Unit,
-    subtitle: String,
-    emptyText: String,
-) {
-    Rail(title, state, subtitle = subtitle, emptyText = emptyText, key = { it.desiredItemId }) { w ->
-        val status = LibraryStatus.ofState(w.state)
-        MediaCard(
             w.title,
-            MediaType.UNKNOWN,
-            onOpen = {
-                w.workId?.let { onOpen(Route.Detail(it, MediaType.UNKNOWN, w.title, from = "Missing")) }
-            },
-            subtitle = w.qualityProfile?.let {
-                "profile: $it"
-            },
-            meta = listOf(w.state.lowercase().replace('_', ' ')),
-            status = status,
-            showBadge = false,
+            type,
+            onOpen = { onOpen(Route.Detail(w.id, type, w.title, from = "Home")) },
+            subtitle = w.artist ?: w.author,
+            meta = listOf(w.year?.toString()),
+            artwork = cover.bitmap,
+            mode = session.mode,
+            availability = Availability.READY,
         )
     }
 }

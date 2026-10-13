@@ -50,8 +50,11 @@ import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.ui.components.AvailabilityMark
+import one.rarebit.heyarr.ui.components.GetItButton
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.MetaLine

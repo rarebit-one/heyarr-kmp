@@ -18,7 +18,8 @@ object WorksJson {
     private val ENVELOPE_KEYS = listOf("items", "works", "data")
 
     /** Parse a works-list response body into [Work]s, skipping any element missing an id. */
-    fun parse(body: String): List<Work> = JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it) }
+    fun parse(body: String): List<Work> =
+        JsonScan.objectsOf(body, ENVELOPE_KEYS).mapNotNull { parseObject(it, listed = true) }
 
     /** Parse one `Work` object body (`GET /works/{id}`), or null if it has no id. */
     fun parseOne(body: String): Work? = JsonScan.rootObject(body)?.let { parseObject(it) }
@@ -27,7 +28,12 @@ object WorksJson {
     fun nextCursor(body: String): String? =
         JsonScan.rootObject(body)?.let { JsonScan.stringField(it, "next_cursor") }?.takeIf { it.isNotBlank() }
 
-    private fun parseObject(obj: String): Work? {
+    /**
+     * [listed] is a row of the works listing, which [LibraryClient] always asks for the
+     * `primary_asset` embed — so an absent or null embed there means the work holds no file. A
+     * single work (`GET /works/{id}`) carries no embed, so it leaves [Work.playable] unknown.
+     */
+    private fun parseObject(obj: String, listed: Boolean = false): Work? {
         val id = JsonScan.stringField(obj, "id") ?: return null
         val title = JsonScan.firstString(obj, TITLE_KEYS) ?: id
         val attributes = JsonScan.objectAt(obj, "attributes")
@@ -43,6 +49,7 @@ object WorksJson {
             createdAt = JsonScan.stringField(obj, "created_at"),
             updatedAt = JsonScan.stringField(obj, "updated_at"),
             artworkPath = JsonScan.objectAt(obj, "artwork")?.let { JsonScan.stringField(it, "content_url") },
+            playable = if (listed) JsonScan.objectAt(obj, "primary_asset") != null else null,
         )
     }
 }

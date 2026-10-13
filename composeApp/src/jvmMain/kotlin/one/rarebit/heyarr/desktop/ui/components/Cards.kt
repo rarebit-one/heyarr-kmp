@@ -60,10 +60,13 @@ import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
+import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.ui.components.ArchiveFallbackCover
+import one.rarebit.heyarr.ui.components.AvailabilityMark
 import one.rarebit.heyarr.ui.components.CornerBracket
+import one.rarebit.heyarr.ui.components.GetItButton
 import one.rarebit.heyarr.ui.components.MediaBadge
 import one.rarebit.heyarr.ui.components.MetaLine
 import one.rarebit.heyarr.ui.components.Notice
@@ -170,6 +173,13 @@ fun Artwork(
 fun wantVisible(mode: ClientMode, status: LibraryStatus?): Boolean =
     GuestGate.allows(mode, Surface.WANT) && status != LibraryStatus.IN_LIBRARY
 
+/** The state a card or row reads out: availability when given (silent when ready), else the want status. */
+private fun stateLabel(availability: Availability?, status: LibraryStatus?): String = when {
+    availability != null -> if (availability == Availability.READY) "" else ", ${availability.label}"
+    status != null -> ", ${status.label}"
+    else -> ""
+}
+
 /**
  * The poster / cover / square card. Aspect, placeholder glyph and accent follow the
  * type; the type badge sits top-left, the status pill top-right, and the one-click
@@ -191,6 +201,12 @@ fun MediaCard(
     onWant: (() -> Unit)? = null,
     /** The client's mode; a guest ([ClientMode.GUEST]) never sees the Want affordance. */
     mode: ClientMode = ClientMode.ENROLLED,
+    /**
+     * The consumer face: when set, the card shows [AvailabilityMark] instead of [status] (no mark
+     * at all for a work that is ready) and offers [onGetIt] instead of Want.
+     */
+    availability: Availability? = null,
+    onGetIt: (() -> Unit)? = null,
     width: Dp? = if (MediaThemes.of(type).aspect == CardAspect.WIDE) 280.dp else Tokens.posterWidth,
     showBadge: Boolean = true,
     aspectOverride: CardAspect? = null,
@@ -210,7 +226,7 @@ fun MediaCard(
                 shape,
             )
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen)
-            .semantics { this.contentDescription = "${type.label}: $title${status?.let { ", ${it.label}" } ?: ""}" },
+            .semantics { this.contentDescription = "${type.label}: $title${stateLabel(availability, status)}" },
     ) {
         Box(Modifier.fillMaxWidth().aspectRatio((aspectOverride ?: theme.aspect).ratio)) {
             Artwork(artwork, type, Modifier.fillMaxSize(), contentDescription = null, seed = title)
@@ -224,10 +240,7 @@ fun MediaCard(
                 )
             }
             if (showBadge) MediaBadge(type, Modifier.align(Alignment.TopStart).padding(8.dp))
-            if (status != null) StatusPill(status, Modifier.align(Alignment.TopEnd).padding(8.dp), compact = !hovered)
-            if (onWant != null && wantVisible(mode, status) && hovered) {
-                CardWantButton(status, onWant, Modifier.align(Alignment.BottomEnd))
-            }
+            CardStateOverlay(CardState(availability, status, mode, onGetIt, onWant), title, hovered)
         }
         CardCaption(title, subtitle, meta)
     }
@@ -247,6 +260,8 @@ fun MediaCardSkeleton(aspect: CardAspect = CardAspect.POSTER, width: Dp = Tokens
 
 /** A compact list row (search results, missing list): art thumb, title, meta, badge, status, trailing action. */
 @Composable
+// Compose naming; a screen or row takes its content and callbacks as parameters.
+@Suppress("FunctionNaming", "LongParameterList")
 fun MediaRow(
     title: String,
     type: MediaType,
@@ -258,6 +273,8 @@ fun MediaRow(
     status: LibraryStatus? = null,
     selected: Boolean = false,
     trailing: (@Composable () -> Unit)? = null,
+    /** The consumer face: when set, the row shows [AvailabilityMark] (nothing when ready) instead of [status]. */
+    availability: Availability? = null,
 ) = MediaScope(type) {
     val theme = LocalMediaTheme.current
     val interaction = remember { MutableInteractionSource() }
@@ -277,7 +294,7 @@ fun MediaRow(
             .clickable(interactionSource = interaction, indication = null, role = Role.Button, onClick = onOpen)
             .semantics {
                 this.contentDescription =
-                    "${type.label}: $title${status?.let { ", ${it.label}" } ?: ""}${if (selected) ", selected" else ""}"
+                    "${type.label}: $title${stateLabel(availability, status)}${if (selected) ", selected" else ""}"
             }
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -312,7 +329,7 @@ fun MediaRow(
             }
             MetaLine(meta)
         }
-        if (status != null) StatusPill(status)
+        RowStateMark(availability, status)
         if (trailing != null) trailing()
     }
 }
