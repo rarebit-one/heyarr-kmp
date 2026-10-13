@@ -1,10 +1,16 @@
 package one.rarebit.heyarr.core
 
+import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.heyarr.SidecarAction
+import one.rarebit.heyarr.core.heyarr.SidecarClient
+import one.rarebit.heyarr.core.heyarr.SidecarReply
 import one.rarebit.heyarr.core.heyarr.SidecarResult
+import one.rarebit.heyarr.core.mcp.McpTransportException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 /** The sidecar levers send a work-scoped body and read the node's own counts back (ADR-0084/0085/0087). */
 class SidecarsTest {
@@ -39,5 +45,29 @@ class SidecarsTest {
             "This work already has a cover and a canonical id.",
             SidecarResult.parse(SidecarAction.FETCH_COVER, """{"candidates":0,"enqueued":0}""").message,
         )
+    }
+
+    @Test
+    fun guestsGetCaptionsButNotCoverLookups() {
+        assertTrue(SidecarAction.FETCH_CAPTIONS.allowedFor(ClientMode.GUEST))
+        assertTrue(SidecarAction.EXTRACT_CAPTIONS.allowedFor(ClientMode.GUEST))
+        assertFalse(SidecarAction.FETCH_COVER.allowedFor(ClientMode.GUEST))
+        assertTrue(SidecarAction.FETCH_COVER.allowedFor(ClientMode.ENROLLED))
+    }
+
+    @Test
+    fun aForbiddenAnswerKeepsTheNodesReason() {
+        val reply = SidecarClient.reply(
+            SidecarAction.FETCH_CAPTIONS,
+            403,
+            """{"title":"Forbidden","detail":"this credential lacks the write scope"}""",
+            "en",
+        )
+        assertEquals(SidecarReply.Refused("this credential lacks the write scope", 403), reply)
+        assertEquals(
+            SidecarReply.Done(SidecarResult(SidecarAction.EXTRACT_CAPTIONS, candidates = 2, queued = 2)),
+            SidecarClient.reply(SidecarAction.EXTRACT_CAPTIONS, 202, """{"candidates":2,"enqueued":2}"""),
+        )
+        assertFailsWith<McpTransportException> { SidecarClient.reply(SidecarAction.FETCH_COVER, 401, "") }
     }
 }

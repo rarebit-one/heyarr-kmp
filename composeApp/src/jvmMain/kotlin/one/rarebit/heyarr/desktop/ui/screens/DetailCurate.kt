@@ -129,7 +129,7 @@ private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List
             }
         }
         SidecarActions(
-            sidecarOptions(type, session),
+            SidecarOptions.of(type, session.mode),
             busy = runner.busy,
             outcome = runner.outcome,
             onAction = { action, language -> runner.run(session, scope, state.workId, action, language) },
@@ -339,13 +339,6 @@ internal fun HealthTab(
         AllFilesSection(state.assets.orEmpty())
     }
 }
-
-/** Captions for film and series, a cover lookup for music and books; writes need an enrolled session. */
-private fun sidecarOptions(type: MediaType, session: AppSession) = SidecarOptions(
-    video = type == MediaType.MOVIE || type == MediaType.SERIES,
-    enrichable = type == MediaType.MUSIC || type == MediaType.BOOK,
-    canWrite = !session.isGuest,
-)
 
 /** One work's caption/cover request in flight, and what the node answered last. */
 private class SidecarRunner {

@@ -66,10 +66,10 @@ import one.rarebit.heyarr.ui.components.ReasonList
 import one.rarebit.heyarr.ui.components.RejectedBy
 import one.rarebit.heyarr.ui.components.RuleCode
 import one.rarebit.heyarr.ui.components.SecondaryButton
+import one.rarebit.heyarr.ui.components.Section
 import one.rarebit.heyarr.ui.components.SidecarActions
 import one.rarebit.heyarr.ui.components.SidecarOptions
 import one.rarebit.heyarr.ui.components.SidecarOutcome
-import one.rarebit.heyarr.ui.components.Section
 import one.rarebit.heyarr.ui.components.Skeleton
 import one.rarebit.heyarr.ui.components.StatusPill
 import one.rarebit.heyarr.ui.components.TableColumn
@@ -131,20 +131,13 @@ private fun SidecarsPanel(session: AppSession, state: DetailState, seasons: List
             }
         }
         SidecarActions(
-            sidecarOptions(type, session),
+            SidecarOptions.of(type, session.mode),
             busy = runner.busy,
             outcome = runner.outcome,
             onAction = { action, language -> runner.run(session, scope, state.workId, action, language) },
         )
     }
 }
-
-/** Captions for anything with video; a cover lookup where the node enriches (music and books). */
-private fun sidecarOptions(type: MediaType, session: AppSession) = SidecarOptions(
-    video = type == MediaType.MOVIE || type == MediaType.SERIES,
-    enrichable = type == MediaType.MUSIC || type == MediaType.BOOK,
-    canWrite = !session.isGuest,
-)
 
 /** One sidecar request at a time, and the last answer, for the panel to show. */
 private class SidecarRunner {

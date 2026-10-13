@@ -1,6 +1,12 @@
 package one.rarebit.heyarr.core.heyarr
 
+import one.rarebit.heyarr.core.auth.ClientMode
+import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.auth.GuestGate
+import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.mcp.JsonWrite
+import one.rarebit.heyarr.core.mcp.McpTransportException
+import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
 
 /**
@@ -26,6 +32,66 @@ enum class SidecarAction(val path: String, val countKey: String, val label: Stri
         val fields = linkedMapOf<String, Any?>("work_id" to workId)
         if (this == FETCH_CAPTIONS) fields["language"] = requireNotNull(language) { "a caption fetch needs a language" }
         return JsonWrite.obj(fields)
+    }
+
+    /**
+     * Whether a client in [mode] is offered this lever. Captions follow the guest gate
+     * ([Surface.SUBTITLE] is guest-allowed); a cover lookup rewrites the catalogue, so it waits
+     * for enrolment. Either way the node has the last word: a credential without the scope gets
+     * its 403, shown in the node's words.
+     */
+    fun allowedFor(mode: ClientMode): Boolean = when (this) {
+        EXTRACT_CAPTIONS, FETCH_CAPTIONS -> GuestGate.allows(mode, Surface.SUBTITLE)
+        FETCH_COVER -> mode != ClientMode.GUEST
+    }
+}
+
+/** The node's answer to a sidecar request: what it queued, or its refusal in its own words. */
+sealed interface SidecarReply {
+    data class Done(val result: SidecarResult) : SidecarReply
+
+    data class Refused(val message: String, val status: Int) : SidecarReply
+}
+
+/** The one place both clients send a [SidecarAction], so auth and status handling cannot drift. */
+class SidecarClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
+    // commonMain has no java.io.IOException; whatever the platform transport throws is a transport failure.
+    @Suppress("TooGenericExceptionCaught")
+    fun request(action: SidecarAction, workId: String, language: String? = null): SidecarReply {
+        val resp = try {
+            http.post(
+                "$baseUrl${action.path}",
+                action.body(workId, language),
+                "application/json",
+                credential.asHeader(),
+            )
+        } catch (e: Exception) {
+            throw McpTransportException("heyarr is unreachable: ${e.message ?: e::class.simpleName}", e)
+        }
+        return reply(action, resp.status, resp.body, language)
+    }
+
+    companion object {
+        private const val HTTP_OK = 200
+        private const val HTTP_ACCEPTED = 202
+        private const val HTTP_UNAUTHORIZED = 401
+
+        /**
+         * Pure: a status and body into a reply. 401 means the credential itself was not accepted;
+         * a 403 is kept as a refusal because its body says which scope is missing.
+         */
+        fun reply(action: SidecarAction, status: Int, body: String, language: String? = null): SidecarReply =
+            when (status) {
+                HTTP_OK, HTTP_ACCEPTED -> SidecarReply.Done(SidecarResult.parse(action, body, language))
+
+                HTTP_UNAUTHORIZED -> throw McpTransportException(
+                    "heyarr refused the credential (HTTP $status)",
+                    null,
+                    status,
+                )
+
+                else -> SidecarReply.Refused(Problem.message(body, status, action.label), status)
+            }
     }
 }
 

@@ -17,6 +17,8 @@ import one.rarebit.heyarr.core.heyarr.QualityProfileJson
 import one.rarebit.heyarr.core.heyarr.SessionInfo
 import one.rarebit.heyarr.core.heyarr.SessionInfoJson
 import one.rarebit.heyarr.core.heyarr.SidecarAction
+import one.rarebit.heyarr.core.heyarr.SidecarClient
+import one.rarebit.heyarr.core.heyarr.SidecarReply
 import one.rarebit.heyarr.core.heyarr.SidecarResult
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.mcp.DiscoveryJson
@@ -346,38 +348,18 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
         }
     }
 
+    private val sidecars = SidecarClient(http, baseUrl, credential)
+
     /**
      * The caption and cover levers for one work (see [SidecarAction]): extract embedded captions
      * (ADR-0084), want captions in a language from the subtitle provider (ADR-0085), or look a
      * music or book cover up (ADR-0087). All three queue work on the node and report counts.
      */
-    fun sidecar(action: SidecarAction, workId: String, language: String? = null): McpResult<SidecarResult> {
-        val resp = try {
-            http.post(
-                "$baseUrl${action.path}",
-                action.body(workId, language),
-                "application/json",
-                credential.asHeader() + ("Content-Type" to "application/json"),
-            )
-        } catch (e: IOException) {
-            throw McpTransportException("heyarr is unreachable: ${e.message}", e)
+    fun sidecar(action: SidecarAction, workId: String, language: String? = null): McpResult<SidecarResult> =
+        when (val reply = sidecars.request(action, workId, language)) {
+            is SidecarReply.Done -> McpResult.Ok(reply.result)
+            is SidecarReply.Refused -> McpResult.Refused(reply.message, "POST ${action.path}", reply.status)
         }
-        return when (resp.status) {
-            200, 202 -> McpResult.Ok(SidecarResult.parse(action, resp.body, language))
-
-            401, 403 -> throw McpTransportException(
-                "heyarr refused the credential (HTTP ${resp.status})",
-                null,
-                resp.status,
-            )
-
-            else -> McpResult.Refused(
-                ProblemDetail.message(resp.body, resp.status, action.label),
-                "POST ${action.path}",
-                resp.status,
-            )
-        }
-    }
 
     // ── telemetry (the connection sheet) ─────────────────────────────────────────
     fun sessionInfo(): SessionInfo? = SessionInfoJson.parse(get("$baseUrl/api/v1/session", "GET /session"))
