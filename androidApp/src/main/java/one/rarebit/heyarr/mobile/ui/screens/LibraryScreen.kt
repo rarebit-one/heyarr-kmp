@@ -257,7 +257,15 @@ fun LibraryScreen(
     // (never for a guest, whose want index is empty by design) and lives in Manage → Downloads.
     val availabilityOf: (Work) -> Availability = { it.availability(session.index.statusOf(it.id)) }
     val all = if (curator) catalogued else catalogued.filter { availabilityOf(it) == Availability.READY }
-    val pending = if (curator || session.isGuest) 0 else catalogued.count { availabilityOf(it) in COMING }
+    // Counted from the whole want index, not the loaded page: a want on a later page still counts.
+    // A work the shelf already plays is not on the way, whatever its want says.
+    val pending = if (curator || session.isGuest) {
+        0
+    } else {
+        val playing = catalogued.filter { it.isPlayable }.map { it.id }.toSet()
+        session.index.items.mapNotNull { it.workId }.distinct()
+            .count { it !in playing && Availability.of(session.index.statusOf(it)) in COMING }
+    }
     val from = if (curator) "All works" else "Library"
     val counts = all.groupingBy { MediaType.from(it.kind) }.eachCount()
     val filtered = all.filter { w ->

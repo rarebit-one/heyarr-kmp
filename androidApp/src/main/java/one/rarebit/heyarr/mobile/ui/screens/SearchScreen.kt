@@ -383,6 +383,7 @@ private fun IdlePane(recent: List<String>, onPick: (String) -> Unit, onClear: ()
                 style = MaterialTheme.typography.bodySmall,
                 color = Tokens.textDisabled,
             )
+            SecondaryButton("Find something new", onDiscover, icon = Icons.Rounded.TravelExplore)
         }
     }
 }

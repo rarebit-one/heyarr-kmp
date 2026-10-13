@@ -180,7 +180,9 @@ fun HomeScreen(
                     }
                 }.getOrElse { Resolution(emptyList(), complete = false) }
                 val variantIds = Variants.variantIds(works + resolution.resolved)
-                return works.filter { it.id !in variantIds } to resolution.complete
+                // Only what can be played counts, so the quotas page on until the rails can fill with it:
+                // a work a want created before anything arrived has no file.
+                return works.filter { it.id !in variantIds && it.isPlayable } to resolution.complete
             }
             var cursor: String? = null
             val accumulated = mutableListOf<Work>()
@@ -208,8 +210,7 @@ fun HomeScreen(
                 state.recent = RailState.Failed(msg)
                 state.spotlight = RailState.Failed(msg)
             } else {
-                // Only what can be played: a work a want created before anything arrived has no file.
-                val (spotlight, recent) = homeRails(shown.filter { it.isPlayable })
+                val (spotlight, recent) = homeRails(shown)
                 state.recent = RailState.Loaded(recent)
                 state.spotlight = RailState.Loaded(spotlight)
             }
@@ -290,7 +291,8 @@ fun HomeScreen(
                     },
                     trailing = personal.onOpenPlaylists?.let { f -> @Composable { GhostButton("Playlists", f) } },
                 ) { w ->
-                    WorkCard(session, w, onOpen, actionsFor(w), from = "Home")
+                    // Starred works come from the single-work endpoint, which carries no file embed.
+                    WorkCard(session, w, onOpen, actionsFor(w), from = "Home", listed = false)
                 }
             }
         }
@@ -350,8 +352,20 @@ private fun GuestBanner(onSignIn: () -> Unit) {
     }
 }
 
+/**
+ * A work's card. [listed] is a row of the works listing, whose `primary_asset` embed says whether
+ * it has a file; a work from anywhere else reads its availability from the catalogue instead.
+ */
 @Composable
-private fun WorkCard(session: AppSession, w: Work, onOpen: (Route) -> Unit, actions: List<CardAction>, from: String) {
+@Suppress("LongParameterList") // The card's work, its menu actions and where it was opened from.
+private fun WorkCard(
+    session: AppSession,
+    w: Work,
+    onOpen: (Route) -> Unit,
+    actions: List<CardAction>,
+    from: String,
+    listed: Boolean = true,
+) {
     val type = MediaType.from(w.kind)
     val status = session.index.statusOf(w.id)
     // Wide-aspect types (MOVIE, SERIES, VIDEO) render at 280 dp; poster types render at
@@ -378,7 +392,7 @@ private fun WorkCard(session: AppSession, w: Work, onOpen: (Route) -> Unit, acti
         w.artist ?: w.author,
         meta = listOf(w.year?.toString()),
         artwork = cover.url,
-        availability = w.availability(status),
+        availability = if (listed) w.availability(status) else session.cataloguedAvailability(w.id),
         actions = actions,
     )
 }
