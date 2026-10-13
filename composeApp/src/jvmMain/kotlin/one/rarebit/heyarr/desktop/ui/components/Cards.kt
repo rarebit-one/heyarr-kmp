@@ -388,6 +388,8 @@ fun <T> Rail(
  * the badge follow the type.
  */
 @Composable
+// Compose naming; a screen or hero takes its content and callbacks as parameters.
+@Suppress("FunctionNaming", "LongParameterList")
 fun Hero(
     title: String,
     type: MediaType,
@@ -396,7 +398,7 @@ fun Hero(
     meta: List<String?> = emptyList(),
     description: String? = null,
     artwork: ImageBitmap? = null,
-    status: LibraryStatus? = null,
+    availability: Availability? = null,
     primary: (@Composable () -> Unit)? = null,
     secondary: (@Composable () -> Unit)? = null,
     height: Dp = 380.dp,
@@ -421,7 +423,7 @@ fun Hero(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            HeroFacts(type, meta, status)
+            HeroFacts(type, meta, availability)
             if (description !=
                 null
             ) {

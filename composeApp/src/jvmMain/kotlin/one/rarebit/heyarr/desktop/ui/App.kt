@@ -355,6 +355,14 @@ fun App(
                             true
                         }
 
+                        // A work's title page and its Manage view, one key apart.
+                        mod && e.key == Key.M && current is Route.Detail -> {
+                            (current as? Route.Detail)?.let { d ->
+                                details[d.workId]?.let { it.managing = !it.managing }
+                            }
+                            true
+                        }
+
                         mod && e.key == Key.Five -> {
                             nav.go(Route.NowPlaying)
                             true
@@ -552,6 +560,7 @@ fun App(
                                             onBack = nav::back,
                                             onOpen = ::go,
                                             onWant = onWant,
+                                            onGetIt = onGetIt,
                                         )
 
                                         is Route.Player -> PlayerScreen(

@@ -206,7 +206,9 @@ fun MissingScreen(
                         w.subject,
                         MediaType.UNKNOWN,
                         onOpen = {
-                            w.workId?.let { onOpen(Route.Detail(it, MediaType.UNKNOWN, w.title, from = "Missing")) }
+                            w.workId?.let {
+                                onOpen(Route.Detail(it, MediaType.UNKNOWN, w.title, from = "Missing", curate = true))
+                            }
                         },
                         subtitle = listOfNotNull(
                             w.context,

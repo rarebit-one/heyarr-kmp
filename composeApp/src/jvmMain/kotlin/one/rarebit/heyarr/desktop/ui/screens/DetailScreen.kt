@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -86,12 +87,15 @@ import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 
-/** The two faces of a work: what you came to watch, and the tooling that keeps it that way. */
-enum class DetailTab(val label: String) { WATCH("Overview"), RELEASES("Releases"), RULES("Rules"), HEALTH("Health") }
+/** The Manage view's tabs: the tooling that keeps a work the way it should be. */
+enum class DetailTab(val label: String) { RELEASES("Releases"), RULES("Rules"), HEALTH("Health") }
 
 /** Everything the detail screen loads for one work, each piece independently. */
 class DetailState(val workId: String) {
-    var tab by mutableStateOf(DetailTab.WATCH)
+    var tab by mutableStateOf(DetailTab.RELEASES)
+
+    /** The title page (false), or this work's Manage view: releases, rules and health. */
+    var managing by mutableStateOf(false)
     var detail by mutableStateOf<WorkDetail?>(null)
     var detailError by mutableStateOf<String?>(null)
     var loading by mutableStateOf(true)
@@ -127,14 +131,16 @@ class DetailState(val workId: String) {
 }
 
 /**
- * The one adaptive detail template, built around the work identity. **Overview** is what
- * you came for: the art, a synopsis when the node has one (and an honest line when it
- * has not), and the thing itself — seasons and episodes with their thumbnails for a
- * series, tracks for an album, the file for a film, the archive for a feed. **Manage**
- * keeps every technical surface — why this release, indexer candidates, scoring, health,
- * captions and artwork inventory, files — one tab away, never on the way.
+ * The one adaptive detail template, built around the work identity. The **title page** is what
+ * you came for: the art, a synopsis when there is one, and the thing itself — seasons and
+ * episodes with their thumbnails for a series, tracks for an album, the file for a film, the
+ * archive for a feed — with no want state, scores or rule codes on the way. **Manage** (the top
+ * bar's button, or Ctrl+M) is the same work's curator view: releases, rules and health, with
+ * why this release in the context column.
  */
 @Composable
+// Compose naming; a screen or hero takes its content and callbacks as parameters.
+@Suppress("FunctionNaming", "LongParameterList")
 fun DetailScreen(
     session: AppSession,
     route: Route.Detail,
@@ -142,6 +148,7 @@ fun DetailScreen(
     onBack: () -> Unit,
     onOpen: (Route) -> Unit,
     onWant: (String, String, MediaType) -> Unit,
+    onGetIt: (String, String, MediaType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -154,9 +161,13 @@ fun DetailScreen(
     fun load() = loadDetail(session, state, route.workId, scope)
     fun loadWants() = loadWantDetails(session, state, wants, scope)
     bindNavigation(state, route, onOpen)
-    LaunchedEffect(route.workId) {
+    LaunchedEffect(route.workId) { load() }
+    // Each visit opens where its route says: a title from a shelf, Manage from Downloads or Missing.
+    LaunchedEffect(route) {
+        state.managing = route.curate
+        // A visit straight into Manage (from Downloads or Missing) starts on Releases, wherever this
+        // work's Manage view was last left.
         if (route.curate) state.tab = DetailTab.RELEASES
-        load()
     }
     LaunchedEffect(wants.map { it.id }) { loadWants() }
     LoadDetailExtras(session, state, route.workId, detail, type)
@@ -167,44 +178,25 @@ fun DetailScreen(
         }
 
     // Outside the lazy list: a lazy item is only composed while it is on screen.
-    if (detail != null && !session.isGuest) ContextPane { DetailContext(session, wants, state, onWant, detail) }
+    if (detail != null && state.managing && !session.isGuest) {
+        ContextPane { DetailContext(session, wants, state, onWant, detail) }
+    }
 
     MediaScope(type) {
+        // One scroll position per view: switching to Manage starts at its header, not wherever the
+        // (longer) title page had been scrolled to.
+        val listState = remember(route.workId, state.managing) { LazyListState() }
         LazyColumn(
             modifier.fillMaxSize(),
+            state = listState,
             contentPadding = PaddingValues(horizontal = 32.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            item {
-                DetailTopBar(
-                    route.from,
-                    onBack,
-                    onRemove = { confirmRemoval = true }.takeIf { !session.isGuest && detail != null },
-                )
-            }
-            item {
-                when {
-                    state.loading && detail == null -> HeroSkeleton(340.dp)
-                    detail == null -> ErrorState("Couldn't load this work", state.detailError, onRetry = ::load)
-                    else -> DetailHero(session, detail, type, wants, state, seasons, onWant)
-                }
-            }
-            if (detail != null) {
-                item { TabStrip(state.tab, onSelect = { state.tab = it }) }
-                when (state.tab) {
-                    DetailTab.WATCH -> when (type) {
-                        MediaType.SERIES -> item { SeasonsBlock(session, detail, seasons, state, wants) }
-                        MediaType.MUSIC, MediaType.AUDIOBOOK -> item { TracksBlock(session, detail, state) }
-                        MediaType.FEED, MediaType.PODCAST -> item { ArchiveBlock(session, state) }
-                        else -> item { FileBlock(session, detail, state) }
-                    }
-
-                    DetailTab.RELEASES -> item { ReleasesTab(session, wants, state, ::loadWants) }
-
-                    DetailTab.RULES -> item { RulesTab(session, wants) }
-
-                    DetailTab.HEALTH -> item { HealthTab(session, detail, type, wants, state, seasons) }
-                }
+            val model = DetailModel(session, route, state, type, wants, seasons)
+            if (state.managing) {
+                manageView(model, onBack, { confirmRemoval = true }, ::loadWants, ::load)
+            } else {
+                titlePage(model, onBack, onGetIt, ::load)
             }
             item { Spacer(Modifier.height(24.dp)) }
         }
@@ -247,12 +239,12 @@ private fun LoadDetailExtras(
 /** Back, Remove (enrolled, once the work has loaded) and the Watch/Curate switch. */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-private fun DetailTopBar(from: String, onBack: () -> Unit, onRemove: (() -> Unit)?) {
+internal fun DetailTopBar(back: String, onBack: () -> Unit, trailing: @Composable () -> Unit = {}) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        GhostButton(from, onBack, icon = HeyarrIcons.Back)
+        GhostButton(back, onBack, icon = HeyarrIcons.Back)
         Spacer(Modifier.weight(1f))
-        if (onRemove != null) {
-            GhostButton("Remove", onRemove, icon = HeyarrIcons.Delete)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            trailing()
         }
     }
 }
@@ -381,7 +373,7 @@ private fun loadWantDetails(session: AppSession, state: DetailState, wants: List
  */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-private fun TabStrip(current: DetailTab, onSelect: (DetailTab) -> Unit) {
+internal fun TabStrip(current: DetailTab, onSelect: (DetailTab) -> Unit) {
     UnderlineTabs(DetailTab.entries.map { it.label }, current.ordinal, { onSelect(DetailTab.entries[it]) })
 }
 
