@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -58,10 +59,13 @@ import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.ArtworkLoader
 import one.rarebit.heyarr.desktop.state.SearchController
+import one.rarebit.heyarr.desktop.ui.ContextPane
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.MediaRow
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
+import one.rarebit.heyarr.desktop.ui.hasContextColumn
 import one.rarebit.heyarr.ui.components.ArchiveLoading
+import one.rarebit.heyarr.ui.components.ArchiveVignette
 import one.rarebit.heyarr.ui.components.EditorialRule
 import one.rarebit.heyarr.ui.components.EmptyState
 import one.rarebit.heyarr.ui.components.FilterChip
@@ -130,15 +134,16 @@ fun SearchScreen(
             onClear = { search.updateQuery("") },
             focusRequester = focusRequester,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip("Library", !discovering, { discovering = false }, icon = HeyarrIcons.Search)
-            FilterChip("Discover", discovering, { discovering = true }, icon = HeyarrIcons.Discover)
-        }
+        SearchFilterBar(discovering, { discovering = it }, search, sections)
         if (discovering) {
             ProviderSearchPane(session, search.query, onWantTitle)
             return@Column
         }
-        SearchFilterChips(search, sections)
+        if (!search.isIdle) {
+            ContextPane {
+                SelectedResult(session, search.selectedRow(), rows.firstOrNull(), ::open, onWant)
+            }
+        }
         when {
             search.isIdle -> IdlePane(recent, onPick = { search.updateQuery(it) }, onClear = {
                 session.recent.clear()
@@ -150,6 +155,7 @@ fun SearchScreen(
             ) -> EmptyState(
                 "Nothing in the library matches “${search.query}”",
                 detail = "Discover can find titles to add from the metadata catalogue.",
+                vignette = ArchiveVignette.SEARCH,
                 action = {
                     SecondaryButton("Discover titles", {
                         discovering = true
@@ -163,12 +169,15 @@ fun SearchScreen(
 }
 
 @Composable
+@Suppress("FunctionNaming", "LongParameterList") // Compose naming; the row and its Open button navigate differently.
 private fun ResultRow(
     session: AppSession,
     row: SearchRow,
     selected: Boolean,
     onOpen: () -> Unit,
     onWant: (String, String, MediaType) -> Unit,
+    /** The trailing Open button: always opens, even where a click on the row only selects it. */
+    onOpenNow: () -> Unit = onOpen,
 ) {
     when (row) {
         is SearchRow.WorkRow -> {
@@ -194,7 +203,7 @@ private fun ResultRow(
                             onWant(hit.workId, hit.title, row.type)
                         }, icon = HeyarrIcons.Add, compact = true, contentDescription = "Want ${hit.title}")
                     } else {
-                        SecondaryButton("Open", onOpen, compact = true)
+                        SecondaryButton("Open", onOpenNow, compact = true)
                     }
                 },
             )
@@ -294,7 +303,7 @@ private fun SearchBox(
 }
 
 /** Where a search row leads: its work's detail page, or nowhere for an episode or source with no work. */
-private fun routeFor(row: SearchRow): Route.Detail? = when (row) {
+internal fun routeFor(row: SearchRow): Route.Detail? = when (row) {
     is SearchRow.WorkRow ->
         Route.Detail(row.hit.workId, MediaType.from(row.hit.contentType), row.hit.title, from = "Search")
 
@@ -309,6 +318,25 @@ private fun routeFor(row: SearchRow): Route.Detail? = when (row) {
 
     is SearchRow.SourceRow -> row.source.workId?.let {
         Route.Detail(it, MediaType.from(row.source.type), row.source.title, from = "Search")
+    }
+}
+
+/** One filter bar: where to search (the library, or discovery), then what kind of work. */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun SearchFilterBar(
+    discovering: Boolean,
+    onDiscovering: (Boolean) -> Unit,
+    search: SearchController,
+    sections: List<SearchSection>,
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        FilterChip("Library", !discovering, { onDiscovering(false) }, icon = HeyarrIcons.Search)
+        FilterChip("Discover", discovering, { onDiscovering(true) }, icon = HeyarrIcons.Discover)
+        if (!discovering) {
+            Box(Modifier.padding(horizontal = 8.dp).width(Tokens.hairline).height(20.dp).background(Tokens.border))
+            SearchFilterChips(search, sections)
+        }
     }
 }
 
@@ -344,6 +372,7 @@ private fun SearchResults(
     onWant: (String, String, MediaType) -> Unit,
 ) {
     val sections = search.sections
+    val wide = hasContextColumn
     LazyColumn(
         state = listState,
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -382,8 +411,11 @@ private fun SearchResults(
                         val i = start + seg.rows.indexOf(row)
                         Column {
                             ResultRow(session, row, selected = i == search.selected, onOpen = {
-                                onOpenRow(row)
-                            }, onWant = onWant)
+                                // With a context column, a click selects (the pane shows the result)
+                                // and a second click on the selected row opens it; without one, a
+                                // click opens straight away.
+                                if (wide && i != search.selected) search.selected = i else onOpenRow(row)
+                            }, onWant = onWant, onOpenNow = { onOpenRow(row) })
                             if (row.key != seg.rows.lastOrNull()?.key) {
                                 EditorialRule(Modifier.padding(start = 60.dp, end = 8.dp), dashed = true)
                             }

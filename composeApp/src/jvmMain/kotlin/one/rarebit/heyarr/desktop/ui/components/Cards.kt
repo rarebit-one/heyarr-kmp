@@ -85,6 +85,9 @@ import one.rarebit.heyarr.ui.theme.Tokens
 
 private const val HERO_CROSSFADE_DURATION_MS = 500
 
+/** The share of the hero the title column may take; the rest is the art's. */
+private const val HERO_TEXT_COLUMN = 0.58f
+
 /**
  * Artwork with a blur-up: an archive fallback shows at once; the decoded bitmap fades over
  * it when it lands. Loading is lazy — see
@@ -103,6 +106,8 @@ fun Artwork(
     contentDescription: String? = null,
     glyphSize: Dp = 28.dp,
     seed: String? = null,
+    /** Fit keeps a cover whole in a card; a hero crops to fill its frame instead of letterboxing. */
+    contentScale: ContentScale = ContentScale.Fit,
 ) {
     val theme = MediaThemes.of(type)
     val reduce = LocalAppearance.current.reduceMotion
@@ -147,7 +152,7 @@ fun Artwork(
             Image(
                 bitmap,
                 contentDescription = contentDescription,
-                contentScale = ContentScale.Fit,
+                contentScale = contentScale,
                 modifier = Modifier.fillMaxSize().alpha(alpha),
             )
         }
@@ -379,28 +384,27 @@ fun Hero(
     secondary: (@Composable () -> Unit)? = null,
     height: Dp = 380.dp,
 ) = MediaScope(type) {
-    val theme = LocalMediaTheme.current
     val shape = RoundedCornerShape(Tokens.radiusCard)
     Box(
-        modifier.fillMaxWidth().height(
-            height,
-        ).clip(shape).background(Tokens.surface1).border(Tokens.hairline, Tokens.border, shape),
+        modifier.fillMaxWidth().height(height).clip(shape).background(Tokens.surface1),
     ) {
         SpotlightArtwork(artwork, type, title)
         HeroScrims()
         Column(
-            Modifier.align(Alignment.BottomStart).padding(28.dp).fillMaxWidth(0.62f),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            Modifier.align(Alignment.BottomStart)
+                .padding(horizontal = 36.dp, vertical = 32.dp)
+                .fillMaxWidth(HERO_TEXT_COLUMN),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            HeroKicker(type, kicker, status)
+            HeroKicker(type, kicker)
             Text(
                 title,
-                style = MaterialTheme.typography.displayMedium,
+                style = MaterialTheme.typography.displayLarge,
                 color = Tokens.textPrimary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            MetaLine(meta, color = Tokens.textPrimary.copy(alpha = 0.85f))
+            HeroFacts(type, meta, status)
             if (description !=
                 null
             ) {
@@ -430,7 +434,7 @@ private fun SpotlightArtwork(artwork: ImageBitmap?, type: MediaType, title: Stri
         animationSpec = tween(if (reduceMotion) 0 else HERO_CROSSFADE_DURATION_MS),
         label = "spotlight-artwork",
     ) { image ->
-        Artwork(image, type, Modifier.fillMaxSize(), glyphSize = 72.dp, seed = title)
+        Artwork(image, type, Modifier.fillMaxSize(), glyphSize = 72.dp, seed = title, contentScale = ContentScale.Crop)
     }
 }
 

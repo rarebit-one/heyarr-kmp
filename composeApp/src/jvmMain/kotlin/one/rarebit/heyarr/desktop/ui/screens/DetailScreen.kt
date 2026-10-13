@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
@@ -60,10 +63,12 @@ import one.rarebit.heyarr.desktop.library.Work
 import one.rarebit.heyarr.desktop.library.WorkDetail
 import one.rarebit.heyarr.desktop.music.Track
 import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.desktop.ui.ContextPane
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Hero
 import one.rarebit.heyarr.desktop.ui.components.HeroSkeleton
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
+import one.rarebit.heyarr.ui.components.DashedDivider
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
@@ -74,13 +79,14 @@ import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.Skeleton
 import one.rarebit.heyarr.ui.components.focusRing
+import one.rarebit.heyarr.ui.theme.HeyarrTextStyles
 import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 
 /** The two faces of a work: what you came to watch, and the tooling that keeps it that way. */
-enum class DetailTab(val label: String) { WATCH("Overview"), CURATE("Manage") }
+enum class DetailTab(val label: String) { WATCH("Overview"), RELEASES("Releases"), RULES("Rules"), HEALTH("Health") }
 
 /** Everything the detail screen loads for one work, each piece independently. */
 class DetailState(val workId: String) {
@@ -148,7 +154,7 @@ fun DetailScreen(
     fun loadWants() = loadWantDetails(session, state, wants, scope)
     bindNavigation(state, route, onOpen)
     LaunchedEffect(route.workId) {
-        if (route.curate) state.tab = DetailTab.CURATE
+        if (route.curate) state.tab = DetailTab.RELEASES
         load()
     }
     LaunchedEffect(wants.map { it.id }) { loadWants() }
@@ -158,6 +164,9 @@ fun DetailScreen(
         remember(state.assets) {
             if (Series.isSeries(type.apiName ?: type.name)) Series.seasons(state.assets.orEmpty()) else emptyList()
         }
+
+    // Outside the lazy list: a lazy item is only composed while it is on screen.
+    if (detail != null && !session.isGuest) ContextPane { DetailContext(session, wants, state, onWant, detail) }
 
     MediaScope(type) {
         LazyColumn(
@@ -169,7 +178,6 @@ fun DetailScreen(
                 DetailTopBar(
                     route.from,
                     onBack,
-                    state,
                     onRemove = { confirmRemoval = true }.takeIf { !session.isGuest && detail != null },
                 )
             }
@@ -181,16 +189,20 @@ fun DetailScreen(
                 }
             }
             if (detail != null) {
-                item { SynopsisBlock(detail, type, seasons, state) }
-                if (state.tab == DetailTab.WATCH) {
-                    when (type) {
+                item { TabStrip(state.tab, onSelect = { state.tab = it }) }
+                when (state.tab) {
+                    DetailTab.WATCH -> when (type) {
                         MediaType.SERIES -> item { SeasonsBlock(session, detail, seasons, state, wants) }
                         MediaType.MUSIC, MediaType.AUDIOBOOK -> item { TracksBlock(session, detail, state) }
                         MediaType.FEED, MediaType.PODCAST -> item { ArchiveBlock(session, state) }
                         else -> item { FileBlock(session, detail, state) }
                     }
-                } else {
-                    item { CurateTab(session, detail, type, wants, state, seasons, ::loadWants) }
+
+                    DetailTab.RELEASES -> item { ReleasesTab(session, wants, state, ::loadWants) }
+
+                    DetailTab.RULES -> item { RulesTab(session, wants) }
+
+                    DetailTab.HEALTH -> item { HealthTab(session, detail, type, wants, state, seasons) }
                 }
             }
             item { Spacer(Modifier.height(24.dp)) }
@@ -233,14 +245,14 @@ private fun LoadDetailExtras(
 
 /** Back, Remove (enrolled, once the work has loaded) and the Watch/Curate switch. */
 @Composable
-private fun DetailTopBar(from: String, onBack: () -> Unit, state: DetailState, onRemove: (() -> Unit)?) {
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun DetailTopBar(from: String, onBack: () -> Unit, onRemove: (() -> Unit)?) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         GhostButton(from, onBack, icon = HeyarrIcons.Back)
         Spacer(Modifier.weight(1f))
         if (onRemove != null) {
             GhostButton("Remove", onRemove, icon = HeyarrIcons.Delete)
         }
-        TabSwitch(state.tab, onSelect = { state.tab = it })
     }
 }
 
@@ -362,49 +374,38 @@ private fun loadWantDetails(session: AppSession, state: DetailState, wants: List
     }
 }
 
+/**
+ * The work's sections as a strip of tracked labels over a dashed rule: OVERVIEW, RELEASES,
+ * RULES, HEALTH. The active one is mint with a marker under it; no boxes.
+ */
 @Composable
-private fun TabSwitch(current: DetailTab, onSelect: (DetailTab) -> Unit) {
-    Row(
-        Modifier.background(
-            Tokens.surface1,
-            RectangleShape,
-        ).border(Tokens.hairline, Tokens.border, RectangleShape).padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        for (t in DetailTab.entries) {
-            val active = t == current
-            val theme = LocalMediaTheme.current
-            val interaction = remember { MutableInteractionSource() }
-            Row(
-                Modifier.focusRing(interaction, RectangleShape).clip(RectangleShape)
-                    .background(if (active) theme.tint(0.22f) else Color.Transparent, RectangleShape)
-                    .clickable(interactionSource = interaction, indication = null, role = Role.Tab, onClick = {
-                        onSelect(t)
-                    })
-                    .semantics { contentDescription = t.label + if (active) ", selected" else "" }
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
-                Icon(
-                    if (t ==
-                        DetailTab.WATCH
-                    ) {
-                        HeyarrIcons.Play
-                    } else {
-                        HeyarrIcons.Build
-                    },
-                    contentDescription = null,
-                    tint = if (active) theme.accentGradientEnd else Tokens.textMuted,
-                    modifier = Modifier.size(14.dp),
-                )
-                Text(
-                    t.label.uppercase(),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = if (active) Tokens.textPrimary else Tokens.textMuted,
-                )
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun TabStrip(current: DetailTab, onSelect: (DetailTab) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(28.dp)) {
+            for (t in DetailTab.entries) {
+                val active = t == current
+                val interaction = remember { MutableInteractionSource() }
+                Column(
+                    Modifier.focusRing(interaction, RectangleShape)
+                        .clickable(interactionSource = interaction, indication = null, role = Role.Tab) { onSelect(t) }
+                        .semantics {
+                            contentDescription = t.label
+                            selected = active
+                        }
+                        .padding(top = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        t.label.uppercase(),
+                        style = HeyarrTextStyles.sectionLabel,
+                        color = if (active) Tokens.accent else Tokens.textMuted,
+                    )
+                    Box(Modifier.width(24.dp).height(2.dp).background(if (active) Tokens.accent else Color.Transparent))
+                }
             }
         }
+        DashedDivider()
     }
 }
 
