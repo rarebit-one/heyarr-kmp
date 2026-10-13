@@ -30,9 +30,10 @@ data class Appearance(val adaptiveAccents: Boolean = true, val reduceMotion: Boo
 val LocalAppearance = staticCompositionLocalOf { Appearance() }
 
 /**
- * The H1–H6 + Body-XS→XL sizes the type ramp is built from. The desktop's compact scale is
+ * The Display + H1–H6 + Body-XS→XL sizes the type ramp is built from. The desktop's scale is
  * [Tokens.Type]; the phone sets its own (larger body, smaller display) — see `:androidApp`'s
- * `theme/Tokens`.
+ * `theme/Tokens`. [display] is for hero and detail titles only; it defaults to [h1] so a scale
+ * that predates it keeps its look.
  */
 @Immutable
 data class TypeScale(
@@ -46,6 +47,7 @@ data class TypeScale(
     val bodyM: TextUnit,
     val bodyS: TextUnit,
     val bodyXs: TextUnit,
+    val display: TextUnit = h1,
 ) {
     companion object {
         /** The desktop's compact scale, straight from [Tokens.Type]. */
@@ -60,6 +62,7 @@ data class TypeScale(
             bodyM = Tokens.Type.bodyM,
             bodyS = Tokens.Type.bodyS,
             bodyXs = Tokens.Type.bodyXs,
+            display = Tokens.Type.display,
         )
     }
 }
@@ -99,79 +102,69 @@ fun rememberHeyarrTypography(scale: TypeScale): Typography {
     return remember(rubik, scale) { heyarrTypography(rubik, scale) }
 }
 
+@Suppress("MagicNumber") // Leading ratios and tracking are the type ramp's design values.
 private fun heyarrTypography(rubik: FontFamily, t: TypeScale): Typography {
-    val display = rubik
-    val body = rubik
     val semi = FontWeight.SemiBold
-    return Typography(
-        displayLarge = TextStyle(
-            fontFamily = display,
-            fontSize = t.h1,
-            fontWeight = semi,
-            lineHeight = 34.sp,
-            letterSpacing = (-0.5).sp,
-        ),
-        displayMedium = TextStyle(
-            fontFamily = display,
-            fontSize = t.h2,
-            fontWeight = semi,
-            lineHeight = 28.sp,
-            letterSpacing = (-0.3).sp,
-        ),
-        displaySmall = TextStyle(fontFamily = display, fontSize = t.h3, fontWeight = semi, lineHeight = 28.sp),
-        headlineLarge = TextStyle(fontFamily = display, fontSize = t.h3, fontWeight = semi, lineHeight = 28.sp),
-        headlineMedium = TextStyle(fontFamily = display, fontSize = t.h4, fontWeight = semi, lineHeight = 26.sp),
-        headlineSmall = TextStyle(
-            fontFamily = display,
-            fontSize = t.h5,
-            fontWeight = semi,
-            lineHeight = 22.sp,
-            letterSpacing = 0.2.sp,
-        ),
-        titleLarge = TextStyle(fontFamily = body, fontSize = t.h4, fontWeight = semi, lineHeight = 26.sp),
-        titleMedium = TextStyle(fontFamily = body, fontSize = t.h5, fontWeight = semi, lineHeight = 22.sp),
-        titleSmall = TextStyle(fontFamily = body, fontSize = t.h6, fontWeight = semi, lineHeight = 20.sp),
-        bodyLarge = TextStyle(
-            fontFamily = body,
-            fontSize = t.bodyL,
-            fontWeight = FontWeight.Normal,
-            lineHeight = 24.sp,
-        ),
-        bodyMedium = TextStyle(
-            fontFamily = body,
-            fontSize = t.bodyM,
-            fontWeight = FontWeight.Normal,
-            lineHeight = 20.sp,
-        ),
-        bodySmall = TextStyle(
-            fontFamily = body,
-            fontSize = t.bodyS,
-            fontWeight = FontWeight.Normal,
-            lineHeight = 16.sp,
-        ),
-        labelLarge = TextStyle(
-            fontFamily = body,
-            fontSize = t.bodyM,
-            fontWeight = FontWeight.Medium,
-            lineHeight = 20.sp,
-        ),
-        // The two small label slots are the technical voice — Rubik — so chips, badges,
-        // key/value labels and captions read as instrumentation, not prose.
-        labelMedium = TextStyle(
-            fontFamily = rubik,
-            fontSize = t.bodyS,
-            fontWeight = FontWeight.Medium,
-            lineHeight = 16.sp,
-            letterSpacing = 0.2.sp,
-        ),
-        labelSmall = TextStyle(
-            fontFamily = rubik,
-            fontSize = t.bodyXs,
-            fontWeight = FontWeight.Medium,
-            lineHeight = 14.sp,
-            letterSpacing = 0.4.sp,
-        ),
+    val medium = FontWeight.Medium
+
+    // Display steps are tight-leaded and slightly negatively tracked, like the mockups' titles;
+    // body steps keep a comfortable 1.4–1.6 leading. Labels are the technical voice: tracked so
+    // the uppercase button, chip and badge strings read as instrumentation.
+    fun heading(size: TextUnit, leading: Float, tracking: TextUnit = 0.sp) = TextStyle(
+        fontFamily = rubik,
+        fontSize = size,
+        fontWeight = semi,
+        lineHeight = size * leading,
+        letterSpacing = tracking,
     )
+
+    fun body(size: TextUnit, leading: Float) =
+        TextStyle(fontFamily = rubik, fontSize = size, fontWeight = FontWeight.Normal, lineHeight = size * leading)
+
+    fun label(size: TextUnit, leading: Float, tracking: TextUnit) = TextStyle(
+        fontFamily = rubik,
+        fontSize = size,
+        fontWeight = medium,
+        lineHeight = size * leading,
+        letterSpacing = tracking,
+    )
+
+    return Typography(
+        displayLarge = heading(t.display, 1.05f, (-0.8).sp),
+        displayMedium = heading(t.h1, 1.12f, (-0.4).sp),
+        displaySmall = heading(t.h2, 1.2f, (-0.2).sp),
+        headlineLarge = heading(t.h2, 1.2f, (-0.2).sp),
+        headlineMedium = heading(t.h3, 1.25f),
+        headlineSmall = heading(t.h4, 1.3f),
+        titleLarge = heading(t.h4, 1.3f),
+        titleMedium = heading(t.h5, 1.35f),
+        titleSmall = heading(t.h6, 1.4f),
+        bodyLarge = body(t.bodyL, 1.6f),
+        bodyMedium = body(t.bodyM, 1.45f),
+        bodySmall = body(t.bodyS, 1.4f),
+        labelLarge = label(t.bodyM, 1.4f, 0.9.sp),
+        labelMedium = label(t.bodyS, 1.35f, 0.6.sp),
+        labelSmall = label(t.bodyXs, 1.3f, 1.0.sp),
+    )
+}
+
+/**
+ * Styles Material's slots don't cover: the tracked uppercase eyebrow that heads a hero or a
+ * section ("FEATURED DISCOVERY", "RECENTLY CATALOGUED"). Apply it only to fixed UI strings —
+ * never uppercase a title, a person or a device name.
+ */
+object HeyarrTextStyles {
+    val eyebrow: TextStyle
+        @Composable get() = MaterialTheme.typography.labelSmall.copy(
+            fontWeight = FontWeight.Medium,
+            letterSpacing = Tokens.Type.labelTracking,
+        )
+
+    val sectionLabel: TextStyle
+        @Composable get() = MaterialTheme.typography.labelMedium.copy(
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = Tokens.Type.labelTracking,
+        )
 }
 
 val HeyarrShapes = Shapes(

@@ -29,7 +29,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -46,6 +45,7 @@ import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.theme.HeyarrFonts
 import one.rarebit.heyarr.ui.theme.MediaScope
 import one.rarebit.heyarr.ui.theme.Tokens
 import java.net.URI
@@ -190,7 +190,7 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                                     Text(
                                         ch.title,
                                         style = MaterialTheme.typography.headlineMedium.copy(
-                                            fontFamily = FontFamily.Serif,
+                                            fontFamily = HeyarrFonts.serif,
                                             fontWeight = FontWeight.SemiBold,
                                         ),
                                         color = Tokens.readingInk,
@@ -211,7 +211,7 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                                         Text(
                                             ch.text,
                                             style = MaterialTheme.typography.bodyLarge.copy(
-                                                fontFamily = FontFamily.Serif,
+                                                fontFamily = HeyarrFonts.serif,
                                                 fontSize = readingSize.sp,
                                                 lineHeight = (
                                                     readingSize *

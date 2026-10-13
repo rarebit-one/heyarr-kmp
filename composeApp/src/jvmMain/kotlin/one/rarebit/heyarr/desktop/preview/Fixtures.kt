@@ -16,7 +16,7 @@ object Fixtures {
     const val SINTEL_WANT = "01a032c1-f554-7157-90c8-b3a9825dc435"
 
     private fun work(id: String, type: String, title: String, year: Int?, art: Boolean = false, attrs: String = "{}") =
-        """{"id":"$id","work_id":"$id","content_type":"$type","title":"$title","sort_title":"${title.lowercase()}","year":${year ?: "null"},"attributes":$attrs,"created_at":"2026-08-24T07:40:09Z","updated_at":"2026-09-01T10:00:00Z","artwork":${if (art) """{"asset_id":"a-$id","blob_hash":"$HASH","mime":"image/jpeg","content_url":"/api/v1/blobs/$HASH/content"}""" else "null"}}"""
+        """{"id":"$id","work_id":"$id","content_type":"$type","title":"$title","sort_title":"${title.lowercase()}","year":${year ?: "null"},"attributes":$attrs,"created_at":"2026-08-24T07:40:09Z","updated_at":"2026-09-01T10:00:00Z","artwork":${if (art) """{"asset_id":"a-$id","blob_hash":"${id.fixtureArtHash}","mime":"image/jpeg","content_url":"${id.fixtureArtPath}"}""" else "null"}}"""
 
     val works = listOf(
         work(YELLOWSTONE, "series", "Yellowstone", 2018, art = true),
@@ -134,7 +134,7 @@ object Fixtures {
       {"rule":"source.nin","section":"accept","result":"fail","detail":"source cam, which is not outside [cam, telesync]"}],
       "rejected_by":[{"rule":"resolution.gte","section":"accept","result":"fail","detail":"resolution 480, which is not at least 1080"},{"rule":"source.nin","section":"accept","result":"fail","detail":"source cam, which is not outside [cam, telesync]"}]}]}"""
 
-    val renderers = """{"renderers":[{"udn":"uuid:1e055177","name":"Phantom II 95 dB-a98d","manufacturer":"Devialet","model":"Phantom II 95 dB","location":"http://192.168.16.69:45317/x.xml"},{"udn":"uuid:tv","name":"Living room TV","manufacturer":"Samsung","model":"QN85BA 55"}]}"""
+    val renderers = """{"renderers":[{"udn":"uuid:1e055177","name":"Study speaker","manufacturer":"Example Audio","model":"Speaker Two","location":"http://192.0.2.10:45317/x.xml"},{"udn":"uuid:tv","name":"Living room TV","manufacturer":"Example Display","model":"Panel 55"}]}"""
     val playback = """{"elapsed_seconds":1425,"duration_seconds":5520,"playing":true,"renderer":"Living room TV","state":"PLAYING","title":"Yellowstone — S04E02 Phantom Pain"}"""
     val jobs = """{"items":[
       {"id":"j1","type":"search_release","state":"succeeded","attempts":1,"last_error":null,"updated_at":"2026-09-07T20:41:10Z"},
@@ -142,8 +142,8 @@ object Fixtures {
       {"id":"j3","type":"probe_blob","state":"dead","attempts":5,"last_error":"ffprobe: moov atom not found","updated_at":"2026-09-07T19:12:44Z"},
       {"id":"j4","type":"provider_health","state":"succeeded","attempts":1,"last_error":null,"updated_at":"2026-09-07T20:38:00Z"}
     ]}"""
-    val peers = """{"count":1,"truncated":false,"peers":[{"peer_id":"01a01df7-2472-7a96-b9d7-73da4e8a7355","name":"hyperion-1","site":"bartley-ridge","mode":"full","is_self":true}],"note":"More than one peer is supported and proven (M4), and so is exactly one: a single peer here is a deployment choice, not a symptom."}"""
-    val replicas = """{"blob_hash":"$HASH","replicas":[{"peer":"hyperion-1","state":"present","verified":true}]}"""
+    val peers = """{"count":1,"truncated":false,"peers":[{"peer_id":"01a01df7-2472-7a96-b9d7-73da4e8a7355","name":"node-a","site":"home","mode":"full","is_self":true}],"note":"More than one peer is supported and proven (M4), and so is exactly one: a single peer here is a deployment choice, not a symptom."}"""
+    val replicas = """{"blob_hash":"$HASH","replicas":[{"peer":"peer-a","state":"present","verified":true}]}"""
     val externalIds = """{"external_ids":[{"source":"tvdb","value":"341164"},{"source":"imdb","value":"tt4236770"}]}"""
 
     fun workDetail(id: String): String {
@@ -176,7 +176,7 @@ object Fixtures {
         val code = "S%02dE%02d".format(season, n)
         val stem = "Yellowstone (2018) - $code - $title [HDTV-1080p][AC3 5.1][x264]"
         val label = "Season %02d".format(season)
-        val thumb = """{"id":"th-$code","edition_id":"e$season","blob_hash":"$HASH","filename":"$stem-thumb.jpg","mime":"image/jpeg","role":"artwork","blob_size":48511,"edition_label":"$label"}"""
+        val thumb = """{"id":"th-$code","edition_id":"e$season","blob_hash":"${"$stem-thumb".fixtureArtHash}","filename":"$stem-thumb.jpg","mime":"image/jpeg","role":"artwork","blob_size":48511,"edition_label":"$label"}"""
         val video = if (held) """,{"id":"as-$code","edition_id":"e$season","blob_hash":"$HASH","filename":"$stem.mp4","mime":"video/mp4","role":"primary","blob_size":${1_300_000_000L + n * 37_000_000L},"edition_label":"$label"}""" else ""
         val sub = if (held &&
             n == 1
@@ -197,7 +197,7 @@ object Fixtures {
 
     /** The node's continue rail: one unfinished session on Yellowstone S04E03. */
     val continueRail = """{"items":[{"session":{"id":"cs-1","asset_id":"as-S04E03","device_id":"dev-1","verb":"watch","state":"paused","progress":{"locator":"1425","unit":"seconds"},"created_at":"2026-09-06T20:00:00Z","updated_at":"2026-09-06T20:41:00Z","started_at":"2026-09-06T20:00:00Z","ended_at":null},
-      "work":{"id":"$YELLOWSTONE","content_type":"series","title":"Yellowstone","year":2018,"artwork":{"asset_id":"a","blob_hash":"$HASH","mime":"image/jpeg","content_url":"/api/v1/blobs/$HASH/content"}},
+      "work":{"id":"$YELLOWSTONE","content_type":"series","title":"Yellowstone","year":2018,"artwork":{"asset_id":"a","blob_hash":"${YELLOWSTONE.fixtureArtHash}","mime":"image/jpeg","content_url":"${YELLOWSTONE.fixtureArtPath}"}},
       "edition":{"id":"e4","label":"Season 04","attributes":{}},
       "asset":{"asset_id":"as-S04E03","edition_id":"e4","blob_hash":"$HASH","mime":"video/mp4","size":1411000000,"duration_seconds":3312.5,"content_url":"/api/v1/blobs/$HASH/content"}}]}"""
 
@@ -231,7 +231,7 @@ class FakeHeyarrTransport(private val delayMs: Long = 0) : HttpTransport {
 
             path == "providers" -> """{"providers":[{"name":"linuxtracker","capabilities":["indexer"],"healthy":true,"detail":"reachable — Prowlarr","version":"unreported","checked_at":"2026-09-07T14:19:19Z"},{"name":"transmission","capabilities":["download"],"healthy":true,"detail":"reachable","version":"4.1.3","checked_at":"2026-09-07T14:19:19Z"},{"name":"internet-archive","capabilities":["indexer"],"healthy":false,"detail":"the indexer is rate limiting","checked_at":"2026-09-07T14:19:19Z"}],"capabilities":["indexer","download"]}"""
 
-            path == "capabilities" -> """{"holders":[{"worker_id":"hyperion/19403/01a0723e","peer_id":"p1","peer_name":"hyperion-1","capabilities":[{"name":"download"},{"name":"ffmpeg"},{"name":"ffmpeg.encoder.h264"},{"name":"ffprobe"},{"name":"indexer"}],"expires_at":"2026-09-07T14:30:18Z"}],"available":["download","ffmpeg","ffmpeg.encoder.h264","ffprobe","indexer"]}"""
+            path == "capabilities" -> """{"holders":[{"worker_id":"node-a/19403/01a0723e","peer_id":"p1","peer_name":"node-a","capabilities":[{"name":"download"},{"name":"ffmpeg"},{"name":"ffmpeg.encoder.h264"},{"name":"ffprobe"},{"name":"indexer"}],"expires_at":"2026-09-07T14:30:18Z"}],"available":["download","ffmpeg","ffmpeg.encoder.h264","ffprobe","indexer"]}"""
 
             path == "libraries" -> """{"items":[{"id":"l1","name":"shows","content_type":"show","enabled":true,"roots":[{"path":"/srv/nas-seed/media/tvseries"}]},{"id":"l2","name":"films","content_type":"movie","enabled":true,"roots":[{"path":"/srv/nas-seed/media/movies"}]}]}"""
 

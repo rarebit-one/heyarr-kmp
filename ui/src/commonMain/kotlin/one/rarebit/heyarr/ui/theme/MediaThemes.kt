@@ -38,8 +38,9 @@ data class MediaTheme(
 }
 
 /**
- * The media → theme table reuses the Archive palette. Media accents distinguish actions
- * without importing unrelated neon colors into the shared chrome. Artwork is never tinted.
+ * The media → theme table reuses the Archive palette. Media accents tint badges, glyphs and
+ * focus rings so a mixed shelf stays legible; primary actions stay Pale Mint for every type
+ * (see `PrimaryButton`). Artwork is never tinted.
  * Unknown / non-media kinds fall back to a neutral slate so they never look like a
  * movie.
  */
@@ -47,27 +48,26 @@ data class MediaTheme(
 object MediaThemes {
     private val MOVIE = MediaTheme(
         MediaType.MOVIE,
-        Color(0xFF599C7B),
-        Color(0xFF78B493),
-        Color(0xFFB8D8C7),
+        Color(0xFF7EE0B3),
+        Color(0xFF9BEAC6),
+        Color(0xFFBDF3DA),
         CardAspect.WIDE,
         ctaLabel = "Play",
         ctaSecondaryLabel = null,
         metadataKeys = listOf("runtime", "year", "rating", "genre"),
-        ctaStart = Color(0xFF78B493),
     )
     private val SERIES = MediaTheme(
         MediaType.SERIES,
-        Color(0xFF78A58B),
-        Color(0xFF97BFA7),
-        Color(0xFFB8D8C7),
+        Color(0xFF8FD6C0),
+        Color(0xFFAEE3D2),
+        Color(0xFFCDEFE4),
         CardAspect.WIDE,
         ctaLabel = "Play",
         ctaSecondaryLabel = "Next episode",
         metadataKeys = listOf("season", "episode", "air_status", "year"),
     )
     private val BOOK = MediaTheme(
-        MediaType.BOOK, Color(0xFFC7B66D), Color(0xFFD7C77E), Color(0xFFE6D99D), CardAspect.POSTER,
+        MediaType.BOOK, Color(0xFFF4B860), Color(0xFFF7CA85), Color(0xFFFADBA8), CardAspect.POSTER,
         ctaLabel = "Read", ctaSecondaryLabel = null,
         metadataKeys = listOf(
             "author",
@@ -78,9 +78,9 @@ object MediaThemes {
     )
     private val AUDIOBOOK = MediaTheme(
         MediaType.AUDIOBOOK,
-        Color(0xFF6FA58C),
-        Color(0xFF8FBEA6),
-        Color(0xFFB8D8C7),
+        Color(0xFF9CD9B0),
+        Color(0xFFB6E6C6),
+        Color(0xFFD0F0DB),
         CardAspect.SQUARE,
         ctaLabel = "Listen",
         ctaSecondaryLabel = null,
@@ -88,9 +88,9 @@ object MediaThemes {
     )
     private val PODCAST = MediaTheme(
         MediaType.PODCAST,
-        Color(0xFF8DAE8D),
-        Color(0xFFAFC9A4),
-        Color(0xFFD1DDB5),
+        Color(0xFFC4D98C),
+        Color(0xFFD3E4A6),
+        Color(0xFFE2EEC2),
         CardAspect.SQUARE,
         ctaLabel = "Play episode",
         ctaSecondaryLabel = null,
@@ -103,9 +103,9 @@ object MediaThemes {
     )
     private val MUSIC = MediaTheme(
         MediaType.MUSIC,
-        Color(0xFF83A876),
-        Color(0xFFA1C18C),
-        Color(0xFFC1D8A8),
+        Color(0xFFA8DC8A),
+        Color(0xFFBDE6A6),
+        Color(0xFFD3EFC3),
         CardAspect.SQUARE,
         ctaLabel = "Play",
         ctaSecondaryLabel = null,

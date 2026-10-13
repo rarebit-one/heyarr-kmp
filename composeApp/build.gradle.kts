@@ -125,6 +125,8 @@ tasks.register<JavaExec>("screenshots") {
     )
     mainClass.set("one.rarebit.heyarr.desktop.preview.ScreenshotsKt")
     systemProperty("java.awt.headless", "true")
+    // Fictional fixture posters (scripts/art); absent → procedural placeholder art.
+    systemProperty("heyarr.previewArt", layout.projectDirectory.dir("preview-art").asFile.absolutePath)
     args(layout.buildDirectory.dir("screenshots").get().asFile.absolutePath)
 }
 

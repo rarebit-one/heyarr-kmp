@@ -8,14 +8,17 @@ import one.rarebit.heyarr.ui.generated.resources.Res
 import one.rarebit.heyarr.ui.generated.resources.rubik_medium
 import one.rarebit.heyarr.ui.generated.resources.rubik_regular
 import one.rarebit.heyarr.ui.generated.resources.rubik_semibold
+import one.rarebit.heyarr.ui.generated.resources.source_serif_regular
+import one.rarebit.heyarr.ui.generated.resources.source_serif_semibold
 import org.jetbrains.compose.resources.Font
 
 /**
  * The self-hosted type faces (static instances, OFL — licences under
  * composeResources/files/licenses). The TTFs ship ONCE, from this module's composeResources,
- * to both apps: the desktop jar and the android assets. Only Rubik ships: every type slot
- * uses it (see `heyarrTypography`), so the unused Inter and Montserrat faces were dropped
- * rather than carried as dead weight in both apps.
+ * to both apps: the desktop jar and the android assets. Rubik is every interface slot (see
+ * `heyarrTypography`); Source Serif 4 (the SmText optical size, cut for body reading) is the
+ * reader's face only. It ships so long-form text looks the same on every platform instead of
+ * falling back to whatever `FontFamily.Serif` resolves to.
  *
  * Compose resources load a font inside composition (on JVM and Android the first read is
  * synchronous, so there is no fallback-font flash), which is why each family is a
@@ -29,5 +32,13 @@ object HeyarrFonts {
             val medium = Font(Res.font.rubik_medium, FontWeight.Medium)
             val semiBold = Font(Res.font.rubik_semibold, FontWeight.SemiBold)
             return remember(regular, medium, semiBold) { FontFamily(regular, medium, semiBold) }
+        }
+
+    /** Source Serif 4 — long-form reading surfaces only, never chrome. */
+    val serif: FontFamily
+        @Composable get() {
+            val regular = Font(Res.font.source_serif_regular, FontWeight.Normal)
+            val semiBold = Font(Res.font.source_serif_semibold, FontWeight.SemiBold)
+            return remember(regular, semiBold) { FontFamily(regular, semiBold) }
         }
 }

@@ -44,7 +44,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -64,6 +63,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.pointer.PointerEventType
@@ -596,6 +596,31 @@ internal fun languageName(code: String?): String? {
         ?: code.uppercase().takeIf { code.length in 2..3 }
 }
 
+/**
+ * The scrubber before the stream is seekable: an inert dashed rail, so it reads as "not ready"
+ * rather than a playhead frozen at zero. It does not sweep: a moving bar reads as measured
+ * progress, and the wait has none (the overlay's "Starting…" says what is happening).
+ */
+@Composable
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
+private fun WarmUpRail() {
+    Canvas(
+        Modifier.fillMaxWidth().padding(horizontal = 10.dp).height(4.dp)
+            .semantics { contentDescription = "Starting…" },
+    ) {
+        val y = size.height / 2f
+        drawLine(
+            Tokens.border,
+            Offset(0f, y),
+            Offset(size.width, y),
+            strokeWidth = size.height / 2f,
+            pathEffect = PathEffect.dashPathEffect(floatArrayOf(WARM_UP_DASH_PX, WARM_UP_DASH_PX)),
+        )
+    }
+}
+
+private const val WARM_UP_DASH_PX = 6f
+
 @Composable
 private fun SeekBar(ps: PlayerState, onSeek: (Float) -> Unit) {
     val theme = LocalMediaTheme.current
@@ -604,16 +629,7 @@ private fun SeekBar(ps: PlayerState, onSeek: (Float) -> Unit) {
     // Fixed height so the row does not jump when the warm-up bar swaps for the Slider.
     Box(Modifier.fillMaxWidth().height(24.dp), contentAlignment = Alignment.Center) {
         if (ps.warmingUp) {
-            // Not seekable yet: an indeterminate line, so the scrubber reads as "loading"
-            // rather than a live playhead frozen at zero that ignores every drag.
-            LinearProgressIndicator(
-                modifier = Modifier.fillMaxWidth().padding(
-                    horizontal = 10.dp,
-                ).height(4.dp).clip(RoundedCornerShape(Tokens.radiusCard))
-                    .semantics { contentDescription = "Starting…" },
-                color = theme.accent,
-                trackColor = Tokens.surface3,
-            )
+            WarmUpRail()
         } else {
             // Behind the Slider: the inactive rail, and over it a lighter band as far
             // as the stream has cached ahead. Inset by the thumb radius so it lines up

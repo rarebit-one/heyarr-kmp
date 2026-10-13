@@ -97,6 +97,7 @@ import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SearchEntryButton
 import one.rarebit.heyarr.ui.components.ToastCard
+import one.rarebit.heyarr.ui.theme.Appearance
 import one.rarebit.heyarr.ui.theme.HeyarrTheme
 import one.rarebit.heyarr.ui.theme.LocalAppearance
 import one.rarebit.heyarr.ui.theme.MediaThemes
@@ -143,6 +144,12 @@ fun App(
      * tests leave it false so they stay guest and touch no device key store.
      */
     enableDeviceEnrol: Boolean = false,
+    /** The probe's clock ([AppSession]); previews pass a constant one. */
+    nanoClock: () -> Long = System::nanoTime,
+    /** Appearance at launch; previews ask for reduced motion so animated glyphs render one fixed frame. */
+    initialAppearance: Appearance = Appearance(),
+    /** Hands the session to the screenshot harness, which waits on its first probe before capturing. */
+    onSession: (AppSession) -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     val session =
@@ -153,8 +160,10 @@ fun App(
                     downloader,
                     opener,
                 ),
-                scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol,
+                scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol, nanoClock,
             ).also {
+                onSession(it)
+                it.appearance = initialAppearance
                 if (initialAudioQueue.isNotEmpty()) it.playback.queueAudio(initialAudioQueue)
             }
         }

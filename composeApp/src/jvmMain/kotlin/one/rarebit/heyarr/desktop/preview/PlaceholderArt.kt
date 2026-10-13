@@ -4,10 +4,27 @@ import org.jetbrains.skia.Color4f
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Paint
 import org.jetbrains.skia.Surface
+import java.io.File
 
-/** Procedural "artwork" for previews: a two-tone diagonal composition seeded by the path, so cards differ. */
+/**
+ * Artwork for previews. When the `heyarr.previewArt` system property names a directory holding
+ * `<key>.png|webp|jpg` for a fixture's art key ([FixtureArt.keyOf]), that file is served: fictional
+ * posters made for the screenshot suite, so design review sees realistic artwork without shipping
+ * anyone's real covers. Otherwise a procedural two-tone composition seeded by the path, so cards
+ * still differ.
+ */
 object PlaceholderArt {
-    fun bytes(path: String): ByteArray {
+    private val artDir: File? = System.getProperty("heyarr.previewArt")?.let(::File)?.takeIf { it.isDirectory }
+
+    fun bytes(path: String): ByteArray = previewFile(path)?.readBytes() ?: procedural(path)
+
+    private fun previewFile(path: String): File? {
+        val key = FixtureArt.keyOf(path)
+        if (artDir == null || key == null) return null
+        return listOf("png", "webp", "jpg").map { File(artDir, "$key.$it") }.firstOrNull { it.isFile }
+    }
+
+    private fun procedural(path: String): ByteArray {
         val seed = path.hashCode()
         val hue = ((seed ushr 3) % 360 + 360) % 360
         val surface = Surface.makeRasterN32Premul(400, 600)
