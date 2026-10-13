@@ -211,7 +211,7 @@ fun MediaCard(
                 .semantics {
                     this.contentDescription =
                         "${type.label}: $title${stateLabel(availability, status)}" +
-                            if (hasMenu) ". Long press for actions" else ""
+                        if (hasMenu) ". Long press for actions" else ""
                 },
         ) {
             CardArtBox(

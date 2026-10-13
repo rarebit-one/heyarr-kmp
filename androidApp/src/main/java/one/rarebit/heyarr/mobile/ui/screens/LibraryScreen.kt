@@ -502,7 +502,6 @@ fun LibraryScreen(
     }
 }
 
-
 /** The want-status filter, for Manage → All works. */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.

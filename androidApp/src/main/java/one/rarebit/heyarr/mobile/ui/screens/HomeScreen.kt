@@ -351,13 +351,7 @@ private fun GuestBanner(onSignIn: () -> Unit) {
 }
 
 @Composable
-private fun WorkCard(
-    session: AppSession,
-    w: Work,
-    onOpen: (Route) -> Unit,
-    actions: List<CardAction>,
-    from: String,
-) {
+private fun WorkCard(session: AppSession, w: Work, onOpen: (Route) -> Unit, actions: List<CardAction>, from: String) {
     val type = MediaType.from(w.kind)
     val status = session.index.statusOf(w.id)
     // Wide-aspect types (MOVIE, SERIES, VIDEO) render at 280 dp; poster types render at
@@ -377,7 +371,9 @@ private fun WorkCard(
         w.artist ?: w.author,
     )
     MediaCard(
-        w.title, type, onOpen = { onOpen(detailRoute(w.id, type, w.title, from = from)) },
+        w.title,
+        type,
+        onOpen = { onOpen(detailRoute(w.id, type, w.title, from = from)) },
         subtitle =
         w.artist ?: w.author,
         meta = listOf(w.year?.toString()),
@@ -388,11 +384,7 @@ private fun WorkCard(
 }
 
 @Composable
-private fun SpotlightBlock(
-    session: AppSession,
-    state: HomeState,
-    onOpen: (Route) -> Unit,
-) {
+private fun SpotlightBlock(session: AppSession, state: HomeState, onOpen: (Route) -> Unit) {
     when (val s = state.spotlight) {
         RailState.Loading -> HeroSkeleton()
 
@@ -420,7 +412,9 @@ private fun SpotlightBlock(
                 work.artist ?: work.author,
             )
             Hero(
-                title = work.title, type = type, kicker = "Featured from your library",
+                title = work.title,
+                type = type,
+                kicker = "Featured from your library",
                 meta = listOf(
                     work.year?.toString(),
                     work.artist ?: work.author,
