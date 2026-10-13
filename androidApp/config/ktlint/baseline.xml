@@ -17,12 +17,12 @@
         <error line="6" column="1" source="standard:kdoc" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/nav/HeyarrNavHost.kt">
-        <error line="370" column="121" source="standard:max-line-length" />
-        <error line="374" column="120" source="standard:max-line-length" />
-        <error line="421" column="121" source="standard:max-line-length" />
-        <error line="468" column="121" source="standard:max-line-length" />
-        <error line="515" column="121" source="standard:max-line-length" />
-        <error line="602" column="121" source="standard:max-line-length" />
+        <error line="390" column="121" source="standard:max-line-length" />
+        <error line="394" column="120" source="standard:max-line-length" />
+        <error line="446" column="121" source="standard:max-line-length" />
+        <error line="493" column="121" source="standard:max-line-length" />
+        <error line="540" column="121" source="standard:max-line-length" />
+        <error line="627" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/nav/Routes.kt">
         <error line="1" column="1" source="standard:filename" />
@@ -62,12 +62,12 @@
         <error line="285" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/HomeScreen.kt">
-        <error line="191" column="121" source="standard:max-line-length" />
-        <error line="199" column="121" source="standard:max-line-length" />
-        <error line="328" column="121" source="standard:max-line-length" />
+        <error line="182" column="121" source="standard:max-line-length" />
+        <error line="190" column="121" source="standard:max-line-length" />
+        <error line="319" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/LibraryScreen.kt">
-        <error line="264" column="121" source="standard:max-line-length" />
+        <error line="277" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/MissingScreen.kt">
         <error line="265" column="121" source="standard:max-line-length" />
@@ -76,11 +76,11 @@
         <error line="190" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/SearchScreen.kt">
-        <error line="149" column="121" source="standard:max-line-length" />
-        <error line="327" column="121" source="standard:max-line-length" />
-        <error line="367" column="121" source="standard:max-line-length" />
-        <error line="369" column="121" source="standard:max-line-length" />
-        <error line="383" column="121" source="standard:max-line-length" />
+        <error line="154" column="121" source="standard:max-line-length" />
+        <error line="333" column="121" source="standard:max-line-length" />
+        <error line="376" column="121" source="standard:max-line-length" />
+        <error line="378" column="121" source="standard:max-line-length" />
+        <error line="392" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/SettingsScreen.kt">
         <error line="127" column="121" source="standard:max-line-length" />
