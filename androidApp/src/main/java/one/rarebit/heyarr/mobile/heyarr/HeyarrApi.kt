@@ -16,6 +16,9 @@ import one.rarebit.heyarr.core.heyarr.QualityProfile
 import one.rarebit.heyarr.core.heyarr.QualityProfileJson
 import one.rarebit.heyarr.core.heyarr.SessionInfo
 import one.rarebit.heyarr.core.heyarr.SessionInfoJson
+import one.rarebit.heyarr.core.heyarr.SidecarAction
+import one.rarebit.heyarr.core.heyarr.SidecarClient
+import one.rarebit.heyarr.core.heyarr.SidecarReply
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.mcp.DiscoveryJson
 import one.rarebit.heyarr.core.mcp.Explanation
@@ -343,6 +346,16 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
             )
         }
     }
+
+    private val sidecars = SidecarClient(http, baseUrl, credential)
+
+    /**
+     * The caption and cover levers for one work (see [SidecarAction]): extract embedded captions
+     * (ADR-0084), want captions in a language from the subtitle provider (ADR-0085), or look a
+     * music or book cover up (ADR-0087). All three queue work on the node and report counts.
+     */
+    fun sidecar(action: SidecarAction, workId: String, language: String? = null): SidecarReply =
+        sidecars.request(action, workId, language)
 
     // ── telemetry (the connection sheet) ─────────────────────────────────────────
     fun sessionInfo(): SessionInfo? = SessionInfoJson.parse(get("$baseUrl/api/v1/session", "GET /session"))
