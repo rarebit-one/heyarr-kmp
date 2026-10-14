@@ -123,7 +123,8 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
 
             state.rendererList!!.renderers.isEmpty() -> EmptyState(
                 "No renderers found",
-                detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again.",
+                detail = "A device that is switched off is not listed — that is not the same as it not existing. " +
+                    "Switch it on and search again.",
                 icon = HeyarrIcons.Cast,
             )
 

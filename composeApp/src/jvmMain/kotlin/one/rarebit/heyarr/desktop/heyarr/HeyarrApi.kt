@@ -33,11 +33,11 @@ import one.rarebit.heyarr.core.mcp.Satisfaction
 import one.rarebit.heyarr.core.mcp.SatisfactionJson
 import one.rarebit.heyarr.core.mcp.SearchHits
 import one.rarebit.heyarr.core.mcp.SearchHitsJson
+import one.rarebit.heyarr.core.mcp.SsdpScanner
 import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.mcp.WantCreated
 import one.rarebit.heyarr.core.mcp.WantCreatedJson
 import one.rarebit.heyarr.core.mcp.WantJson
-import one.rarebit.heyarr.core.mcp.SsdpScanner
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.core.theme.MediaType
@@ -52,13 +52,6 @@ import one.rarebit.heyarr.desktop.ssdp.JvmSsdpScanner
 import java.io.IOException
 import java.net.URLEncoder
 
-/**
- * The one typed door to heyarr for every screen. Each method is a single MCP tool (named
- * in its doc line) or one of the three verified REST reads; the mapping is exact and
- * nothing here invents an endpoint. Results are values; a tool's refusal comes back as
- * [McpOutcome.Refused] where the screen must show it, or is thrown where a refusal can
- * only mean failure. Blocking — call on `Dispatchers.IO`.
- */
 /**
  * Where and how to play an asset, resolved from the playback plan: the URL to
  * open, plus the source's true runtime in seconds when the plan is a transcode
@@ -80,6 +73,13 @@ private const val HTTP_OK_MIN = 200
 private const val HTTP_OK_MAX = 299
 private const val HTTP_CONFLICT = 409
 
+/**
+ * The one typed door to heyarr for every screen. Each method is a single MCP tool (named
+ * in its doc line) or one of the three verified REST reads; the mapping is exact and
+ * nothing here invents an endpoint. Results are values; a tool's refusal comes back as
+ * [McpOutcome.Refused] where the screen must show it, or is thrown where a refusal can
+ * only mean failure. Blocking — call on `Dispatchers.IO`.
+ */
 class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private val credential: Credential) {
     private val mcp = McpClient(http, baseUrl, credential)
     private val library = LibraryClient(http, baseUrl, credential)
@@ -204,10 +204,7 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
      *
      * Falls back to MCP `list_renderers` only when the REST endpoint is unreachable.
      */
-    fun renderers(
-        refresh: Boolean = false,
-        scanner: SsdpScanner = JvmSsdpScanner(),
-    ): RendererListResult {
+    fun renderers(refresh: Boolean = false, scanner: SsdpScanner = JvmSsdpScanner()): RendererListResult {
         // 1. SSDP scan — never throws; empty list on network error.
         val discovered = scanner.scan()
 
@@ -259,12 +256,7 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
      * Falls back to MCP `play_here` only when the REST endpoint itself is unreachable
      * (IOException), which should be rare once the server is reachable enough to list renderers.
      */
-    fun playHere(
-        assetId: String,
-        renderer: String,
-        udn: String? = null,
-        forceDirect: Boolean = false,
-    ): CastResult {
+    fun playHere(assetId: String, renderer: String, udn: String? = null, forceDirect: Boolean = false): CastResult {
         if (udn != null) {
             val body = one.rarebit.heyarr.core.mcp.JsonWrite.obj(
                 buildMap<String, Any?> {
@@ -289,6 +281,7 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
         }
         return when (val viaTool = mcp.call("play_here", toolArgs).map { }) {
             is McpResult.Ok -> CastResult.Success(clientMustStayConnected = false)
+
             is McpResult.Refused -> CastResult.Refused(
                 message = viaTool.message,
                 tool = viaTool.tool,
@@ -604,7 +597,9 @@ private fun parsePlayConflict(body: String): CastResult {
 internal fun parsePlayResponse(body: String, status: Int): CastResult = when {
     status in HTTP_OK_MIN..HTTP_OK_MAX ->
         CastResult.Success(clientMustStayConnected = JsonScan.boolField(body, "client_must_stay_connected") ?: false)
+
     status == HTTP_CONFLICT -> parsePlayConflict(body)
+
     else -> CastResult.Refused(
         message = Problem.message(body, status, "play on renderer"),
         tool = "renderers/play",

@@ -28,24 +28,20 @@ class JvmSsdpScanner(private val windowMs: Int = 3000) : SsdpScanner {
         private const val MAX_PACKET_BYTES = 2048
     }
 
-    override fun scan(): List<SsdpResponse> =
-        try {
-            DatagramSocket().use { socket ->
-                socket.soTimeout = RECEIVE_TIMEOUT_MS
-                val request = SsdpParser.msearchRequest().toByteArray(Charsets.UTF_8)
-                val addr = InetAddress.getByName(SSDP_ADDRESS)
-                socket.send(DatagramPacket(request, request.size, addr, SSDP_PORT))
-                collectResponses(socket, System.currentTimeMillis() + windowMs).values.toList()
-            }
-        } catch (e: IOException) {
-            System.err.println("SSDP scan failed: ${e.message}")
-            emptyList()
+    override fun scan(): List<SsdpResponse> = try {
+        DatagramSocket().use { socket ->
+            socket.soTimeout = RECEIVE_TIMEOUT_MS
+            val request = SsdpParser.msearchRequest().toByteArray(Charsets.UTF_8)
+            val addr = InetAddress.getByName(SSDP_ADDRESS)
+            socket.send(DatagramPacket(request, request.size, addr, SSDP_PORT))
+            collectResponses(socket, System.currentTimeMillis() + windowMs).values.toList()
         }
+    } catch (e: IOException) {
+        System.err.println("SSDP scan failed: ${e.message}")
+        emptyList()
+    }
 
-    private fun collectResponses(
-        socket: DatagramSocket,
-        deadline: Long,
-    ): Map<String, SsdpResponse> {
+    private fun collectResponses(socket: DatagramSocket, deadline: Long): Map<String, SsdpResponse> {
         val results = mutableMapOf<String, SsdpResponse>()
         val buf = ByteArray(MAX_PACKET_BYTES)
         while (System.currentTimeMillis() < deadline) {

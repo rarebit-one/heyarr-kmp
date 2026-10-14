@@ -41,9 +41,9 @@ import one.rarebit.heyarr.desktop.device.DesktopDeviceEnroller
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DevicePairingSteps
 import one.rarebit.heyarr.desktop.device.PairingCoordinator
+import one.rarebit.heyarr.desktop.heyarr.CastResult
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.McpResult
-import one.rarebit.heyarr.desktop.heyarr.CastResult
 import one.rarebit.heyarr.desktop.login.BearerTokenLogin
 import one.rarebit.heyarr.desktop.login.DeviceEnroller
 import one.rarebit.heyarr.desktop.login.DeviceLogin
