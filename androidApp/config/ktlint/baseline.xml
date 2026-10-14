@@ -73,7 +73,7 @@
         <error line="265" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/PlayerScreen.kt">
-        <error line="190" column="121" source="standard:max-line-length" />
+        <error line="221" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/SearchScreen.kt">
         <error line="154" column="121" source="standard:max-line-length" />

@@ -96,7 +96,10 @@ import one.rarebit.heyarr.ui.theme.MediaScope
 // portrait layout's top bar, picture, inline controls and "Up next"; plus the transport's
 // seek rail and the captions menu.
 
-/** Fullscreen or landscape video: the picture edge to edge, controls that fade while playing; a tap toggles them. */
+/**
+ * Fullscreen or landscape video: the picture edge to edge, controls that fade while playing; a
+ * tap toggles them, and a double tap on the left or right third jumps back or ahead 10 s.
+ */
 @UnstableApi
 @Composable
 internal fun ImmersivePlayer(
@@ -109,18 +112,12 @@ internal fun ImmersivePlayer(
     val item = video.current ?: return
     val ps = video.state
     val fullscreen = video.fullscreen
-    Box(
-        modifier.fillMaxSize().background(Color.Black).clickable(
-            interactionSource = remember {
-                MutableInteractionSource()
-            },
-            indication = null,
-        ) {
-            state.controlsVisible =
-                !state.controlsVisible
-        },
-    ) {
+    Box(modifier.fillMaxSize().background(Color.Black)) {
         Surface(video, item.target, Modifier.fillMaxSize())
+        // Above the picture, below the controls: the controls still take their own taps.
+        SeekGestureLayer(video, isSeekable(ps, item.target), onTap = {
+            state.controlsVisible = !state.controlsVisible
+        }, Modifier.fillMaxSize())
         if (state.controlsVisible || ps.paused) {
             Row(
                 Modifier.align(
@@ -223,6 +220,7 @@ internal fun PlayerPicture(video: VideoSession, item: NowPlaying, type: MediaTyp
     ) {
         if (item.target.isVideo) {
             Surface(video, item.target, Modifier.fillMaxSize())
+            SeekGestureLayer(video, isSeekable(ps, item.target), onTap = {}, Modifier.fillMaxSize())
         } else {
             Artwork(item.artworkUrl, type, Modifier.fillMaxSize(), glyphSize = 64.dp)
         }

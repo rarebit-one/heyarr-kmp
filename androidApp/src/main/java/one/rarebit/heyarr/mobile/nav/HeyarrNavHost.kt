@@ -30,11 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -139,7 +135,6 @@ fun HeyarrNavHost(
     )
     val session = holder.session
     val context = LocalContext.current
-    val view = LocalView.current
     val scope = rememberCoroutineScope()
     var want by remember { mutableStateOf<WantRequest?>(null) }
     // A guest tapped a gated affordance (Want, Follow, playlists…): offer the upgrade instead
@@ -182,17 +177,15 @@ fun HeyarrNavHost(
             navController.navigate(Route.Player) { launchSingleTop = true }
         }
     }
-    // Fullscreen is first-class: landscape and no system bars while it is on.
+    // Fullscreen is first-class: it locks landscape while it is on. The system bars are the
+    // player's own business (PlayerScreen's ImmersiveSystemBars), since rotating into
+    // landscape goes immersive without the toggle.
     LaunchedEffect(video.fullscreen) {
         val activity = context as? Activity ?: return@LaunchedEffect
-        val controller = WindowCompat.getInsetsController(activity.window, view)
-        if (video.fullscreen) {
-            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            controller.hide(WindowInsetsCompat.Type.systemBars())
+        activity.requestedOrientation = if (video.fullscreen) {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
         } else {
-            activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            controller.show(WindowInsetsCompat.Type.systemBars())
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
     LaunchedEffect(focusDevice) { if (focusDevice > 0) navController.navigate(Route.Device) { launchSingleTop = true } }

@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.mobile.ui.screens
 
+import android.app.Activity
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
@@ -45,6 +46,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,11 +60,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import kotlinx.coroutines.delay
@@ -125,6 +131,7 @@ fun PlayerScreen(
     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val immersive = fullscreen || (landscape && item.target.isVideo)
     val scope = rememberCoroutineScope()
+    ImmersiveSystemBars(immersive)
 
     BackHandler { if (fullscreen) video.fullscreen = false else onBack() }
     LaunchedEffect(immersive, ps.paused, state.controlsVisible) {
@@ -166,6 +173,30 @@ fun PlayerScreen(
     }
 }
 
+/**
+ * Hides the status and navigation bars while the player is immersive: the fullscreen toggle
+ * AND a video simply rotated into landscape, which takes the whole screen without it. A swipe
+ * from the edge brings them back for a moment. Leaving immersive, or the player, shows them.
+ */
+@Composable
+@Suppress("FunctionNaming") // Composables are PascalCase.
+private fun ImmersiveSystemBars(immersive: Boolean) {
+    val view = LocalView.current
+    DisposableEffect(immersive) {
+        val window = (view.context as? Activity)?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
+        if (immersive) {
+            controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller?.hide(WindowInsetsCompat.Type.systemBars())
+        }
+        onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
+    }
+}
+
+/** Whether the playing stream can seek: it has a known runtime and a seekable (or restart-seekable) target. */
+internal fun isSeekable(ps: VideoSession.State, target: PlaybackTarget): Boolean =
+    ps.durationMs > 0 && (target.seekable || target.restartSeekable)
+
 @UnstableApi
 @Composable
 internal fun Transport(
@@ -177,7 +208,7 @@ internal fun Transport(
     fullscreenToggle: () -> Unit,
     fullscreen: Boolean,
 ) {
-    val seekable = ps.durationMs > 0 && (target.seekable || target.restartSeekable)
+    val seekable = isSeekable(ps, target)
     SeekRail(video, ps, seekable)
     Row(
         Modifier.fillMaxWidth(),
