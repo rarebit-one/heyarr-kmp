@@ -28,12 +28,11 @@ import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
-import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.desktop.heyarr.McpResult
+import one.rarebit.heyarr.desktop.heyarr.PlayResult
 import one.rarebit.heyarr.desktop.library.Episode
 import one.rarebit.heyarr.desktop.library.PrimaryAsset
 import one.rarebit.heyarr.desktop.library.Season
@@ -298,59 +297,126 @@ private fun HeroSecondaryActions(actions: HeroActions, first: Episode?) {
 private fun CastPicker(session: AppSession, state: DetailState) {
     val scope = rememberCoroutineScope()
     val assetId = state.castAssetId ?: return
-    fun playOn(renderer: Renderer) {
-        val api = session.api ?: return
-        state.castAssetId = null
-        // Session scope, not this picker's: clearing castAssetId (above) removes the picker
-        // from composition, and a picker-scoped coroutine would be cancelled with it before the
-        // cast — and its toast — completed. A codec refusal offers "Cast anyway" (force_direct);
-        // forcing again is a plain refusal, so no loop.
-        fun cast(force: Boolean) {
-            session.launch {
-                state.busy = "cast"
-                session.io { api.playHere(assetId, renderer.name, renderer.udn, forceDirect = force) }
-                    .onSuccess { r ->
-                        when (r) {
-                            is McpResult.Ok -> session.toast(Toast.Kind.SUCCESS, "Playing on ${renderer.name}")
-
-                            is McpResult.Refused -> if (force) {
-                                session.refused(
-                                    r,
-                                )
-                            } else {
-                                session.castRefused(r, renderer.name) {
-                                    cast(true)
-                                }
-                            }
-                        }
-                    }
-                state.busy = null
-            }
-        }
-        cast(false)
-    }
     Panel("Play on a renderer", trailing = { GhostButton("Close", { state.castAssetId = null }) }) {
-        val r = state.renderers
+        val rl = state.rendererList
         when {
-            r == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
+            rl == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
 
-            r.isEmpty() -> Text(
+            rl.renderers.isEmpty() -> Text(
                 "No renderers found. A device that is switched off will not be listed — that is not the same as it not existing.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Tokens.textMuted,
             )
 
-            else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (x in r) FilterChip(x.name, false, { playOn(x) }, icon = HeyarrIcons.Cast)
+            else -> {
+                // Group renderers: client's site first (labelled "Here"), then others by site name.
+                val clientSite = rl.clientSite
+                val bySite = rl.renderers.groupBy { it.site ?: "" }
+                val siteOrder = buildList {
+                    if (clientSite != null && bySite.containsKey(clientSite)) add(clientSite)
+                    bySite.keys.filter { it != clientSite }.sorted().forEach { add(it) }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (site in siteOrder) {
+                        val group = bySite[site] ?: continue
+                        val siteLabel = if (site == clientSite) "Here" else site.ifBlank { "Other" }
+                        if (siteOrder.size > 1 || siteLabel == "Here") {
+                            Text(
+                                siteLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Tokens.textMuted,
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (x in group) {
+                                FilterChip(
+                                    x.name,
+                                    false,
+                                    {
+                                        if (x.r3Only) return@FilterChip
+                                        val a = session.api ?: return@FilterChip
+                                        state.castAssetId = null
+                                        // On the SESSION scope, not this picker's: clearing castAssetId
+                                        // removes CastPicker from composition, cancelling a picker-scoped
+                                        // coroutine before the cast or toast completes. A codec refusal
+                                        // offers "Cast anyway" (force_direct); forcing again is a plain
+                                        // refusal, so no loop.
+                                        fun cast(force: Boolean) {
+                                            session.launch {
+                                                state.busy = "cast"
+                                                session.io {
+                                                    a.playHere(assetId, x.name, x.udn, forceDirect = force)
+                                                }.onSuccess { res ->
+                                                    when (res) {
+                                                        is PlayResult.Success -> session.toast(
+                                                            Toast.Kind.SUCCESS,
+                                                            "Playing on ${x.name}",
+                                                            if (res.clientMustStayConnected) {
+                                                                "Keep this app open while it plays."
+                                                            } else {
+                                                                "You can close the app."
+                                                            },
+                                                        )
+                                                        is PlayResult.Refused -> if (force) {
+                                                            session.refused(res)
+                                                        } else {
+                                                            session.castRefused(res, x.name) { cast(true) }
+                                                        }
+                                                        is PlayResult.Conflict -> {
+                                                            val altAction = res.alternatives
+                                                                .firstOrNull { it.kind == "smaller_copy" && it.assetId != null }
+                                                                ?.let { alt ->
+                                                                    one.rarebit.heyarr.core.state.ToastAction(
+                                                                        "Play the ${alt.heightPx}p copy instead",
+                                                                    ) {
+                                                                        session.launch {
+                                                                            session.io {
+                                                                                a.playHere(
+                                                                                    alt.assetId!!,
+                                                                                    x.name,
+                                                                                    x.udn,
+                                                                                    forceDirect = force,
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            session.toast(
+                                                                Toast.Kind.REFUSED,
+                                                                res.reasonHuman,
+                                                                res.alternatives
+                                                                    .firstOrNull { it.kind == "copy_to_site_first" }
+                                                                    ?.let { "A copy needs to reach ${it.site} first." },
+                                                                action = altAction,
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                                state.busy = null
+                                            }
+                                        }
+                                        cast(false)
+                                    },
+                                    icon = HeyarrIcons.Cast,
+                                    enabled = !x.r3Only,
+                                )
+                            }
+                        }
+                        if (group.any { it.r3Only }) {
+                            Text(
+                                "Not reachable from the server yet",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Tokens.textDisabled,
+                            )
+                        }
+                    }
+                }
             }
         }
         GhostButton("Search the network again", {
             scope.launch {
                 session.api?.let { a ->
-                    session.io { a.renderers(refresh = true) }.onSuccess {
-                        state.renderers =
-                            it
-                    }
+                    session.io { a.renderers(refresh = true) }.onSuccess { state.rendererList = it }
                 }
             }
         })

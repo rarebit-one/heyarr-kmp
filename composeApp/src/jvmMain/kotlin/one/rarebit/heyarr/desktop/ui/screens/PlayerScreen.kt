@@ -64,9 +64,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.mcp.Renderer
+import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.desktop.heyarr.McpResult
+import one.rarebit.heyarr.desktop.heyarr.PlayAlternative
+import one.rarebit.heyarr.desktop.heyarr.PlayResult
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
 import one.rarebit.heyarr.desktop.playback.MpvTrack
 import one.rarebit.heyarr.desktop.playback.PlayerState
@@ -94,7 +96,7 @@ import java.awt.GraphicsEnvironment
 
 /** Per-visit state of the player screen; playback itself lives in [AppSession.playback]. */
 class PlayerScreenState {
-    var renderers by mutableStateOf<List<Renderer>?>(null)
+    var rendererList by mutableStateOf<RendererListResult?>(null)
     var castOpen by mutableStateOf(false)
 }
 
@@ -474,15 +476,10 @@ fun PlayerScreen(
                 }, icon = if (playback.popout) HeyarrIcons.Fullscreen else HeyarrIcons.OpenExternal, compact = true)
                 IconButtonRound(HeyarrIcons.Cast, "Play on a renderer", {
                     state.castOpen = !state.castOpen
-                    if (state.renderers ==
-                        null
-                    ) {
+                    if (state.rendererList == null) {
                         scope.launch {
                             session.api?.let { a ->
-                                session.io { a.renderers() }.onSuccess {
-                                    state.renderers =
-                                        it
-                                }
+                                session.io { a.renderers() }.onSuccess { state.rendererList = it }
                             }
                         }
                     }
@@ -684,62 +681,124 @@ private fun StartingOverlay(label: String) {
 private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.Player) {
     val scope = rememberCoroutineScope()
     Panel("Play on a renderer", trailing = { GhostButton("Close", { state.castOpen = false }) }) {
-        val r = state.renderers
+        val rl = state.rendererList
         when {
-            r == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
+            rl == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
 
-            r.isEmpty() -> Text(
+            rl.renderers.isEmpty() -> Text(
                 "No renderers found — a device that is off is not listed.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Tokens.textMuted,
             )
 
-            else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (x in r) {
-                    FilterChip(x.name, false, {
-                        val a = session.api ?: return@FilterChip
-                        state.castOpen = false
-                        // On the SESSION scope, not this row's: closing the picker (above) removes
-                        // CastRow from composition, which would cancel a row-scoped coroutine — and
-                        // its toast — before the cast finished. A codec refusal offers "Cast anyway"
-                        // (force_direct); forcing again is shown as a plain refusal, so no loop.
-                        fun cast(force: Boolean) {
-                            session.launch {
-                                session.playback.player.pause()
-                                session.io { a.playHere(item.assetId, x.name, x.udn, forceDirect = force) }
-                                    .onSuccess { res ->
-                                        when (res) {
-                                            is McpResult.Ok -> session.toast(
-                                                Toast.Kind.SUCCESS,
-                                                "Playing on ${x.name}",
-                                                item.title,
-                                            )
-
-                                            is McpResult.Refused -> if (force) {
-                                                session.refused(
-                                                    res,
-                                                )
-                                            } else {
-                                                session.castRefused(res, x.name) {
-                                                    cast(true)
+            else -> {
+                // Group renderers: client's site first (labelled "Here"), then others by site name.
+                val clientSite = rl.clientSite
+                val bySite = rl.renderers.groupBy { it.site ?: "" }
+                val siteOrder = buildList {
+                    if (clientSite != null && bySite.containsKey(clientSite)) add(clientSite)
+                    bySite.keys.filter { it != clientSite }.sorted().forEach { add(it) }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (site in siteOrder) {
+                        val group = bySite[site] ?: continue
+                        val siteLabel = if (site == clientSite) "Here" else site.ifBlank { "Other" }
+                        if (siteOrder.size > 1 || siteLabel == "Here") {
+                            Text(
+                                siteLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Tokens.textMuted,
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            for (x in group) {
+                                FilterChip(
+                                    x.name,
+                                    false,
+                                    {
+                                        if (x.r3Only) return@FilterChip
+                                        val a = session.api ?: return@FilterChip
+                                        state.castOpen = false
+                                        // On the SESSION scope, not this row's: closing the picker
+                                        // removes CastRow from composition, cancelling a row-scoped
+                                        // coroutine before the cast or toast completes. A codec
+                                        // refusal offers "Cast anyway" (force_direct); forcing again
+                                        // is shown as a plain refusal, so no loop.
+                                        fun cast(force: Boolean) {
+                                            session.launch {
+                                                session.playback.player.pause()
+                                                session.io {
+                                                    a.playHere(item.assetId, x.name, x.udn, forceDirect = force)
+                                                }.onSuccess { res ->
+                                                    when (res) {
+                                                        is PlayResult.Success -> session.toast(
+                                                            Toast.Kind.SUCCESS,
+                                                            "Playing on ${x.name}",
+                                                            if (res.clientMustStayConnected) {
+                                                                "Keep this app open while it plays."
+                                                            } else {
+                                                                "You can close the app."
+                                                            },
+                                                        )
+                                                        is PlayResult.Refused -> if (force) {
+                                                            session.refused(res)
+                                                        } else {
+                                                            session.castRefused(res, x.name) { cast(true) }
+                                                        }
+                                                        is PlayResult.Conflict -> {
+                                                            val altAction = res.alternatives
+                                                                .firstOrNull { it.kind == "smaller_copy" && it.assetId != null }
+                                                                ?.let { alt ->
+                                                                    one.rarebit.heyarr.core.state.ToastAction(
+                                                                        "Play the ${alt.heightPx}p copy instead",
+                                                                    ) {
+                                                                        session.launch {
+                                                                            session.io {
+                                                                                a.playHere(
+                                                                                    alt.assetId!!,
+                                                                                    x.name,
+                                                                                    x.udn,
+                                                                                    forceDirect = force,
+                                                                                )
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            session.toast(
+                                                                Toast.Kind.REFUSED,
+                                                                res.reasonHuman,
+                                                                res.alternatives
+                                                                    .firstOrNull { it.kind == "copy_to_site_first" }
+                                                                    ?.let { "A copy needs to reach ${it.site} first." },
+                                                                action = altAction,
+                                                            )
+                                                        }
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
+                                        cast(false)
+                                    },
+                                    icon = HeyarrIcons.Cast,
+                                    enabled = !x.r3Only,
+                                )
                             }
                         }
-                        cast(false)
-                    }, icon = HeyarrIcons.Cast)
+                        if (group.any { it.r3Only }) {
+                            Text(
+                                "Not reachable from the server yet",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Tokens.textDisabled,
+                            )
+                        }
+                    }
                 }
             }
         }
         GhostButton("Search the network again", {
             scope.launch {
                 session.api?.let { a ->
-                    session.io { a.renderers(refresh = true) }.onSuccess {
-                        state.renderers =
-                            it
-                    }
+                    session.io { a.renderers(refresh = true) }.onSuccess { state.rendererList = it }
                 }
             }
         })

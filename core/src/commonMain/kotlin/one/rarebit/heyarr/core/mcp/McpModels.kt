@@ -237,18 +237,60 @@ data class ReleaseToExplain(val id: String, val title: String, val attributes: R
 }
 
 /** A network renderer (`list_renderers`): a television, speaker or projector heyarr can play to. */
-data class Renderer(val udn: String, val name: String, val manufacturer: String?, val model: String?) {
+data class Renderer(
+    val udn: String,
+    val name: String,
+    val manufacturer: String?,
+    val model: String?,
+    /** The site this renderer was discovered at (null when the server does not report it). */
+    val site: String? = null,
+    /** Which agent discovered this renderer ("client" or "server"). */
+    val discoveredBy: String? = null,
+    /**
+     * True when this renderer can only be reached by the client relaying the stream
+     * (ADR-0111 Route R3); it is shown greyed and labelled "Not reachable from the server yet".
+     */
+    val r3Only: Boolean = false,
+) {
     val subtitle: String get() = listOfNotNull(manufacturer, model).joinToString(" · ")
 }
 
+/** Result from GET /api/v1/renderers: the client's own site plus the renderer list. */
+data class RendererListResult(
+    /** Site the server inferred for this client from its source IP (null when not reported). */
+    val clientSite: String?,
+    val renderers: List<Renderer>,
+)
+
 object RendererJson {
+    /** Parse the legacy / MCP `{"renderers":[…]}` or `{"items":[…]}` flat response. */
     fun list(body: String): List<Renderer> = JsonScan.objectsOf(body, listOf("renderers", "items")).mapNotNull { r ->
-        val name = JsonScan.stringField(r, "name") ?: return@mapNotNull null
-        Renderer(
+        parseRenderer(r)
+    }
+
+    /**
+     * Parse the ADR-0111 REST response: `{"client_site":"…","renderers":[…]}`.
+     * Falls back gracefully to the flat shape if `client_site` is absent.
+     */
+    fun listWithMeta(body: String): RendererListResult {
+        val root = JsonScan.rootObject(body)
+        val clientSite = root?.let { JsonScan.stringField(it, "client_site") }
+        val renderers = JsonScan.objectsOf(body, listOf("renderers", "items")).mapNotNull { r ->
+            parseRenderer(r)
+        }
+        return RendererListResult(clientSite = clientSite, renderers = renderers)
+    }
+
+    private fun parseRenderer(r: String): Renderer? {
+        val name = JsonScan.stringField(r, "name") ?: return null
+        return Renderer(
             udn = JsonScan.stringField(r, "udn") ?: name,
             name = name,
             manufacturer = JsonScan.stringField(r, "manufacturer"),
             model = JsonScan.stringField(r, "model"),
+            site = JsonScan.stringField(r, "site"),
+            discoveredBy = JsonScan.stringField(r, "discovered_by"),
+            r3Only = JsonScan.boolField(r, "r3_only") ?: false,
         )
     }
 }

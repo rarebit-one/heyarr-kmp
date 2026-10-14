@@ -2646,6 +2646,52 @@
     }
    }
   },
+  "/api/v1/renderers/reported": {
+   "post": {
+    "tags": [
+     "playback"
+    ],
+    "operationId": "reportRenderer",
+    "summary": "Report a renderer the client can see (ADR-0111 phase 1a).",
+    "description": "A client that can see a UPnP renderer on its own network segment supplies its HTTP description URL. The controller validates the URL against SSRF rules, fetches and caches the device description, and associates the entry with the reporting client's site.\n\nIf the device IP falls outside all configured site networks the controller cannot fetch it directly; the response is `202 Accepted` with `r3_only: true`, marking it as a candidate for the Phase 2 relay path.\n\nThe URL must contain a literal IP address (no hostnames). Redirects are not followed.",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "location"
+        ],
+        "properties": {
+         "location": {
+          "type": "string",
+          "description": "HTTP URL of the renderer's UPnP description document (literal IP)."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Renderer fetched and cached."
+     },
+     "202": {
+      "description": "Accepted as r3_only (device outside all site networks)."
+     },
+     "400": {
+      "description": "Missing or rejected location (SSRF guard, non-literal host, etc.)."
+     },
+     "502": {
+      "description": "The renderer description URL did not respond."
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     }
+    }
+   }
+  },
   "/api/v1/renderers/{udn}/status": {
    "parameters": [
     {
@@ -2717,10 +2763,127 @@
     },
     "responses": {
      "200": {
-      "description": "Playing."
+      "description": "Playing.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "session_id": {
+           "type": "string"
+          },
+          "renderer": {
+           "type": "object",
+           "properties": {
+            "udn": {
+             "type": "string"
+            },
+            "name": {
+             "type": "string"
+            },
+            "model": {
+             "type": "string"
+            }
+           }
+          },
+          "asset_id": {
+           "type": "string"
+          },
+          "title": {
+           "type": "string"
+          },
+          "content_type": {
+           "type": "string"
+          },
+          "route": {
+           "type": "string",
+           "enum": [
+            "r1",
+            "r2"
+           ],
+           "description": "The ADR-0111 route chosen: \"r1\" (byte source and renderer share a site) or \"r2\" (the bytes cross a declared inter-site link)."
+          },
+          "controlling_party": {
+           "type": "string",
+           "description": "The peer id of the controller driving the renderer."
+          },
+          "byte_origin": {
+           "type": "string",
+           "description": "The render base URL the renderer fetches bytes from."
+          },
+          "client_must_stay_connected": {
+           "type": "boolean",
+           "description": "false: the client can close — the controller drives the renderer and the bytes do not pass through the client. Always false until the client relay (R3) exists."
+          },
+          "reason_code": {
+           "type": "string",
+           "description": "Stable code for the route decision: `route-r1-local`, `route-r2-within-capacity`, `route-r2-capacity-undeclared` or `route-r2-bitrate-unknown`. Clients branch on this, not on `reason_human`."
+          },
+          "reason_human": {
+           "type": "string",
+           "description": "Human-readable explanation of the route decision."
+          }
+         }
+        }
+       }
+      }
      },
      "409": {
-      "description": "Nothing to play from — most often a replica on another peer, since a capability is only valid at the peer that signed it (ADR-0040)."
+      "description": "Nothing to play from, or the route planner refused (ADR-0111). The `code` field identifies the refusal reason; `alternatives` lists options the client can offer (a smaller copy or waiting for replication to the renderer's site).",
+      "content": {
+       "application/problem+json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "type": {
+           "type": "string"
+          },
+          "title": {
+           "type": "string"
+          },
+          "status": {
+           "type": "integer"
+          },
+          "detail": {
+           "type": "string"
+          },
+          "code": {
+           "type": "string",
+           "description": "Stable machine-readable refusal code. Route refusals are `route-r2-over-capacity`, `route-no-source` and `route-r3-not-available`."
+          },
+          "alternatives": {
+           "type": "array",
+           "description": "Playback options the client can offer when the route is refused (ADR-0111 §R2). Empty for non-route refusals.",
+           "items": {
+            "type": "object",
+            "properties": {
+             "kind": {
+              "type": "string",
+              "description": "`smaller_copy` — play a lower-bitrate asset that fits the link; `copy_to_site_first` — wait for a replica to land at the renderer's site."
+             },
+             "asset_id": {
+              "type": "string",
+              "description": "Set for `smaller_copy` alternatives."
+             },
+             "height_px": {
+              "type": "integer",
+              "description": "Set for `smaller_copy` alternatives."
+             },
+             "bitrate_kbps": {
+              "type": "number",
+              "description": "Set for `smaller_copy` alternatives."
+             },
+             "site": {
+              "type": "string",
+              "description": "Set for `copy_to_site_first` alternatives."
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
      },
      "502": {
       "description": "The renderer refused, with its own UPnP error. `714 Illegal MIME-type` and `701 Transition not available` are different problems and need different fixes, so the device's answer is passed through rather than flattened."
@@ -9170,7 +9333,7 @@
     ],
     "operationId": "retryJob",
     "summary": "Put a finished job back on the queue. Requires `write`.",
-    "description": "An operator action: something was wrong and has been fixed. Only a\nsucceeded, failed or dead job may be retried; a pending or leased one is\na 409, because \"retry\" on a job that is already running would mean\nrunning it twice.\n",
+    "description": "An operator action: something was wrong and has been fixed. Only a\nsucceeded, failed or dead job may be retried; a pending or leased one is\na 409, because \"retry\" on a job that is already running would mean\nrunning it twice.\n\nA second 409 case: the job has a `dedupe_key` that is already held by\na live (pending or leased) job. The response carries `code:\n\"dedupe_key_conflict\"` and `live_job_id` with the id of the holder, so\nthe operator can find it without a second lookup.\n",
     "parameters": [
      {
       "$ref": "#/components/parameters/id"
@@ -10135,6 +10298,10 @@
      "request_id": {
       "type": "string",
       "description": "Correlates the response with the server log line."
+     },
+     "live_job_id": {
+      "type": "string",
+      "description": "Present on 409 responses with `code: \"dedupe_key_conflict\"` only.\nThe id of the pending or leased job that holds the `dedupe_key` of\nthe job the operator tried to retry.\n"
      }
     }
    },

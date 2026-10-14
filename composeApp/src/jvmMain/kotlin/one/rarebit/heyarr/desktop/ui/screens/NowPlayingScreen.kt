@@ -40,6 +40,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.mcp.PlaybackStatus
 import one.rarebit.heyarr.core.mcp.Renderer
+import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.ui.components.EmptyState
@@ -60,7 +61,7 @@ import one.rarebit.heyarr.ui.theme.Tokens
 class NowPlayingState {
     /** The session generation this state was loaded for. */
     var generation = -1
-    var renderers by mutableStateOf<List<Renderer>?>(null)
+    var rendererList by mutableStateOf<RendererListResult?>(null)
     var error by mutableStateOf<String?>(null)
     var selected by mutableStateOf<Renderer?>(null)
     var status by mutableStateOf<McpResult<PlaybackStatus?>?>(null)
@@ -82,8 +83,8 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
         scope.launch {
             session.io { a.renderers(refresh) }.fold(
                 onSuccess = { list ->
-                    state.renderers = list
-                    if (state.selected == null) state.selected = list.firstOrNull()
+                    state.rendererList = list
+                    if (state.selected == null) state.selected = list.renderers.firstOrNull()
                 },
                 onFailure = { state.error = it.message },
             )
@@ -91,7 +92,7 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
     }
     // Loaded once per node: a new URL or token (session.generation) throws the cached answer away.
     LaunchedEffect(session.generation) {
-        if (state.renderers == null || state.generation != session.generation) {
+        if (state.rendererList == null || state.generation != session.generation) {
             state.generation = session.generation
             load()
         }
@@ -114,20 +115,20 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
             GhostButton("Search the network again", { load(refresh = true) }, icon = HeyarrIcons.Refresh)
         })
         when {
-            state.error != null && state.renderers == null -> ErrorState("Couldn't list renderers", state.error, {
+            state.error != null && state.rendererList == null -> ErrorState("Couldn't list renderers", state.error, {
                 load()
             })
 
-            state.renderers == null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
+            state.rendererList == null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
 
-            state.renderers!!.isEmpty() -> EmptyState(
+            state.rendererList!!.renderers.isEmpty() -> EmptyState(
                 "No renderers found",
                 detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again.",
                 icon = HeyarrIcons.Cast,
             )
 
             else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (r in state.renderers!!) {
+                for (r in state.rendererList!!.renderers) {
                     DeviceTab(r.name, state.selected?.udn == r.udn) {
                         state.selected = r
                         state.status = null

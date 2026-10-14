@@ -138,8 +138,12 @@ class McpModelsTest {
         assertEquals("fetching", desired[1].phase)
         assertEquals("1 candidate(s), none acceptable", desired[2].detail)
 
-        val r = RendererJson.list(Fixtures.renderers)
-        assertEquals("Devialet · Phantom II 95 dB", r[0].subtitle)
+        val meta = RendererJson.listWithMeta(Fixtures.renderers)
+        assertEquals("site-a", meta.clientSite)
+        assertEquals("Generic · Media Renderer", meta.renderers[0].subtitle)
+        assertEquals("site-a", meta.renderers[0].site)
+        assertFalse(meta.renderers[0].r3Only)
+        assertEquals("client", meta.renderers[0].discoveredBy)
 
         val p = PlaybackStatusJson.parse(Fixtures.playback)!!
         assertTrue(p.playing)
