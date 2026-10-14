@@ -1,0 +1,11 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Themed-icon layer (Android 13+): the foreground's Archive H, Ochre pixel included,
+         in one colour; the launcher tints it. -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M38,34h12v40h-12z M58,34h12v40h-12z M50,50h8v8h-8z M34,30h4v4h-4z M70,74h4v4h-4z" />
+</vector>

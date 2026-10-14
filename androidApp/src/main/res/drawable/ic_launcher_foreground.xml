@@ -1,0 +1,16 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- The Archive H, ArchiveMark's PRIMARY variant (ui/components/ArchiveGlyph.kt): its
+         12 x 12 grid at 4dp a cell, centred, so the mark spans 30..78 and every block sits
+         inside the 66dp adaptive-icon safe zone. Cream legs, the 2 x 2 crossbar and the
+         offset pixel at (1,0); the Ochre pixel at its foot, (10,11). -->
+    <path
+        android:fillColor="#F2E3C4"
+        android:pathData="M38,34h12v40h-12z M58,34h12v40h-12z M50,50h8v8h-8z M34,30h4v4h-4z" />
+    <path
+        android:fillColor="#F4B860"
+        android:pathData="M70,74h4v4h-4z" />
+</vector>

@@ -103,9 +103,11 @@ compose.desktop {
             vendor = "rarebit.one"
 
             linux {
-                // Populated as the app matures; menu group + a real icon come later.
                 menuGroup = "AudioVideo"
-                // iconFile.set(project.file("src/jvmMain/resources/icon.png"))
+                // The Archive H on its plate; jpackage installs it as lib/heyarr-desktop.png,
+                // which scripts/install-desktop.sh's .desktop entry points at. The same
+                // resource is the window/taskbar icon (Main.kt).
+                iconFile.set(project.file("src/jvmMain/resources/heyarr-icon.png"))
             }
         }
     }
