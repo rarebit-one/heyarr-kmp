@@ -43,7 +43,7 @@ import one.rarebit.heyarr.desktop.device.DevicePairingSteps
 import one.rarebit.heyarr.desktop.device.PairingCoordinator
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.McpResult
-import one.rarebit.heyarr.desktop.heyarr.PlayResult
+import one.rarebit.heyarr.desktop.heyarr.CastResult
 import one.rarebit.heyarr.desktop.login.BearerTokenLogin
 import one.rarebit.heyarr.desktop.login.DeviceEnroller
 import one.rarebit.heyarr.desktop.login.DeviceLogin
@@ -543,9 +543,9 @@ class AppSession(
         )
     }
 
-    fun refused(r: PlayResult.Refused) = toast(Toast.Kind.REFUSED, "Refused by ${r.tool}", r.message, r.tool)
+    fun refused(r: CastResult.Refused) = toast(Toast.Kind.REFUSED, "Refused by ${r.tool}", r.message, r.tool)
 
-    fun castRefused(r: PlayResult.Refused, deviceName: String, retry: () -> Unit) {
+    fun castRefused(r: CastResult.Refused, deviceName: String, retry: () -> Unit) {
         toast(
             Toast.Kind.REFUSED,
             "Couldn't cast to $deviceName",

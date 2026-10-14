@@ -28,13 +28,10 @@ import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
-import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
-import one.rarebit.heyarr.desktop.heyarr.PlayResult
 import one.rarebit.heyarr.desktop.library.Episode
 import one.rarebit.heyarr.desktop.library.PrimaryAsset
 import one.rarebit.heyarr.desktop.library.Season
@@ -46,7 +43,6 @@ import one.rarebit.heyarr.desktop.ui.components.Artwork
 import one.rarebit.heyarr.desktop.ui.components.Hero
 import one.rarebit.heyarr.desktop.ui.components.HeroFacts
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
-import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GetItButton
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.HeyarrIcons
@@ -310,50 +306,17 @@ private fun CastPicker(session: AppSession, state: DetailState) {
                 color = Tokens.textMuted,
             )
 
-            else -> {
-                // Group renderers: client's site first (labelled "Here"), then others by site name.
-                val clientSite = rl.clientSite
-                val bySite = rl.renderers.groupBy { it.site ?: "" }
-                val siteOrder = buildList {
-                    if (clientSite != null && bySite.containsKey(clientSite)) add(clientSite)
-                    bySite.keys.filter { it != clientSite }.sorted().forEach { add(it) }
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (site in siteOrder) {
-                        val group = bySite[site] ?: continue
-                        val siteLabel = if (site == clientSite) "Here" else site.ifBlank { "Other" }
-                        if (siteOrder.size > 1 || siteLabel == "Here") {
-                            Text(
-                                siteLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Tokens.textMuted,
-                            )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            for (x in group) {
-                                FilterChip(
-                                    x.name,
-                                    false,
-                                    {
-                                        if (x.r3Only) return@FilterChip
-                                        val a = session.api ?: return@FilterChip
-                                        state.castAssetId = null
-                                        detailCast(session, state, assetId, x, a, false)
-                                    },
-                                    icon = HeyarrIcons.Cast,
-                                    enabled = !x.r3Only,
-                                )
-                            }
-                        }
-                        if (group.any { it.r3Only }) {
-                            Text(
-                                "Not reachable from the server yet",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Tokens.textDisabled,
-                            )
-                        }
-                    }
-                }
+            else -> RendererGroups(rl) { x ->
+                val a = session.api ?: return@RendererGroups
+                state.castAssetId = null
+                castTo(
+                    session,
+                    a,
+                    assetId,
+                    x,
+                    before = { state.busy = "cast" },
+                    after = { state.busy = null },
+                )
             }
         }
         GhostButton("Search the network again", {
@@ -363,68 +326,6 @@ private fun CastPicker(session: AppSession, state: DetailState) {
                 }
             }
         })
-    }
-}
-
-private fun handleDetailCastResult(
-    session: AppSession,
-    state: DetailState,
-    res: PlayResult,
-    assetId: String,
-    x: Renderer,
-    api: HeyarrApi,
-    force: Boolean,
-) {
-    when (res) {
-        is PlayResult.Success -> session.toast(
-            Toast.Kind.SUCCESS,
-            "Playing on ${x.name}",
-            if (res.clientMustStayConnected) "Keep this app open while it plays." else "You can close the app.",
-        )
-        is PlayResult.Refused -> if (force) {
-            session.refused(res)
-        } else {
-            session.castRefused(res, x.name) { detailCast(session, state, assetId, x, api, true) }
-        }
-        is PlayResult.Conflict -> {
-            val altAction = res.alternatives
-                .firstOrNull { it.kind == "smaller_copy" && it.assetId != null }
-                ?.let { alt ->
-                    one.rarebit.heyarr.core.state.ToastAction(
-                        "Play the ${alt.heightPx}p copy instead",
-                    ) {
-                        session.launch {
-                            session.io { api.playHere(alt.assetId!!, x.name, x.udn, forceDirect = force) }
-                        }
-                    }
-                }
-            session.toast(
-                Toast.Kind.REFUSED,
-                res.reasonHuman,
-                res.alternatives.firstOrNull { it.kind == "copy_to_site_first" }
-                    ?.let { "A copy needs to reach ${it.site} first." },
-                action = altAction,
-            )
-        }
-    }
-}
-
-private fun detailCast(
-    session: AppSession,
-    state: DetailState,
-    assetId: String,
-    x: Renderer,
-    api: HeyarrApi,
-    force: Boolean,
-) {
-    session.launch {
-        state.busy = "cast"
-        session.io {
-            api.playHere(assetId, x.name, x.udn, forceDirect = force)
-        }.onSuccess { res ->
-            handleDetailCastResult(session, state, res, assetId, x, api, force)
-        }
-        state.busy = null
     }
 }
 

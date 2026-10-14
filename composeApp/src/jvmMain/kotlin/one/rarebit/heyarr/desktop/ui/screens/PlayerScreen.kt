@@ -63,12 +63,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.Series
-import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
-import one.rarebit.heyarr.desktop.heyarr.PlayResult
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
 import one.rarebit.heyarr.desktop.playback.MpvTrack
 import one.rarebit.heyarr.desktop.playback.PlayerState
@@ -78,7 +75,6 @@ import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
 import one.rarebit.heyarr.desktop.ui.components.VideoSurface
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
-import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
@@ -691,50 +687,10 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
                 color = Tokens.textMuted,
             )
 
-            else -> {
-                // Group renderers: client's site first (labelled "Here"), then others by site name.
-                val clientSite = rl.clientSite
-                val bySite = rl.renderers.groupBy { it.site ?: "" }
-                val siteOrder = buildList {
-                    if (clientSite != null && bySite.containsKey(clientSite)) add(clientSite)
-                    bySite.keys.filter { it != clientSite }.sorted().forEach { add(it) }
-                }
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    for (site in siteOrder) {
-                        val group = bySite[site] ?: continue
-                        val siteLabel = if (site == clientSite) "Here" else site.ifBlank { "Other" }
-                        if (siteOrder.size > 1 || siteLabel == "Here") {
-                            Text(
-                                siteLabel,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Tokens.textMuted,
-                            )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            for (x in group) {
-                                FilterChip(
-                                    x.name,
-                                    false,
-                                    {
-                                        if (x.r3Only) return@FilterChip
-                                        val a = session.api ?: return@FilterChip
-                                        state.castOpen = false
-                                        playerCast(session, item.assetId, x, a, false)
-                                    },
-                                    icon = HeyarrIcons.Cast,
-                                    enabled = !x.r3Only,
-                                )
-                            }
-                        }
-                        if (group.any { it.r3Only }) {
-                            Text(
-                                "Not reachable from the server yet",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Tokens.textDisabled,
-                            )
-                        }
-                    }
-                }
+            else -> RendererGroups(rl) { x ->
+                val a = session.api ?: return@RendererGroups
+                state.castOpen = false
+                castTo(session, a, item.assetId, x, before = { session.playback.player.pause() })
             }
         }
         GhostButton("Search the network again", {
@@ -744,59 +700,6 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
                 }
             }
         })
-    }
-}
-
-private fun handlePlayerCastResult(
-    session: AppSession,
-    res: PlayResult,
-    assetId: String,
-    x: Renderer,
-    api: HeyarrApi,
-    force: Boolean,
-) {
-    when (res) {
-        is PlayResult.Success -> session.toast(
-            Toast.Kind.SUCCESS,
-            "Playing on ${x.name}",
-            if (res.clientMustStayConnected) "Keep this app open while it plays." else "You can close the app.",
-        )
-        is PlayResult.Refused -> if (force) {
-            session.refused(res)
-        } else {
-            session.castRefused(res, x.name) { playerCast(session, assetId, x, api, true) }
-        }
-        is PlayResult.Conflict -> {
-            val altAction = res.alternatives
-                .firstOrNull { it.kind == "smaller_copy" && it.assetId != null }
-                ?.let { alt ->
-                    one.rarebit.heyarr.core.state.ToastAction(
-                        "Play the ${alt.heightPx}p copy instead",
-                    ) {
-                        session.launch {
-                            session.io { api.playHere(alt.assetId!!, x.name, x.udn, forceDirect = force) }
-                        }
-                    }
-                }
-            session.toast(
-                Toast.Kind.REFUSED,
-                res.reasonHuman,
-                res.alternatives.firstOrNull { it.kind == "copy_to_site_first" }
-                    ?.let { "A copy needs to reach ${it.site} first." },
-                action = altAction,
-            )
-        }
-    }
-}
-
-private fun playerCast(session: AppSession, assetId: String, x: Renderer, api: HeyarrApi, force: Boolean) {
-    session.launch {
-        session.playback.player.pause()
-        session.io {
-            api.playHere(assetId, x.name, x.udn, forceDirect = force)
-        }.onSuccess { res ->
-            handlePlayerCastResult(session, res, assetId, x, api, force)
-        }
     }
 }
 

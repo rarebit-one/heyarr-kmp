@@ -211,11 +211,17 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
         // 1. SSDP scan — never throws; empty list on network error.
         val discovered = scanner.scan()
 
-        // 2. Report each LOCATION to the server in parallel (best-effort, failures logged).
-        for (ssdp in discovered) {
+        // 2. Report each LOCATION to the server in parallel (best-effort, failures logged). The
+        //    server fetches each description before answering, so serially this would cost one
+        //    device-timeout per switched-off TV.
+        discovered.parallelStream().forEach { ssdp ->
             val locBody = one.rarebit.heyarr.core.mcp.JsonWrite.obj(mapOf("location" to ssdp.location))
             try {
-                http.post("$baseUrl/api/v1/renderers/reported", locBody, "application/json", credential.asHeader())
+                val url = "$baseUrl/api/v1/renderers/reported"
+                val resp = http.post(url, locBody, "application/json", credential.asHeader())
+                if (resp.status !in HTTP_OK_MIN..HTTP_OK_MAX) {
+                    System.err.println("renderers/reported: ${ssdp.location}: HTTP ${resp.status}")
+                }
             } catch (e: IOException) {
                 System.err.println("renderers/reported: ${ssdp.location}: ${e.message}")
             }
@@ -223,7 +229,8 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
 
         // 3. Fetch the authoritative list via REST.
         return try {
-            val resp = http.get("$baseUrl/api/v1/renderers", credential.asHeader())
+            val query = if (refresh) "?refresh=true" else ""
+            val resp = http.get("$baseUrl/api/v1/renderers$query", credential.asHeader())
             if (resp.status in HTTP_OK_MIN..HTTP_OK_MAX) {
                 RendererJson.listWithMeta(resp.body)
             } else {
@@ -246,9 +253,9 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
     /**
      * Play an asset on a renderer via REST `POST /renderers/{udn}/play`.
      *
-     * Returns [PlayResult.Success] on 200 with the `client_must_stay_connected` flag so the
+     * Returns [CastResult.Success] on 200 with the `client_must_stay_connected` flag so the
      * UI can tell the user whether it is safe to close the window.
-     * Returns [PlayResult.Conflict] on 409 with a human-readable message and alternatives list.
+     * Returns [CastResult.Conflict] on 409 with a human-readable message and alternatives list.
      * Falls back to MCP `play_here` only when the REST endpoint itself is unreachable
      * (IOException), which should be rare once the server is reachable enough to list renderers.
      */
@@ -257,7 +264,7 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
         renderer: String,
         udn: String? = null,
         forceDirect: Boolean = false,
-    ): PlayResult {
+    ): CastResult {
         if (udn != null) {
             val body = one.rarebit.heyarr.core.mcp.JsonWrite.obj(
                 buildMap<String, Any?> {
@@ -281,8 +288,8 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
             if (forceDirect) put("force_direct", true)
         }
         return when (val viaTool = mcp.call("play_here", toolArgs).map { }) {
-            is McpResult.Ok -> PlayResult.Success(clientMustStayConnected = false)
-            is McpResult.Refused -> PlayResult.Refused(
+            is McpResult.Ok -> CastResult.Success(clientMustStayConnected = false)
+            is McpResult.Refused -> CastResult.Refused(
                 message = viaTool.message,
                 tool = viaTool.tool,
                 code = viaTool.code,
@@ -569,10 +576,18 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
     }
 }
 
-private fun parsePlayConflict(body: String): PlayResult.Conflict {
-    val reasonHuman = JsonScan.stringField(body, "reason_human")
-        ?: JsonScan.stringField(body, "detail")
-        ?: "The renderer refused the request."
+/**
+ * A 409 from `POST /renderers/{udn}/play`. A route refusal (ADR-0111) carries a `route-…` code
+ * and its alternatives, and its `detail` is the planner's reason. Any other 409 — the codec plan
+ * the device can't take — stays a plain refusal, so the picker still offers "Cast anyway".
+ */
+private fun parsePlayConflict(body: String): CastResult {
+    val code = JsonScan.stringField(body, "code")
+    if (code == null || !code.startsWith("route-")) {
+        val message = Problem.message(body, HTTP_CONFLICT, "play on renderer")
+        return CastResult.Refused(message, "renderers/play", HTTP_CONFLICT)
+    }
+    val reasonHuman = JsonScan.stringField(body, "detail") ?: "The server refused this route."
     val alternatives = JsonScan.objectsOf(body, listOf("alternatives")).mapNotNull { alt ->
         val kind = JsonScan.stringField(alt, "kind") ?: return@mapNotNull null
         PlayAlternative(
@@ -583,14 +598,14 @@ private fun parsePlayConflict(body: String): PlayResult.Conflict {
             site = JsonScan.stringField(alt, "site"),
         )
     }
-    return PlayResult.Conflict(reasonHuman = reasonHuman, alternatives = alternatives)
+    return CastResult.Conflict(code = code, reasonHuman = reasonHuman, alternatives = alternatives)
 }
 
-private fun parsePlayResponse(body: String, status: Int): PlayResult = when {
+internal fun parsePlayResponse(body: String, status: Int): CastResult = when {
     status in HTTP_OK_MIN..HTTP_OK_MAX ->
-        PlayResult.Success(clientMustStayConnected = JsonScan.boolField(body, "client_must_stay_connected") ?: false)
+        CastResult.Success(clientMustStayConnected = JsonScan.boolField(body, "client_must_stay_connected") ?: false)
     status == HTTP_CONFLICT -> parsePlayConflict(body)
-    else -> PlayResult.Refused(
+    else -> CastResult.Refused(
         message = Problem.message(body, status, "play on renderer"),
         tool = "renderers/play",
         code = status,
@@ -636,11 +651,11 @@ data class PlayAlternative(
  * [Success]  Play started. [clientMustStayConnected] is true when the app is acting as a relay
  *            and must be kept alive; false when the stream is self-contained on the renderer.
  * [Refused]  The renderer or server rejected the request outright (non-200, non-409 status, or MCP refusal).
- * [Conflict] The renderer can't play this asset as-is (409). [reasonHuman] is the server's
- *            explanation; [alternatives] lists actionable alternatives the UI may offer.
+ * [Conflict] The route planner refused (409 with a `route-…` [code]). [reasonHuman] is the
+ *            server's explanation; [alternatives] lists what the UI may offer instead.
  */
-sealed interface PlayResult {
-    data class Success(val clientMustStayConnected: Boolean) : PlayResult
-    data class Refused(val message: String, val tool: String, val code: Int) : PlayResult
-    data class Conflict(val reasonHuman: String, val alternatives: List<PlayAlternative>) : PlayResult
+sealed interface CastResult {
+    data class Success(val clientMustStayConnected: Boolean) : CastResult
+    data class Refused(val message: String, val tool: String, val code: Int) : CastResult
+    data class Conflict(val code: String, val reasonHuman: String, val alternatives: List<PlayAlternative>) : CastResult
 }

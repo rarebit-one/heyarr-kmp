@@ -134,12 +134,13 @@ object Fixtures {
       {"rule":"source.nin","section":"accept","result":"fail","detail":"source cam, which is not outside [cam, telesync]"}],
       "rejected_by":[{"rule":"resolution.gte","section":"accept","result":"fail","detail":"resolution 480, which is not at least 1080"},{"rule":"source.nin","section":"accept","result":"fail","detail":"source cam, which is not outside [cam, telesync]"}]}]}"""
 
-    const val renderers =
+    val renderers =
         """{"client_site":"site-a","renderers":[""" +
-        """{"udn":"uuid:1e055177","name":"Living room speaker","manufacturer":"Generic",""" +
-        """"model":"Media Renderer","location":"http://192.0.2.1:45317/x.xml",""" +
-        """"site":"site-a","discovered_by":"client","r3_only":false},""" +
-        """{"udn":"uuid:tv","name":"Living room TV","manufacturer":"Generic",""" +
-        """"model":"Display","site":"site-a","discovered_by":"server","r3_only":false}]}"""
+            """{"udn":"uuid:1e055177","name":"Living room speaker","manufacturer":"Generic",""" +
+            """"model":"Media Renderer","location":"http://192.0.2.1:45317/x.xml",""" +
+            """"site":"site-a","discovered_by":"client","r3_only":false},""" +
+            """{"udn":"uuid:tv","name":"Living room TV","manufacturer":"Generic",""" +
+            """"model":"Display","site":"site-a","discovered_by":"server",""" +
+            """"r3_only":false}]}"""
     val playback = """{"elapsed_seconds":1425,"duration_seconds":5520,"playing":true,"renderer":"Living room TV","state":"PLAYING","title":"Yellowstone — S04E02 Phantom Pain"}"""
 }
