@@ -142,5 +142,7 @@ object Fixtures {
             """{"udn":"uuid:tv","name":"Living room TV","manufacturer":"Generic",""" +
             """"model":"Display","site":"site-a","discovered_by":"server",""" +
             """"r3_only":false}]}"""
-    val playback = """{"elapsed_seconds":1425,"duration_seconds":5520,"playing":true,"renderer":"Living room TV","state":"PLAYING","title":"Yellowstone — S04E02 Phantom Pain"}"""
+    val playback =
+        """{"elapsed_seconds":1425,"duration_seconds":5520,"playing":true,"renderer":"Living room TV",""" +
+            """"state":"PLAYING","title":"Yellowstone — S04E02 Phantom Pain"}"""
 }
