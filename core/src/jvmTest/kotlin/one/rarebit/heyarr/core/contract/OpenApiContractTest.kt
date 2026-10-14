@@ -66,6 +66,8 @@ class OpenApiContractTest {
             "SearchResultsJson" to listOf("POST /api/v1/search"),
             "DiscoverClient" to listOf("POST /api/v1/discover"),
             "HeyarrApi" to listOf("POST /api/v1/playback/plan", "POST /api/v1/renderers/{udn}/play"),
+            "parsePlayConflict" to listOf("POST /api/v1/renderers/{udn}/play"),
+            "parsePlayResponse" to listOf("POST /api/v1/renderers/{udn}/play"),
             "PlaybackJson" to listOf("POST /api/v1/playback/plan", "POST /api/v1/playback"),
             "ConsumptionClient" to listOf("POST /api/v1/consumption/sessions", "POST /api/v1/devices"),
             "EnrolClient" to listOf("POST /enrol", "#Problem"),
