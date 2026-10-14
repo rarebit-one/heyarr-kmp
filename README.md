@@ -77,7 +77,7 @@ Android `minSdk` of at least 33.
 | AGP | 8.7.3 (compileSdk 35, minSdk 33) |
 | Compose Multiplatform | 1.9.3 (desktop, `:ui`) |
 | Compose compiler | bundled with Kotlin (`org.jetbrains.kotlin.plugin.compose`) |
-| void-which-binds-client | 0.11.0 (GitHub Packages, private; gen2-only, ADR-0022) |
+| void-which-binds-client | 0.12.0 (GitHub Packages, private; gen2-only, ADR-0022; canonical key renderings, void-which-binds-go #116) |
 
 ---
 

@@ -9,7 +9,8 @@ name: ci
 # Keep each path list below in sync with the `push.paths` of the workflow it gates.
 on:
   pull_request:
-    branches: [main]
+    # Release branches too, so a fix PR'd into release/vX.Y gets the same required check.
+    branches: [main, "release/**"]
 
 concurrency:
   group: ci-${{ github.event.pull_request.number }}
