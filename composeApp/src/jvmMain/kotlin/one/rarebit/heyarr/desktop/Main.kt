@@ -1,5 +1,8 @@
 package one.rarebit.heyarr.desktop
 
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
@@ -10,6 +13,7 @@ import one.rarebit.heyarr.desktop.net.JdkHttpTransport
 import one.rarebit.heyarr.desktop.playback.MpvPlayer
 import one.rarebit.heyarr.desktop.settings.FileSettingsStore
 import one.rarebit.heyarr.desktop.ui.App
+import org.jetbrains.skia.Image
 import kotlin.system.exitProcess
 
 /**
@@ -42,12 +46,14 @@ fun main() {
         },
     )
 
+    val appIcon = loadAppIcon()
     application {
         val state = rememberWindowState(width = 1280.dp, height = 800.dp)
         Window(
             onCloseRequest = ::exitApplication,
             state = state,
             title = "Heyarr",
+            icon = appIcon,
         ) {
             App(
                 settings = FileSettingsStore(),
@@ -70,3 +76,7 @@ fun main() {
     // of playing on behind a closed window.
     exitProcess(0)
 }
+
+/** The Archive H window/taskbar icon, the same PNG jpackage installs; null leaves the default. */
+private fun loadAppIcon(): Painter? = object {}.javaClass.getResourceAsStream("/heyarr-icon.png")
+    ?.use { BitmapPainter(Image.makeFromEncoded(it.readAllBytes()).toComposeImageBitmap()) }
