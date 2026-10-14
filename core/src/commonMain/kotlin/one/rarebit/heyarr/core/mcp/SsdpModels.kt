@@ -36,8 +36,7 @@ object SsdpParser {
     fun parseResponse(text: String): SsdpResponse? {
         val lines = text.lines()
         // First line must be a 200 OK (SSDP responses, not NOTIFY messages)
-        val status = lines.firstOrNull() ?: return null
-        if (!status.contains("200")) return null
+        if (lines.firstOrNull()?.contains("200") != true) return null
 
         var location: String? = null
         var st: String? = null
@@ -55,8 +54,11 @@ object SsdpParser {
             }
         }
 
-        if (location.isNullOrBlank() || st.isNullOrBlank() || usn.isNullOrBlank()) return null
-        return SsdpResponse(location = location, st = st, usn = usn)
+        return if (!location.isNullOrBlank() && !st.isNullOrBlank() && !usn.isNullOrBlank()) {
+            SsdpResponse(location = location, st = st, usn = usn)
+        } else {
+            null
+        }
     }
 }
 

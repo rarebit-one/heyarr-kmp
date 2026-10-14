@@ -76,6 +76,10 @@ data class PlaybackTarget(val url: String, val durationSeconds: Double? = null, 
     val restartSeekable: Boolean get() = streamBaseUrl != null
 }
 
+private const val HTTP_OK_MIN = 200
+private const val HTTP_OK_MAX = 299
+private const val HTTP_CONFLICT = 409
+
 class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private val credential: Credential) {
     private val mcp = McpClient(http, baseUrl, credential)
     private val library = LibraryClient(http, baseUrl, credential)
@@ -208,7 +212,6 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
         val discovered = scanner.scan()
 
         // 2. Report each LOCATION to the server in parallel (best-effort, failures logged).
-        val reportBody = one.rarebit.heyarr.core.mcp.JsonWrite.obj(mapOf("refresh" to refresh))
         for (ssdp in discovered) {
             val locBody = one.rarebit.heyarr.core.mcp.JsonWrite.obj(mapOf("location" to ssdp.location))
             try {
@@ -221,7 +224,7 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
         // 3. Fetch the authoritative list via REST.
         return try {
             val resp = http.get("$baseUrl/api/v1/renderers", credential.asHeader())
-            if (resp.status in 200..299) {
+            if (resp.status in HTTP_OK_MIN..HTTP_OK_MAX) {
                 RendererJson.listWithMeta(resp.body)
             } else {
                 // Unexpected HTTP error — fall back to MCP list so the UI still populates.
@@ -265,40 +268,10 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
             val resp = try {
                 http.post("$baseUrl/api/v1/renderers/${enc(udn)}/play", body, "application/json", credential.asHeader())
             } catch (e: IOException) {
-                // REST unreachable — fall through to MCP fallback below.
+                System.err.println("renderers/play REST unreachable: ${e.message}")
                 null
             }
-            if (resp != null) {
-                return when (resp.status) {
-                    200, 201, 202 -> {
-                        val stayConnected = JsonScan.boolField(resp.body, "client_must_stay_connected") ?: false
-                        PlayResult.Success(clientMustStayConnected = stayConnected)
-                    }
-
-                    409 -> {
-                        val reasonHuman = JsonScan.stringField(resp.body, "reason_human")
-                            ?: JsonScan.stringField(resp.body, "detail")
-                            ?: "The renderer refused the request."
-                        val alternatives = JsonScan.objectsOf(resp.body, listOf("alternatives")).mapNotNull { alt ->
-                            val kind = JsonScan.stringField(alt, "kind") ?: return@mapNotNull null
-                            PlayAlternative(
-                                kind = kind,
-                                assetId = JsonScan.stringField(alt, "asset_id"),
-                                heightPx = JsonScan.intField(alt, "height_px"),
-                                bitrateKbps = JsonScan.intField(alt, "bitrate_kbps"),
-                                site = JsonScan.stringField(alt, "site"),
-                            )
-                        }
-                        PlayResult.Conflict(reasonHuman = reasonHuman, alternatives = alternatives)
-                    }
-
-                    else -> PlayResult.Refused(
-                        message = Problem.message(resp.body, resp.status, "play on renderer"),
-                        tool = "renderers/play",
-                        code = resp.status,
-                    )
-                }
-            }
+            if (resp != null) return parsePlayResponse(resp.body, resp.status)
         }
 
         // MCP fallback: used when no UDN is known or REST is unreachable.
@@ -594,6 +567,34 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
         fun blobUrl(baseUrl: String, blobHash: String) = baseUrl.trimEnd('/') + "/api/v1/blobs/" + blobHash + "/content"
         fun blobUrlFromPath(baseUrl: String, contentPath: String) = baseUrl.trimEnd('/') + contentPath
     }
+}
+
+private fun parsePlayConflict(body: String): PlayResult.Conflict {
+    val reasonHuman = JsonScan.stringField(body, "reason_human")
+        ?: JsonScan.stringField(body, "detail")
+        ?: "The renderer refused the request."
+    val alternatives = JsonScan.objectsOf(body, listOf("alternatives")).mapNotNull { alt ->
+        val kind = JsonScan.stringField(alt, "kind") ?: return@mapNotNull null
+        PlayAlternative(
+            kind = kind,
+            assetId = JsonScan.stringField(alt, "asset_id"),
+            heightPx = JsonScan.intField(alt, "height_px"),
+            bitrateKbps = JsonScan.intField(alt, "bitrate_kbps"),
+            site = JsonScan.stringField(alt, "site"),
+        )
+    }
+    return PlayResult.Conflict(reasonHuman = reasonHuman, alternatives = alternatives)
+}
+
+private fun parsePlayResponse(body: String, status: Int): PlayResult = when {
+    status in HTTP_OK_MIN..HTTP_OK_MAX ->
+        PlayResult.Success(clientMustStayConnected = JsonScan.boolField(body, "client_must_stay_connected") ?: false)
+    status == HTTP_CONFLICT -> parsePlayConflict(body)
+    else -> PlayResult.Refused(
+        message = Problem.message(body, status, "play on renderer"),
+        tool = "renderers/play",
+        code = status,
+    )
 }
 
 /**

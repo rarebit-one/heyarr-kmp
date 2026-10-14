@@ -67,7 +67,7 @@ import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.desktop.heyarr.PlayAlternative
+import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.PlayResult
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
 import one.rarebit.heyarr.desktop.playback.MpvTrack
@@ -719,65 +719,7 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
                                         if (x.r3Only) return@FilterChip
                                         val a = session.api ?: return@FilterChip
                                         state.castOpen = false
-                                        // On the SESSION scope, not this row's: closing the picker
-                                        // removes CastRow from composition, cancelling a row-scoped
-                                        // coroutine before the cast or toast completes. A codec
-                                        // refusal offers "Cast anyway" (force_direct); forcing again
-                                        // is shown as a plain refusal, so no loop.
-                                        fun cast(force: Boolean) {
-                                            session.launch {
-                                                session.playback.player.pause()
-                                                session.io {
-                                                    a.playHere(item.assetId, x.name, x.udn, forceDirect = force)
-                                                }.onSuccess { res ->
-                                                    when (res) {
-                                                        is PlayResult.Success -> session.toast(
-                                                            Toast.Kind.SUCCESS,
-                                                            "Playing on ${x.name}",
-                                                            if (res.clientMustStayConnected) {
-                                                                "Keep this app open while it plays."
-                                                            } else {
-                                                                "You can close the app."
-                                                            },
-                                                        )
-                                                        is PlayResult.Refused -> if (force) {
-                                                            session.refused(res)
-                                                        } else {
-                                                            session.castRefused(res, x.name) { cast(true) }
-                                                        }
-                                                        is PlayResult.Conflict -> {
-                                                            val altAction = res.alternatives
-                                                                .firstOrNull { it.kind == "smaller_copy" && it.assetId != null }
-                                                                ?.let { alt ->
-                                                                    one.rarebit.heyarr.core.state.ToastAction(
-                                                                        "Play the ${alt.heightPx}p copy instead",
-                                                                    ) {
-                                                                        session.launch {
-                                                                            session.io {
-                                                                                a.playHere(
-                                                                                    alt.assetId!!,
-                                                                                    x.name,
-                                                                                    x.udn,
-                                                                                    forceDirect = force,
-                                                                                )
-                                                                            }
-                                                                        }
-                                                                    }
-                                                                }
-                                                            session.toast(
-                                                                Toast.Kind.REFUSED,
-                                                                res.reasonHuman,
-                                                                res.alternatives
-                                                                    .firstOrNull { it.kind == "copy_to_site_first" }
-                                                                    ?.let { "A copy needs to reach ${it.site} first." },
-                                                                action = altAction,
-                                                            )
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        cast(false)
+                                        playerCast(session, item.assetId, x, a, false)
                                     },
                                     icon = HeyarrIcons.Cast,
                                     enabled = !x.r3Only,
@@ -802,6 +744,59 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
                 }
             }
         })
+    }
+}
+
+private fun handlePlayerCastResult(
+    session: AppSession,
+    res: PlayResult,
+    assetId: String,
+    x: Renderer,
+    api: HeyarrApi,
+    force: Boolean,
+) {
+    when (res) {
+        is PlayResult.Success -> session.toast(
+            Toast.Kind.SUCCESS,
+            "Playing on ${x.name}",
+            if (res.clientMustStayConnected) "Keep this app open while it plays." else "You can close the app.",
+        )
+        is PlayResult.Refused -> if (force) {
+            session.refused(res)
+        } else {
+            session.castRefused(res, x.name) { playerCast(session, assetId, x, api, true) }
+        }
+        is PlayResult.Conflict -> {
+            val altAction = res.alternatives
+                .firstOrNull { it.kind == "smaller_copy" && it.assetId != null }
+                ?.let { alt ->
+                    one.rarebit.heyarr.core.state.ToastAction(
+                        "Play the ${alt.heightPx}p copy instead",
+                    ) {
+                        session.launch {
+                            session.io { api.playHere(alt.assetId!!, x.name, x.udn, forceDirect = force) }
+                        }
+                    }
+                }
+            session.toast(
+                Toast.Kind.REFUSED,
+                res.reasonHuman,
+                res.alternatives.firstOrNull { it.kind == "copy_to_site_first" }
+                    ?.let { "A copy needs to reach ${it.site} first." },
+                action = altAction,
+            )
+        }
+    }
+}
+
+private fun playerCast(session: AppSession, assetId: String, x: Renderer, api: HeyarrApi, force: Boolean) {
+    session.launch {
+        session.playback.player.pause()
+        session.io {
+            api.playHere(assetId, x.name, x.udn, forceDirect = force)
+        }.onSuccess { res ->
+            handlePlayerCastResult(session, res, assetId, x, api, force)
+        }
     }
 }
 
