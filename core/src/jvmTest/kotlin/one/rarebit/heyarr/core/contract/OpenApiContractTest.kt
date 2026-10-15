@@ -116,6 +116,7 @@ class OpenApiContractTest {
             put("LandscapeArtwork", "third-party artwork API, not heyarr")
             put("PlayerEvents", "libmpv JSON IPC events, not heyarr")
             put("Fixtures", "preview/screenshot fixtures")
+            put("FixtureWorksList", "preview fake: filters fixture responses by request parameters")
             put("FakeHeyarrTransport", "preview fake: reads the REQUEST it is sent, not a response")
         }
 
