@@ -64,9 +64,42 @@ import java.net.URLEncoder
  * URL with no `start` param, from which [HeyarrApi.streamUrl] builds `?start=<s>`.
  * Null for a direct blob, which the blob endpoint already seeks natively (ADR-0013).
  */
-data class PlaybackTarget(val url: String, val durationSeconds: Double? = null, val streamBaseUrl: String? = null) {
+data class SourceAudioTrack(val ordinal: Int, val language: String?, val title: String?, val commentary: Boolean)
+
+data class PlaybackTarget(
+    val url: String,
+    val durationSeconds: Double? = null,
+    val streamBaseUrl: String? = null,
+    val audioTracks: List<SourceAudioTrack> = emptyList(),
+    val selectedAudioTrack: Int? = null,
+) {
     /** True for a node-repackaged stream: a seek is a restart, not an offset. */
     val restartSeekable: Boolean get() = streamBaseUrl != null
+}
+
+private fun parsePlaybackPlan(baseUrl: String, body: String, requestedAudioTrack: Int?): PlaybackTarget {
+    val root = requireNotNull(JsonScan.rootObject(body)) { "Invalid playback plan" }
+    val url =
+        requireNotNull(JsonScan.stringField(root, "url")?.takeIf { it.isNotBlank() }) { "Playback plan has no URL" }
+    val absolute = if (url.startsWith("http")) url else baseUrl.trimEnd('/') + url
+    val source = JsonScan.objectAt(root, "source")
+    val duration = source?.let { JsonScan.longField(it, "duration_seconds") }
+        ?.toDouble()?.takeIf { it > 0 }
+    val tracks = source?.let { JsonScan.objectsOf(it, listOf("audio_tracks")) }.orEmpty().mapNotNull { track ->
+        val ordinal = JsonScan.longField(track, "ordinal")?.toInt() ?: return@mapNotNull null
+        SourceAudioTrack(
+            ordinal,
+            JsonScan.stringField(track, "language"),
+            JsonScan.stringField(track, "title"),
+            JsonScan.boolField(track, "commentary") ?: false,
+        )
+    }
+    val selected = source?.let { JsonScan.longField(it, "audio_track")?.toInt() }
+    require(requestedAudioTrack == null || selected == requestedAudioTrack) {
+        "The selected audio track is unavailable"
+    }
+    val streamBase = absolute.takeIf { JsonScan.stringField(root, "mode") == "stream" }
+    return PlaybackTarget(absolute, duration, streamBase, tracks, selected)
 }
 
 private const val HTTP_OK_MIN = 200
@@ -308,13 +341,21 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
      * something any player decodes smoothly (this machine has no hardware decoder),
      * while content already within the profile plays direct with no server work.
      *
-     * Never throws: on any failure (no plan route, malformed answer, the asset not
-     * found) it falls back to the direct blob URL, so playback never depends on the
-     * plan succeeding. Returns an absolute URL; the plan's own URL is relative.
+     * The default selection falls back to the direct blob if planning fails. An
+     * explicit audio selection reports failure so the control never claims a switch
+     * that did not happen. Returns an absolute URL; the plan's URL is relative.
      */
-    fun playbackTarget(assetId: String, blobHash: String, maxHeight: Int = DEFAULT_MAX_HEIGHT): PlaybackTarget {
+    fun playbackTarget(
+        assetId: String,
+        blobHash: String,
+        maxHeight: Int = DEFAULT_MAX_HEIGHT,
+        audioTrack: Int? = null,
+    ): PlaybackTarget {
         val fallback = PlaybackTarget(blobUrl(baseUrl, blobHash))
-        if (assetId.isBlank()) return fallback
+        if (assetId.isBlank()) {
+            require(audioTrack == null) { "Audio tracks are unavailable for this asset" }
+            return fallback
+        }
         val body = JsonWrite.obj(
             mapOf(
                 "asset_id" to assetId,
@@ -324,30 +365,15 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
                     "audio" to listOf("aac"),
                     "audio_languages" to listOf("en"),
                     "max_height" to maxHeight,
-                ),
+                ) + (audioTrack?.let { mapOf("audio_track" to it) } ?: emptyMap()),
             ),
         )
-        return try {
+        val planned = runCatching {
             val resp = http.post("$baseUrl/api/v1/playback/plan", body, "application/json", credential.asHeader())
-            if (resp.status != 200) return fallback
-            val root = JsonScan.rootObject(resp.body) ?: return fallback
-            val url = JsonScan.stringField(root, "url")?.takeIf { it.isNotBlank() } ?: return fallback
-            val abs = if (url.startsWith("http")) url else baseUrl.trimEnd('/') + url
-            // The plan's source carries the true runtime; use it as the scrubber total
-            // for a transcode stream (whose own duration only grows as it encodes).
-            val dur = JsonScan.objectAt(root, "source")?.let {
-                JsonScan.longField(it, "duration_seconds")
-            }?.toDouble()?.takeIf {
-                it >
-                    0
-            }
-            // Only a `stream` is restart-seekable, and only off a URL that carries no
-            // `start` of its own — so a second seek never stacks `?start=` on a first.
-            val streamBase = abs.takeIf { JsonScan.stringField(root, "mode") == "stream" }
-            PlaybackTarget(abs, dur, streamBase)
-        } catch (_: Exception) {
-            fallback
+            require(resp.status == 200) { "Playback plan returned ${resp.status}" }
+            parsePlaybackPlan(baseUrl, resp.body, audioTrack)
         }
+        return if (audioTrack == null) planned.getOrDefault(fallback) else planned.getOrThrow()
     }
 
     // ── following & peers ────────────────────────────────────────────────────────

@@ -6,6 +6,7 @@ import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -51,6 +52,32 @@ class PlaybackPlanTest {
         assertTrue(sentBody!!.contains("\"max_height\":1080"), "declares max_height 1080")
         assertTrue(sentBody!!.contains("\"audio_languages\":[\"en\"]"), "requests English before transcoding")
         assertTrue(sentBody!!.contains("h264"), "declares only h264 video so hevc transcodes")
+    }
+
+    @Test
+    fun sourceTracksIncludeSameLanguageCommentaryAndASelectionRequestsItsOrdinal() {
+        var sentBody: String? = null
+        val response =
+            """{"mode":"stream","url":"/api/v1/playback/stream/new","source":{"audio_track":1,"audio_tracks":[""" +
+                """{"ordinal":0,"language":"eng","title":"Feature"},""" +
+                """{"ordinal":1,"language":"eng","title":"Director commentary","commentary":true}]}}"""
+        val t =
+            transport(
+                200,
+                response,
+            ) {
+                sentBody = it
+            }
+        val target = api(t).playbackTarget("asset-1", "blake3:abc", audioTrack = 1)
+        assertTrue(sentBody!!.contains("\"audio_track\":1"))
+        assertEquals(1, target.selectedAudioTrack)
+        assertEquals("Director commentary", target.audioTracks[1].title)
+        assertTrue(target.audioTracks[1].commentary)
+    }
+
+    @Test
+    fun anExplicitAudioSelectionDoesNotFallBackWhenThePlanFails() {
+        assertFails { api(transport(400, "bad track")).playbackTarget("asset-1", "blake3:abc", audioTrack = 1) }
     }
 
     @Test

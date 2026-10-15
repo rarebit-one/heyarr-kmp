@@ -7,6 +7,7 @@ import one.rarebit.heyarr.core.state.*
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
+import one.rarebit.heyarr.desktop.heyarr.SourceAudioTrack
 import one.rarebit.heyarr.desktop.library.Episode
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
 import one.rarebit.heyarr.desktop.ui.Route
@@ -33,6 +34,17 @@ class PlaybackSession {
     var audioQueue: List<Route.Player> by mutableStateOf(emptyList())
         private set
     var loadedAssetId: String? = null
+    var audioTracks: List<SourceAudioTrack> by mutableStateOf(emptyList())
+        private set
+    var selectedAudioTrack: Int? by mutableStateOf(null)
+    var audioSwitching: Boolean by mutableStateOf(false)
+    var currentTarget: PlaybackTarget? = null
+
+    fun useTarget(target: PlaybackTarget) {
+        currentTarget = target
+        audioTracks = target.audioTracks
+        selectedAudioTrack = target.selectedAudioTrack
+    }
 
     fun queueAudio(items: List<Route.Player>, startIndex: Int = 0) {
         val playable = items.filter { it.typeHint.isListening() }
@@ -73,6 +85,9 @@ class PlaybackSession {
             player.play()
             return
         }
+        audioTracks = emptyList()
+        selectedAudioTrack = null
+        currentTarget = null
         if (!item.typeHint.isListening()) {
             audioQueue = emptyList()
         } else if (audioQueue.none { it.assetId == item.assetId }) {
@@ -119,6 +134,9 @@ class PlaybackSession {
         queue = emptyList()
         audioQueue = emptyList()
         loadedAssetId = null
+        audioTracks = emptyList()
+        selectedAudioTrack = null
+        currentTarget = null
         pendingStart = false
         fullscreen = false
         popout = false
@@ -139,6 +157,7 @@ class PlaybackSession {
     var resolvePlaybackTarget: (
         Route.Player,
     ) -> PlaybackTarget = { PlaybackTarget(HeyarrApi.blobUrl(baseUrl, it.blobHash)) }
+    var resolveAudioTarget: (Route.Player, Int) -> PlaybackTarget = { item, _ -> resolvePlaybackTarget(item) }
     var accentHex: String = "#7EE0B3"
 
     fun title(item: Route.Player): String = item.title + (item.subtitle?.let { " — $it" } ?: "")

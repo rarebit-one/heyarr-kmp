@@ -12296,6 +12296,11 @@
       },
       "description": "Preferred audio languages in order, using language tags or ISO codes.\nOmitted uses media.audio_languages; an empty list keeps original main\naudio. Missing preferred dialogue falls back to original main audio.\n"
      },
+     "audio_track": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Zero-based source audio ordinal. Overrides audio_languages. An\nordinal absent from the probe returns HTTP 400.\n"
+     },
      "max_height": {
       "type": "integer",
       "minimum": 0,
@@ -12345,6 +12350,13 @@
      "audio_language": {
       "type": "string"
      },
+     "audio_tracks": {
+      "type": "array",
+      "description": "Every probed source audio stream in ordinal order.",
+      "items": {
+       "$ref": "#/components/schemas/PlaybackAudioTrack"
+      }
+     },
      "width": {
       "type": "integer"
      },
@@ -12354,6 +12366,31 @@
      "duration_seconds": {
       "type": "number",
       "description": "The source's full runtime in seconds — the scrubber total for a\n`stream` plan, whose transcode cannot report its own length until\nit finishes. Absent when the probe found none.\n"
+     }
+    }
+   },
+   "PlaybackAudioTrack": {
+    "type": "object",
+    "properties": {
+     "ordinal": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "language": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "codec": {
+      "type": "string"
+     },
+     "channels": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "commentary": {
+      "type": "boolean"
      }
     }
    },

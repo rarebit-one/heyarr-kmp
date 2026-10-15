@@ -31,6 +31,8 @@ data class MpvTrack(
     val label: String get() = listOfNotNull(lang?.uppercase(), title).joinToString(" · ").ifBlank { "#$id" }
 }
 
+data class PlaybackResume(val position: Double, val paused: Boolean)
+
 /** What the player is doing right now — the only state the controls read. */
 data class PlayerState(
     val loaded: Boolean = false,
@@ -161,6 +163,7 @@ class EmbeddedPlayer(
     var exited: Boolean by mutableStateOf(false)
         private set
     private var resumeAt: Double? = null
+    private var seekAfterLoad: Double? = null
     private var lastUrl: String? = null
     private var lastToken: String? = null
     private var lastTitle: String? = null
@@ -331,24 +334,32 @@ class EmbeddedPlayer(
     }
 
     /** Replace what is playing (the token was given at start; mpv keeps its header option). */
-    fun load(url: String, title: String, knownDurationSec: Double? = null, streamBaseUrl: String? = null) {
+    fun load(
+        url: String,
+        title: String,
+        knownDurationSec: Double? = null,
+        streamBaseUrl: String? = null,
+        resume: PlaybackResume? = null,
+    ) {
+        val startSeconds = resume?.position ?: 0.0
         seekCoalescer.cancel()
         lastUrl = url
         lastTitle = title
         knownDuration = knownDurationSec?.takeIf { it > 0 }
         streamBase = streamBaseUrl
-        streamStart = 0.0 // a new item always begins at its own start
+        streamStart = if (streamBaseUrl != null) startSeconds.coerceAtLeast(0.0) else 0.0
+        seekAfterLoad = startSeconds.takeIf { streamBaseUrl == null && it > 0.0 }
         appliedSubs.clear() // a new file drops the old file's external subtitles
         wantedSubs = emptyList()
         state =
             state.copy(
-                loaded = false, position = 0.0, duration = knownDuration ?: 0.0, eof = false,
+                loaded = false, position = startSeconds, duration = knownDuration ?: 0.0, eof = false,
                 error = null, hasStarted = false, coreIdle = true, title = title,
                 subtitles = emptyList(), audio = emptyList(),
             )
         send("set_property", "force-media-title", title)
-        send("loadfile", streamBaseUrl ?: url)
-        send("set_property", "pause", false)
+        send("loadfile", streamBaseUrl?.let { StreamSeek.urlAt(it, streamStart) } ?: url)
+        send("set_property", "pause", resume?.paused ?: false)
     }
 
     /**
@@ -450,6 +461,7 @@ class EmbeddedPlayer(
         send("loadfile", StreamSeek.urlAt(base, at))
         send("set_property", "pause", false)
     }
+
     fun setVolume(v: Double) = send("set_property", "volume", v.coerceIn(0.0, 130.0))
     fun toggleMute() = send("cycle", "mute")
     fun setSubtitle(id: Int?) = send("set_property", "sid", id ?: "no")
@@ -498,6 +510,7 @@ class EmbeddedPlayer(
         wantedSubs = emptyList()
         streamBase = null
         streamStart = 0.0
+        seekAfterLoad = null
         state = PlayerState()
     }
 
@@ -537,7 +550,7 @@ class EmbeddedPlayer(
                         state = knownDuration?.let { next.copy(duration = it) } ?: next
                         // The file is open: attach requests made while it was loading.
                         if (!wasLoaded && next.loaded) {
-                            addExternalSubtitles(wantedSubs)
+                            finishFileLoad()
                         }
                     }
                 }
@@ -545,6 +558,14 @@ class EmbeddedPlayer(
         } catch (e: IOException) {
             if (!closed) onGone()
         }
+    }
+
+    private fun finishFileLoad() {
+        seekAfterLoad?.let { seconds ->
+            seekAfterLoad = null
+            send("seek", seconds, "absolute")
+        }
+        addExternalSubtitles(wantedSubs)
     }
 
     /** mpv closed its end (the user shut the pop-out, or it crashed): remember where it was. */
