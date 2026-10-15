@@ -38,6 +38,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -66,6 +67,7 @@ import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.desktop.library.WorkDetail
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
 import one.rarebit.heyarr.desktop.playback.MpvTrack
 import one.rarebit.heyarr.desktop.playback.PlayerState
@@ -75,6 +77,7 @@ import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
 import one.rarebit.heyarr.desktop.ui.components.VideoSurface
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
+import one.rarebit.heyarr.desktop.ui.isListening
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
@@ -256,6 +259,29 @@ fun PlayerScreen(
                 },
             ) {
                 when {
+                    type.isListening() -> {
+                        val work by produceState<WorkDetail?>(null, item.workId, session.generation) {
+                            value = session.io { session.api?.work(item.workId) }.getOrNull()
+                        }
+                        val cover by rememberCover(
+                            session,
+                            type,
+                            item.title,
+                            work?.artworkPath,
+                            work?.work?.year,
+                            work?.work?.artist ?: work?.work?.author,
+                        )
+                        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Artwork(
+                                cover.bitmap,
+                                type,
+                                Modifier.size(minOf(maxWidth, maxHeight)),
+                                contentDescription = "Cover for ${item.title}",
+                                seed = item.title,
+                            )
+                        }
+                    }
+
                     headless -> {
                         val art by session.artwork.rememberArtwork(null)
                         Artwork(art, type, Modifier.fillMaxSize(), glyphSize = 64.dp)
