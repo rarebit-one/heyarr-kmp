@@ -73,56 +73,58 @@ val MEDIA = MediaType.UNKNOWN
 internal val MEDIA_KINDS =
     setOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.AUDIOBOOK, MediaType.PODCAST)
 
-/** One catalog fetch serves every shelf; each screen keeps its own filters and layout. */
-class LibraryContents {
-    var generation = -1
+/** One response may serve every shelf, while a shelf opened first can load only its kinds. */
+class CatalogLoad {
     var requestId = 0
     var works by mutableStateOf<List<Work>?>(null)
     var error by mutableStateOf<String?>(null)
     var loading by mutableStateOf(false)
+
+    fun clear() {
+        requestId++
+        works = null
+        error = null
+        loading = false
+    }
 }
 
-class LibraryState(private val contents: LibraryContents = LibraryContents()) {
+class LibraryContents {
+    var generation = -1
+    val full = CatalogLoad()
+    private val shelves = Experience.entries.associateWith { CatalogLoad() }
+
+    fun shelf(experience: Experience): CatalogLoad = shelves.getValue(experience)
+
+    fun resetFor(newGeneration: Int) {
+        if (generation == newGeneration) return
+        generation = newGeneration
+        full.clear()
+        shelves.values.forEach(CatalogLoad::clear)
+    }
+}
+
+class LibraryState(private val contents: LibraryContents = LibraryContents(), val experience: Experience? = null) {
     val downloads = DownloadsState()
-    var generation: Int
-        get() = contents.generation
-        set(value) {
-            contents.generation = value
+
+    // Watch often covers most catalogued works. Its full read
+    // also fills Listen and Read when someone moves between shelves.
+    val target: CatalogLoad
+        get() = if (experience == null || experience == Experience.WATCH || contents.full.works != null) {
+            contents.full
+        } else {
+            contents.shelf(experience)
         }
-    var requestId: Int
-        get() = contents.requestId
-        set(value) {
-            contents.requestId = value
-        }
-    var works: List<Work>?
-        get() = contents.works
-        set(value) {
-            contents.works = value
-        }
-    var error: String?
-        get() = contents.error
-        set(value) {
-            contents.error = value
-        }
-    var loading: Boolean
-        get() = contents.loading
-        set(value) {
-            contents.loading = value
-        }
+    val fetchingFull: Boolean get() = target === contents.full
+    val works: List<Work>? get() = target.works
+    val error: String? get() = target.error
+    val loading: Boolean get() = target.loading
 
     /** null = every kind; [MEDIA] = films, series, music, books (the default — feeds are the Archive, not the shelf). */
     var type by mutableStateOf<MediaType?>(MEDIA)
     var status by mutableStateOf<LibraryStatus?>(null)
     var grid by mutableStateOf(true)
 
-    fun resetFor(newGeneration: Int) {
-        if (generation == newGeneration) return
-        generation = newGeneration
-        requestId++
-        works = null
-        error = null
-        loading = false
-    }
+    fun resetFor(newGeneration: Int) = contents.resetFor(newGeneration)
 }
 
 /**
@@ -216,21 +218,23 @@ private fun libraryEmpty(libraryIsEmpty: Boolean, experience: Experience?): Pair
     else -> "The library is empty" to "Scan a library root on the node, or Want something and let heyarr find it."
 }
 
-/** Load (or reload) every work the node catalogues. */
+/** Load the open shelf's kinds, or the whole catalog for Manage. */
 private fun loadLibrary(session: AppSession, state: LibraryState, scope: CoroutineScope) {
     val a = session.api ?: return
-    if (state.loading) return
-    val requestId = ++state.requestId
-    state.loading = true
-    state.error = null
+    val target = state.target
+    val kinds = if (state.fetchingFull) null else state.experience?.kinds
+    if (target.loading) return
+    val requestId = ++target.requestId
+    target.loading = true
+    target.error = null
     scope.launch {
         try {
-            val result = session.io { a.works() }
-            if (requestId == state.requestId) {
-                result.fold(onSuccess = { state.works = it }, onFailure = { state.error = it.message })
+            val result = session.io { if (kinds == null) a.works() else a.worksFor(kinds) }
+            if (requestId == target.requestId) {
+                result.fold(onSuccess = { target.works = it }, onFailure = { target.error = it.message })
             }
         } finally {
-            if (requestId == state.requestId) state.loading = false
+            if (requestId == target.requestId) target.loading = false
         }
     }
 }

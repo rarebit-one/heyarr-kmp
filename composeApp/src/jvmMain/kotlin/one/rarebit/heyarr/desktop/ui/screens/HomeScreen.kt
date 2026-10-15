@@ -108,7 +108,7 @@ private fun loadHome(session: AppSession, state: HomeState, scope: CoroutineScop
     val a = session.api ?: return
     state.loadedOnce = true
     scope.launch {
-        session.io { a.works() }.fold(
+        session.io { a.recentWorks() }.fold(
             onSuccess = { all ->
                 val variants = one.rarebit.heyarr.core.library.Variants.variantIds(all)
                 // Only what can be played: a work a want created before anything arrived has no file.

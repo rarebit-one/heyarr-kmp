@@ -420,6 +420,12 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
     /** `GET /api/v1/works` — the whole library, recent first (existing client). */
     fun works(): List<Work> = library.listWorks()
 
+    /** The works on one consumption shelf, fetched by server content type. */
+    fun worksFor(kinds: Set<MediaType>): List<Work> = library.listWorks(kinds)
+
+    /** A bounded recent listing for Home's two work rails. */
+    fun recentWorks(): List<Work> = library.recentWorks()
+
     /** `GET /api/v1/works/{id}` — one work with its artwork + primary asset (existing client). */
     fun work(id: String): WorkDetail? = detail.getWorkDetail(id)
 

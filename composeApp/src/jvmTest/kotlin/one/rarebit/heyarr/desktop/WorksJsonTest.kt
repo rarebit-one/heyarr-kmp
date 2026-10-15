@@ -3,6 +3,7 @@ package one.rarebit.heyarr.desktop
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.library.LibraryClient
 import one.rarebit.heyarr.desktop.library.WorksJson
 import kotlin.test.Test
@@ -57,7 +58,7 @@ class WorksJsonTest {
     @Test
     fun urlBuilderAddsLimitAndCursor() {
         assertEquals(
-            "https://h.example/api/v1/works?limit=200&include=artwork,primary_asset",
+            "https://h.example/api/v1/works?limit=500&include=artwork,primary_asset",
             LibraryClient.worksUrl("https://h.example/", null),
         )
         assertTrue(LibraryClient.worksUrl("https://h.example", "c/d").endsWith("&cursor=c%2Fd"))
@@ -81,5 +82,51 @@ class WorksJsonTest {
         val works = LibraryClient(transport, "https://h.example", Credential.Bearer("heyarr_1_secret")).listWorks()
         assertEquals(2, works.size)
         assertTrue(seenAuth.all { it == "Bearer heyarr_1_secret" })
+    }
+
+    @Test
+    fun listenShelfRequestsOnlyItsContentTypes() {
+        val urls = ArrayList<String>()
+        val transport = object : HttpTransport {
+            override fun get(url: String, headers: Map<String, String>): HttpResponse {
+                urls += url
+                return when {
+                    "content_type=music" in url -> HttpResponse(
+                        200,
+                        """{"items":[{"id":"m1","title":"Album","content_type":"music"}]}""",
+                    )
+
+                    else -> HttpResponse(200, """{"items":[]}""")
+                }
+            }
+            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+                HttpResponse(405, "")
+        }
+        val works = LibraryClient(transport, "https://h.example", Credential.Bearer("token"))
+            .listWorks(setOf(MediaType.MUSIC, MediaType.AUDIOBOOK, MediaType.PODCAST))
+        assertEquals(listOf("m1"), works.map { it.id })
+        assertEquals(3, urls.size)
+        assertTrue(urls.all { "content_type=" in it && "limit=500" in it })
+    }
+
+    @Test
+    fun homeStopsAfterOneRecentPageWhenItHasEnoughCards() {
+        val urls = ArrayList<String>()
+        val body = """{"items":[${(1..24).joinToString(",") {
+            """{"id":"w$it","title":"Work $it","content_type":"movie","primary_asset":{}}"""
+        }}],"next_cursor":"more"}"""
+        val transport = object : HttpTransport {
+            override fun get(url: String, headers: Map<String, String>): HttpResponse {
+                urls += url
+                return HttpResponse(200, body)
+            }
+            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+                HttpResponse(405, "")
+        }
+        val works = LibraryClient(transport, "https://h.example", Credential.Bearer("token")).recentWorks()
+        assertEquals(24, works.size)
+        assertEquals(1, urls.size)
+        assertTrue(urls.single().contains("limit=50"))
+        assertTrue(urls.single().contains("sort=recent"))
     }
 }

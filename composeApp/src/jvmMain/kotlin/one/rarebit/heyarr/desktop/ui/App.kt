@@ -174,7 +174,7 @@ fun App(
     val home = remember { HomeState() }
     val libraryContents = remember { LibraryContents() }
     val library = remember { LibraryState(libraryContents) }
-    val shelves = remember { Experience.entries.associateWith { LibraryState(libraryContents) } }
+    val shelves = remember { Experience.entries.associateWith { LibraryState(libraryContents, it) } }
     var consuming by remember { mutableStateOf(initialRoute is Route.Consume) }
     val missing = remember { MissingState() }
     val nowPlaying = remember { NowPlayingState() }

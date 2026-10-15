@@ -2,28 +2,33 @@ package one.rarebit.heyarr.desktop.library
 
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.theme.MediaType
 import java.net.URLEncoder
 
 /**
  * Browses heyarr's native library reach — `GET /api/v1/works` — authenticated with the
  * caller's [Credential] (here a `Bearer` token). Adapted from heyarr-mobile's
- * `library.LibraryClient`: the list is paged (`{items, next_cursor?}`, server max 200
+ * `library.LibraryClient`: the list is paged (`{items, next_cursor?}`, server max 500
  * per page); [listWorks] follows `next_cursor` to the end and returns the whole library
  * most-recently-touched first.
  */
 class LibraryClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
     /** Fetch every work, recent first. Throws on a non-200 so the caller can surface the status. */
-    fun listWorks(): List<Work> {
+    fun listWorks(contentTypes: Set<MediaType>? = null): List<Work> {
         val all = ArrayList<Work>()
-        var cursor: String? = null
-        var pages = 0
-        do {
-            val resp = http.get(worksUrl(baseUrl, cursor), credential.asHeader())
-            require(resp.status == 200) { "library: GET /works failed: HTTP ${resp.status}" }
-            all.addAll(WorksJson.parse(resp.body))
-            cursor = WorksJson.nextCursor(resp.body)
-            pages++
-        } while (cursor != null && pages < MAX_PAGES)
+        val types = contentTypes?.flatMap(::serverTypes) ?: listOf(null)
+        for (type in types) {
+            var cursor: String? = null
+            var pages = 0
+            do {
+                val resp = http.get(worksUrl(baseUrl, cursor, type), credential.asHeader())
+                require(resp.status == 200) { "library: GET /works failed: HTTP ${resp.status}" }
+                all.addAll(WorksJson.parse(resp.body))
+                cursor = WorksJson.nextCursor(resp.body)
+                pages++
+            } while (cursor != null && pages < MAX_PAGES)
+            check(cursor == null) { "library: /works exceeded $MAX_PAGES pages" }
+        }
         // Recent-first: RFC-3339 timestamps sort lexicographically, so a plain reverse
         // string sort is the order the Library shows (nulls last).
         return all.sortedWith(compareByDescending(nullsFirst()) { it.recency })
@@ -37,9 +42,28 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
         return WorksJson.parseOne(resp.body)
     }
 
+    /** Home needs only enough recent cards to fill its two rails. */
+    fun recentWorks(count: Int = 24): List<Work> {
+        val all = ArrayList<Work>()
+        var cursor: String? = null
+        var pages = 0
+        var playable = 0
+        do {
+            val url = worksUrl(baseUrl, cursor, limit = 50) + "&sort=recent"
+            val resp = http.get(url, credential.asHeader())
+            require(resp.status == 200) { "library: GET /works failed: HTTP ${resp.status}" }
+            val page = WorksJson.parse(resp.body)
+            all.addAll(page)
+            playable += page.count { it.playable != false && it.kind != "document" }
+            cursor = WorksJson.nextCursor(resp.body)
+            pages++
+        } while (cursor != null && pages < MAX_PAGES && playable < count)
+        return all
+    }
+
     companion object {
         /** The server's per-page maximum; asking for it minimises round trips. */
-        const val PAGE_LIMIT = 200
+        const val PAGE_LIMIT = 500
 
         /** A guard so a misbehaving cursor can never loop forever. */
         const val MAX_PAGES = 50
@@ -47,10 +71,17 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
         /** The bare route, no paging. */
         fun worksUrl(baseUrl: String): String = baseUrl.trimEnd('/') + "/api/v1/works"
 
-        /** `GET /works?limit=200[&cursor=…]` — one page of the list. */
-        fun worksUrl(baseUrl: String, cursor: String?): String {
-            val base = worksUrl(baseUrl) + "?limit=" + PAGE_LIMIT + "&include=artwork,primary_asset"
-            return if (cursor.isNullOrBlank()) base else base + "&cursor=" + URLEncoder.encode(cursor, "UTF-8")
+        /** `GET /works?limit=500[&cursor=…]` — one page of the list. Older nodes clamp the limit. */
+        fun worksUrl(baseUrl: String, cursor: String?, contentType: String? = null, limit: Int = PAGE_LIMIT): String {
+            val base = worksUrl(baseUrl) + "?limit=" + limit + "&include=artwork,primary_asset"
+            val filtered = contentType?.let { base + "&content_type=" + URLEncoder.encode(it, "UTF-8") } ?: base
+            return if (cursor.isNullOrBlank()) filtered else filtered + "&cursor=" + URLEncoder.encode(cursor, "UTF-8")
+        }
+
+        private fun serverTypes(type: MediaType): List<String> = when (type) {
+            MediaType.FEED -> listOf("document")
+            MediaType.UNKNOWN -> emptyList()
+            else -> listOf(type.apiName ?: type.name.lowercase())
         }
 
         fun workUrl(baseUrl: String, id: String): String =
