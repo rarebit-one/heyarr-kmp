@@ -46,7 +46,6 @@ import one.rarebit.heyarr.core.feeds.FollowedItem
 import one.rarebit.heyarr.core.heyarr.Candidate
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
-import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.ExternalId
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.RendererListResult
@@ -146,6 +145,7 @@ fun DetailScreen(
     session: AppSession,
     route: Route.Detail,
     state: DetailState,
+    catalogWorks: List<Work>?,
     onBack: () -> Unit,
     onOpen: (Route) -> Unit,
     onWant: (String, String, MediaType) -> Unit,
@@ -159,7 +159,7 @@ fun DetailScreen(
     val detail = state.detail
     val type = detail?.work?.kind?.let { MediaType.from(it) } ?: route.typeHint
 
-    fun load() = loadDetail(session, state, route.workId, scope)
+    fun load() = loadDetail(session, state, route.workId, catalogWorks, scope)
     fun loadWants() = loadWantDetails(session, state, wants, scope)
     bindNavigation(state, route, onOpen)
     LaunchedEffect(route.workId) { load() }
@@ -305,10 +305,17 @@ private fun RemoveWorkDialog(
 }
 
 /** Load the work and everything the screen shows beside it, each piece independently. */
-private fun loadDetail(session: AppSession, state: DetailState, workId: String, scope: CoroutineScope) {
+private fun loadDetail(
+    session: AppSession,
+    state: DetailState,
+    workId: String,
+    catalogWorks: List<Work>?,
+    scope: CoroutineScope,
+) {
     val a = session.api ?: return
     state.loading = true
     state.detailError = null
+    state.variants = emptyList()
     scope.launch {
         session.io { a.work(workId) }.fold(
             onSuccess = { d ->
@@ -319,6 +326,9 @@ private fun loadDetail(session: AppSession, state: DetailState, workId: String, 
         )
         state.loading = false
         val d = state.detail ?: return@launch
+        scope.launch {
+            session.io { a.seriesVariantsOf(d.work, catalogWorks) }.onSuccess { state.variants = it }
+        }
         if (session.config.externalMetadata) {
             val t = MediaType.from(d.work.kind)
             val feedRef = if (t == MediaType.FEED ||
@@ -340,12 +350,6 @@ private fun loadDetail(session: AppSession, state: DetailState, workId: String, 
     }
     scope.launch { session.io { a.assets(workId) }.onSuccess { state.assets = it } }
     scope.launch { session.io { a.externalIds(workId) }.onSuccess { state.externalIds = it } }
-    scope.launch {
-        session.io { a.works() }.onSuccess { all ->
-            state.variants =
-                Variants.group(all)[workId].orEmpty()
-        }
-    }
 }
 
 /** Load each want's satisfaction and indexer candidates. */

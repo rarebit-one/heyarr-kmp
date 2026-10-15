@@ -1,11 +1,13 @@
 package one.rarebit.heyarr.desktop.net
 
 import one.rarebit.heyarr.core.net.*
+import java.io.ByteArrayInputStream
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse.BodyHandlers
 import java.time.Duration
+import java.util.zip.GZIPInputStream
 
 /**
  * The desktop actual of [HttpTransport], built on JDK 17's `java.net.http.HttpClient`
@@ -68,12 +70,18 @@ class JdkHttpTransport(
 
     private fun baseRequest(url: String, headers: Map<String, String>): HttpRequest.Builder {
         val b = HttpRequest.newBuilder(URI.create(url)).timeout(requestTimeout)
+        if (headers.keys.none { it.equals("Accept-Encoding", ignoreCase = true) }) b.header("Accept-Encoding", "gzip")
         headers.forEach { (k, v) -> b.header(k, v) }
         return b
     }
 
     private fun send(request: HttpRequest): HttpResponse {
-        val resp = client.send(request, BodyHandlers.ofString(Charsets.UTF_8))
-        return HttpResponse(resp.statusCode(), resp.body().orEmpty())
+        val resp = client.send(request, BodyHandlers.ofByteArray())
+        val bytes = if (resp.headers().firstValue("Content-Encoding").orElse("").equals("gzip", ignoreCase = true)) {
+            GZIPInputStream(ByteArrayInputStream(resp.body())).use { it.readAllBytes() }
+        } else {
+            resp.body()
+        }
+        return HttpResponse(resp.statusCode(), bytes.toString(Charsets.UTF_8))
     }
 }

@@ -228,7 +228,7 @@ class FakeHeyarrTransport(private val delayMs: Long = 0) : HttpTransport {
         if (delayMs > 0) Thread.sleep(delayMs)
         val path = url.substringAfter("/api/v1/").substringBefore('?')
         val body = when {
-            path == "works" -> Fixtures.worksList()
+            path == "works" -> FixtureWorksList.forUrl(url)
 
             path == "quality-profiles" -> Fixtures.profiles
 
