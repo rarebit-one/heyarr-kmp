@@ -152,6 +152,7 @@ class WorksJsonTest {
         assertEquals(1, urls.size)
         assertTrue("content_type=series" in urls.single())
         assertTrue("q=yellowstone" in urls.single())
+        assertTrue("include=" !in urls.single())
         urls.clear()
         assertEquals(
             listOf("variant"),
@@ -201,5 +202,6 @@ class WorksJsonTest {
         assertEquals(11, titles.size)
         assertEquals(1, urls.size)
         assertTrue("?limit=500" in urls.single())
+        assertTrue("include=" !in urls.single())
     }
 }

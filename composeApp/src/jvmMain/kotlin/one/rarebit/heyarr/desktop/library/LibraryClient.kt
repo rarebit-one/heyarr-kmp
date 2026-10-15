@@ -6,6 +6,12 @@ import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.theme.MediaType
 import java.net.URLEncoder
 
+data class WorksListOptions(
+    val contentType: String? = null,
+    val query: String? = null,
+    val includeEmbeds: Boolean = true,
+)
+
 /**
  * Browses heyarr's native library reach — `GET /api/v1/works` — authenticated with the
  * caller's [Credential] (here a `Bearer` token). Adapted from heyarr-mobile's
@@ -15,14 +21,21 @@ import java.net.URLEncoder
  */
 class LibraryClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
     /** Fetch every work, recent first. Throws on a non-200 so the caller can surface the status. */
-    fun listWorks(contentTypes: Set<MediaType>? = null, query: String? = null): List<Work> {
+    fun listWorks(
+        contentTypes: Set<MediaType>? = null,
+        query: String? = null,
+        includeEmbeds: Boolean = true,
+    ): List<Work> {
         val all = ArrayList<Work>()
         val types = contentTypes?.flatMap(::serverTypes) ?: listOf(null)
         for (type in types) {
             var cursor: String? = null
             var pages = 0
             do {
-                val resp = http.get(worksUrl(baseUrl, cursor, type, query = query), credential.asHeader())
+                val resp = http.get(
+                    worksUrl(baseUrl, cursor, WorksListOptions(type, query, includeEmbeds)),
+                    credential.asHeader(),
+                )
                 require(resp.status == 200) { "library: GET /works failed: HTTP ${resp.status}" }
                 all.addAll(WorksJson.parse(resp.body))
                 cursor = WorksJson.nextCursor(resp.body)
@@ -52,7 +65,7 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
         val fetched = when {
             missing.isEmpty() -> emptyList()
             missing.size <= MAX_DIRECT_TITLE_READS -> missing.mapNotNull(::getWork)
-            else -> listWorks()
+            else -> listWorks(includeEmbeds = false)
         }
         return (cached + fetched).filter { it.id in wanted }.associate { it.id to it.title }
     }
@@ -63,7 +76,7 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
         val key = work.sortTitle?.takeIf { it.isNotBlank() } ?: work.title
         val query = Variants.rawBase(key) ?: key
         val candidates = catalog?.takeIf { works -> works.any { it.id == work.id } }
-            ?: listWorks(setOf(MediaType.SERIES), query)
+            ?: listWorks(setOf(MediaType.SERIES), query, includeEmbeds = false)
         return Variants.group(candidates)[work.id].orEmpty()
     }
 
@@ -102,13 +115,14 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
         fun worksUrl(
             baseUrl: String,
             cursor: String?,
-            contentType: String? = null,
+            options: WorksListOptions = WorksListOptions(),
             limit: Int = PAGE_LIMIT,
-            query: String? = null,
         ): String {
-            val base = worksUrl(baseUrl) + "?limit=" + limit + "&include=artwork,primary_asset"
-            val filtered = contentType?.let { base + "&content_type=" + URLEncoder.encode(it, "UTF-8") } ?: base
-            val searched = query?.let { filtered + "&q=" + URLEncoder.encode(it, "UTF-8") } ?: filtered
+            val base =
+                worksUrl(baseUrl) + "?limit=" + limit +
+                    if (options.includeEmbeds) "&include=artwork,primary_asset" else ""
+            val filtered = options.contentType?.let { base + "&content_type=" + URLEncoder.encode(it, "UTF-8") } ?: base
+            val searched = options.query?.let { filtered + "&q=" + URLEncoder.encode(it, "UTF-8") } ?: filtered
             return if (cursor.isNullOrBlank()) searched else searched + "&cursor=" + URLEncoder.encode(cursor, "UTF-8")
         }
 
