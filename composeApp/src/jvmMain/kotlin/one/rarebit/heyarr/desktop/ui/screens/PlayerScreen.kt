@@ -259,28 +259,7 @@ fun PlayerScreen(
                 },
             ) {
                 when {
-                    type.isListening() -> {
-                        val work by produceState<WorkDetail?>(null, item.workId, session.generation) {
-                            value = session.io { session.api?.work(item.workId) }.getOrNull()
-                        }
-                        val cover by rememberCover(
-                            session,
-                            type,
-                            item.title,
-                            work?.artworkPath,
-                            work?.work?.year,
-                            work?.work?.artist ?: work?.work?.author,
-                        )
-                        BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Artwork(
-                                cover.bitmap,
-                                type,
-                                Modifier.size(minOf(maxWidth, maxHeight)),
-                                contentDescription = "Cover for ${item.title}",
-                                seed = item.title,
-                            )
-                        }
-                    }
+                    type.isListening() -> AudioPlayerArtwork(session, item)
 
                     headless -> {
                         val art by session.artwork.rememberArtwork(null)
@@ -576,6 +555,31 @@ fun PlayerScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+@Suppress("FunctionNaming") // Compose components use PascalCase.
+private fun AudioPlayerArtwork(session: AppSession, item: Route.Player) {
+    val work by produceState<WorkDetail?>(null, item.workId, session.generation) {
+        value = session.io { session.api?.work(item.workId) }.getOrNull()
+    }
+    val cover by rememberCover(
+        session,
+        item.typeHint,
+        item.title,
+        work?.artworkPath,
+        work?.work?.year,
+        work?.work?.artist ?: work?.work?.author,
+    )
+    BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Artwork(
+            cover.bitmap,
+            item.typeHint,
+            Modifier.size(minOf(maxWidth, maxHeight)),
+            contentDescription = "Cover for ${item.title}",
+            seed = item.title,
+        )
     }
 }
 
