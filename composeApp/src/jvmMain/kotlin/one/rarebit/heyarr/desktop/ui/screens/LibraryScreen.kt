@@ -95,6 +95,8 @@ class LibraryContents {
 
     fun shelf(experience: Experience): CatalogLoad = shelves.getValue(experience)
 
+    fun cachedFull(currentGeneration: Int): List<Work>? = full.works.takeIf { generation == currentGeneration }
+
     fun resetFor(newGeneration: Int) {
         if (generation == newGeneration) return
         generation = newGeneration

@@ -426,6 +426,13 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
     /** A bounded recent listing for Home's two work rails. */
     fun recentWorks(): List<Work> = library.recentWorks()
 
+    /** Resolve Downloads labels without a full catalog fetch for a short want list. */
+    fun workTitles(ids: List<String>, catalog: List<Work>? = null): Map<String, String> =
+        library.titlesFor(ids, catalog)
+
+    /** The scanner's alternate season works for one series. */
+    fun seriesVariantsOf(work: Work, catalog: List<Work>? = null): List<Work> = library.seriesVariantsOf(work, catalog)
+
     /** `GET /api/v1/works/{id}` — one work with its artwork + primary asset (existing client). */
     fun work(id: String): WorkDetail? = detail.getWorkDetail(id)
 

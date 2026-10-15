@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.state.LibraryIndex
 import one.rarebit.heyarr.core.state.LibraryStatus
+import one.rarebit.heyarr.desktop.library.Work
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.components.ArchiveLoading
@@ -116,13 +117,18 @@ internal fun ManageOverview(session: AppSession, onOpen: (Route) -> Unit, onWant
 /** Manage → Downloads: the wants in flight and the job queue, on a page of its own. */
 @Composable
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
-internal fun ManageDownloads(session: AppSession, state: DownloadsState, onOpen: (Route) -> Unit) {
+internal fun ManageDownloads(
+    session: AppSession,
+    state: DownloadsState,
+    onOpen: (Route) -> Unit,
+    catalogWorks: List<Work>?,
+) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 32.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         SectionHeader("Downloads", subtitle = "What heyarr is fetching right now")
-        DownloadsScreen(session, state, onOpen)
+        DownloadsScreen(session, state, onOpen, catalogWorks)
     }
 }
 

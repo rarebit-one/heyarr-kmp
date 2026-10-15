@@ -24,6 +24,7 @@ import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.McpResult
+import one.rarebit.heyarr.desktop.library.Work
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.components.Cell
@@ -55,10 +56,12 @@ class DownloadsState {
  * relay yet. Refreshes every 10 s while open.
  */
 @Composable
+@Suppress("FunctionNaming", "LongMethod", "CyclomaticComplexMethod")
 fun DownloadsScreen(
     session: AppSession,
     state: DownloadsState,
     onOpen: (Route) -> Unit,
+    catalogWorks: List<Work>?,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -72,14 +75,12 @@ fun DownloadsScreen(
             session.io { a.jobs(40) }.onSuccess { state.jobs = it }
             val wanted = state.desired.orEmpty().mapNotNull { it.workId }.distinct().filter { it !in state.titles }
             if (wanted.isNotEmpty()) {
-                session.io { a.works() }.onSuccess { works ->
-                    state.titles =
-                        state.titles + works.associate { it.id to it.title }
-                }
+                session.io { a.workTitles(wanted, catalogWorks) }.onSuccess { state.titles = state.titles + it }
             }
         }
     }
-    LaunchedEffect(session.config) {
+    LaunchedEffect(session.config, session.generation) {
+        state.titles = emptyMap()
         while (isActive) {
             load()
             delay(10_000)

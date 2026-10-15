@@ -1,6 +1,7 @@
 package one.rarebit.heyarr.desktop.library
 
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.theme.MediaType
 import java.net.URLEncoder
@@ -14,14 +15,14 @@ import java.net.URLEncoder
  */
 class LibraryClient(private val http: HttpTransport, private val baseUrl: String, private val credential: Credential) {
     /** Fetch every work, recent first. Throws on a non-200 so the caller can surface the status. */
-    fun listWorks(contentTypes: Set<MediaType>? = null): List<Work> {
+    fun listWorks(contentTypes: Set<MediaType>? = null, query: String? = null): List<Work> {
         val all = ArrayList<Work>()
         val types = contentTypes?.flatMap(::serverTypes) ?: listOf(null)
         for (type in types) {
             var cursor: String? = null
             var pages = 0
             do {
-                val resp = http.get(worksUrl(baseUrl, cursor, type), credential.asHeader())
+                val resp = http.get(worksUrl(baseUrl, cursor, type, query = query), credential.asHeader())
                 require(resp.status == 200) { "library: GET /works failed: HTTP ${resp.status}" }
                 all.addAll(WorksJson.parse(resp.body))
                 cursor = WorksJson.nextCursor(resp.body)
@@ -40,6 +41,30 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
         if (resp.status == 404) return null
         require(resp.status == 200) { "library: GET /works/$id failed: HTTP ${resp.status}" }
         return WorksJson.parseOne(resp.body)
+    }
+
+    /** Resolve a small want list by id, reusing a full catalog when one is already loaded. */
+    fun titlesFor(ids: List<String>, catalog: List<Work>? = null): Map<String, String> {
+        val wanted = ids.toSet()
+        val cached = catalog.orEmpty().filter { it.id in wanted }
+        val known = cached.map { it.id }.toSet()
+        val missing = wanted.filter { it !in known }
+        val fetched = when {
+            missing.isEmpty() -> emptyList()
+            missing.size <= MAX_DIRECT_TITLE_READS -> missing.mapNotNull(::getWork)
+            else -> listWorks()
+        }
+        return (cached + fetched).filter { it.id in wanted }.associate { it.id to it.title }
+    }
+
+    /** Find a series' scanner variants by title instead of walking every work. */
+    fun seriesVariantsOf(work: Work, catalog: List<Work>? = null): List<Work> {
+        if (MediaType.from(work.kind) != MediaType.SERIES) return emptyList()
+        val key = work.sortTitle?.takeIf { it.isNotBlank() } ?: work.title
+        val query = Variants.rawBase(key) ?: key
+        val candidates = catalog?.takeIf { works -> works.any { it.id == work.id } }
+            ?: listWorks(setOf(MediaType.SERIES), query)
+        return Variants.group(candidates)[work.id].orEmpty()
     }
 
     /** Home needs only enough recent cards to fill its two rails. */
@@ -62,6 +87,8 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
     }
 
     companion object {
+        private const val MAX_DIRECT_TITLE_READS = 10
+
         /** The server's per-page maximum; asking for it minimises round trips. */
         const val PAGE_LIMIT = 500
 
@@ -72,10 +99,17 @@ class LibraryClient(private val http: HttpTransport, private val baseUrl: String
         fun worksUrl(baseUrl: String): String = baseUrl.trimEnd('/') + "/api/v1/works"
 
         /** `GET /works?limit=500[&cursor=…]` — one page of the list. Older nodes clamp the limit. */
-        fun worksUrl(baseUrl: String, cursor: String?, contentType: String? = null, limit: Int = PAGE_LIMIT): String {
+        fun worksUrl(
+            baseUrl: String,
+            cursor: String?,
+            contentType: String? = null,
+            limit: Int = PAGE_LIMIT,
+            query: String? = null,
+        ): String {
             val base = worksUrl(baseUrl) + "?limit=" + limit + "&include=artwork,primary_asset"
             val filtered = contentType?.let { base + "&content_type=" + URLEncoder.encode(it, "UTF-8") } ?: base
-            return if (cursor.isNullOrBlank()) filtered else filtered + "&cursor=" + URLEncoder.encode(cursor, "UTF-8")
+            val searched = query?.let { filtered + "&q=" + URLEncoder.encode(it, "UTF-8") } ?: filtered
+            return if (cursor.isNullOrBlank()) searched else searched + "&cursor=" + URLEncoder.encode(cursor, "UTF-8")
         }
 
         private fun serverTypes(type: MediaType): List<String> = when (type) {

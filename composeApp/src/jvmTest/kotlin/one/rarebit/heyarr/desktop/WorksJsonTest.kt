@@ -5,6 +5,7 @@ import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.library.LibraryClient
+import one.rarebit.heyarr.desktop.library.Work
 import one.rarebit.heyarr.desktop.library.WorksJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -128,5 +129,77 @@ class WorksJsonTest {
         assertEquals(1, urls.size)
         assertTrue(urls.single().contains("limit=50"))
         assertTrue(urls.single().contains("sort=recent"))
+    }
+
+    @Test
+    fun aSeriesDetailSearchesItsTitleInsteadOfTheWholeCatalog() {
+        val urls = ArrayList<String>()
+        val transport = object : HttpTransport {
+            override fun get(url: String, headers: Map<String, String>): HttpResponse {
+                urls += url
+                return HttpResponse(
+                    200,
+                    """{"items":[{"id":"series","title":"The Yellowstone","content_type":"series"},""" +
+                        """{"id":"variant","title":"The Yellowstone Season 4 Mp4","content_type":"series"}]}""",
+                )
+            }
+            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+                HttpResponse(405, "")
+        }
+        val client = LibraryClient(transport, "https://h.example", Credential.Bearer("token"))
+        val series = Work("series", "The Yellowstone", "series", sortTitle = "yellowstone")
+        assertEquals(listOf("variant"), client.seriesVariantsOf(series).map { it.id })
+        assertEquals(1, urls.size)
+        assertTrue("content_type=series" in urls.single())
+        assertTrue("q=yellowstone" in urls.single())
+        urls.clear()
+        assertEquals(
+            listOf("variant"),
+            client.seriesVariantsOf(
+                series,
+                listOf(series, Work("variant", "The Yellowstone Season 4 Mp4", "series")),
+            ).map {
+                it.id
+            },
+        )
+        assertTrue(urls.isEmpty())
+        assertTrue(client.seriesVariantsOf(Work("film", "Film", "movie")).isEmpty())
+        assertTrue(urls.isEmpty())
+    }
+
+    @Test
+    fun downloadTitlesReadOnlyMissingIds() {
+        val urls = ArrayList<String>()
+        val transport = object : HttpTransport {
+            override fun get(url: String, headers: Map<String, String>): HttpResponse {
+                urls += url
+                return HttpResponse(200, """{"id":"w2","title":"Second"}""")
+            }
+            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+                HttpResponse(405, "")
+        }
+        val client = LibraryClient(transport, "https://h.example", Credential.Bearer("token"))
+        val titles = client.titlesFor(listOf("w1", "w2"), catalog = listOf(Work("w1", "First")))
+        assertEquals(mapOf("w1" to "First", "w2" to "Second"), titles)
+        assertEquals(listOf("https://h.example/api/v1/works/w2"), urls)
+    }
+
+    @Test
+    fun manyDownloadTitlesUseOneCatalogWalk() {
+        val urls = ArrayList<String>()
+        val body = """{"items":[${(1..11).joinToString(",") { """{"id":"w$it","title":"Work $it"}""" }}]}"""
+        val transport = object : HttpTransport {
+            override fun get(url: String, headers: Map<String, String>): HttpResponse {
+                urls += url
+                return HttpResponse(200, body)
+            }
+            override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+                HttpResponse(405, "")
+        }
+        val client = LibraryClient(transport, "https://h.example", Credential.Bearer("token"))
+        val titles = client.titlesFor((1..11).map { "w$it" })
+        assertEquals(11, titles.size)
+        assertEquals(1, urls.size)
+        assertTrue("?limit=500" in urls.single())
     }
 }

@@ -540,7 +540,12 @@ fun App(
                                         }
 
                                         Route.Downloads -> ManageFrame(r, ::go) {
-                                            ManageDownloads(session, library.downloads, ::go)
+                                            ManageDownloads(
+                                                session,
+                                                library.downloads,
+                                                ::go,
+                                                libraryContents.cachedFull(session.generation),
+                                            )
                                         }
 
                                         Route.Missing -> ManageFrame(r, ::go) {
@@ -563,6 +568,7 @@ fun App(
                                             details.getOrPut(r.workId) {
                                                 DetailState(r.workId)
                                             },
+                                            catalogWorks = libraryContents.cachedFull(session.generation),
                                             onBack = nav::back,
                                             onOpen = ::go,
                                             onWant = onWant,

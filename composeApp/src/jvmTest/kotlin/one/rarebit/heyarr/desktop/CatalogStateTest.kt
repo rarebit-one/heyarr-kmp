@@ -21,10 +21,12 @@ class CatalogStateTest {
         assertNull(watch.works)
 
         manage.target.works = listOf(Work("movie", "Film", "movie"))
+        assertEquals("movie", contents.cachedFull(1)?.single()?.id)
         assertEquals("movie", watch.works?.single()?.id)
         assertEquals("movie", listen.works?.single()?.id)
 
         watch.resetFor(2)
+        assertNull(contents.cachedFull(1))
         assertNull(manage.works)
         assertNull(listen.works)
     }
