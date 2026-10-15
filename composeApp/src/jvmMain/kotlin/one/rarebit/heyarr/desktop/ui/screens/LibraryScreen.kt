@@ -73,18 +73,56 @@ val MEDIA = MediaType.UNKNOWN
 internal val MEDIA_KINDS =
     setOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.AUDIOBOOK, MediaType.PODCAST)
 
-class LibraryState {
-    /** The session generation this state was loaded for. */
+/** One catalog fetch serves every shelf; each screen keeps its own filters and layout. */
+class LibraryContents {
     var generation = -1
-    val downloads = DownloadsState()
+    var requestId = 0
     var works by mutableStateOf<List<Work>?>(null)
     var error by mutableStateOf<String?>(null)
     var loading by mutableStateOf(false)
+}
+
+class LibraryState(private val contents: LibraryContents = LibraryContents()) {
+    val downloads = DownloadsState()
+    var generation: Int
+        get() = contents.generation
+        set(value) {
+            contents.generation = value
+        }
+    var requestId: Int
+        get() = contents.requestId
+        set(value) {
+            contents.requestId = value
+        }
+    var works: List<Work>?
+        get() = contents.works
+        set(value) {
+            contents.works = value
+        }
+    var error: String?
+        get() = contents.error
+        set(value) {
+            contents.error = value
+        }
+    var loading: Boolean
+        get() = contents.loading
+        set(value) {
+            contents.loading = value
+        }
 
     /** null = every kind; [MEDIA] = films, series, music, books (the default — feeds are the Archive, not the shelf). */
     var type by mutableStateOf<MediaType?>(MEDIA)
     var status by mutableStateOf<LibraryStatus?>(null)
     var grid by mutableStateOf(true)
+
+    fun resetFor(newGeneration: Int) {
+        if (generation == newGeneration) return
+        generation = newGeneration
+        requestId++
+        works = null
+        error = null
+        loading = false
+    }
 }
 
 /**
@@ -104,9 +142,9 @@ fun LibraryScreen(
     val scope = rememberCoroutineScope()
     fun load() = loadLibrary(session, state, scope)
     // Loaded once per node: a new URL or token (session.generation) throws the cached answer away.
-    LaunchedEffect(state, session.generation) {
-        if (state.works == null || state.generation != session.generation) {
-            state.generation = session.generation
+    LaunchedEffect(state, session.generation, state.loading) {
+        state.resetFor(session.generation)
+        if (state.works == null && state.error == null && !state.loading) {
             load()
         }
     }
@@ -181,11 +219,19 @@ private fun libraryEmpty(libraryIsEmpty: Boolean, experience: Experience?): Pair
 /** Load (or reload) every work the node catalogues. */
 private fun loadLibrary(session: AppSession, state: LibraryState, scope: CoroutineScope) {
     val a = session.api ?: return
+    if (state.loading) return
+    val requestId = ++state.requestId
     state.loading = true
     state.error = null
     scope.launch {
-        session.io { a.works() }.fold(onSuccess = { state.works = it }, onFailure = { state.error = it.message })
-        state.loading = false
+        try {
+            val result = session.io { a.works() }
+            if (requestId == state.requestId) {
+                result.fold(onSuccess = { state.works = it }, onFailure = { state.error = it.message })
+            }
+        } finally {
+            if (requestId == state.requestId) state.loading = false
+        }
     }
 }
 
