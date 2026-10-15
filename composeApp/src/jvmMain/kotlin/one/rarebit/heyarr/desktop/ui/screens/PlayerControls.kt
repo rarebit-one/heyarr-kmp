@@ -57,6 +57,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.Series
@@ -64,10 +65,13 @@ import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.McpResult
+import one.rarebit.heyarr.desktop.heyarr.SourceAudioTrack
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
 import one.rarebit.heyarr.desktop.playback.MpvTrack
+import one.rarebit.heyarr.desktop.playback.PlaybackResume
 import one.rarebit.heyarr.desktop.playback.PlayerState
 import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.desktop.state.PlaybackSession
 import one.rarebit.heyarr.desktop.state.rememberArtwork
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
@@ -88,11 +92,11 @@ import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 import java.awt.GraphicsEnvironment
 
-// The player's controls ([PlayerScreen]): the caption/audio menu, volume, status text, and the pop-out notice.
+// The player's controls ([PlayerScreen]): captions, audio, volume, status text, and the pop-out notice.
 
-/** Captions (and audio, when there is a choice) as a menu: Off, then each track by language name, title and origin. */
+/** Captions as a menu: Off, then each track by language name, title and origin. */
 @Composable
-internal fun TrackMenu(ps: PlayerState, p: EmbeddedPlayer) {
+internal fun captionMenu(ps: PlayerState, p: EmbeddedPlayer) {
     var open by remember { mutableStateOf(false) }
     val current = ps.subtitles.firstOrNull { it.id == ps.subtitleId }
     Box {
@@ -101,7 +105,7 @@ internal fun TrackMenu(ps: PlayerState, p: EmbeddedPlayer) {
             { open = !open },
             icon = HeyarrIcons.Captions,
             compact = true,
-            enabled = ps.subtitles.isNotEmpty() || ps.audio.size > 1,
+            enabled = ps.subtitles.isNotEmpty(),
         )
         if (ps.subtitles.isNotEmpty() &&
             ps.subtitles.size > 1
@@ -122,10 +126,141 @@ internal fun TrackMenu(ps: PlayerState, p: EmbeddedPlayer) {
                     open = false
                 }
             }
-            if (ps.audio.size > 1) {
-                AudioMenuItems(ps) { id ->
-                    p.setAudio(id)
+        }
+    }
+}
+
+/** Source tracks remain visible even when a transcode exposes only one track to mpv. */
+@Composable
+internal fun audioMenu(ps: PlayerState, p: EmbeddedPlayer, playback: PlaybackSession, session: AppSession) {
+    val tracks = playback.audioTracks
+    if (tracks.size <= 1 && ps.audio.size <= 1) return
+    var open by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val selected = tracks.firstOrNull { it.ordinal == playback.selectedAudioTrack }
+    val label = if (selected?.commentary == true) {
+        selected.title?.takeIf { it.isNotBlank() } ?: "Commentary"
+    } else {
+        languageName(selected?.language) ?: selected?.title
+            ?: ps.audio.firstOrNull { it.id == ps.audioId }?.let(::trackLabel)
+    }
+    Box {
+        SecondaryButton(
+            "Audio · ${label ?: "Track"}",
+            { open = !open },
+            icon = HeyarrIcons.Volume,
+            compact = true,
+            enabled = ps.loaded && !playback.audioSwitching,
+            contentDescription = "Choose audio track",
+        )
+        DropdownMenu(expanded = open, onDismissRequest = {
+            open = false
+        }, modifier = Modifier.background(Tokens.surface3)) {
+            Text(
+                "Audio",
+                style = MaterialTheme.typography.labelSmall,
+                color = Tokens.textMuted,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+            if (tracks.isNotEmpty()) {
+                sourceAudioItems(tracks, playback.selectedAudioTrack) { ordinal ->
                     open = false
+                    switchSourceAudio(ordinal, p, playback, session, scope)
+                }
+            } else {
+                mpvAudioItems(ps, p) { open = false }
+            }
+        }
+    }
+}
+
+@Composable
+private fun sourceAudioItems(tracks: List<SourceAudioTrack>, selected: Int?, onPick: (Int) -> Unit) {
+    for (track in tracks) {
+        val name = listOfNotNull(
+            languageName(track.language),
+            track.title?.takeIf { it.isNotBlank() },
+            if (track.commentary) "Commentary" else null,
+        ).distinct().joinToString(" · ").ifBlank { "Track ${track.ordinal + 1}" }
+        DropdownMenuItem(
+            text = {
+                Text(
+                    name,
+                    color = if (track.ordinal ==
+                        selected
+                    ) {
+                        LocalMediaTheme.current.accentGradientEnd
+                    } else {
+                        Tokens.textPrimary
+                    },
+                )
+            },
+            onClick = { onPick(track.ordinal) },
+        )
+    }
+}
+
+@Composable
+private fun mpvAudioItems(ps: PlayerState, p: EmbeddedPlayer, onPick: () -> Unit) {
+    for (track in ps.audio) {
+        DropdownMenuItem(
+            text = {
+                Text(
+                    trackLabel(track),
+                    color = if (track.id ==
+                        ps.audioId
+                    ) {
+                        LocalMediaTheme.current.accentGradientEnd
+                    } else {
+                        Tokens.textPrimary
+                    },
+                )
+            },
+            onClick = {
+                p.setAudio(track.id)
+                onPick()
+            },
+        )
+    }
+}
+
+private fun switchSourceAudio(
+    ordinal: Int,
+    p: EmbeddedPlayer,
+    playback: PlaybackSession,
+    session: AppSession,
+    scope: CoroutineScope,
+) {
+    if (ordinal == playback.selectedAudioTrack) return
+    val ps = p.state
+    if (playback.currentTarget?.streamBaseUrl == null) {
+        ps.audio.getOrNull(ordinal)?.id?.let { id ->
+            p.setAudio(id)
+            playback.selectedAudioTrack = ordinal
+        }
+    } else {
+        playback.current?.let { item ->
+            val resume = PlaybackResume(ps.position, ps.paused)
+            scope.launch {
+                playback.audioSwitching = true
+                try {
+                    session.io { playback.resolveAudioTarget(item, ordinal) }
+                        .onSuccess { next ->
+                            if (playback.current?.assetId == item.assetId) {
+                                p.load(next.url, playback.title(item), next.durationSeconds, next.streamBaseUrl, resume)
+                                playback.useTarget(next)
+                                playback.refreshSubtitles()
+                            }
+                        }
+                        .onFailure {
+                            session.toast(
+                                Toast.Kind.ERROR,
+                                "Couldn't switch audio",
+                                it.message ?: "Playback plan failed",
+                            )
+                        }
+                } finally {
+                    playback.audioSwitching = false
                 }
             }
         }
@@ -183,33 +318,6 @@ private fun CaptionMenuItems(ps: PlayerState, onPick: (Int?) -> Unit) {
                 onPick(t.id)
             },
         )
-    }
-}
-
-/** The audio tracks, when there is more than one to choose between. */
-@Composable
-private fun AudioMenuItems(ps: PlayerState, onPick: (Int) -> Unit) {
-    Text(
-        "Audio",
-        style = MaterialTheme.typography.labelSmall,
-        color = Tokens.textMuted,
-        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-    )
-    for (t in ps.audio) {
-        DropdownMenuItem(text = {
-            Text(
-                trackLabel(t),
-                color = if (t.id ==
-                    ps.audioId
-                ) {
-                    LocalMediaTheme.current.accentGradientEnd
-                } else {
-                    Tokens.textPrimary
-                },
-            )
-        }, onClick = {
-            onPick(t.id)
-        })
     }
 }
 

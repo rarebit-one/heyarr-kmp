@@ -238,6 +238,10 @@ fun App(
             session.api?.playbackTarget(item.assetId, item.blobHash)
                 ?: PlaybackTarget(HeyarrApi.blobUrl(playback.baseUrl, item.blobHash))
         }
+        playback.resolveAudioTarget = { item, ordinal ->
+            session.api?.playbackTarget(item.assetId, item.blobHash, audioTrack = ordinal)
+                ?: error("Audio track selection requires a connection")
+        }
         playback.accentHex = accentHex(MediaThemes.of(playback.type).accent)
     }
     // Player keys are handled at the window level: a KeyEventDispatcher runs before

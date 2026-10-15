@@ -347,7 +347,9 @@ fun PlayerScreen(
                     )
                     PlaybackStatusText(ps)
                     Spacer(Modifier.weight(1f))
-                    TrackMenu(ps, p)
+                    captionMenu(ps, p)
+                    Spacer(Modifier.width(8.dp))
+                    audioMenu(ps, p, playback, session)
                     Spacer(Modifier.width(8.dp))
                     VolumeControl(ps, p)
                     IconButtonRound(

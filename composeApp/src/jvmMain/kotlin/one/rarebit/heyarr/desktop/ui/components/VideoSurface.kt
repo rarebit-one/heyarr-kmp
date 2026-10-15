@@ -72,11 +72,12 @@ fun PlaybackHost(session: AppSession) {
             } else if (playback.player.isRunning) {
                 playback.resolvePlaybackTarget(item).let { t ->
                     playback.player.load(t.url, playback.title(item), t.durationSeconds, t.streamBaseUrl)
+                    playback.useTarget(t)
                     null
                 }
             } else {
                 playback.resolvePlaybackTarget(item).let { t ->
-                    playback.player.start(
+                    val startError = playback.player.start(
                         embedded,
                         t.url,
                         playback.token,
@@ -84,6 +85,8 @@ fun PlaybackHost(session: AppSession) {
                         t.durationSeconds,
                         t.streamBaseUrl,
                     )
+                    if (startError == null) playback.useTarget(t)
+                    startError
                 }
             }
         }.fold(onSuccess = { it }, onFailure = { it.message ?: "Could not start playback" })
@@ -93,6 +96,15 @@ fun PlaybackHost(session: AppSession) {
             playback.loadedAssetId = item.assetId
             playback.player.play()
             playback.refreshSubtitles()
+        }
+    }
+    val target = playback.currentTarget
+    val ps = playback.player.state
+    LaunchedEffect(ps.loaded, ps.audio, target, playback.selectedAudioTrack) {
+        if (ps.loaded && target?.streamBaseUrl == null) {
+            playback.selectedAudioTrack?.let { ordinal ->
+                ps.audio.getOrNull(ordinal)?.id?.takeIf { it != ps.audioId }?.let(playback.player::setAudio)
+            }
         }
     }
 }
