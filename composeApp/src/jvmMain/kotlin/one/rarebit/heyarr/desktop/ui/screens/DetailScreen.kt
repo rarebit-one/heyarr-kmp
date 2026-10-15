@@ -49,6 +49,7 @@ import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.ExternalId
 import one.rarebit.heyarr.core.mcp.Renderer
+import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.mcp.Replica
 import one.rarebit.heyarr.core.mcp.Satisfaction
 import one.rarebit.heyarr.core.state.ExternalEpisode
@@ -108,7 +109,7 @@ class DetailState(val workId: String) {
     var acquisitionError by mutableStateOf<String?>(null)
     var acquisitionRefused by mutableStateOf(false)
     var replicas by mutableStateOf<McpResult<List<Replica>>?>(null)
-    var renderers by mutableStateOf<List<Renderer>?>(null)
+    var rendererList by mutableStateOf<RendererListResult?>(null)
 
     /** The asset a "Play on…" picker is open for, if any. */
     var castAssetId by mutableStateOf<String?>(null)
@@ -403,9 +404,7 @@ internal fun toggleCast(
     scope: kotlinx.coroutines.CoroutineScope,
 ) {
     state.castAssetId = if (state.castAssetId == assetId) null else assetId
-    if (state.renderers ==
-        null
-    ) {
-        scope.launch { session.api?.let { a -> session.io { a.renderers() }.onSuccess { state.renderers = it } } }
+    if (state.rendererList == null) {
+        scope.launch { session.api?.let { a -> session.io { a.renderers() }.onSuccess { state.rendererList = it } } }
     }
 }

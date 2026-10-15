@@ -65,7 +65,10 @@ class OpenApiContractTest {
             "SessionJson" to listOf("GET /api/v1/session"),
             "SearchResultsJson" to listOf("POST /api/v1/search"),
             "DiscoverClient" to listOf("POST /api/v1/discover"),
-            "HeyarrApi" to listOf("POST /api/v1/playback/plan"),
+            "HeyarrApi" to listOf("POST /api/v1/playback/plan", "POST /api/v1/renderers/{udn}/play"),
+            // The 409 route refusal (ADR-0111): `detail` plus `alternatives`.
+            "parsePlayConflict" to listOf("POST /api/v1/renderers/{udn}/play 409"),
+            "parsePlayResponse" to listOf("POST /api/v1/renderers/{udn}/play"),
             "PlaybackJson" to listOf("POST /api/v1/playback/plan", "POST /api/v1/playback"),
             "ConsumptionClient" to listOf("POST /api/v1/consumption/sessions", "POST /api/v1/devices"),
             "EnrolClient" to listOf("POST /enrol", "#Problem"),

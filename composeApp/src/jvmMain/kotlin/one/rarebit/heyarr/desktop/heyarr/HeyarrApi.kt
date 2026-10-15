@@ -26,12 +26,14 @@ import one.rarebit.heyarr.core.mcp.QueuedJobJson
 import one.rarebit.heyarr.core.mcp.ReleaseToExplain
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.RendererJson
+import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.mcp.Replica
 import one.rarebit.heyarr.core.mcp.ReplicaJson
 import one.rarebit.heyarr.core.mcp.Satisfaction
 import one.rarebit.heyarr.core.mcp.SatisfactionJson
 import one.rarebit.heyarr.core.mcp.SearchHits
 import one.rarebit.heyarr.core.mcp.SearchHitsJson
+import one.rarebit.heyarr.core.mcp.SsdpScanner
 import one.rarebit.heyarr.core.mcp.Want
 import one.rarebit.heyarr.core.mcp.WantCreated
 import one.rarebit.heyarr.core.mcp.WantCreatedJson
@@ -46,16 +48,10 @@ import one.rarebit.heyarr.desktop.library.WorkDetailClient
 import one.rarebit.heyarr.desktop.library.WorksJson
 import one.rarebit.heyarr.desktop.music.Track
 import one.rarebit.heyarr.desktop.music.TracksJson
+import one.rarebit.heyarr.desktop.ssdp.JvmSsdpScanner
 import java.io.IOException
 import java.net.URLEncoder
 
-/**
- * The one typed door to heyarr for every screen. Each method is a single MCP tool (named
- * in its doc line) or one of the three verified REST reads; the mapping is exact and
- * nothing here invents an endpoint. Results are values; a tool's refusal comes back as
- * [McpOutcome.Refused] where the screen must show it, or is thrown where a refusal can
- * only mean failure. Blocking — call on `Dispatchers.IO`.
- */
 /**
  * Where and how to play an asset, resolved from the playback plan: the URL to
  * open, plus the source's true runtime in seconds when the plan is a transcode
@@ -73,6 +69,17 @@ data class PlaybackTarget(val url: String, val durationSeconds: Double? = null, 
     val restartSeekable: Boolean get() = streamBaseUrl != null
 }
 
+private const val HTTP_OK_MIN = 200
+private const val HTTP_OK_MAX = 299
+private const val HTTP_CONFLICT = 409
+
+/**
+ * The one typed door to heyarr for every screen. Each method is a single MCP tool (named
+ * in its doc line) or one of the three verified REST reads; the mapping is exact and
+ * nothing here invents an endpoint. Results are values; a tool's refusal comes back as
+ * [McpOutcome.Refused] where the screen must show it, or is thrown where a refusal can
+ * only mean failure. Blocking — call on `Dispatchers.IO`.
+ */
 class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private val credential: Credential) {
     private val mcp = McpClient(http, baseUrl, credential)
     private val library = LibraryClient(http, baseUrl, credential)
@@ -186,51 +193,99 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
 
     // ── playback ─────────────────────────────────────────────────────────────────
 
-    /** `list_renderers` — the devices on the network heyarr can play to. */
-    fun renderers(refresh: Boolean = false): List<Renderer> =
-        RendererJson.list(mcp.call("list_renderers", if (refresh) mapOf("refresh" to true) else emptyMap()).require())
+    /**
+     * Scan the local network for renderers via SSDP, report discovered devices to the server,
+     * then fetch the canonical renderer list from REST.
+     *
+     * The SSDP scan is performed by [JvmSsdpScanner]; each discovered LOCATION is POSTed to
+     * `/api/v1/renderers/reported` in parallel (short timeout, failures logged not surfaced).
+     * The server uses the client's source IP to infer its site and sorts that site's renderers
+     * first. Returns a [RendererListResult] with the inferred [clientSite] and the full list.
+     *
+     * Falls back to MCP `list_renderers` only when the REST endpoint is unreachable.
+     */
+    fun renderers(refresh: Boolean = false, scanner: SsdpScanner = JvmSsdpScanner()): RendererListResult {
+        // 1. SSDP scan — never throws; empty list on network error.
+        val discovered = scanner.scan()
+
+        // 2. Report each LOCATION to the server in parallel (best-effort, failures logged). The
+        //    server fetches each description before answering, so serially this would cost one
+        //    device-timeout per switched-off TV.
+        discovered.parallelStream().forEach { ssdp ->
+            val locBody = one.rarebit.heyarr.core.mcp.JsonWrite.obj(mapOf("location" to ssdp.location))
+            try {
+                val url = "$baseUrl/api/v1/renderers/reported"
+                val resp = http.post(url, locBody, "application/json", credential.asHeader())
+                if (resp.status !in HTTP_OK_MIN..HTTP_OK_MAX) {
+                    System.err.println("renderers/reported: ${ssdp.location}: HTTP ${resp.status}")
+                }
+            } catch (e: IOException) {
+                System.err.println("renderers/reported: ${ssdp.location}: ${e.message}")
+            }
+        }
+
+        // 3. Fetch the authoritative list via REST.
+        return try {
+            val query = if (refresh) "?refresh=true" else ""
+            val resp = http.get("$baseUrl/api/v1/renderers$query", credential.asHeader())
+            if (resp.status in HTTP_OK_MIN..HTTP_OK_MAX) {
+                RendererJson.listWithMeta(resp.body)
+            } else {
+                // Unexpected HTTP error — fall back to MCP list so the UI still populates.
+                System.err.println("GET /api/v1/renderers returned ${resp.status}; falling back to MCP")
+                val mcpList = RendererJson.list(
+                    mcp.call("list_renderers", if (refresh) mapOf("refresh" to true) else emptyMap()).require(),
+                )
+                RendererListResult(clientSite = null, renderers = mcpList)
+            }
+        } catch (e: IOException) {
+            System.err.println("GET /api/v1/renderers unreachable: ${e.message}; falling back to MCP")
+            val mcpList = RendererJson.list(
+                mcp.call("list_renderers", if (refresh) mapOf("refresh" to true) else emptyMap()).require(),
+            )
+            RendererListResult(clientSite = null, renderers = mcpList)
+        }
+    }
 
     /**
-     * Play an asset on a renderer. The `play_here` tool is tried first; when it answers
-     * only "the tool failed" (the MCP layer masks a renderer's UPnP refusal), the REST
-     * route behind it — `POST /renderers/{udn}/play` — is asked for the problem detail,
-     * which names the UPnP action and error code the device gave. That text is what
-     * the person needs, so it comes back verbatim.
+     * Play an asset on a renderer via REST `POST /renderers/{udn}/play`.
+     *
+     * Returns [CastResult.Success] on 200 with the `client_must_stay_connected` flag so the
+     * UI can tell the user whether it is safe to close the window.
+     * Returns [CastResult.Conflict] on 409 with a human-readable message and alternatives list.
+     * Falls back to MCP `play_here` only when the REST endpoint itself is unreachable
+     * (IOException), which should be rare once the server is reachable enough to list renderers.
      */
-    fun playHere(
-        assetId: String,
-        renderer: String,
-        udn: String? = null,
-        forceDirect: Boolean = false,
-    ): McpResult<Unit> {
-        // force_direct is the "cast anyway" override: send the bytes even when the renderer's
-        // declared codecs would make the plan non-DIRECT (a TV that decodes more than it
-        // advertises). Only added when set, so a normal cast keeps the honest refusal.
+    fun playHere(assetId: String, renderer: String, udn: String? = null, forceDirect: Boolean = false): CastResult {
+        if (udn != null) {
+            val body = one.rarebit.heyarr.core.mcp.JsonWrite.obj(
+                buildMap<String, Any?> {
+                    put("asset_id", assetId)
+                    if (forceDirect) put("force_direct", true)
+                },
+            )
+            val resp = try {
+                http.post("$baseUrl/api/v1/renderers/${enc(udn)}/play", body, "application/json", credential.asHeader())
+            } catch (e: IOException) {
+                System.err.println("renderers/play REST unreachable: ${e.message}")
+                null
+            }
+            if (resp != null) return parsePlayResponse(resp.body, resp.status)
+        }
+
+        // MCP fallback: used when no UDN is known or REST is unreachable.
         val toolArgs = buildMap<String, Any?> {
             put("asset_id", assetId)
             put("renderer", renderer)
             if (forceDirect) put("force_direct", true)
         }
-        val viaTool = mcp.call("play_here", toolArgs).map { }
-        if (viaTool !is McpResult.Refused || udn == null || !viaTool.message.contains("tool failed")) return viaTool
-        val body = one.rarebit.heyarr.core.mcp.JsonWrite.obj(
-            buildMap<String, Any?> {
-                put("asset_id", assetId)
-                if (forceDirect) put("force_direct", true)
-            },
-        )
-        val resp = try {
-            http.post("$baseUrl/api/v1/renderers/${enc(udn)}/play", body, "application/json", credential.asHeader())
-        } catch (e: IOException) {
-            throw McpTransportException("heyarr is unreachable: ${e.message}", e)
-        }
-        return when (resp.status) {
-            200, 201, 202 -> McpResult.Ok(Unit)
+        return when (val viaTool = mcp.call("play_here", toolArgs).map { }) {
+            is McpResult.Ok -> CastResult.Success(clientMustStayConnected = false)
 
-            else -> McpResult.Refused(
-                Problem.message(resp.body, resp.status, "play on renderer"),
-                "renderers/play",
-                resp.status,
+            is McpResult.Refused -> CastResult.Refused(
+                message = viaTool.message,
+                tool = viaTool.tool,
+                code = viaTool.code,
             )
         }
     }
@@ -515,6 +570,44 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
 }
 
 /**
+ * A 409 from `POST /renderers/{udn}/play`. A route refusal (ADR-0111) carries a `route-…` code
+ * and its alternatives, and its `detail` is the planner's reason. Any other 409 — the codec plan
+ * the device can't take — stays a plain refusal, so the picker still offers "Cast anyway".
+ */
+private fun parsePlayConflict(body: String): CastResult {
+    val code = JsonScan.stringField(body, "code")
+    if (code == null || !code.startsWith("route-")) {
+        val message = Problem.message(body, HTTP_CONFLICT, "play on renderer")
+        return CastResult.Refused(message, "renderers/play", HTTP_CONFLICT)
+    }
+    val reasonHuman = JsonScan.stringField(body, "detail") ?: "The server refused this route."
+    val alternatives = JsonScan.objectsOf(body, listOf("alternatives")).mapNotNull { alt ->
+        val kind = JsonScan.stringField(alt, "kind") ?: return@mapNotNull null
+        PlayAlternative(
+            kind = kind,
+            assetId = JsonScan.stringField(alt, "asset_id"),
+            heightPx = JsonScan.intField(alt, "height_px"),
+            bitrateKbps = JsonScan.intField(alt, "bitrate_kbps"),
+            site = JsonScan.stringField(alt, "site"),
+        )
+    }
+    return CastResult.Conflict(code = code, reasonHuman = reasonHuman, alternatives = alternatives)
+}
+
+internal fun parsePlayResponse(body: String, status: Int): CastResult = when {
+    status in HTTP_OK_MIN..HTTP_OK_MAX ->
+        CastResult.Success(clientMustStayConnected = JsonScan.boolField(body, "client_must_stay_connected") ?: false)
+
+    status == HTTP_CONFLICT -> parsePlayConflict(body)
+
+    else -> CastResult.Refused(
+        message = Problem.message(body, status, "play on renderer"),
+        tool = "renderers/play",
+        code = status,
+    )
+}
+
+/**
  * A tool's answer, typed: the value, or the refusal to show verbatim. Screens `when` on
  * it; the rule-code text in [Refused] is the server's own wording.
  */
@@ -528,4 +621,36 @@ sealed interface McpResult<out T> {
 private inline fun <T> McpOutcome.map(read: (String) -> T): McpResult<T> = when (this) {
     is McpOutcome.Ok -> McpResult.Ok(read(json))
     is McpOutcome.Refused -> McpResult.Refused(error.message, error.tool, error.code)
+}
+
+/**
+ * An alternative the server offers when play is refused with a 409 Conflict.
+ *
+ * [kind]         one of `"smaller_copy"` or `"copy_to_site_first"`.
+ * [assetId]      the asset to play instead (present for `smaller_copy`).
+ * [heightPx]     vertical resolution of the smaller copy, e.g. 1080.
+ * [bitrateKbps]  approximate bitrate of the smaller copy.
+ * [site]         the site the content needs to be copied to first (present for `copy_to_site_first`).
+ */
+data class PlayAlternative(
+    val kind: String,
+    val assetId: String?,
+    val heightPx: Int?,
+    val bitrateKbps: Int?,
+    val site: String?,
+)
+
+/**
+ * The outcome of a [HeyarrApi.playHere] call.
+ *
+ * [Success]  Play started. [clientMustStayConnected] is true when the app is acting as a relay
+ *            and must be kept alive; false when the stream is self-contained on the renderer.
+ * [Refused]  The renderer or server rejected the request outright (non-200, non-409 status, or MCP refusal).
+ * [Conflict] The route planner refused (409 with a `route-…` [code]). [reasonHuman] is the
+ *            server's explanation; [alternatives] lists what the UI may offer instead.
+ */
+sealed interface CastResult {
+    data class Success(val clientMustStayConnected: Boolean) : CastResult
+    data class Refused(val message: String, val tool: String, val code: Int) : CastResult
+    data class Conflict(val code: String, val reasonHuman: String, val alternatives: List<PlayAlternative>) : CastResult
 }

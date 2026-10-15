@@ -63,10 +63,9 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.Series
-import one.rarebit.heyarr.core.mcp.Renderer
+import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
-import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
 import one.rarebit.heyarr.desktop.playback.MpvTrack
 import one.rarebit.heyarr.desktop.playback.PlayerState
@@ -76,7 +75,6 @@ import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
 import one.rarebit.heyarr.desktop.ui.components.VideoSurface
 import one.rarebit.heyarr.desktop.ui.components.rememberCover
-import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.IconButtonRound
@@ -94,7 +92,7 @@ import java.awt.GraphicsEnvironment
 
 /** Per-visit state of the player screen; playback itself lives in [AppSession.playback]. */
 class PlayerScreenState {
-    var renderers by mutableStateOf<List<Renderer>?>(null)
+    var rendererList by mutableStateOf<RendererListResult?>(null)
     var castOpen by mutableStateOf(false)
 }
 
@@ -474,15 +472,10 @@ fun PlayerScreen(
                 }, icon = if (playback.popout) HeyarrIcons.Fullscreen else HeyarrIcons.OpenExternal, compact = true)
                 IconButtonRound(HeyarrIcons.Cast, "Play on a renderer", {
                     state.castOpen = !state.castOpen
-                    if (state.renderers ==
-                        null
-                    ) {
+                    if (state.rendererList == null) {
                         scope.launch {
                             session.api?.let { a ->
-                                session.io { a.renderers() }.onSuccess {
-                                    state.renderers =
-                                        it
-                                }
+                                session.io { a.renderers() }.onSuccess { state.rendererList = it }
                             }
                         }
                     }
@@ -684,62 +677,26 @@ private fun StartingOverlay(label: String) {
 private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.Player) {
     val scope = rememberCoroutineScope()
     Panel("Play on a renderer", trailing = { GhostButton("Close", { state.castOpen = false }) }) {
-        val r = state.renderers
+        val rl = state.rendererList
         when {
-            r == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
+            rl == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
 
-            r.isEmpty() -> Text(
+            rl.renderers.isEmpty() -> Text(
                 "No renderers found — a device that is off is not listed.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Tokens.textMuted,
             )
 
-            else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (x in r) {
-                    FilterChip(x.name, false, {
-                        val a = session.api ?: return@FilterChip
-                        state.castOpen = false
-                        // On the SESSION scope, not this row's: closing the picker (above) removes
-                        // CastRow from composition, which would cancel a row-scoped coroutine — and
-                        // its toast — before the cast finished. A codec refusal offers "Cast anyway"
-                        // (force_direct); forcing again is shown as a plain refusal, so no loop.
-                        fun cast(force: Boolean) {
-                            session.launch {
-                                session.playback.player.pause()
-                                session.io { a.playHere(item.assetId, x.name, x.udn, forceDirect = force) }
-                                    .onSuccess { res ->
-                                        when (res) {
-                                            is McpResult.Ok -> session.toast(
-                                                Toast.Kind.SUCCESS,
-                                                "Playing on ${x.name}",
-                                                item.title,
-                                            )
-
-                                            is McpResult.Refused -> if (force) {
-                                                session.refused(
-                                                    res,
-                                                )
-                                            } else {
-                                                session.castRefused(res, x.name) {
-                                                    cast(true)
-                                                }
-                                            }
-                                        }
-                                    }
-                            }
-                        }
-                        cast(false)
-                    }, icon = HeyarrIcons.Cast)
-                }
+            else -> RendererGroups(rl) { x ->
+                val a = session.api ?: return@RendererGroups
+                state.castOpen = false
+                Caster(session, a, x, before = { session.playback.player.pause() }).cast(item.assetId)
             }
         }
         GhostButton("Search the network again", {
             scope.launch {
                 session.api?.let { a ->
-                    session.io { a.renderers(refresh = true) }.onSuccess {
-                        state.renderers =
-                            it
-                    }
+                    session.io { a.renderers(refresh = true) }.onSuccess { state.rendererList = it }
                 }
             }
         })

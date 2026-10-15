@@ -41,6 +41,7 @@ import one.rarebit.heyarr.desktop.device.DesktopDeviceEnroller
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DevicePairingSteps
 import one.rarebit.heyarr.desktop.device.PairingCoordinator
+import one.rarebit.heyarr.desktop.heyarr.CastResult
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.login.BearerTokenLogin
@@ -533,6 +534,18 @@ class AppSession(
      * no loop, since the retry path shows the plain refusal.
      */
     fun castRefused(r: McpResult.Refused, deviceName: String, retry: () -> Unit) {
+        toast(
+            Toast.Kind.REFUSED,
+            "Couldn't cast to $deviceName",
+            r.message,
+            r.tool,
+            action = ToastAction("Cast anyway") { retry() },
+        )
+    }
+
+    fun refused(r: CastResult.Refused) = toast(Toast.Kind.REFUSED, "Refused by ${r.tool}", r.message, r.tool)
+
+    fun castRefused(r: CastResult.Refused, deviceName: String, retry: () -> Unit) {
         toast(
             Toast.Kind.REFUSED,
             "Couldn't cast to $deviceName",

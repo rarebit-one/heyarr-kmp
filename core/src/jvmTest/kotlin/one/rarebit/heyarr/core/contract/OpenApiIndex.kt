@@ -6,7 +6,8 @@ package one.rarebit.heyarr.core.contract
  * anywhere in that response?".
  *
  * A **target** is either an operation — `"GET /api/v1/works"`, whose 2xx `application/json`
- * response schemas are used — or a named component schema — `"#Problem"`. Naming the
+ * response schemas are used, or `"POST /api/v1/renderers/{udn}/play 409"`, which uses only that
+ * status's JSON schemas — or a named component schema — `"#Problem"`. Naming the
  * operation rather than the schema is deliberate: it also fails when the route itself is
  * removed or stops returning JSON, which is drift too.
  *
@@ -36,15 +37,17 @@ internal class OpenApiIndex(private val root: Map<String, Any?>) {
             requireNotNull(schema) { "no component schema ${target.substring(1)}" }
             return listOf(schema)
         }
-        val method = target.substringBefore(' ')
-        val path = target.substringAfter(' ')
+        val parts = target.split(' ')
+        val method = parts[0]
+        val path = parts.getOrElse(1) { "" }
+        val status = parts.getOrNull(2)
         require(method in METHODS && path.startsWith("/")) {
             "bad target '$target' (want \"GET /api/v1/…\" or \"#Schema\")"
         }
         val op = map(map(map(root["paths"])?.get(path))?.get(method.lowercase()))
         requireNotNull(op) { "no operation $method $path" }
         val schemas = map(op["responses"]).orEmpty()
-            .filterKeys { it.startsWith("2") }
+            .filterKeys { if (status == null) it.startsWith("2") else it == status }
             .values
             .flatMap { response ->
                 map(map(resolve(response))?.get("content")).orEmpty()
@@ -52,7 +55,7 @@ internal class OpenApiIndex(private val root: Map<String, Any?>) {
                     .values
                     .mapNotNull { map(it)?.get("schema") }
             }
-        require(schemas.isNotEmpty()) { "$method $path has no 2xx JSON response" }
+        require(schemas.isNotEmpty()) { "$method $path has no ${status ?: "2xx"} JSON response" }
         return schemas
     }
 
