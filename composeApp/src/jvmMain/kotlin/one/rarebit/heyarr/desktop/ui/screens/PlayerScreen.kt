@@ -690,7 +690,7 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
             else -> RendererGroups(rl) { x ->
                 val a = session.api ?: return@RendererGroups
                 state.castOpen = false
-                castTo(session, a, item.assetId, x, before = { session.playback.player.pause() })
+                Caster(session, a, x, before = { session.playback.player.pause() }).cast(item.assetId)
             }
         }
         GhostButton("Search the network again", {

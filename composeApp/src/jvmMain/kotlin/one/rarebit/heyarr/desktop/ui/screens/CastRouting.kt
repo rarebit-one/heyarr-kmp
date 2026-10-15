@@ -24,6 +24,7 @@ import one.rarebit.heyarr.ui.theme.Tokens
  * only the client can see (`r3_only`) is shown disabled — the server cannot drive it until the
  * client-relay route exists.
  */
+@Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 @Composable
 internal fun RendererGroups(list: RendererListResult, onPick: (Renderer) -> Unit) {
     val clientSite = list.clientSite
@@ -63,65 +64,59 @@ internal fun RendererGroups(list: RendererListResult, onPick: (Renderer) -> Unit
 }
 
 /**
- * Cast [assetId] to [renderer] and say how it went. Runs on the SESSION scope, not the
- * picker's: closing the picker removes it from composition, which would cancel a
- * picker-scoped coroutine — and its toast — before the cast finished.
+ * Casts to one [renderer] and says how it went. Runs on the SESSION scope, not the picker's:
+ * closing the picker removes it from composition, which would cancel a picker-scoped
+ * coroutine — and its toast — before the cast finished.
  *
  * A codec refusal offers "Cast anyway" (force_direct); forcing again is shown as a plain
  * refusal, so no loop. A route refusal (409 with alternatives) offers the smaller copy the
  * server named, cast through this same path so its outcome is reported too.
  */
-internal fun castTo(
-    session: AppSession,
-    api: HeyarrApi,
-    assetId: String,
-    renderer: Renderer,
-    force: Boolean = false,
-    before: suspend () -> Unit = {},
-    after: () -> Unit = {},
+internal class Caster(
+    private val session: AppSession,
+    private val api: HeyarrApi,
+    private val renderer: Renderer,
+    private val before: suspend () -> Unit = {},
+    private val after: () -> Unit = {},
 ) {
-    val recast = { id: String, f: Boolean -> castTo(session, api, id, renderer, f, before, after) }
-    session.launch {
-        before()
-        session.io { api.playHere(assetId, renderer.name, renderer.udn, forceDirect = force) }
-            .onSuccess { reportCast(session, renderer, it, assetId, force, recast) }
-        after()
-    }
-}
-
-private fun reportCast(
-    session: AppSession,
-    renderer: Renderer,
-    res: CastResult,
-    assetId: String,
-    force: Boolean,
-    recast: (assetId: String, force: Boolean) -> Unit,
-) {
-    when (res) {
-        is CastResult.Success -> session.toast(
-            Toast.Kind.SUCCESS,
-            "Playing on ${renderer.name}",
-            if (res.clientMustStayConnected) "Keep this app open while it plays." else "You can close the app.",
-        )
-
-        is CastResult.Refused -> if (force) {
-            session.refused(res)
-        } else {
-            session.castRefused(res, renderer.name) { recast(assetId, true) }
+    fun cast(assetId: String, force: Boolean = false) {
+        session.launch {
+            before()
+            session.io { api.playHere(assetId, renderer.name, renderer.udn, forceDirect = force) }
+                .onSuccess { report(it, assetId, force) }
+            after()
         }
+    }
 
-        is CastResult.Conflict -> {
-            val smaller = res.alternatives.firstOrNull { it.kind == "smaller_copy" && it.assetId != null }
-            val elsewhere = res.alternatives.firstOrNull { it.kind == "copy_to_site_first" }?.site
-            session.toast(
-                Toast.Kind.REFUSED,
-                "Couldn't cast to ${renderer.name}",
-                listOfNotNull(res.reasonHuman, elsewhere?.let { "A copy needs to reach $it first." }).joinToString(" "),
-                action = smaller?.let { alt ->
-                    val label = alt.heightPx?.let { "Play the ${it}p copy instead" } ?: "Play a smaller copy instead"
-                    ToastAction(label) { recast(alt.assetId!!, force) }
-                },
+    private fun report(res: CastResult, assetId: String, force: Boolean) {
+        when (res) {
+            is CastResult.Success -> session.toast(
+                Toast.Kind.SUCCESS,
+                "Playing on ${renderer.name}",
+                if (res.clientMustStayConnected) "Keep this app open while it plays." else "You can close the app.",
             )
+
+            is CastResult.Refused -> if (force) {
+                session.refused(res)
+            } else {
+                session.castRefused(res, renderer.name) { cast(assetId, force = true) }
+            }
+
+            is CastResult.Conflict -> {
+                val smaller = res.alternatives.firstOrNull { it.kind == "smaller_copy" && it.assetId != null }
+                val elsewhere = res.alternatives.firstOrNull { it.kind == "copy_to_site_first" }?.site
+                session.toast(
+                    Toast.Kind.REFUSED,
+                    "Couldn't cast to ${renderer.name}",
+                    listOfNotNull(res.reasonHuman, elsewhere?.let { "A copy needs to reach $it first." })
+                        .joinToString(" "),
+                    action = smaller?.let { alt ->
+                        val label =
+                            alt.heightPx?.let { "Play the ${it}p copy instead" } ?: "Play a smaller copy instead"
+                        ToastAction(label) { cast(alt.assetId!!, force) }
+                    },
+                )
+            }
         }
     }
 }

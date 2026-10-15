@@ -309,14 +309,7 @@ private fun CastPicker(session: AppSession, state: DetailState) {
             else -> RendererGroups(rl) { x ->
                 val a = session.api ?: return@RendererGroups
                 state.castAssetId = null
-                castTo(
-                    session,
-                    a,
-                    assetId,
-                    x,
-                    before = { state.busy = "cast" },
-                    after = { state.busy = null },
-                )
+                Caster(session, a, x, before = { state.busy = "cast" }, after = { state.busy = null }).cast(assetId)
             }
         }
         GhostButton("Search the network again", {
