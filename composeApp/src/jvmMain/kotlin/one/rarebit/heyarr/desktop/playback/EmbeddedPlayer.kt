@@ -168,16 +168,8 @@ class EmbeddedPlayer(
     /** External subtitle URLs already `sub-add`ed to the current file, so re-applying is idempotent. */
     private val appliedSubs = mutableListOf<String>()
 
-    /**
-     * The sidecar URLs the session wants on this item, kept so a restart seek can put
-     * them back: a re-cut is a whole new file to mpv and its `sub-add`s go with the old
-     * one, and nothing upstream re-offers them (the shell only calls `refreshSubtitles`
-     * when an item starts). Re-applied on the `file-loaded` that follows the re-cut,
-     * not straight after `loadfile`, because `sub-add` before the file is open is lost.
-     */
+    /** Sidecars requested for this file, attached after `file-loaded` and again after a restart seek. */
     private var wantedSubs: List<String> = emptyList()
-
-    @Volatile private var resubOnLoad = false
 
     /**
      * Start mpv and load [url]. [embedded] runs libmpv in-process, rendering into the
@@ -348,7 +340,6 @@ class EmbeddedPlayer(
         streamStart = 0.0 // a new item always begins at its own start
         appliedSubs.clear() // a new file drops the old file's external subtitles
         wantedSubs = emptyList()
-        resubOnLoad = false // and they belonged to the old item
         state =
             state.copy(
                 loaded = false, position = 0.0, duration = knownDuration ?: 0.0, eof = false,
@@ -455,7 +446,6 @@ class EmbeddedPlayer(
         val at = atSeconds.coerceAtLeast(0.0).let { if (limit != null) it.coerceAtMost(limit) else it }
         streamStart = at
         appliedSubs.clear() // the re-cut is a new file to mpv; sidecars re-attach below
-        resubOnLoad = wantedSubs.isNotEmpty()
         state = state.copy(position = at, bufferedTo = at, loaded = false, eof = false, error = null, coreIdle = true)
         send("loadfile", StreamSeek.urlAt(base, at))
         send("set_property", "pause", false)
@@ -470,15 +460,16 @@ class EmbeddedPlayer(
      * (mpv `sub-add`). They ride the same `http-header-fields` bearer the video does, so
      * the authenticated blob fetch just works, and land in `track-list` as `external`
      * tracks — exactly what the CC picker labels "sidecar file". The first is selected so
-     * captions show; the rest are added selectable-but-off. Idempotent and a no-op until
-     * the socket is up, so callers may invoke it on both start and queue-load without
-     * double-adding; [load] clears the set when the file changes.
+     * captions show; the rest are added selectable-but-off. Keep requests made during
+     * loading and attach them after `file-loaded`; mpv drops a `sub-add` sent before it.
+     * [load] clears the set when the file changes.
      */
+    @Synchronized
     fun addExternalSubtitles(urls: List<String>) {
         wantedSubs = urls.filter { it.isNotBlank() }
-        if (channel?.isOpen != true) return
-        for (u in urls) {
-            if (u.isBlank() || u in appliedSubs) continue
+        if (channel?.isOpen != true || !state.loaded) return
+        for (u in wantedSubs) {
+            if (u in appliedSubs) continue
             send("sub-add", u, if (appliedSubs.isEmpty()) "select" else "auto")
             appliedSubs.add(u)
         }
@@ -505,7 +496,6 @@ class EmbeddedPlayer(
         socketPath?.delete()
         appliedSubs.clear()
         wantedSubs = emptyList()
-        resubOnLoad = false
         streamBase = null
         streamStart = 0.0
         state = PlayerState()
@@ -540,13 +530,13 @@ class EmbeddedPlayer(
                     val line = pending.substring(0, nl).trim()
                     pending.delete(0, nl + 1)
                     if (line.isNotEmpty()) {
+                        val wasLoaded = state.loaded
                         val next = PlayerEvents.apply(state, line, streamStart)
                         // Pin the total to the known source runtime: a transcode stream's
                         // own duration grows as it encodes, which would flicker the scrubber.
                         state = knownDuration?.let { next.copy(duration = it) } ?: next
-                        // The re-cut is open: put the sidecars back on it.
-                        if (resubOnLoad && next.loaded) {
-                            resubOnLoad = false
+                        // The file is open: attach requests made while it was loading.
+                        if (!wasLoaded && next.loaded) {
                             addExternalSubtitles(wantedSubs)
                         }
                     }
