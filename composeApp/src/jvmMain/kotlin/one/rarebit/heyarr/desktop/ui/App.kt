@@ -73,6 +73,7 @@ import one.rarebit.heyarr.desktop.ui.screens.DetailState
 import one.rarebit.heyarr.desktop.ui.screens.Field
 import one.rarebit.heyarr.desktop.ui.screens.HomeScreen
 import one.rarebit.heyarr.desktop.ui.screens.HomeState
+import one.rarebit.heyarr.desktop.ui.screens.LibraryContents
 import one.rarebit.heyarr.desktop.ui.screens.LibraryScreen
 import one.rarebit.heyarr.desktop.ui.screens.LibraryState
 import one.rarebit.heyarr.desktop.ui.screens.ManageDownloads
@@ -171,8 +172,9 @@ fun App(
     val nav = remember { Nav(initialRoute) }
     val search = remember { SearchController(scope, { session.api }, session::noteTransportFailure) }
     val home = remember { HomeState() }
-    val library = remember { LibraryState() }
-    val shelves = remember { Experience.entries.associateWith { LibraryState() } }
+    val libraryContents = remember { LibraryContents() }
+    val library = remember { LibraryState(libraryContents) }
+    val shelves = remember { Experience.entries.associateWith { LibraryState(libraryContents) } }
     var consuming by remember { mutableStateOf(initialRoute is Route.Consume) }
     val missing = remember { MissingState() }
     val nowPlaying = remember { NowPlayingState() }
