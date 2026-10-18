@@ -90,7 +90,7 @@ fun MissingScreen(
             })
         }
     }
-    LaunchedEffect(Unit) { if (state.missing == null) load() }
+    LaunchedEffect(state) { if (state.missing == null) load() }
 
     val list = (if (state.tab == 0) state.missing else state.upgrades)
     val sel = state.selected.filter { id -> list?.any { it.desiredItemId == id } == true }.toSet()

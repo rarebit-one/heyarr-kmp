@@ -597,7 +597,9 @@ fun DownloadsScreen(
             }
         }
     }
-    LaunchedEffect(Unit) {
+    // Keyed on the state: a session change swaps it in while this screen stays, and a Unit key
+    // kept polling the first session's state (see HomeScreen).
+    LaunchedEffect(state) {
         while (isActive) {
             load()
             delay(10_000)

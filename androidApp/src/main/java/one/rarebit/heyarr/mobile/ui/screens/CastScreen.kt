@@ -80,7 +80,7 @@ fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modif
             )
         }
     }
-    LaunchedEffect(Unit) { if (state.renderers == null) load() }
+    LaunchedEffect(state) { if (state.renderers == null) load() }
     LaunchedEffect(state.selected?.udn) {
         val r = state.selected ?: return@LaunchedEffect
         while (isActive) {

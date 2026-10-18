@@ -94,7 +94,7 @@ fun SettingsScreen(
         scope.launch { session.io { session.api.peers() }.onSuccess { state.peers = it } }
     }
     // Followed sources and peers are enrolled-only reads; a guest never loads them.
-    LaunchedEffect(Unit) { if (!isGuest && state.followed == null) load() }
+    LaunchedEffect(state, isGuest) { if (!isGuest && state.followed == null) load() }
 
     LazyColumn(
         modifier.fillMaxSize(),
