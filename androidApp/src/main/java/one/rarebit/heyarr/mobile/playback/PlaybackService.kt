@@ -1,10 +1,12 @@
 package one.rarebit.heyarr.mobile.playback
 
 import android.content.Intent
+import android.net.Uri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSourceBitmapLoader
+import androidx.media3.datasource.ResolvingDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -27,11 +29,18 @@ class PlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
-        val okHttp = (application as HeyarrApp).graph.okHttp
+        val graph = (application as HeyarrApp).graph
+        val okHttp = graph.okHttp
         val dataSources = OkHttpDataSource.Factory(okHttp)
+        // Each track's blob URL is swapped, as it loads, for the render capability minted
+        // when the queue started — a read that needs no proof, so it works on a locked
+        // phone (RenderCapabilityCache). No capability: the blob URL, on a proof, as before.
+        val trackSources = ResolvingDataSource.Factory(dataSources) { spec ->
+            graph.renderCapabilities.resolve(spec.uri.toString())?.let { spec.withUri(Uri.parse(it)) } ?: spec
+        }
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(
-                DefaultMediaSourceFactory(dataSources).setLoadErrorHandlingPolicy(LockedPlayback.ErrorPolicy()),
+                DefaultMediaSourceFactory(trackSources).setLoadErrorHandlingPolicy(LockedPlayback.ErrorPolicy()),
             )
             // Load far ahead while the phone can still sign range reads, and wait out a
             // locked phone rather than fail (LockedPlayback): music under the lock screen
