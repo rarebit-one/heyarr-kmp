@@ -22,6 +22,12 @@ import one.rarebit.heyarr.mobile.device.PairingCoordinator
 import one.rarebit.heyarr.mobile.device.PairingForegroundService
 import one.rarebit.heyarr.mobile.device.PairingState
 import one.rarebit.heyarr.mobile.device.PrefsPendingPairingStore
+import one.rarebit.heyarr.mobile.login.LoginCoordinator
+import one.rarebit.heyarr.mobile.login.LoginForegroundService
+import one.rarebit.heyarr.mobile.login.PrefsPendingLoginStore
+import one.rarebit.heyarr.mobile.login.QrLoginClient
+import one.rarebit.heyarr.mobile.login.holdsProcess
+import one.rarebit.heyarr.mobile.net.OkHttpTransport
 import one.rarebit.heyarr.mobile.net.OkHttpVoidbindTransport
 import one.rarebit.heyarr.mobile.net.RedirectNoStoreInterceptor
 
@@ -31,7 +37,8 @@ import one.rarebit.heyarr.mobile.net.RedirectNoStoreInterceptor
  * so it survives the Activity, the Enrol screen leaving composition, and the app
  * being backgrounded while the user is over in Cruciform — and while it is live, a
  * foreground service ([PairingForegroundService]) keeps the process from being
- * killed. The Activity's ViewModel only observes it.
+ * killed. The Activity's ViewModel only observes it. [login] is the same for a QR login
+ * handed to Cruciform on this phone (#172).
  */
 @UnstableApi
 class HeyarrApp :
@@ -86,6 +93,20 @@ class HeyarrApp :
     }
 
     /**
+     * The QR login and its `GET /login/{id}` poll, app-scoped for the same reason as
+     * [pairing]: "Approve on this phone" puts the app behind Cruciform, where a
+     * ViewModel-scoped poll died with a frozen or killed process (#172). The pending
+     * login is persisted, so a restart resumes the poll.
+     */
+    val login: LoginCoordinator by lazy {
+        LoginCoordinator(
+            scope = appScope,
+            store = PrefsPendingLoginStore(this),
+            login = { base -> QrLoginClient(http = OkHttpTransport(), rpBase = base) },
+        )
+    }
+
+    /**
      * Coil's loader over the shared OkHttp client: a poster URL on our node picks up the
      * live credential in net/AuthInterceptor; one on any other host goes out bare.
      *
@@ -127,6 +148,24 @@ class HeyarrApp :
                 .collect { inFlight ->
                     val intent = Intent(this@HeyarrApp, PairingForegroundService::class.java)
                     if (inFlight) startForegroundService(intent) else stopService(intent)
+                }
+        }
+        // And for as long as a QR login waits on Cruciform on this phone, or its approval
+        // waits for the app to come back and apply it.
+        appScope.launch {
+            login.state
+                .map { it.holdsProcess }
+                .distinctUntilChanged()
+                .collect { waiting ->
+                    val intent = Intent(this@HeyarrApp, LoginForegroundService::class.java)
+                    if (!waiting) {
+                        stopService(intent)
+                    } else {
+                        // A login resumed after a process death can be read while the app
+                        // is not yet in front, where Android refuses a foreground start; the
+                        // resumed poll still runs, it is only not protected.
+                        runCatching { startForegroundService(intent) }
+                    }
                 }
         }
     }

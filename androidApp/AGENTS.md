@@ -30,6 +30,10 @@ also ships the `void-which-binds-client` library.
 - **Pairing runs in the app-scoped `device/PairingCoordinator`, not the ViewModel.** It lives in
   `HeyarrApp.pairing` with a foreground service, so switching to Cruciform on the same phone
   cannot kill the relay poll. `AppViewModel` only projects its state.
+- **So does the QR login's poll: `login/LoginCoordinator`, in `HeyarrApp.login`** (#172). "Approve
+  on this phone" puts the app behind Cruciform. A foreground service holds the process while the
+  login is handed off, and the open login is persisted so a restart resumes its `GET /login/{id}`
+  poll instead of losing the approval.
 - **One-tap same-phone pairing only for a deep-linked invite.** A scanned or pasted invite keeps
   the human SAS comparison, because there is no local channel to another device.
   `heyarr-mobile://pair-done` carries a session id only: a navigation hint, never evidence.

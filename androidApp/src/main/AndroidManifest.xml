@@ -12,7 +12,9 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- A pairing with Cruciform on this phone has the user switching apps for minutes; the
          relay wait runs in an app-scoped holder under a "Pairing with Cruciform…" foreground
-         service (device/PairingForegroundService) so the process is not killed meanwhile. -->
+         service (device/PairingForegroundService) so the process is not killed meanwhile. A
+         QR login handed to Cruciform on this phone ("Approve on this phone") waits the same
+         way, under login/LoginForegroundService. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <!-- The audio queue plays under a MediaSessionService (playback/PlaybackService): music
@@ -112,6 +114,11 @@
         <!-- Holds the process alive while a pairing is in flight (see the permissions above). -->
         <service
             android:name=".device.PairingForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+        <!-- Holds the process alive while a login waits on Cruciform on this phone (#172). -->
+        <service
+            android:name=".login.LoginForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
         <!-- The reader: a Readium navigator in its own activity (fragment-hosted), launched

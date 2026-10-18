@@ -8,6 +8,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.core.auth.Credential
@@ -25,9 +26,11 @@ import one.rarebit.heyarr.mobile.device.InMemoryPendingPairingStore
 import one.rarebit.heyarr.mobile.device.MembershipOps
 import one.rarebit.heyarr.mobile.device.PairingCoordinator
 import one.rarebit.heyarr.mobile.device.PairingSteps
+import one.rarebit.heyarr.mobile.login.InMemoryPendingLoginStore
+import one.rarebit.heyarr.mobile.login.LoginCoordinator
+import one.rarebit.heyarr.mobile.login.LoginFlow
 import one.rarebit.heyarr.mobile.login.LoginUiState
 import one.rarebit.heyarr.mobile.login.QrLoginClient
-import one.rarebit.heyarr.mobile.login.VoidbindLogin
 import one.rarebit.heyarr.mobile.net.DeviceAuthTransport
 import one.rarebit.heyarr.mobile.net.OkHttpTransport
 import one.rarebit.heyarr.mobile.playback.PlaybackCoordinator
@@ -64,9 +67,6 @@ private object UnavailablePairingSteps : PairingSteps {
  */
 class AppViewModel internal constructor(
     private val settings: SettingsStore = InMemorySettingsStore(),
-    private val loginFactory: (baseUrl: String) -> VoidbindLogin = { base ->
-        QrLoginClient(http = OkHttpTransport(), rpBase = base)
-    },
     /**
      * The app-scoped pairing holder ([one.rarebit.heyarr.mobile.HeyarrApp.pairing] on
      * the phone): the join → SAS → admission → `/enrol` pipeline outlives this
@@ -76,6 +76,18 @@ class AppViewModel internal constructor(
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         store = InMemoryPendingPairingStore(),
         steps = { UnavailablePairingSteps },
+    ),
+    /**
+     * The app-scoped QR login ([one.rarebit.heyarr.mobile.HeyarrApp.login] on the phone):
+     * its `GET /login/{id}` poll outlives this ViewModel, so a login approved in Cruciform
+     * while this app was frozen or killed behind it is still collected (#172). This
+     * ViewModel starts it and applies its outcome. The default polls a real QR login on a
+     * scope of its own.
+     */
+    private val login: LoginCoordinator = LoginCoordinator(
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+        store = InMemoryPendingLoginStore(),
+        login = { base -> QrLoginClient(http = OkHttpTransport(), rpBase = base) },
     ),
     /**
      * The raw transport — the shared OkHttp client on the phone (AppGraph), a bare one
@@ -162,6 +174,46 @@ class AppViewModel internal constructor(
 
     private val _loginState = MutableStateFlow<LoginUiState>(LoginUiState.Idle)
     val loginState: StateFlow<LoginUiState> = _loginState.asStateFlow()
+
+    init {
+        // Mirror the app-scoped login, and apply its outcome exactly once, including one
+        // collected by a poll resumed after a process death (#172).
+        //
+        // Dispatched on Dispatchers.Main, not viewModelScope's Main.immediate: an approval
+        // already waiting when this ViewModel is built would otherwise be applied right here,
+        // before `credential`'s own initializer further down runs and resets it.
+        //
+        // An approval is applied only once the config points at the node that approved it
+        // (the token is only good there). After a restart an mDNS-discovered node is only
+        // re-found by autoDiscover(), so the approval waits for it rather than being dropped;
+        // a sign-out or a new sign-in cancels the login, and with it a stale approval.
+        viewModelScope.launch(Dispatchers.Main) {
+            combine(login.state, _config) { flow, cfg -> flow to cfg.baseUrl }.collect { (flow, base) ->
+                when (flow) {
+                    LoginFlow.Idle, is LoginFlow.Starting -> Unit
+
+                    is LoginFlow.Awaiting -> _loginState.value = LoginUiState.AwaitingScan(flow.pending.qrTuple)
+
+                    is LoginFlow.Approved -> if (flow.rpBase == base) {
+                        // The QR bootstrap yields a Bearer session token (auth/Credential.Session).
+                        credential = Credential.Session(flow.sessionToken)
+                        _loginState.value = LoginUiState.Approved(flow.user)
+                        loadSessionAuthority()
+                        login.consume()
+                    } else if (_loginState.value is LoginUiState.AwaitingScan) {
+                        // Not this node (yet): offer "Sign in" again rather than a QR that
+                        // already completed. A new sign-in replaces the waiting approval.
+                        _loginState.value = LoginUiState.Idle
+                    }
+
+                    is LoginFlow.Failed -> {
+                        _loginState.value = LoginUiState.Error(flow.message)
+                        login.consume()
+                    }
+                }
+            }
+        }
+    }
 
     private val _sessionAuthority = MutableStateFlow<SessionAuthority?>(null)
     val sessionAuthority: StateFlow<SessionAuthority?> = _sessionAuthority.asStateFlow()
@@ -275,6 +327,7 @@ class AppViewModel internal constructor(
         deviceCredential = null
         _sessionAuthority.value = null
         playback.stop()
+        login.cancel()
         _loginState.value = LoginUiState.Idle
         startGuestBrowsing()
     }
@@ -290,31 +343,20 @@ class AppViewModel internal constructor(
         loadSessionAuthority()
     }
 
+    /**
+     * Open a QR login on the current node. It runs in the app-scoped [LoginCoordinator],
+     * not here, so going behind Cruciform cannot lose it; [loginState] mirrors it.
+     */
     fun signIn() {
         if (_loginState.value is LoginUiState.AwaitingScan) return
-        val login = loginFactory(config.baseUrl)
-        viewModelScope.launch {
-            val result = withContext(Dispatchers.IO) {
-                runCatching {
-                    val pending = login.begin()
-                    _loginState.value = LoginUiState.AwaitingScan(pending.qrTuple)
-                    login.awaitApproval(pending)
-                }.getOrElse { VoidbindLogin.Result.Failed(it.message ?: "login error") }
-            }
-            when (result) {
-                is VoidbindLogin.Result.Approved -> {
-                    // The QR bootstrap yields a Bearer session token (auth/Credential.Session).
-                    credential = Credential.Session(result.sessionToken)
-                    _loginState.value = LoginUiState.Approved(result.user)
-                    loadSessionAuthority()
-                }
-
-                is VoidbindLogin.Result.Denied -> _loginState.value = LoginUiState.Error(result.reason)
-
-                is VoidbindLogin.Result.Failed -> _loginState.value = LoginUiState.Error(result.error)
-            }
-        }
+        login.start(config.baseUrl)
     }
+
+    /** "Approve on this phone": the app goes behind Cruciform, so hold the process up. */
+    fun loginHandedOff() = login.handedOff()
+
+    /** Cruciform did not open after "Approve on this phone": undo [loginHandedOff]. */
+    fun loginHandOffFailed() = login.handOffFailed()
 
     /** Introspect the session (`GET /api/v1/session`) for the signed-in / guest / read-only banner. */
     fun loadSessionAuthority() {

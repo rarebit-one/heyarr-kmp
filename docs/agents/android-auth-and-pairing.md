@@ -55,6 +55,16 @@ is the app's state machine over it). When Cruciform (the Voidbind authenticator 
 so it can foreground us) — no second-phone QR dance; the RP is still polled. (Contrast
 `allthing-android`, whose channel is push-approve — do **not** copy FCM/ntfy wiring.)
 
+That poll runs in the app-scoped `login/LoginCoordinator` (`HeyarrApp.login`), not the
+ViewModel (#172). While Cruciform is in front Android may freeze or kill heyarr, and a
+ViewModel-scoped poll died with it: the restored Activity showed a fresh "Sign in" while
+the node held an approval nobody collected. Now, from the "Approve on this phone" tap
+until the login ends, `login/LoginForegroundService` holds the process up, and the open
+login (`PendingLogin`: node, id, tuple) is persisted in `PrefsPendingLoginStore`, so a
+restart after a process death resumes the poll for what is left of its two-minute window.
+`AppViewModel` starts it and applies its outcome, dropping an approval minted by a node it
+no longer points at.
+
 The **reverse** handoff exists too (voidbind-kmp ADR-0006): Cruciform's "Add a device"
 on the same phone fires **`heyarr-mobile://pair?invite=<percent-encoded void-which-binds:pair
 tuple>`** (manifest filter; `device/PairDeepLink` routes it — pure Kotlin, unit-tested)
