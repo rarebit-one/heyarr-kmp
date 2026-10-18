@@ -12,6 +12,7 @@ import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +29,11 @@ import kotlinx.coroutines.launch
  * controller only knows MediaItems), and the position ticks while playing.
  */
 @UnstableApi
-class SessionAudioPlayer(private val context: Context, private val scope: CoroutineScope) : AudioPlayer {
+class SessionAudioPlayer(
+    private val context: Context,
+    private val scope: CoroutineScope,
+    private val capabilities: RenderCapabilityCache? = null,
+) : AudioPlayer {
 
     private val _state = MutableStateFlow(AudioState())
     override val state: StateFlow<AudioState> = _state.asStateFlow()
@@ -97,6 +102,10 @@ class SessionAudioPlayer(private val context: Context, private val scope: Corout
         val start = startIndex.coerceIn(0, items.size - 1)
         val volume = _state.value.volume
         _state.value = AudioState(queue = items, index = start, volume = volume)
+        // Now, while the phone is necessarily unlocked, mint the whole queue's render
+        // capabilities, so its tracks still load once the screen locks (RenderCapabilityCache).
+        // In parallel with the first load, which does not wait for it.
+        capabilities?.let { caps -> scope.launch(Dispatchers.IO) { caps.prefetch(items) } }
         withController { c ->
             c.volume = volume
             c.setMediaItems(items.map { it.toMediaItem() }, start, 0L)

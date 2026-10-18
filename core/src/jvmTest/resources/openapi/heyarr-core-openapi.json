@@ -230,7 +230,15 @@
       "$ref": "#/components/parameters/cursor"
      },
      {
-      "$ref": "#/components/parameters/limit"
+      "name": "limit",
+      "in": "query",
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 500,
+       "default": 50
+      },
+      "description": "Values above 500 are clamped. Other collections keep the 200-row maximum."
      },
      {
       "name": "content_type",
@@ -1751,6 +1759,218 @@
     }
    }
   },
+  "/api/v1/spaces/{id}/members": {
+   "get": {
+    "tags": [
+     "personal-state"
+    ],
+    "operationId": "listSpaceMembers",
+    "summary": "Who a space is shared with (ADR-0108). Refused to a restricted credential and a Guest.",
+    "description": "Every membership row, current and removed, the owner first. A removed\nmember keeps its row with `removed_at` set: while it is set no new copy\nof the space key is admitted for that user's devices, and the owner's\ndevice reads it to know which recipients a rotation must leave out.\n\nA space with no rows — created by a bearer token, or before membership\nexisted — is gated by device enrolment alone, as it always was.\n",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/id"
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The membership rows (possibly empty).",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "space_id",
+          "members"
+         ],
+         "properties": {
+          "space_id": {
+           "type": "string"
+          },
+          "members": {
+           "type": "array",
+           "items": {
+            "$ref": "#/components/schemas/SpaceMember"
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "personal-state"
+    ],
+    "operationId": "addSpaceMember",
+    "summary": "Share a space with a user (ADR-0108). Device credential with `write` only; the owner's device.",
+    "description": "The space is the unit of sharing: a member's enrolled devices may each\nhold a wrapped copy of the space key, and a user who is not a member may\nnot be given one. This is the first of two steps. It records the\nmembership and answers with `wrap_for`, the member's enrolled device\nencryption keys, and `key_epoch`, the space's current epoch. The\ncaller's device then wraps the current key for each of them and pushes\nthe copies with `POST /spaces/{id}/keys`, which from now on admits\nthem. The server never wraps: it holds no key to wrap with\n(Invariant 6).\n\nOnly a management-authorised Device credential may add — a bearer\ntoken or a session is a `403` — and only the space owner's, unless the\nspace is a `family` space (every household member's by definition; any\nsuch device may change it) or has no recorded owner (ADR-0104's\nowner-less rule). Members may not re-share: a member's device is a\n`403`. Adding a user who is already a member, or the owner, returns the\nexisting row. A user with no enrolled device carrying an encryption\nkey is a `409` with code `member_has_no_enrolled_device`: they enrol\nfirst. An unknown user is a `404`; a reference that matches more than\none identity is a `400`. Every add emits\n`personalstate.space.member_added`.\n\nFrom the first membership row on, every wrap for an enrolled device on\na `personal`, `shared` or `research` space must be a current member's,\nor the wrap is a `403` with code `wrap_recipient_not_member`. A\nrecipient the space was created for whose user never joined keeps\nbeing re-wrapped (it already holds a copy); a removed member's device\nnever is, even while it holds one. Recovery keys and granted service\nrecipients are not member devices and pass as before.\n",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/id"
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "user"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "user": {
+          "type": "string",
+          "description": "The user to add, by principal id or name, or user identity id."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "The membership, with what to wrap for next.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "allOf": [
+          {
+           "$ref": "#/components/schemas/SpaceMember"
+          },
+          {
+           "type": "object",
+           "required": [
+            "key_epoch",
+            "wrap_for"
+           ],
+           "properties": {
+            "key_epoch": {
+             "type": "integer",
+             "minimum": 0,
+             "description": "The space's current key epoch, which the wraps must seal."
+            },
+            "wrap_for": {
+             "type": "array",
+             "items": {
+              "type": "string"
+             },
+             "description": "The member's enrolled device encryption keys (x25519:<hex>), sorted."
+            }
+           }
+          }
+         ]
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     },
+     "409": {
+      "$ref": "#/components/responses/Conflict"
+     }
+    }
+   }
+  },
+  "/api/v1/spaces/{id}/members/{member}": {
+   "delete": {
+    "tags": [
+     "personal-state"
+    ],
+    "operationId": "removeSpaceMember",
+    "summary": "Stop sharing a space with a user (ADR-0108). Device credential with `write` only; the owner's device.",
+    "description": "Records the removal as a tombstone. From then on no new copy of the\nspace key is admitted for the user's devices — not by a re-wrap and\nnot by a rotation, which must name them in `revoke` instead. The\nanswer carries `revoke`: the removed member's device keys that hold a\ncopy of the current key, the revoke list of the rotation\n(`POST /spaces/{id}/rotate`, ADR-0103) that completes the removal.\n\nThis is not yet forward secrecy. The server cannot rotate — it holds\nno key — so the removed member's devices keep every copy they hold\nuntil the owner's device re-keys the space without them. That\nrotation is refused by the CLI for every space that is not a playlist\nuntil older clients understand key epochs (#698, #706); until then a\nremoval from such a space closes the gate on new copies and leaves\nthe current key with the devices that already hold it.\n\nSame caller rule as the add. The owner cannot be removed (`409`,\n`member_is_owner`); a user who is not a current member is a `404`.\nEvery removal emits `personalstate.space.member_removed`.\n",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/id"
+     },
+     {
+      "name": "member",
+      "in": "path",
+      "required": true,
+      "description": "The user, by principal id or name, or user identity id.",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The tombstoned membership, with the recipients a rotation must leave out.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "allOf": [
+          {
+           "$ref": "#/components/schemas/SpaceMember"
+          },
+          {
+           "type": "object",
+           "required": [
+            "revoke",
+            "key_epoch"
+           ],
+           "properties": {
+            "revoke": {
+             "type": "array",
+             "items": {
+              "type": "string"
+             },
+             "description": "The removed member's device keys holding a copy of the current key, sorted."
+            },
+            "key_epoch": {
+             "type": "integer",
+             "minimum": 0,
+             "description": "The space's current key epoch, which that rotation starts from."
+            }
+           }
+          }
+         ]
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     },
+     "409": {
+      "$ref": "#/components/responses/Conflict"
+     }
+    }
+   }
+  },
   "/api/v1/service-recipients": {
    "get": {
     "tags": [
@@ -2646,6 +2866,52 @@
     }
    }
   },
+  "/api/v1/renderers/reported": {
+   "post": {
+    "tags": [
+     "playback"
+    ],
+    "operationId": "reportRenderer",
+    "summary": "Report a renderer the client can see (ADR-0111 phase 1a).",
+    "description": "A client that can see a UPnP renderer on its own network segment supplies its HTTP description URL. The controller validates the URL against SSRF rules, fetches and caches the device description, and associates the entry with the reporting client's site.\n\nIf the device IP falls outside all configured site networks the controller cannot fetch it directly; the response is `202 Accepted` with `r3_only: true`, marking it as a candidate for the Phase 2 relay path.\n\nThe URL must contain a literal IP address (no hostnames). Redirects are not followed.",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "location"
+        ],
+        "properties": {
+         "location": {
+          "type": "string",
+          "description": "HTTP URL of the renderer's UPnP description document (literal IP)."
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "Renderer fetched and cached."
+     },
+     "202": {
+      "description": "Accepted as r3_only (device outside all site networks)."
+     },
+     "400": {
+      "description": "Missing or rejected location (SSRF guard, non-literal host, etc.)."
+     },
+     "502": {
+      "description": "The renderer description URL did not respond."
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     }
+    }
+   }
+  },
   "/api/v1/renderers/{udn}/status": {
    "parameters": [
     {
@@ -2717,10 +2983,127 @@
     },
     "responses": {
      "200": {
-      "description": "Playing."
+      "description": "Playing.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "session_id": {
+           "type": "string"
+          },
+          "renderer": {
+           "type": "object",
+           "properties": {
+            "udn": {
+             "type": "string"
+            },
+            "name": {
+             "type": "string"
+            },
+            "model": {
+             "type": "string"
+            }
+           }
+          },
+          "asset_id": {
+           "type": "string"
+          },
+          "title": {
+           "type": "string"
+          },
+          "content_type": {
+           "type": "string"
+          },
+          "route": {
+           "type": "string",
+           "enum": [
+            "r1",
+            "r2"
+           ],
+           "description": "The ADR-0111 route chosen: \"r1\" (byte source and renderer share a site) or \"r2\" (the bytes cross a declared inter-site link)."
+          },
+          "controlling_party": {
+           "type": "string",
+           "description": "The peer id of the controller driving the renderer."
+          },
+          "byte_origin": {
+           "type": "string",
+           "description": "The render base URL the renderer fetches bytes from."
+          },
+          "client_must_stay_connected": {
+           "type": "boolean",
+           "description": "false: the client can close — the controller drives the renderer and the bytes do not pass through the client. Always false until the client relay (R3) exists."
+          },
+          "reason_code": {
+           "type": "string",
+           "description": "Stable code for the route decision: `route-r1-local`, `route-r2-within-capacity`, `route-r2-capacity-undeclared` or `route-r2-bitrate-unknown`. Clients branch on this, not on `reason_human`."
+          },
+          "reason_human": {
+           "type": "string",
+           "description": "Human-readable explanation of the route decision."
+          }
+         }
+        }
+       }
+      }
      },
      "409": {
-      "description": "Nothing to play from — most often a replica on another peer, since a capability is only valid at the peer that signed it (ADR-0040)."
+      "description": "Nothing to play from, or the route planner refused (ADR-0111). The `code` field identifies the refusal reason; `alternatives` lists options the client can offer (a smaller copy or waiting for replication to the renderer's site).",
+      "content": {
+       "application/problem+json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "type": {
+           "type": "string"
+          },
+          "title": {
+           "type": "string"
+          },
+          "status": {
+           "type": "integer"
+          },
+          "detail": {
+           "type": "string"
+          },
+          "code": {
+           "type": "string",
+           "description": "Stable machine-readable refusal code. Route refusals are `route-r2-over-capacity`, `route-no-source` and `route-r3-not-available`."
+          },
+          "alternatives": {
+           "type": "array",
+           "description": "Playback options the client can offer when the route is refused (ADR-0111 §R2). Empty for non-route refusals.",
+           "items": {
+            "type": "object",
+            "properties": {
+             "kind": {
+              "type": "string",
+              "description": "`smaller_copy` — play a lower-bitrate asset that fits the link; `copy_to_site_first` — wait for a replica to land at the renderer's site."
+             },
+             "asset_id": {
+              "type": "string",
+              "description": "Set for `smaller_copy` alternatives."
+             },
+             "height_px": {
+              "type": "integer",
+              "description": "Set for `smaller_copy` alternatives."
+             },
+             "bitrate_kbps": {
+              "type": "number",
+              "description": "Set for `smaller_copy` alternatives."
+             },
+             "site": {
+              "type": "string",
+              "description": "Set for `copy_to_site_first` alternatives."
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
      },
      "502": {
       "description": "The renderer refused, with its own UPnP error. `714 Illegal MIME-type` and `701 Transition not available` are different problems and need different fixes, so the device's answer is passed through rather than flattened."
@@ -5006,6 +5389,47 @@
      },
      "404": {
       "$ref": "#/components/responses/NotFound"
+     }
+    }
+   }
+  },
+  "/api/v1/render/capabilities": {
+   "post": {
+    "tags": [
+     "playback"
+    ],
+    "operationId": "mintRenderCapabilities",
+    "summary": "Capability URLs for a queue, minted ahead of a locked screen (ADR-0112).",
+    "description": "One `/render/{capability}` URL per asset (ADR-0040), for a\n**first-party client that is about to lose the ability to sign**: a\nphone queueing music before its screen locks. A locked phone's device\nkey cannot sign, so once its last possession proof is retired it can no\nlonger authenticate a range read. A capability needs no credential.\n\n**It writes nothing.** No consumption session, no event, no token. That\nis why it is not `POST /playback`, which opens a session per call: a\ntwelve-track album would be twelve plays nobody made. It needs only\n`read`, the floor that already lets this caller fetch these bytes.\n\nURLs are minted at the node's **public origin** (`http.public_origin`,\nelse the peer endpoint), the one the caller already reaches it at. They\nare never minted at the plain-HTTP render listener (`http.render_addr`),\nwhich is for televisions on the LAN (ADR-0079).\n\nThe answer has one entry per asset id, in request order. Each entry has\neither `render_url` and `expires_at` (six hours) or `render_unavailable`\nwith the reason. The reasons are: no healthy peer holds the bytes, a\nreplica on another peer, no recorded media type or one that is not\naudio/video, no such asset, or a node that mints no capabilities at\nall. A Guest gets \"no such asset\" for anything outside the guest\ncontent boundary (ADR-0074), as `GET /assets/{id}` answers. A\ncapability is stateless and cannot be revoked before it expires.\n",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RenderCapabilitiesRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "One capability or refusal per asset, in request order.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RenderCapabilities"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
      }
     }
    }
@@ -9170,7 +9594,7 @@
     ],
     "operationId": "retryJob",
     "summary": "Put a finished job back on the queue. Requires `write`.",
-    "description": "An operator action: something was wrong and has been fixed. Only a\nsucceeded, failed or dead job may be retried; a pending or leased one is\na 409, because \"retry\" on a job that is already running would mean\nrunning it twice.\n",
+    "description": "An operator action: something was wrong and has been fixed. Only a\nsucceeded, failed or dead job may be retried; a pending or leased one is\na 409, because \"retry\" on a job that is already running would mean\nrunning it twice.\n\nA second 409 case: the job has a `dedupe_key` that is already held by\na live (pending or leased) job. The response carries `code:\n\"dedupe_key_conflict\"` and `live_job_id` with the id of the holder, so\nthe operator can find it without a second lookup.\n",
     "parameters": [
      {
       "$ref": "#/components/parameters/id"
@@ -9930,6 +10354,46 @@
      }
     }
    },
+   "SpaceMember": {
+    "type": "object",
+    "description": "One user's membership of a space, current or removed (ADR-0108).",
+    "required": [
+     "space_id",
+     "principal_id",
+     "role",
+     "added_at"
+    ],
+    "properties": {
+     "space_id": {
+      "type": "string"
+     },
+     "principal_id": {
+      "type": "string",
+      "description": "The member's user principal. Opaque; never a name (§38)."
+     },
+     "role": {
+      "type": "string",
+      "enum": [
+       "owner",
+       "member"
+      ],
+      "description": "The owner is the user who created the space from a device; there is at most one and it cannot be removed."
+     },
+     "added_at": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "added_by_device": {
+      "type": "string",
+      "description": "The device key whose credential added the member; absent on the owner row a creation wrote."
+     },
+     "removed_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Set on a tombstone — the user was a member until then, and no new wrap for their devices is admitted while it is set."
+     }
+    }
+   },
    "ServiceRecipient": {
     "type": "object",
     "description": "An executor's X25519 public key, registered as a wrap recipient (ADR-0104).",
@@ -10135,6 +10599,10 @@
      "request_id": {
       "type": "string",
       "description": "Correlates the response with the server log line."
+     },
+     "live_job_id": {
+      "type": "string",
+      "description": "Present on 409 responses with `code: \"dedupe_key_conflict\"` only.\nThe id of the pending or leased job that holds the `dedupe_key` of\nthe job the operator tried to retry.\n"
      }
     }
    },
@@ -12077,6 +12545,56 @@
      }
     }
    },
+   "RenderCapabilitiesRequest": {
+    "type": "object",
+    "required": [
+     "asset_ids"
+    ],
+    "properties": {
+     "asset_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+       "type": "string"
+      }
+     }
+    }
+   },
+   "RenderCapabilities": {
+    "type": "object",
+    "required": [
+     "capabilities"
+    ],
+    "properties": {
+     "capabilities": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "required": [
+        "asset_id"
+       ],
+       "properties": {
+        "asset_id": {
+         "type": "string"
+        },
+        "render_url": {
+         "type": "string",
+         "description": "Absolute `/render/{capability}/{name}` URL at the public origin."
+        },
+        "render_unavailable": {
+         "type": "string",
+         "description": "Why no URL was minted. Present exactly when `render_url` is absent."
+        },
+        "expires_at": {
+         "type": "string",
+         "format": "date-time"
+        }
+       }
+      }
+     }
+    }
+   },
    "PlanRequest": {
     "type": "object",
     "required": [
@@ -12129,6 +12647,11 @@
       },
       "description": "Preferred audio languages in order, using language tags or ISO codes.\nOmitted uses media.audio_languages; an empty list keeps original main\naudio. Missing preferred dialogue falls back to original main audio.\n"
      },
+     "audio_track": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Zero-based source audio ordinal. Overrides audio_languages. An\nordinal absent from the probe returns HTTP 400.\n"
+     },
      "max_height": {
       "type": "integer",
       "minimum": 0,
@@ -12178,6 +12701,13 @@
      "audio_language": {
       "type": "string"
      },
+     "audio_tracks": {
+      "type": "array",
+      "description": "Every probed source audio stream in ordinal order.",
+      "items": {
+       "$ref": "#/components/schemas/PlaybackAudioTrack"
+      }
+     },
      "width": {
       "type": "integer"
      },
@@ -12187,6 +12717,31 @@
      "duration_seconds": {
       "type": "number",
       "description": "The source's full runtime in seconds — the scrubber total for a\n`stream` plan, whose transcode cannot report its own length until\nit finishes. Absent when the probe found none.\n"
+     }
+    }
+   },
+   "PlaybackAudioTrack": {
+    "type": "object",
+    "properties": {
+     "ordinal": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "language": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "codec": {
+      "type": "string"
+     },
+     "channels": {
+      "type": "integer",
+      "minimum": 0
+     },
+     "commentary": {
+      "type": "boolean"
      }
     }
    },

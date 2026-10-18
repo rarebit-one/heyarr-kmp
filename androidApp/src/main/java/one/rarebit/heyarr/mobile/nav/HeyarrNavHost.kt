@@ -58,6 +58,7 @@ import one.rarebit.heyarr.mobile.device.EnrolUiState
 import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.playback.PlaybackClient
+import one.rarebit.heyarr.mobile.playback.RenderCapabilityCache
 import one.rarebit.heyarr.mobile.playlist.AddToPlaylistDialog
 import one.rarebit.heyarr.mobile.playlist.PersonalActionsViewModel
 import one.rarebit.heyarr.mobile.playlist.PlaylistScreen
@@ -136,6 +137,16 @@ fun HeyarrNavHost(
         factory = viewModelFactory { initializer { SessionHolder(env, graph.settings, graph.external, graph.recent) } },
     )
     val session = holder.session
+    // The audio queue's render capabilities are minted through this session (heyarr-core
+    // ADR-0112). A guest's reads carry no proof, so a locked screen takes nothing from it.
+    // A change of who is signed in forgets the last session's capabilities; this UI going
+    // away does not, because the queue outlives it (RenderCapabilityCache.use).
+    LaunchedEffect(session) {
+        graph.renderCapabilities.use(
+            RenderCapabilityCache.sessionKey(env.baseUrl, env.credential),
+            if (session.isGuest) null else session.api::renderCapabilities,
+        )
+    }
     val context = LocalContext.current
     val view = LocalView.current
     val scope = rememberCoroutineScope()

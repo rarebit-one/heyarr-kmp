@@ -12,6 +12,7 @@ import one.rarebit.heyarr.mobile.net.AuthInterceptor
 import one.rarebit.heyarr.mobile.net.NsdMdnsResolver
 import one.rarebit.heyarr.mobile.net.OkHttpTransport
 import one.rarebit.heyarr.mobile.playback.AudioPlayer
+import one.rarebit.heyarr.mobile.playback.RenderCapabilityCache
 import one.rarebit.heyarr.mobile.playback.SessionAudioPlayer
 import one.rarebit.heyarr.mobile.playback.VideoSession
 import one.rarebit.heyarr.mobile.settings.PrefsSettingsStore
@@ -70,7 +71,14 @@ class AppGraph(app: Application, scope: CoroutineScope) {
      * The audio queue, behind the seam: a MediaController bound to PlaybackService, so
      * music outlives the screen AND the Activity, with notification controls.
      */
-    val audio: AudioPlayer by lazy { SessionAudioPlayer(app, scope) }
+    val audio: AudioPlayer by lazy { SessionAudioPlayer(app, scope, renderCapabilities) }
+
+    /**
+     * Render capabilities for the audio queue (heyarr-core ADR-0112), minted when a queue
+     * starts and swapped in by PlaybackService as each track loads, so a locked phone —
+     * which cannot sign a proof — keeps streaming. The session sets its minter.
+     */
+    val renderCapabilities = RenderCapabilityCache()
 
     /** The in-app video player, app-scoped so the now-playing bar can carry it between screens. */
     val video: VideoSession by lazy { VideoSession(app, okHttp, scope, liveAuthorization = authHeader::current) }

@@ -55,6 +55,7 @@ import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.library.WorkDetailClient
 import one.rarebit.heyarr.mobile.net.ProblemDetail
+import one.rarebit.heyarr.mobile.playback.RenderCapabilitiesJson
 import one.rarebit.heyarr.mobile.search.FollowedItem
 import one.rarebit.heyarr.mobile.search.FollowedSource
 import one.rarebit.heyarr.mobile.search.FollowedSourceClient
@@ -220,6 +221,31 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
                 resp.status,
             )
         }
+    }
+
+    /**
+     * `POST /api/v1/render/capabilities` (heyarr-core ADR-0112): one render capability per
+     * asset, for the audio queue to stream while the phone is locked and cannot sign a
+     * proof. Read-scoped and stateless on the node — no session, unlike `POST /playback`.
+     * Throws on any failure; the caller falls back to the blob URLs.
+     */
+    fun renderCapabilities(assetIds: List<String>): List<RenderCapabilitiesJson.Entry> {
+        val resp = rest {
+            http.post(
+                "$baseUrl/api/v1/render/capabilities",
+                JsonWrite.obj(mapOf("asset_ids" to assetIds)),
+                "application/json",
+                credential.asHeader() + ("Content-Type" to "application/json"),
+            )
+        }
+        if (resp.status != 200) {
+            throw McpTransportException(
+                ProblemDetail.message(resp.body, resp.status, "render capabilities"),
+                null,
+                resp.status,
+            )
+        }
+        return RenderCapabilitiesJson.parse(resp.body)
     }
 
     /** `control_playback` — pause / resume / stop. */
