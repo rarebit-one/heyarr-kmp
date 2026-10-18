@@ -246,4 +246,11 @@ class VaultSpaceClientTest {
         assertEquals("x25519:ab", keys[0].recipient)
         assertTrue(w.contentEquals(keys[0].wrapped))
     }
+
+    @Test
+    fun pathSegmentsAreEncodedLikeUrlEncoderForIds() {
+        val space = "0192f3a4-5b6c-7d8e-9f01-23456789abcd"
+        assertEquals(space, encodePathSegment(space))
+        assertEquals("a%2Fb%20c%C3%A9", encodePathSegment("a/b cé"))
+    }
 }

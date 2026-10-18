@@ -71,8 +71,9 @@ allprojects {
 }
 
 // ── Published client libraries: one.rarebit.heyarr:{core,vault-client} ───────────
-// :vault-client is the trusted vault client other first-party apps consume (the Jumpdrive KMP
-// client renders private blocks with it); :core publishes alongside because vault-client's API
+// :vault-client is the space plumbing other first-party clients build on (space open, keyring,
+// snapshot envelope, VaultSpaceClient); the vault codec on top of it lives in mnemosyne-kmp's
+// :vault-codec (the Jumpdrive KMP client's private blocks still use it from 0.3.x); :core publishes alongside because vault-client's API
 // exposes it (HttpTransport, Credential, JsonScan). Both go to this repo's GitHub Packages
 // registry at ONE version, cut by a `lib-v<version>` tag (.github/workflows/publish.yml checks the
 // tag against the line below; a plain `v*` tag is an android app release, android-release.yml).
@@ -88,7 +89,13 @@ allprojects {
 // 0.3.0 (breaking): core's CanonicalLookup.resolveFor returns a Resolution (the canonicals plus a
 // `complete` flag) instead of a bare list, so a caller can tell a failed lookup from "no
 // canonical" (#139); adds clear(). Not kept as an overload: the old shape is the bug.
-val publishedLibraryVersion = "0.3.2"
+// 0.4.0 (breaking): the vault codec leaves vault-client for mnemosyne-kmp's :vault-codec, same
+// package, unchanged (heyarr-core#754/#757: heyarr keeps only the space plumbing its media
+// personal state needs). Gone from here: the drive CRDT (DriveCrdt, nfc), SyncReconcile,
+// VaultFrame, VaultBlobStore + UrlConnectionVaultBlobStore, VaultRef and VaultObjects /
+// VaultRecipient. StrictJson becomes public so the codec can keep reading strictly. A consumer
+// of the codec stays on 0.3.x until it takes :vault-codec.
+val publishedLibraryVersion = "0.4.0"
 
 listOf(":core", ":vault-client").forEach { path ->
     project(path) {

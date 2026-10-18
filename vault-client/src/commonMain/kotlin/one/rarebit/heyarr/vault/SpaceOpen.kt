@@ -8,7 +8,7 @@ import one.rarebit.voidwhichbinds.crypto.VoidbindEncryption
  * THIS device, unwrap it, and unroll the key history so content sealed under every earlier key
  * stays readable. Every opener goes through here — the desktop's two custody paths
  * (`VaultCustody`, the daemon's `GoStoreCustody`), the android app's `SpaceSession` and
- * [VaultObjects] — so none can open a rotated space with only its newest key.
+ * `VaultObjects` (mnemosyne-kmp :vault-codec) — so none can open a rotated space with only its newest key.
  *
  * The checks are [SpaceKeyring.open]'s: a copy at an epoch other than the space's is refused as
  * superseded, history rows newer than the epoch the keys described are dropped (a rotation can
@@ -45,7 +45,7 @@ object SpaceOpen {
      * [StaleKeyException]: never write under a superseded key. An exception [reopen] throws
      * propagates unchanged. A null [currentEpoch] (a peer that cannot tell) keeps [ring].
      *
-     * The one rule every writer follows: [VaultObjects.put], the desktop sync engine and the
+     * The one rule every writer follows: `VaultObjects.put`, the desktop sync engine and the
      * android `SpaceSession`.
      */
     fun currentForWrite(

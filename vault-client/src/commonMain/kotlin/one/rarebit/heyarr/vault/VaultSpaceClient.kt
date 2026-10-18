@@ -9,7 +9,7 @@ import kotlin.io.encoding.Base64
 
 /**
  * The node refused a vault request with HTTP [status]. Space routes answer 401/403/404 alike for
- * "this credential may not see the space" (heyarr ADR-0104), which [VaultObjects] maps to
+ * "this credential may not see the space" (heyarr ADR-0104), which `VaultObjects` (mnemosyne-kmp :vault-codec) maps to
  * [VaultRefException.Forbidden]; anything else is a failure to retry or report.
  */
 class VaultHttpException(val status: Int, message: String, val code: String? = null) : Exception(message) {

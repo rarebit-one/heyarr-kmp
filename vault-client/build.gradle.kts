@@ -13,15 +13,16 @@ val hasAndroidSdk = extra["hasAndroidSdk"] as Boolean
 if (hasAndroidSdk) apply(plugin = "com.android.library")
 
 kotlin {
-    // The TRUSTED vault client, published for other first-party apps (the Jumpdrive KMP client,
-    // heyarr private blocks): open an encrypted space with this device's wrapped copy and the
-    // key history (ADR-0049, ADR-0103), fold its drive CRDT (ADR-0095), and read or write one
-    // sealed object by its `hv1:` vault ref (ADR-0104). Everything here runs on the device that
-    // holds the key; the node and every other service only ever see ciphertext (Invariant 6).
+    // The TRUSTED space plumbing, published for other first-party clients: open an encrypted
+    // space with this device's wrapped copy and the key history (ADR-0049, ADR-0103), the
+    // snapshot envelope, personal-state ids and VaultSpaceClient. heyarr's media personal state
+    // (playlists, starred, history, reading position) needs exactly this. Everything here runs on
+    // the device that holds the key; the node and every other service only ever see ciphertext
+    // (Invariant 6).
     //
-    // The code is commonMain. Two platform needs have seams: binary blob I/O (`VaultBlobStore`,
-    // with a java.net actual in jvmAndAndroidMain) and Unicode NFC for drive paths
-    // (`expect fun nfc`, java.text.Normalizer on both JVM targets).
+    // The vault codec that used to sit here (the drive CRDT, VaultFrame, VaultRef/VaultObjects,
+    // the VaultBlobStore seam and its java.net actual) moved, unchanged, to mnemosyne-kmp's
+    // :vault-codec at 0.4.0: heyarr is the media service, Mnemosyne the personal one.
     jvm {
         compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
     }
@@ -37,8 +38,8 @@ kotlin {
 
     jvmToolchain(21)
 
-    // `jvmAndAndroidMain`: the java.* actuals both JVM targets share (NFC, the HttpURLConnection
-    // blob store).
+    // `jvmAndAndroidMain`: where java.* actuals both JVM targets share go. Empty since the codec
+    // moved (its NFC and HttpURLConnection actuals went with it); kept so the next one has a home.
     @OptIn(org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi::class)
     applyDefaultHierarchyTemplate {
         common {
