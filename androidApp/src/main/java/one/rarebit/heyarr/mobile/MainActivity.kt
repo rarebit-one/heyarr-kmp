@@ -162,6 +162,7 @@ class MainActivity : FragmentActivity() {
                             AppViewModel(
                                 settings = app.graph.settings,
                                 pairing = app.pairing,
+                                login = app.login,
                                 rawTransport = app.graph.rawTransport,
                                 spaceRegistry = app.graph.spaceRegistry,
                                 mdns = app.graph.mdns,
@@ -255,7 +256,16 @@ class MainActivity : FragmentActivity() {
                                     state = loginState,
                                     onSignIn = vm::signIn,
                                     onApproveOnThisPhone = if (voidbindInstalled) {
-                                        { tuple -> HandoffLauncher.open(context, VoidbindHandoff.loginUri(tuple)) }
+                                        { tuple ->
+                                            // Record the hand-off first, while heyarr is still in front
+                                            // (a foreground service cannot start from the background):
+                                            // it holds the process up while heyarr waits behind
+                                            // Cruciform (#172). Undone if Cruciform does not open.
+                                            vm.loginHandedOff()
+                                            if (!HandoffLauncher.open(context, VoidbindHandoff.loginUri(tuple))) {
+                                                vm.loginHandOffFailed()
+                                            }
+                                        }
                                     } else {
                                         null
                                     },
