@@ -70,6 +70,7 @@ class OpenApiContractTest {
             "parsePlayConflict" to listOf("POST /api/v1/renderers/{udn}/play 409"),
             "parsePlayResponse" to listOf("POST /api/v1/renderers/{udn}/play"),
             "PlaybackJson" to listOf("POST /api/v1/playback/plan", "POST /api/v1/playback"),
+            "RenderCapabilitiesJson" to listOf("POST /api/v1/render/capabilities"),
             "ConsumptionClient" to listOf("POST /api/v1/consumption/sessions", "POST /api/v1/devices"),
             "EnrolClient" to listOf("POST /enrol", "#Problem"),
             // + #Problem: pushChange reads a refusal's `code` (change_key_epoch_mismatch, heyarr-core#712).
