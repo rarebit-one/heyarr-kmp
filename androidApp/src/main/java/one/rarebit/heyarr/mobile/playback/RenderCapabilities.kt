@@ -128,6 +128,21 @@ class RenderCapabilityCache(private val clock: () -> Long = System::currentTimeM
     }
 
     /**
+     * True when some of [items] hold a capability that will lapse within [withinMs], so the
+     * queue should be minted again while the phone can still sign.
+     *
+     * Capabilities live six hours and a queue can outlast that (an audiobook, a long
+     * playlist). A locked phone cannot mint, but any moment the phone CAN — the next track
+     * change after an unlock — is a chance to renew, so only a phone locked for the whole of
+     * a capability's life still runs out. Tracks the node would not mint for hold nothing and
+     * do not count: asking again on every track change would not change the node's answer.
+     */
+    fun needsRenewal(items: List<AudioItem>, withinMs: Long = RENEW_WITHIN_MS): Boolean = synchronized(lock) {
+        minter != null && current == owner &&
+            items.any { item -> byContentUrl[item.contentUrl]?.let { it.expiresAtMs - clock() < withinMs } == true }
+    }
+
+    /**
      * The capability to fetch instead of [contentUrl], or null to fetch [contentUrl] itself.
      * A capability inside [MIN_REMAINING_MS] of expiry is not used: a long track opened on
      * it could outlive it mid-read, and the blob URL is the better bet while the phone can
@@ -159,6 +174,9 @@ class RenderCapabilityCache(private val clock: () -> Long = System::currentTimeM
 
         /** The node's own bound on one request. */
         const val MAX_PER_REQUEST = 200
+
+        /** Renew when a capability has under two hours left: several chances before it lapses. */
+        const val RENEW_WITHIN_MS = 2 * 60 * 60 * 1000L
 
         /** Ten minutes: longer than any one track takes to load. */
         const val MIN_REMAINING_MS = 10 * 60 * 1000L
