@@ -235,7 +235,11 @@ fun HomeScreen(
         loadOwnerRails(session, a, state, scope)
     }
 
-    LaunchedEffect(Unit) { if (!state.loadedOnce) load() }
+    // Keyed on the state, not Unit: this screen stays composed while the session behind it
+    // changes — at start-up the app is a guest until it restores the device credential, and
+    // that swaps in a new SessionHolder with a fresh, never-loaded HomeState. A Unit key
+    // loaded only the first state, and Home sat on skeletons until Refresh was tapped.
+    LaunchedEffect(state) { if (!state.loadedOnce) load() }
 
     fun actionsFor(w: Work): List<CardAction> = buildList {
         personal.onToggleStar?.let { toggle ->

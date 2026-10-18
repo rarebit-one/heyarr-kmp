@@ -89,7 +89,7 @@ fun TelemetryScreen(
         scope.launch { session.io { a.libraries() }.onSuccess { state.libraries = it } }
         scope.launch { session.io { a.jobs() }.onSuccess { state.jobs = it } }
     }
-    LaunchedEffect(Unit) { load() }
+    LaunchedEffect(state) { load() }
 
     LazyColumn(
         modifier.fillMaxSize(),
