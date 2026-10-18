@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * The [AudioPlayer] seam over a [MediaController] bound to [PlaybackService]. Commands
@@ -46,10 +47,17 @@ class SessionAudioPlayer(
     private val listener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             _state.update { it.copy(playing = isPlaying) }
-            if (isPlaying) startTicker() else stopTicker()
+            if (isPlaying) {
+                // A resume after a long pause is a moment the phone can likely sign.
+                renewCapabilities()
+                startTicker()
+            } else {
+                stopTicker()
+            }
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            renewCapabilities()
             val c = controller ?: return
             _state.update {
                 it.copy(
@@ -114,6 +122,29 @@ class SessionAudioPlayer(
         }
     }
 
+    // One renewal at a time: a track change during a renewal would repeat its request. A new
+    // queue's own mint (playQueue) is never held back by this.
+    private val renewing = AtomicBoolean(false)
+
+    /**
+     * Mint the queue again when its capabilities are running out (RenderCapabilityCache
+     * .needsRenewal). Asked on every track change, on play/resume and once a minute while
+     * playing; on a locked phone the mint fails quietly on the device, with no request sent,
+     * and the first ask after an unlock succeeds.
+     */
+    private fun renewCapabilities() {
+        val caps = capabilities ?: return
+        val queue = _state.value.queue
+        if (!caps.needsRenewal(queue) || !renewing.compareAndSet(false, true)) return
+        scope.launch(Dispatchers.IO) {
+            try {
+                caps.prefetch(queue)
+            } finally {
+                renewing.set(false)
+            }
+        }
+    }
+
     override fun play() = withController { it.play() }
     override fun pause() = withController { it.pause() }
     override fun togglePlayPause() = withController { if (it.isPlaying) it.pause() else it.play() }
@@ -151,7 +182,15 @@ class SessionAudioPlayer(
     private fun startTicker() {
         stopTicker()
         ticker = scope.launch {
+            var sinceRenewalCheck = 0L
             while (isActive) {
+                // A track can outlast the renewal window by itself (a single-file audiobook),
+                // so renewal is also checked on a clock, not only on track changes.
+                sinceRenewalCheck += TICK_MS
+                if (sinceRenewalCheck >= RENEWAL_CHECK_MS) {
+                    sinceRenewalCheck = 0
+                    renewCapabilities()
+                }
                 controller?.let { c ->
                     _state.update {
                         it.copy(
@@ -160,7 +199,7 @@ class SessionAudioPlayer(
                         )
                     }
                 }
-                delay(500)
+                delay(TICK_MS)
             }
         }
     }
@@ -178,5 +217,12 @@ class SessionAudioPlayer(
                 .setArtworkUri(artworkUrl?.let { Uri.parse(it) }).build(),
         )
         return builder.build()
+    }
+
+    private companion object {
+        const val TICK_MS = 500L
+
+        /** How often a playing queue checks whether its capabilities need renewing. */
+        const val RENEWAL_CHECK_MS = 60_000L
     }
 }

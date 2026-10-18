@@ -4,7 +4,9 @@ import one.rarebit.heyarr.mobile.playback.AudioItem
 import one.rarebit.heyarr.mobile.playback.RenderCapabilitiesJson
 import one.rarebit.heyarr.mobile.playback.RenderCapabilityCache
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -164,5 +166,27 @@ class RenderCapabilitiesTest {
             RenderCapabilityCache.sessionKey(base, a),
             RenderCapabilityCache.sessionKey(base, one.rarebit.heyarr.core.auth.Credential.Guest),
         )
+    }
+
+    @Test fun aQueueIsRenewedBeforeItsCapabilitiesLapse() {
+        val clock = longArrayOf(now)
+        val cache = RenderCapabilityCache { clock[0] }
+        cache.use("user-a") { ids ->
+            ids.filter { it != "a2" }.map {
+                RenderCapabilitiesJson.Entry(it, "https://pub.example/render/c-$it/s", null, clock[0] + sixHours)
+            }
+        }
+        val queue = listOf(track("a1"), track("a2"))
+        cache.prefetch(queue)
+        assertFalse("fresh capabilities need nothing", cache.needsRenewal(queue))
+
+        clock[0] = now + sixHours - RenderCapabilityCache.RENEW_WITHIN_MS + 1
+        assertTrue("under two hours left: renew while the phone can sign", cache.needsRenewal(queue))
+        cache.prefetch(queue)
+        assertFalse("renewed for another six hours", cache.needsRenewal(queue))
+        assertEquals("$base/render/c-a1/s", cache.resolve(queue[0].contentUrl))
+
+        cache.use("guest", null)
+        assertFalse("a guest has nothing to renew", cache.needsRenewal(queue))
     }
 }
