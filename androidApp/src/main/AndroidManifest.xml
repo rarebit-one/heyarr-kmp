@@ -20,6 +20,9 @@
     <!-- The audio queue plays under a MediaSessionService (playback/PlaybackService): music
          keeps going when the app is backgrounded, with notification / lock-screen controls. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- ExoPlayer's C.WAKE_MODE_NETWORK in PlaybackService: a partial wake lock plus a
+         Wi-Fi lock while the queue plays, so streaming survives the screen going off. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Package visibility (Android 11+): let us resolve the Cruciform authenticator app for the

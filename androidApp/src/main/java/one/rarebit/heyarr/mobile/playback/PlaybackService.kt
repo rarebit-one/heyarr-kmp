@@ -30,7 +30,16 @@ class PlaybackService : MediaSessionService() {
         val okHttp = (application as HeyarrApp).graph.okHttp
         val dataSources = OkHttpDataSource.Factory(okHttp)
         val player = ExoPlayer.Builder(this)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(dataSources))
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(dataSources).setLoadErrorHandlingPolicy(LockedPlayback.ErrorPolicy()),
+            )
+            // Load far ahead while the phone can still sign range reads, and wait out a
+            // locked phone rather than fail (LockedPlayback): music under the lock screen
+            // used to stop about two minutes in.
+            .setLoadControl(LockedPlayback.loadControl())
+            // A partial wake lock and a Wi-Fi lock while playing: the queue streams, and
+            // Wi-Fi power save under the lock screen otherwise slows or stalls the reads.
+            .setWakeMode(C.WAKE_MODE_NETWORK)
             .setHandleAudioBecomingNoisy(true)
             // Declare MUSIC audio + take audio focus, standard for a media
             // session (ducking/pausing for calls). This is correct hygiene the
