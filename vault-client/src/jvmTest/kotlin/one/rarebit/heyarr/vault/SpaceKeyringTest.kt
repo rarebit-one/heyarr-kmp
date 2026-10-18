@@ -111,29 +111,6 @@ class SpaceKeyringTest {
         assertEquals(1, e.epoch)
     }
 
-    @Test
-    fun aManifestSealedUnderAnOlderKeyOpensThroughTheRingAndNamesItsKey() {
-        val ring = SpaceKeyring.unroll(keys[2], 2, history)
-        val fileId = ByteArray(VaultFrame.FILE_ID_LEN) { it.toByte() }
-        val plaintext = ByteArray(40) { (it * 3).toByte() }
-        // A file pushed at epoch 0, before both rotations: content and manifest under key 0.
-        val (content, manifest) = VaultFrame.seal(keys[0], plaintext, fileId, frameSize = 16)
-        val sealedManifest = VaultFrame.sealManifest(keys[0], manifest)
-
-        val opened = VaultFrame.openManifest(ring, sealedManifest)
-        assertEquals(manifest, opened.manifest)
-        assertContentEquals(keys[0], opened.key)
-        val fetch = VaultFrame.Fetch { s, e -> content.copyOfRange(s.toInt(), e.toInt()) }
-        assertContentEquals(plaintext, VaultFrame.openAll(opened.key, opened.manifest, fetch))
-    }
-
-    @Test
-    fun aManifestThatDecryptsButDoesNotParseFailsAtOnce() {
-        val ring = SpaceKeyring.unroll(keys[2], 2, history)
-        val junk = VoidbindEncryption.encryptChange(keys[1], "not a manifest".encodeToByteArray())
-        assertFailsWith<VaultFrame.FrameException> { VaultFrame.openManifest(ring, junk) }
-    }
-
     private fun hex(s: String): ByteArray =
         ByteArray(s.length / 2) { s.substring(it * 2, it * 2 + 2).toInt(16).toByte() }
 }

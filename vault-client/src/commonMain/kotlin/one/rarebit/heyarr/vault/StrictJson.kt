@@ -17,8 +17,12 @@ package one.rarebit.heyarr.vault
  *
  * One deliberate difference: nesting deeper than [MAX_DEPTH] is refused (Go allows 10000), so a
  * hostile object cannot overflow a phone's stack. An envelope never nests that deep.
+ *
+ * Public, not internal, only because the vault codec (the drive CRDT, `VaultFrame` and
+ * `VaultObjects`) now lives in mnemosyne-kmp's `:vault-codec` and still needs the same strict
+ * reading. It is not a general JSON API; reach for `JsonScan` everywhere else.
  */
-internal object StrictJson {
+object StrictJson {
     const val MAX_DEPTH = 512
 
     /** What an envelope check needs from a valid top-level object. */

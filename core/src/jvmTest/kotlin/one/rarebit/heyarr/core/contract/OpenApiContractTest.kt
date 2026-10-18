@@ -77,9 +77,9 @@ class OpenApiContractTest {
             "PersonalStateClient" to SPACES,
             "EncryptedChange" to listOf("#EncryptedChange"),
             "EncryptedSnapshot" to listOf("#EncryptedSnapshot"),
-            // JdkVaultBlobStore moved to rarebit-one/mnemosyne-kmp (Refs heyarr-core#733).
-            // :vault-client.
-            "UrlConnectionVaultBlobStore" to listOf("PUT /api/v1/vault/blobs/{hash}"),
+            // JdkVaultBlobStore moved to rarebit-one/mnemosyne-kmp (Refs heyarr-core#733), and
+            // UrlConnectionVaultBlobStore followed it with the rest of the vault codec at 0.4.0
+            // (heyarr-core#754): its PUT /api/v1/vault/blobs/{hash} read is mnemosyne-kmp's to map.
         )
 
         val SPACES
@@ -103,9 +103,16 @@ class OpenApiContractTest {
             ).forEach { put(it, mcp) }
             val crdt = "decrypted personal-state / vault payload (voidbind-encrypted; the server only sees ciphertext)"
             listOf(
-                "PlayChange", "PlayLog", "Playlist", "PlaylistChange", "PositionChange", "ReadingPositions",
-                "StarChange", "StarSet", "Drive", "VaultFrame",
+                "PlayChange",
+                "PlayLog",
+                "Playlist",
+                "PlaylistChange",
+                "PositionChange",
+                "ReadingPositions",
+                "StarChange",
+                "StarSet",
             ).forEach { put(it, crdt) }
+            // Drive and VaultFrame left with the vault codec for mnemosyne-kmp at 0.4.0.
             val local = "a file this app writes and reads itself"
             // DaemonConfig, FileSyncIndexStore, FileDriveStateStore, VaultSyncDaemon moved to
             // rarebit-one/mnemosyne-kmp (Refs heyarr-core#733).
