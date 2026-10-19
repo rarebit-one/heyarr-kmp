@@ -92,6 +92,20 @@ jobs:
         env:
           JAVA_TOOL_OPTIONS: -Djava.awt.headless=true
 
+      # Build the Linux packages and check each declares the library playback loads at run
+      # time (build.gradle.kts adds it; jpackage cannot see a JNA dlopen). rpm provides
+      # rpmbuild for jpackage's .rpm; dpkg-deb is already on the runner.
+      - name: Linux packages declare libmpv
+        run: |
+          sudo apt-get install -y --no-install-recommends rpm fakeroot
+          ./gradlew :composeApp:packageDeb :composeApp:packageRpm --no-daemon
+          rpm_file=$(ls composeApp/build/compose/binaries/main/rpm/*.rpm)
+          deb_file=$(ls composeApp/build/compose/binaries/main/deb/*.deb)
+          echo "rpm Requires:"; rpm -qp --requires "$rpm_file"
+          echo "deb Depends:"; dpkg-deb -f "$deb_file" Depends
+          rpm -qp --requires "$rpm_file" | grep -qx 'mpv-libs'
+          dpkg-deb -f "$deb_file" Depends | tr ',' '\n' | sed 's/^ *//' | grep -q '^libmpv2'
+
       - name: Upload screenshots
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

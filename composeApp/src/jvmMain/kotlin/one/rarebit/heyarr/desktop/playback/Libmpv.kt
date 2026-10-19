@@ -71,12 +71,49 @@ internal interface MpvLib : Library {
             ) {
                 Result.success(lib)
             } else {
-                Result.failure(
-                    UnsatisfiedLinkError("libmpv is not installed (the mpv library, not only the mpv command)"),
-                )
+                Result.failure(UnsatisfiedLinkError(MpvInstallHint.message()))
             }
         }
     }
+}
+
+/**
+ * What to install when libmpv is missing, named for the system the app is running on. The
+ * library ships under a different package everywhere (and, on Fedora and Debian, apart from the
+ * `mpv` command), so "install libmpv" alone sends people looking.
+ */
+internal object MpvInstallHint {
+    private const val BASE = "libmpv is not installed (the mpv library, not only the mpv command)"
+
+    fun message(osRelease: String? = readOsRelease(), mac: Boolean = Platform.isMac()): String =
+        command(osRelease, mac)?.let { "$BASE. Install it with: $it" } ?: BASE
+
+    /** The install command for this system, from `/etc/os-release`'s ID and ID_LIKE; null when unknown. */
+    fun command(osRelease: String?, mac: Boolean = false): String? {
+        if (mac) return "brew install mpv"
+        val ids = osRelease.orEmpty().lineSequence()
+            .filter { it.startsWith("ID=") || it.startsWith("ID_LIKE=") }
+            .flatMap { it.substringAfter('=').trim('"', '\'').split(' ') }
+            .toList()
+        return when {
+            // Fedora's own repositories carry mpv-libs (checked for 43 through Rawhide); RPM
+            // Fusion is only needed for the codecs Fedora's ffmpeg leaves out, such as HEVC.
+            "fedora" in ids -> "sudo dnf install mpv-libs"
+
+            "opensuse" in ids || "suse" in ids -> "sudo zypper install libmpv2"
+
+            "debian" in ids || "ubuntu" in ids -> "sudo apt install libmpv2"
+
+            "arch" in ids -> "sudo pacman -S mpv"
+
+            else -> null
+        }
+    }
+
+    private fun readOsRelease(): String? =
+        listOf("/etc/os-release", "/usr/lib/os-release").firstNotNullOfOrNull { path ->
+            runCatching { java.io.File(path).readText() }.getOrNull()
+        }
 }
 
 /** `setlocale(3)`: LC_NUMERIC is 1 on glibc and 4 on macOS, the BSDs and MSVC. */

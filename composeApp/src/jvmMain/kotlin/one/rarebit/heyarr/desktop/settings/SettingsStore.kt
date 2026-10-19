@@ -18,9 +18,10 @@ data class DesktopConfig(
     val baseUrl: String = DEFAULT_BASE_URL,
     val bearerToken: String = "",
     /**
-     * UI scale (1.0 = 96 dpi). Null means "detect": `HEYARR_UI_SCALE`, else `GDK_SCALE`,
-     * else 1.0. Explicit because a JVM under XWayland on a HiDPI Wayland compositor
-     * (Hyprland, sway) reports 1x and ignores `sun.java2d.uiScale` for Compose.
+     * UI scale (1.0 = 96 dpi). Null means "detect": `HEYARR_UI_SCALE`, else `GDK_SCALE`, else
+     * the X resource `Xft.dpi` / 96, else 1.0. Explicit because a JVM under XWayland on a HiDPI
+     * Wayland compositor (Hyprland, sway, KDE Plasma) reports 1x and ignores
+     * `sun.java2d.uiScale` for Compose.
      */
     val uiScale: Float? = null,
     /**
@@ -46,16 +47,58 @@ data class DesktopConfig(
      */
     val vaultSpaceId: String? = null,
 ) {
-    /** The scale to render at: the saved value, else the environment, else 1x. */
-    fun effectiveUiScale(env: (String) -> String? = System::getenv): Float =
-        uiScale ?: env("HEYARR_UI_SCALE")?.toFloatOrNull()?.takeIf { it in 0.5f..4f }
-            ?: env("GDK_SCALE")?.toFloatOrNull()?.takeIf { it in 0.5f..4f }
+    /**
+     * The scale to render at: the saved value, else the environment, else what the desktop
+     * tells X clients to scale by, else 1x.
+     *
+     * `GDK_SCALE` is how Omarchy and most Hyprland/sway setups say it. KDE Plasma doesn't set
+     * it: under its default "apply scaling themselves" mode for X11 apps, Plasma publishes the
+     * factor as the `Xft.dpi` X resource instead (144 at 150%), the same knob GTK and Qt read on
+     * X11. In Plasma's other mode, "scaled by the system", it publishes 96 and upscales the
+     * window itself, so 1x is right there too.
+     */
+    fun effectiveUiScale(env: (String) -> String? = System::getenv, xftDpi: () -> Float? = XResources::xftDpi): Float =
+        uiScale ?: env("HEYARR_UI_SCALE")?.toFloatOrNull()?.takeIf { it in SCALE_RANGE }
+            ?: env("GDK_SCALE")?.toFloatOrNull()?.takeIf { it in SCALE_RANGE }
+            ?: xftDpi()?.let { it / BASE_DPI }?.takeIf { it in SCALE_RANGE }
             ?: 1f
 
     companion object {
         const val DEFAULT_BASE_URL = "https://heyarr.br.thesim.family:7777"
         val UI_SCALES = listOf(1f, 1.25f, 1.5f, 1.75f, 2f)
+        private val SCALE_RANGE = 0.5f..4f
+        private const val BASE_DPI = 96f
     }
+}
+
+/**
+ * The X resources database (`xrdb -query`), read once per process: the answer only changes when
+ * the desktop's scale does, and a scale change means a restart for every XWayland app anyway.
+ * Null where there is no X server or no `xrdb` (a headless test, a bare Wayland session).
+ */
+object XResources {
+    private const val QUERY_TIMEOUT_S = 2L
+
+    private val cached: Float? by lazy { query()?.let(::parseXftDpi) }
+
+    fun xftDpi(): Float? = cached
+
+    /** `Xft.dpi:\t144` → 144. */
+    fun parseXftDpi(resources: String): Float? = resources.lineSequence()
+        .map { it.trim() }
+        .firstOrNull { it.startsWith("Xft.dpi:") }
+        ?.substringAfter(':')?.trim()?.toFloatOrNull()
+        ?.takeIf { it > 0f }
+
+    private fun query(): String? = runCatching {
+        val p = ProcessBuilder("xrdb", "-query").redirectError(ProcessBuilder.Redirect.DISCARD).start()
+        if (!p.waitFor(QUERY_TIMEOUT_S, java.util.concurrent.TimeUnit.SECONDS)) {
+            p.destroyForcibly()
+            null
+        } else {
+            p.inputStream.bufferedReader().readText().takeIf { p.exitValue() == 0 }
+        }
+    }.getOrNull()
 }
 
 /** Read/write seam, so the resolution logic is JVM-testable with an in-memory fake. */

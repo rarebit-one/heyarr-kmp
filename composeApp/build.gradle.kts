@@ -113,6 +113,21 @@ compose.desktop {
     }
 }
 
+// jpackage records what the bundled runtime links against, not what the app loads through
+// JNA at run time, so the .rpm and .deb would install without the one library playback
+// needs. Declare it. libsecret stays optional on purpose: with no Secret Service the device
+// keyring falls back to its own sealed key file (DesktopSecretStore).
+//  - Fedora: mpv-libs is in Fedora's own repositories (libmpv.so.2; JNA finds the versioned
+//    name without the -devel package). RPM Fusion is only needed for codecs such as HEVC.
+//  - Debian 12+ / Ubuntu 24.04+: libmpv2.
+tasks.withType<org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask>().configureEach {
+    when (targetFormat) {
+        TargetFormat.Rpm -> freeArgs.addAll("--linux-package-deps", "mpv-libs")
+        TargetFormat.Deb -> freeArgs.addAll("--linux-package-deps", "libmpv2")
+        else -> Unit
+    }
+}
+
 // Off-screen screenshots of every screen with fixture data — the "show the running app"
 // artefact for a headless container. Renders through Compose's ImageComposeScene (no
 // display needed) into build/screenshots/*.png.
