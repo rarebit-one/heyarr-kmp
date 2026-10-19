@@ -7,52 +7,56 @@ import androidx.compose.ui.unit.sp
 
 /**
  * THE design-token layer. Every colour, radius, spacing step and type size the UI uses
- * is named here. The Archive palette uses forest surfaces and compact geometry. Media-keyed accents live in [MediaTheme];
+ * is named here. Colours come from the [Palette] in force (Archive's forest surfaces by default);
+ * geometry is constant. Media-keyed accents live in [MediaTheme];
  * these are the constant base the accents sit on so a mixed-media screen reads as one
  * app.
  */
-@Suppress("MagicNumber") // Design tokens are intentionally declared as literal colour values.
+@Suppress("MagicNumber") // Geometry and type tokens are intentionally literal values.
 object Tokens {
-    // Archive palette, taken from the brand-guide mockup rather than the brief's hex values: the
-    // brief's tones read washed-out on screen (heyarr-kmp UI audit, 2026-10). Deep forest
-    // surfaces let real artwork carry the colour; mint marks action, ochre marks the archive.
-    val bgBase = Color(0xFF0A1410) // Forest Black
-    val surface1 = Color(0xFF111E18) // Raised Panel
-    val surface2 = Color(0xFF172620)
-    val surface3 = Color(0xFF1E2F27)
-    val border = Color(0xFF2C3D35)
+    // Colours read the palette in force ([ActivePalette]): heyarr's own Archive palette by
+    // default, or one derived from the desktop's colours. Getters, not vals, so a palette swap
+    // reaches every reader; each read inside composition subscribes to the swap. The values
+    // and the reasoning behind them live with [Palette.Archive].
+    private val p: Palette get() = ActivePalette.current
+
+    val bgBase: Color get() = p.bgBase // Forest Black
+    val surface1: Color get() = p.surface1 // Raised Panel
+    val surface2: Color get() = p.surface2
+    val surface3: Color get() = p.surface3
+    val border: Color get() = p.border
 
     // Text ramp. Muted clears WCAG AA (≥ 4.5:1) on every surface; disabled is for inert labels only.
-    val textPrimary = Color(0xFFE6EBD7) // Chalk
-    val textMuted = Color(0xFFA6B3A8)
-    val textDisabled = Color(0xFF6E7D73)
+    val textPrimary: Color get() = p.textPrimary // Chalk
+    val textMuted: Color get() = p.textMuted
+    val textDisabled: Color get() = p.textDisabled
 
     // The reader gets its own paper and ink rather than borrowing the chrome colours.
-    val readingPaper = Color(0xFFEDE8D8)
-    val readingInk = Color(0xFF1C211C)
+    val readingPaper: Color get() = p.readingPaper
+    val readingInk: Color get() = p.readingInk
 
     // Brand warmth: Ochre for section markers and the archive's accents, Cream for the mark.
-    val ochre = Color(0xFFF4B860)
-    val cream = Color(0xFFF2E3C4)
+    val ochre: Color get() = p.ochre
+    val cream: Color get() = p.cream
 
     // Semantic.
-    val ratingGold = ochre
-    val danger = Color(0xFFEE8A78)
-    val warning = ochre
-    val success = Color(0xFF7EE0B3)
+    val ratingGold: Color get() = ochre
+    val danger: Color get() = p.danger
+    val warning: Color get() = ochre
+    val success: Color get() = p.success
 
     // Default accent = Pale Mint: the one colour of primary action across every media type.
-    val accent = Color(0xFF7EE0B3) // Pale Mint
-    val accentHover = Color(0xFF9BEAC6)
-    val accentGradEnd = Color(0xFFBDF3DA)
+    val accent: Color get() = p.accent // Pale Mint
+    val accentHover: Color get() = p.accentHover
+    val accentGradEnd: Color get() = p.accentGradEnd
 
     /** Fern: the deep green for filled tracks, active fields and selected rows. */
-    val fern = Color(0xFF2E7D5B)
+    val fern: Color get() = p.fern
 
     /** Neutral slate accent for unknown / non-media types (documents, feeds). */
-    val slate = Color(0xFF9CAAA0)
-    val slateHover = Color(0xFFBCC8BE)
-    val slateGradEnd = Color(0xFFDCE3D9)
+    val slate: Color get() = p.slate
+    val slateHover: Color get() = p.slateHover
+    val slateGradEnd: Color get() = p.slateGradEnd
 
     // Surfaces stay square; controls take a slight radius, as the brand guide's buttons do.
     val radiusCard: Dp = 0.dp

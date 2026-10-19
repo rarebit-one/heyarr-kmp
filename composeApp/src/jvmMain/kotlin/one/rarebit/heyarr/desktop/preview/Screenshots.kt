@@ -15,10 +15,14 @@ import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.InMemorySettingsStore
 import one.rarebit.heyarr.desktop.state.ArtworkLoader
+import one.rarebit.heyarr.desktop.theme.DesktopPalette
 import one.rarebit.heyarr.desktop.ui.App
 import one.rarebit.heyarr.desktop.ui.Experience
 import one.rarebit.heyarr.desktop.ui.Route
+import one.rarebit.heyarr.ui.theme.ActivePalette
 import one.rarebit.heyarr.ui.theme.Appearance
+import one.rarebit.heyarr.ui.theme.Palette
+import one.rarebit.heyarr.ui.theme.derive
 import org.jetbrains.skia.EncodedImageFormat
 import java.io.File
 
@@ -31,6 +35,7 @@ import java.io.File
 @Suppress("MagicNumber") // Dimensions and fixed names describe the screenshot fixture matrix.
 fun main(args: Array<String>) {
     verifyShelfSwitch()
+    followDesktopPaletteIfAsked()
     val out = File(args.firstOrNull() ?: "build/screenshots").apply { mkdirs() }
     val shots = linkedMapOf(
         "00-watch" to Route.Consume(Experience.WATCH),
@@ -289,4 +294,15 @@ private fun verifyShelfSwitch() {
         scope.cancel()
     }
     println("verified Watch → Listen → Read → Watch in one composition")
+}
+
+/**
+ * `HEYARR_PALETTE=auto|omarchy|kde|wal|portal` renders under this desktop's palette, to see a
+ * theme without launching the app. Unset keeps Archive, so the usual matrix is stable.
+ */
+private fun followDesktopPaletteIfAsked() {
+    if (System.getenv("HEYARR_PALETTE") == null) return
+    val found = DesktopPalette.forThisDesktop().resolve()
+    println("Palette: ${found?.source ?: "none found, Archive"}")
+    found?.let { ActivePalette.current = Palette.derive(it.colors) }
 }

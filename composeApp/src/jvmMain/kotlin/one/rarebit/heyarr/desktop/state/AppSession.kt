@@ -131,6 +131,9 @@ class AppSession(
 
     var appearance: Appearance by mutableStateOf(Appearance())
 
+    /** Where the colours in force came from ("Omarchy · tokyo-night", "KDE Plasma"…); null under Archive. */
+    var desktopColors: String? by mutableStateOf(null)
+
     // The "Sign in to save" enrol upgrade over the guest default: a device credential wins,
     // else a pasted bearer token, else [Credential.Guest] (no header → trusted-network guest).
     private val enrol = EnrolUpgrade(

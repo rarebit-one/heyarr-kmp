@@ -121,6 +121,7 @@ class OpenApiContractTest {
                 .forEach { put(it, local) }
             put("ExternalMetadata", "its own on-disk cache of third-party metadata")
             put("ExternalParsers", "third-party public metadata APIs, not heyarr")
+            put("WalPalette", "the desktop's pywal/wallust colours.json, a local theme file, not heyarr")
             put("LandscapeArtwork", "third-party artwork API, not heyarr")
             put("PlayerEvents", "libmpv JSON IPC events, not heyarr")
             put("Fixtures", "preview/screenshot fixtures")
