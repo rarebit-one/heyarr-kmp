@@ -15,10 +15,10 @@ class DiscoveryTest {
     private fun resolver(hit: MdnsHit?) = MdnsResolver { hit }
 
     @Test fun mdnsHitWinsAndDerivesTlsBaseUrl() {
-        val d = NodeDiscovery(resolver(MdnsHit(host = "hyperion-1.local", port = 7777, tls = true)))
+        val d = NodeDiscovery(resolver(MdnsHit(host = "node-a.local", port = 7777, tls = true)))
         val r = d.discover(manual = "https://typed.example:7777")
         assertEquals(DiscoverySource.MDNS, r.source)
-        assertEquals("https://hyperion-1.local:7777", r.baseUrl)
+        assertEquals("https://node-a.local:7777", r.baseUrl)
     }
 
     @Test fun mdnsPlaintextHitDerivesHttpBaseUrl() {
@@ -29,12 +29,19 @@ class DiscoveryTest {
     }
 
     @Test fun noMdnsFallsBackToDnsName() {
-        val d = NodeDiscovery(NoMdnsResolver)
+        val d = NodeDiscovery(NoMdnsResolver, dnsHost = "heyarr.example.test")
         val r = d.discover(manual = "https://typed.example:7777")
         // DNS name is preferred over the saved manual value — the user is not asked to type
         // while a well-known name is available.
         assertEquals(DiscoverySource.DNS, r.source)
-        assertEquals("https://${Discovery.DNS_HOST}:${Discovery.DEFAULT_PORT}", r.baseUrl)
+        assertEquals("https://heyarr.example.test:${Discovery.DEFAULT_PORT}", r.baseUrl)
+    }
+
+    @Test fun noDnsNameIsBuiltIn() {
+        // A build configured with no DNS name skips that rung: the saved URL stands.
+        val r = NodeDiscovery(NoMdnsResolver).discover(manual = "https://my-node.lan:7777")
+        assertEquals(DiscoverySource.MANUAL, r.source)
+        assertEquals("https://my-node.lan:7777", r.baseUrl)
     }
 
     @Test fun noMdnsNoDnsFallsBackToManual() {
@@ -44,16 +51,16 @@ class DiscoveryTest {
         assertEquals("https://my-node.lan:7777", r.baseUrl)
     }
 
-    @Test fun nothingAvailableFallsBackToDnsDefault() {
-        val d = NodeDiscovery(NoMdnsResolver, dnsHost = "")
-        val r = d.discover(manual = null)
-        assertEquals(DiscoverySource.DNS, r.source)
-        assertEquals(Discovery.dnsBaseUrl(), r.baseUrl)
+    @Test fun nothingAvailableFindsNothing() {
+        val r = NodeDiscovery(NoMdnsResolver, dnsHost = "").discover(manual = null)
+        assertEquals(DiscoverySource.MANUAL, r.source)
+        assertEquals("", r.baseUrl)
     }
 
     @Test fun blankManualIsNotChosen() {
         val d = NodeDiscovery(NoMdnsResolver, dnsHost = "")
         val r = d.discover(manual = "   ")
-        assertEquals(DiscoverySource.DNS, r.source)
+        assertEquals(DiscoverySource.MANUAL, r.source)
+        assertEquals("", r.baseUrl)
     }
 }

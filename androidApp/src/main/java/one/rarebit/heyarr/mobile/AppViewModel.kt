@@ -242,7 +242,7 @@ class AppViewModel internal constructor(
 
     // ── auto-discovery (mDNS → split-horizon DNS → saved/default node) ─────────────
 
-    private val discovery = NodeDiscovery(mdns)
+    private val discovery = NodeDiscovery(mdns, dnsHost = BuildConfig.HEYARR_DNS_HOST)
 
     /** A node discovered on THIS network, applied for the session when the user set no override. */
     @Volatile

@@ -35,7 +35,7 @@ class PlaybackUrlTest {
 
     /** Regression: a percent-encoded colon (`blake3%3A…`) is a 400 at the node. */
     @Test fun blobContentUrlKeepsTheColonVerbatim() {
-        val url = PlaybackClient.blobContentUrl("http://192.168.16.224:7777", hash)
+        val url = PlaybackClient.blobContentUrl("http://192.0.2.10:7777", hash)
         assertEquals(true, url.contains("/blobs/blake3:a617"))
         assertEquals(false, url.contains("%3A"))
     }

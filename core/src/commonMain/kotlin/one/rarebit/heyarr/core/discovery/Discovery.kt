@@ -45,10 +45,7 @@ object Discovery {
     /** The DNS-SD service type the node advertises. */
     const val SERVICE_TYPE = "_heyarr._tcp"
 
-    /** The stable split-horizon DNS name the node also answers on. */
-    const val DNS_HOST = "heyarr.thesim.family"
-
-    /** The node's default port (shared with the desktop's hard-coded default URL). */
+    /** The node's default port. */
     const val DEFAULT_PORT = 7777
 
     /** Derive the base URL from an mDNS hit — scheme from the TXT `tls` flag, no `/api/v1` (the API layer adds it). */
@@ -58,7 +55,7 @@ object Discovery {
     }
 
     /** The base URL for the split-horizon DNS name (always TLS; the OS resolves it at connect time). */
-    fun dnsBaseUrl(host: String = DNS_HOST, port: Int = DEFAULT_PORT): String = "https://$host:$port"
+    fun dnsBaseUrl(host: String, port: Int = DEFAULT_PORT): String = "https://$host:$port"
 }
 
 /**
@@ -66,20 +63,25 @@ object Discovery {
  * name, then the caller's own manual/saved entry. mDNS wins because it names the node
  * actually on THIS network; the DNS name is preferred over asking the user to type;
  * a hand-configured URL is the terminal fallback so it is never lost.
+ *
+ * There is no built-in DNS name: a deployment's name is its own business and this code is
+ * public, so each app passes the one its build was configured with (the `heyarrDnsHost`
+ * Gradle property), and a build without one skips that rung.
  */
 class NodeDiscovery(
     private val mdns: MdnsResolver = NoMdnsResolver,
-    private val dnsHost: String = Discovery.DNS_HOST,
+    private val dnsHost: String = "",
     private val dnsPort: Int = Discovery.DEFAULT_PORT,
 ) {
     /**
      * Resolve the server to default the field to. [manual] is the currently saved/typed URL,
-     * offered only when neither mDNS nor a DNS name is available.
+     * offered only when neither mDNS nor a DNS name is available. With none of the three, the
+     * answer is a blank [DiscoverySource.MANUAL] URL: nothing was found, and the caller keeps
+     * whatever it has rather than being handed an address that was never discovered.
      */
     fun discover(manual: String? = null): DiscoveredServer {
         mdns.resolve()?.let { return DiscoveredServer(Discovery.mdnsBaseUrl(it), DiscoverySource.MDNS) }
         if (dnsHost.isNotBlank()) return DiscoveredServer(Discovery.dnsBaseUrl(dnsHost, dnsPort), DiscoverySource.DNS)
-        manual?.takeIf { it.isNotBlank() }?.let { return DiscoveredServer(it, DiscoverySource.MANUAL) }
-        return DiscoveredServer(Discovery.dnsBaseUrl(), DiscoverySource.DNS)
+        return DiscoveredServer(manual?.takeIf { it.isNotBlank() }.orEmpty(), DiscoverySource.MANUAL)
     }
 }

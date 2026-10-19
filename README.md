@@ -169,6 +169,23 @@ blur-up on arrival).
 
 ## Running it
 
+### Pointing a build at your node
+
+This repository names no deployment. A build points at your heyarr node through three Gradle
+properties, set in `~/.gradle/gradle.properties` (never committed) and read by both apps:
+
+```properties
+heyarrBaseUrl=https://heyarr.example.test:7777   # the node a fresh install connects to
+heyarrDnsHost=heyarr.example.test                 # the DNS name discovery tries after mDNS
+heyarrCleartextHosts=192.0.2.10                   # Android release: hosts allowed plain http
+```
+
+Without them a build starts at the reserved placeholder `https://heyarr.example.test:7777`,
+finds its node by mDNS (`_heyarr._tcp`) when one is on the LAN, or takes an address in
+Settings. CI's Android release build reads them from the `HEYARR_BASE_URL`,
+`HEYARR_DNS_HOST` and `HEYARR_CLEARTEXT_HOSTS` repository secrets and refuses to build a
+release without the first.
+
 To run the packaged image (`./gradlew :composeApp:createDistributable` builds a Linux
 app-image with a bundled JRE) on Hyprland / sway / any non-reparenting WM with HiDPI
 Wayland, use `scripts/heyarr-desktop`. It sets `_JAVA_AWT_WM_NONREPARENTING=1`
@@ -190,13 +207,16 @@ the runtime bundled). Each declares the one library the app loads at run time:
 | Distribution | Package | Playback library |
 |---|---|---|
 | Fedora (KDE Plasma or Workstation) | `.rpm` | `mpv-libs`, in Fedora's own repositories |
-| Debian 12+ / Ubuntu 24.04+ | `.deb` | `libmpv2` |
+| Ubuntu 24.04+ / Debian 13+ | `.deb` | `libmpv2` |
 | Arch / Omarchy | `scripts/install-desktop.sh` | `mpv` |
 
 Fedora's ffmpeg leaves out patent-encumbered codecs such as HEVC; for those, enable RPM
 Fusion and swap in its ffmpeg (`sudo dnf swap ffmpeg-free ffmpeg --allowerasing`). The OS
 keychain (GNOME Keyring, or KWallet through its Secret Service API) is used when present;
 without one, device keys are sealed in a local key file instead.
+
+A `.deb` built on Ubuntu 24.04 (CI's runner) names that release's `t64` libraries, so it does
+not install on Debian 12; build there for Debian 12.
 
 The UI scale follows the desktop with no setup on KDE Plasma (its `Xft.dpi`) as well as
 under `GDK_SCALE`. The colours follow the desktop too: see [Design system](#design-system).

@@ -14,7 +14,7 @@ import org.junit.Test
  */
 class PairDeepLinkTest {
     private val usr = "ed25519:" + "ab".repeat(32)
-    private val invite = Invite.encode("http://192.168.16.224:8788", "s3ss10n", ByteArray(32) { it.toByte() }, usr)
+    private val invite = Invite.encode("http://192.0.2.10:8788", "s3ss10n", ByteArray(32) { it.toByte() }, usr)
 
     /** Exactly what Cruciform's `RpPairHandoff.percentEncode` produces (RFC 3986, uppercase, no `+`). */
     private fun encode(s: String): String = buildString {

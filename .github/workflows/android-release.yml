@@ -65,8 +65,21 @@ jobs:
         with:
           cache-disabled: true
 
+      # The deployment the published APK points at comes from repo secrets, never from the
+      # (public) source; Gradle reads ORG_GRADLE_PROJECT_<name> as the <name> property. A
+      # release without a node URL would ship pointing at the reserved placeholder and strand
+      # every phone that updates, so refuse to build one.
+      - name: Require the deployment secrets
+        env:
+          HEYARR_BASE_URL: ${{ secrets.HEYARR_BASE_URL }}
+        run: |
+          [ -n "$HEYARR_BASE_URL" ] || { echo "::error::repo secret HEYARR_BASE_URL is not set"; exit 1; }
+
       - name: Assemble the signed release APK
         env:
+          ORG_GRADLE_PROJECT_heyarrBaseUrl: ${{ secrets.HEYARR_BASE_URL }}
+          ORG_GRADLE_PROJECT_heyarrDnsHost: ${{ secrets.HEYARR_DNS_HOST }}
+          ORG_GRADLE_PROJECT_heyarrCleartextHosts: ${{ secrets.HEYARR_CLEARTEXT_HOSTS }}
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}

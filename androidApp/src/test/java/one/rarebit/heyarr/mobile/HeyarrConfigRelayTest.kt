@@ -19,10 +19,10 @@ class HeyarrConfigRelayTest {
      * `/pair/v1` would double up to `/pair/v1/v1/sessions` (404).
      */
     @Test fun composedSessionUrlHitsTheNodesPairV1SessionsRoute() {
-        val cfg = HeyarrConfig(baseUrl = "http://192.168.16.224:7777")
-        assertEquals("http://192.168.16.224:7777/pair/v1/sessions", cfg.relaySessionsUrl)
+        val cfg = HeyarrConfig(baseUrl = "http://192.0.2.10:7777")
+        assertEquals("http://192.0.2.10:7777/pair/v1/sessions", cfg.relaySessionsUrl)
         assertEquals(
-            "http://192.168.16.224:7777/pair/v1/sessions",
+            "http://192.0.2.10:7777/pair/v1/sessions",
             cfg.effectiveRelayBase.trimEnd('/') + "/v1/sessions", // exactly RelayClient.createSession's composition
         )
         assertEquals(

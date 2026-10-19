@@ -52,7 +52,7 @@ class QrLoginTest {
             pollBodies = listOf(
                 """{"status":"pending"}""",
                 """{"status":"pending"}""",
-                """{"status":"approved","token":"sess-abc","user":"jaryl"}""",
+                """{"status":"approved","token":"sess-abc","user":"someone"}""",
             ),
         )
         val c = client(t)
@@ -60,7 +60,7 @@ class QrLoginTest {
         assertTrue(result is VoidbindLogin.Result.Approved)
         result as VoidbindLogin.Result.Approved
         assertEquals("sess-abc", result.sessionToken)
-        assertEquals("jaryl", result.user)
+        assertEquals("someone", result.user)
         assertEquals(3, t.pollCount)
     }
 

@@ -151,7 +151,7 @@ class McpModelsTest {
         assertEquals(5520, p.durationSeconds)
 
         val bare = PlaybackStatusJson.parse(
-            """{"elapsed_seconds":0,"playing":false,"renderer":"Phantom II 95 dB-a98d","state":"NO_MEDIA_PRESENT"}""",
+            """{"elapsed_seconds":0,"playing":false,"renderer":"Bookshelf speaker-1f2e","state":"NO_MEDIA_PRESENT"}""",
         )!!
         assertEquals("NO_MEDIA_PRESENT", bare.state)
         assertNull(bare.durationSeconds)

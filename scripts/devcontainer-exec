@@ -4,14 +4,16 @@
 # Example: scripts/devcontainer-exec ./gradlew build
 #
 # Nothing builds or runs on the laptop: the working tree is rsynced to the
-# container host (mac-mini-1 / lamia-1 by default), the command runs inside the
+# container host (DEVCONTAINER_REMOTE_HOST), the command runs inside the
 # devcontainer there, and build outputs worth keeping (test reports,
 # screenshots, distributables) are synced back. Modelled on heyarr-core's
 # scripts/devcontainer-exec; worktree-aware in the simple sense that whichever
 # checkout you run it from is the tree that gets synced.
 #
 # Env (optional):
-#   DEVCONTAINER_REMOTE_HOST      default mac-mini-1
+#   DEVCONTAINER_REMOTE_HOST      the container host (ssh name). Required unless set once per
+#                                 clone: git config heyarr.devcontainerHost <host> (local
+#                                 config, never committed: this repository is public)
 #   DEVCONTAINER_REMOTE_PATH      default ~/Workspace/rarebit-one/heyarr-desktop
 #   DEVCONTAINER_REMOTE_PATHDIRS  default /opt/homebrew/bin:/opt/podman/bin
 #   DEVCONTAINER_LOCAL=1          run the container half directly (on the host)
@@ -33,7 +35,11 @@ PUSH_EXCLUDES=(--exclude='.git' --exclude='.worktrees' --exclude='.gradle' --exc
 PULL_INCLUDES=(--include='*/' --include='build/reports/***' --include='build/screenshots/***' --include='build/compose/binaries/***' --exclude='*')
 
 if [[ "${DEVCONTAINER_LOCAL:-}" != "1" && "${DEVCONTAINER_SSH_THROUGH:-}" != "1" ]]; then
-  REMOTE_HOST="${DEVCONTAINER_REMOTE_HOST:-mac-mini-1}"
+  REMOTE_HOST="${DEVCONTAINER_REMOTE_HOST:-$(git -C "$PROJECT_ROOT" config --get heyarr.devcontainerHost || true)}"
+  [[ -z "$REMOTE_HOST" ]] && {
+    echo "ERROR: no container host. Set DEVCONTAINER_REMOTE_HOST, or once: git config heyarr.devcontainerHost <host>" >&2
+    exit 1
+  }
   REMOTE_PATH="${DEVCONTAINER_REMOTE_PATH:-~/Workspace/rarebit-one/heyarr-desktop}"
   REMOTE_PATHDIRS="${DEVCONTAINER_REMOTE_PATHDIRS:-/opt/homebrew/bin:/opt/podman/bin}"
   SSH_TRANSPORT="ssh -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=3"

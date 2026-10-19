@@ -8,10 +8,11 @@ import org.junit.Test
 /** Config resolution: build default → runtime override, with URL normalisation. */
 class HeyarrConfigTest {
 
-    @Test fun buildDefaultIsTheLiveNodeOverInternalTls() {
-        // The gradle default (`heyarrBaseUrl` unset) is the Bartley Ridge node, now
-        // served over internal TLS (valid Let's Encrypt cert on the .br.thesim.family name).
-        assertEquals("https://heyarr.br.thesim.family:7777", HeyarrConfig.DEFAULT_BASE_URL)
+    @Test fun buildDefaultIsTheConfiguredNode() {
+        // The build default is the `heyarrBaseUrl` Gradle property, or a reserved placeholder
+        // in a build made without it (CI's); either way a well-formed origin.
+        assertEquals(BuildConfig.HEYARR_BASE_URL, HeyarrConfig.DEFAULT_BASE_URL)
+        assertEquals(HeyarrConfig.DEFAULT_BASE_URL, HeyarrConfig.normalizeBaseUrl(HeyarrConfig.DEFAULT_BASE_URL))
         assertEquals(HeyarrConfig.DEFAULT_BASE_URL, HeyarrConfig().baseUrl)
         assertEquals("living-room", HeyarrConfig().defaultQualityProfile)
     }
@@ -24,12 +25,12 @@ class HeyarrConfigTest {
 
     @Test fun overridesWinOverDefaults() {
         val c = HeyarrConfig.resolve(
-            baseUrlOverride = "https://heyarr.example.thesim.family",
+            baseUrlOverride = "https://heyarr.example.test",
             qualityProfileOverride = "bedroom",
-            defaultBaseUrl = "http://192.168.16.224:7777",
+            defaultBaseUrl = "http://192.0.2.10:7777",
             defaultQualityProfile = "living-room",
         )
-        assertEquals("https://heyarr.example.thesim.family", c.baseUrl)
+        assertEquals("https://heyarr.example.test", c.baseUrl)
         assertEquals("bedroom", c.defaultQualityProfile)
     }
 
@@ -49,7 +50,7 @@ class HeyarrConfigTest {
     @Test fun rejectsNonOriginInput() {
         assertNull(HeyarrConfig.normalizeBaseUrl(null))
         assertNull(HeyarrConfig.normalizeBaseUrl(""))
-        assertNull(HeyarrConfig.normalizeBaseUrl("192.168.16.224:7777")) // no scheme
+        assertNull(HeyarrConfig.normalizeBaseUrl("192.0.2.10:7777")) // no scheme
         assertNull(HeyarrConfig.normalizeBaseUrl("http://")) // no host
         assertNull(HeyarrConfig.normalizeBaseUrl("http://bad host/")) // unparsable
     }
@@ -60,9 +61,9 @@ class HeyarrConfigTest {
 
         assertEquals(HeyarrConfig.DEFAULT_BASE_URL, resolve().baseUrl)
 
-        store.baseUrlOverride = "http://hyperion-1.tail.ts.net:7777/"
+        store.baseUrlOverride = "http://node-a.tailnet.example:7777/"
         store.qualityProfileOverride = "4k"
-        assertEquals("http://hyperion-1.tail.ts.net:7777", resolve().baseUrl)
+        assertEquals("http://node-a.tailnet.example:7777", resolve().baseUrl)
         assertEquals("4k", resolve().defaultQualityProfile)
 
         store.baseUrlOverride = null
@@ -85,8 +86,8 @@ class HeyarrConfigTest {
             sessionSubtitle(user = null, authority = ro, baseUrl = "http://n:1"),
         )
         assertEquals(
-            "Signed in as jaryl · can write · http://n:1",
-            sessionSubtitle(user = "jaryl", authority = ro.copy(canWrite = true), baseUrl = "http://n:1"),
+            "Signed in as someone · can write · http://n:1",
+            sessionSubtitle(user = "someone", authority = ro.copy(canWrite = true), baseUrl = "http://n:1"),
         )
         assertEquals(
             "Signed in · read-only (session unverified) · http://n:1",

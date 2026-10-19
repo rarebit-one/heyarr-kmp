@@ -12,7 +12,7 @@ import org.junit.Test
  * is likely to see are rejected with a message that names the problem.
  */
 class PairInviteTest {
-    private val relay = "http://192.168.16.224:7777/pair"
+    private val relay = "http://192.0.2.10:7777/pair"
     private val session = "s3ss10n"
     private val salt = ByteArray(16) { it.toByte() }
 

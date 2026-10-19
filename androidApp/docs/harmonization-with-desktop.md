@@ -138,7 +138,7 @@ not a rewrite; the hand-rolled JSON + `HttpTransport` seam make it mechanical.
    establishes a standing subscription (which `want_content` on a work-scoped series now
    does server-side, ADR-0089); decide whether to keep the explicit "Follow on TVDB"
    button (it's a direct-id path that skips `Discover`; desktop dropped it, but it's a
-   useful fallback on a node with no metadata provider — **a UX call for Jaryl**).
+   useful fallback on a node with no metadata provider — **a UX call for the owner**).
    Extract the follow-state decision into a pure, unit-tested helper (also good KMP prep).
 3. **Extract Tier A into a `:shared` KMP module** (the real assimilation step).
 4. **Converge playback-plan** on mobile's `PlaybackClient` shape; delete desktop's
