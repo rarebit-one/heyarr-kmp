@@ -62,6 +62,7 @@ import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.state.ArtworkLoader
 import one.rarebit.heyarr.desktop.state.Connection
 import one.rarebit.heyarr.desktop.state.SearchController
+import one.rarebit.heyarr.desktop.theme.DesktopPalette
 import one.rarebit.heyarr.desktop.ui.components.AudioDock
 import one.rarebit.heyarr.desktop.ui.components.ModalScrim
 import one.rarebit.heyarr.desktop.ui.components.NavConnectionInfo
@@ -100,11 +101,14 @@ import one.rarebit.heyarr.ui.components.Panel
 import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SearchEntryButton
 import one.rarebit.heyarr.ui.components.ToastCard
+import one.rarebit.heyarr.ui.theme.ActivePalette
 import one.rarebit.heyarr.ui.theme.Appearance
 import one.rarebit.heyarr.ui.theme.HeyarrTheme
 import one.rarebit.heyarr.ui.theme.LocalAppearance
 import one.rarebit.heyarr.ui.theme.MediaThemes
+import one.rarebit.heyarr.ui.theme.Palette
 import one.rarebit.heyarr.ui.theme.Tokens
+import one.rarebit.heyarr.ui.theme.derive
 
 /** A pending Want: either an existing work by id, or a title the library has never seen. */
 data class WantRequest(
@@ -117,8 +121,9 @@ data class WantRequest(
 /**
  * The shell: left nav, offline banner, the routed screen, the toast stack and the Want
  * sheet. Global keys: Ctrl+F focuses search, Ctrl-1…5 jump sections, ⌘, opens
- * Settings, Esc goes back or closes the sheet. Adaptive media accents stay within the
- * shared Archive palette and can be disabled in Appearance settings.
+ * Settings, Esc goes back or closes the sheet. Colours are heyarr's Archive palette, or the
+ * desktop's own when Appearance → "Follow desktop colours" is on and [desktopPalette] finds one;
+ * adaptive media accents follow whichever is in force and can be disabled in Appearance.
  */
 @Composable
 fun App(
@@ -152,6 +157,11 @@ fun App(
     initialAppearance: Appearance = Appearance(),
     /** Hands the session to the screenshot harness, which waits on its first probe before capturing. */
     onSession: (AppSession) -> Unit = {},
+    /**
+     * Where the desktop's colours come from ([DesktopPalette.forThisDesktop] from the real entry
+     * point). Null leaves the palette in force untouched: Archive, unless a preview set one.
+     */
+    desktopPalette: DesktopPalette? = null,
 ) {
     val scope = rememberCoroutineScope()
     val session =
@@ -200,6 +210,21 @@ fun App(
         session.startHeartbeat()
         session.refreshIndex()
         initialQuery?.let { search.updateQuery(it) }
+    }
+    // Follow the desktop's colours while the setting is on: re-derive on every change the
+    // sources report, and fall back to Archive when it is off or the desktop says nothing.
+    // Without a source (previews, tests) the palette in force is left alone.
+    LaunchedEffect(desktopPalette, session.config.systemColors) {
+        if (desktopPalette == null) return@LaunchedEffect
+        if (!session.config.systemColors) {
+            ActivePalette.current = Palette.Archive
+            session.desktopColors = null
+            return@LaunchedEffect
+        }
+        desktopPalette.changes().collect { found ->
+            ActivePalette.current = found?.let { Palette.derive(it.colors) } ?: Palette.Archive
+            session.desktopColors = found?.source
+        }
     }
     // A different node means different work ids: the per-work detail caches are worthless.
     LaunchedEffect(session.generation) { if (session.generation > 0) details.clear() }

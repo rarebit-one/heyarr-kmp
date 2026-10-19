@@ -23,7 +23,7 @@ data class MediaTheme(
     val metadataKeys: List<String>,
     /** Whether the cover gets the book "spine" shadow. */
     val spineShadow: Boolean = false,
-    /** Text on the CTA control: Forest Black, with contrast against the light palette accents. */
+    /** Text on the CTA control: the ground (Forest Black under Archive), which every accent clears AA against. */
     val onAccent: Color = Tokens.bgBase,
     /**
      * Where the CTA gradient starts. A light palette tone can improve label contrast;
@@ -38,114 +38,91 @@ data class MediaTheme(
 }
 
 /**
- * The media → theme table reuses the Archive palette. Media accents tint badges, glyphs and
- * focus rings so a mixed shelf stays legible; primary actions stay Pale Mint for every type
- * (see `PrimaryButton`). Artwork is never tinted.
+ * The media → theme table. Media accents tint badges, glyphs and focus rings so a mixed
+ * shelf stays legible; primary actions stay the palette's one accent (Pale Mint under
+ * Archive) for every type (see `PrimaryButton`). Artwork is never tinted.
  * Unknown / non-media kinds fall back to a neutral slate so they never look like a
  * movie.
+ *
+ * The accents come from the [Palette] in force ([Palette.media]); only the shape of each
+ * type (aspect, verbs, metadata) is fixed here. The table is rebuilt when the palette is
+ * swapped and reused otherwise, so [MediaScope]'s equality check stays cheap.
  */
-@Suppress("MagicNumber") // The media accent table documents exact design-system colour values.
 object MediaThemes {
-    private val MOVIE = MediaTheme(
-        MediaType.MOVIE,
-        Color(0xFF7EE0B3),
-        Color(0xFF9BEAC6),
-        Color(0xFFBDF3DA),
-        CardAspect.WIDE,
-        ctaLabel = "Play",
-        ctaSecondaryLabel = null,
-        metadataKeys = listOf("runtime", "year", "rating", "genre"),
-    )
-    private val SERIES = MediaTheme(
-        MediaType.SERIES,
-        Color(0xFF8FD6C0),
-        Color(0xFFAEE3D2),
-        Color(0xFFCDEFE4),
-        CardAspect.WIDE,
-        ctaLabel = "Play",
-        ctaSecondaryLabel = "Next episode",
-        metadataKeys = listOf("season", "episode", "air_status", "year"),
-    )
-    private val BOOK = MediaTheme(
-        MediaType.BOOK, Color(0xFFF4B860), Color(0xFFF7CA85), Color(0xFFFADBA8), CardAspect.POSTER,
-        ctaLabel = "Read", ctaSecondaryLabel = null,
-        metadataKeys = listOf(
-            "author",
-            "pages",
-            "series",
-        ),
-        spineShadow = true,
-    )
-    private val AUDIOBOOK = MediaTheme(
-        MediaType.AUDIOBOOK,
-        Color(0xFF9CD9B0),
-        Color(0xFFB6E6C6),
-        Color(0xFFD0F0DB),
-        CardAspect.SQUARE,
-        ctaLabel = "Listen",
-        ctaSecondaryLabel = null,
-        metadataKeys = listOf("narrator", "duration", "author"),
-    )
-    private val PODCAST = MediaTheme(
-        MediaType.PODCAST,
-        Color(0xFFC4D98C),
-        Color(0xFFD3E4A6),
-        Color(0xFFE2EEC2),
-        CardAspect.SQUARE,
-        ctaLabel = "Play episode",
-        ctaSecondaryLabel = null,
-        metadataKeys = listOf(
-            "show",
-            "episode",
-            "date",
-            "duration",
-        ),
-    )
-    private val MUSIC = MediaTheme(
-        MediaType.MUSIC,
-        Color(0xFFA8DC8A),
-        Color(0xFFBDE6A6),
-        Color(0xFFD3EFC3),
-        CardAspect.SQUARE,
-        ctaLabel = "Play",
-        ctaSecondaryLabel = null,
-        metadataKeys = listOf("artist", "album", "track_count", "year"),
-    )
-    private val FEED = MediaTheme(
-        MediaType.FEED,
-        Tokens.slate,
-        Tokens.slateHover,
-        Tokens.slateGradEnd,
-        CardAspect.SQUARE,
-        ctaLabel = "Open",
-        ctaSecondaryLabel = null,
-        metadataKeys = listOf("source", "date"),
-    )
-    private val UNKNOWN = MediaTheme(
-        MediaType.UNKNOWN,
-        Tokens.slate,
-        Tokens.slateHover,
-        Tokens.slateGradEnd,
-        CardAspect.POSTER,
-        ctaLabel = "Open",
-        ctaSecondaryLabel = null,
-        metadataKeys = listOf("year"),
+    private class Shape(
+        val type: MediaType,
+        val aspect: CardAspect,
+        val ctaLabel: String,
+        val ctaSecondaryLabel: String? = null,
+        val metadataKeys: List<String>,
+        val spineShadow: Boolean = false,
     )
 
-    val all: Map<MediaType, MediaTheme> = mapOf(
-        MediaType.MOVIE to MOVIE,
-        MediaType.SERIES to SERIES,
-        MediaType.BOOK to BOOK,
-        MediaType.AUDIOBOOK to AUDIOBOOK,
-        MediaType.PODCAST to PODCAST,
-        MediaType.MUSIC to MUSIC,
-        MediaType.FEED to FEED,
-        MediaType.UNKNOWN to UNKNOWN,
+    private val SHAPES = listOf(
+        Shape(MediaType.MOVIE, CardAspect.WIDE, "Play", metadataKeys = listOf("runtime", "year", "rating", "genre")),
+        Shape(
+            MediaType.SERIES,
+            CardAspect.WIDE,
+            "Play",
+            ctaSecondaryLabel = "Next episode",
+            metadataKeys = listOf("season", "episode", "air_status", "year"),
+        ),
+        Shape(
+            MediaType.BOOK,
+            CardAspect.POSTER,
+            "Read",
+            metadataKeys = listOf("author", "pages", "series"),
+            spineShadow = true,
+        ),
+        Shape(
+            MediaType.AUDIOBOOK,
+            CardAspect.SQUARE,
+            "Listen",
+            metadataKeys = listOf("narrator", "duration", "author"),
+        ),
+        Shape(
+            MediaType.PODCAST,
+            CardAspect.SQUARE,
+            "Play episode",
+            metadataKeys = listOf("show", "episode", "date", "duration"),
+        ),
+        Shape(
+            MediaType.MUSIC,
+            CardAspect.SQUARE,
+            "Play",
+            metadataKeys = listOf("artist", "album", "track_count", "year"),
+        ),
+        Shape(MediaType.FEED, CardAspect.SQUARE, "Open", metadataKeys = listOf("source", "date")),
+        Shape(MediaType.UNKNOWN, CardAspect.POSTER, "Open", metadataKeys = listOf("year")),
     )
 
-    fun of(type: MediaType): MediaTheme = all[type] ?: UNKNOWN
+    private class Built(val palette: Palette, val themes: Map<MediaType, MediaTheme>)
+
+    // Benign race: two threads may both build for a new palette; the results are equal.
+    private var built: Built? = null
+
+    private fun build(palette: Palette): Map<MediaType, MediaTheme> = SHAPES.associate { s ->
+        val a = palette.mediaAccent(s.type)
+        s.type to MediaTheme(
+            s.type, a.accent, a.hover, a.gradientEnd, s.aspect,
+            ctaLabel = s.ctaLabel,
+            ctaSecondaryLabel = s.ctaSecondaryLabel,
+            metadataKeys = s.metadataKeys,
+            spineShadow = s.spineShadow,
+            onAccent = palette.bgBase,
+        )
+    }
+
+    val all: Map<MediaType, MediaTheme>
+        get() {
+            val palette = ActivePalette.current
+            built?.takeIf { it.palette === palette }?.let { return it.themes }
+            return build(palette).also { built = Built(palette, it) }
+        }
+
+    fun of(type: MediaType): MediaTheme = all[type] ?: all.getValue(MediaType.UNKNOWN)
     fun of(raw: String?): MediaTheme = of(MediaType.from(raw))
 
-    /** The app's default (no media in focus): the emerald. */
-    val default: MediaTheme get() = MOVIE
+    /** The app's default (no media in focus): the palette's own accent. */
+    val default: MediaTheme get() = all.getValue(MediaType.MOVIE)
 }

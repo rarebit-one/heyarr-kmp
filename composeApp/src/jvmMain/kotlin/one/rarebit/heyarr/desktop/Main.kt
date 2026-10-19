@@ -12,6 +12,7 @@ import one.rarebit.heyarr.desktop.discovery.JmdnsResolver
 import one.rarebit.heyarr.desktop.net.JdkHttpTransport
 import one.rarebit.heyarr.desktop.playback.MpvPlayer
 import one.rarebit.heyarr.desktop.settings.FileSettingsStore
+import one.rarebit.heyarr.desktop.theme.DesktopPalette
 import one.rarebit.heyarr.desktop.ui.App
 import org.jetbrains.skia.Image
 import kotlin.system.exitProcess
@@ -63,6 +64,8 @@ fun main() {
                 // The real desktop entry point turns on device enrolment ("Sign in to save"):
                 // a filesystem-backed device key store + the voidbind pairing coordinator.
                 enableDeviceEnrol = true,
+                // Follow the desktop's palette (Omarchy, Plasma, pywal/wallust, the XDG portal).
+                desktopPalette = DesktopPalette.forThisDesktop(),
                 onFullscreen = { on ->
                     state.placement =
                         if (on) WindowPlacement.Fullscreen else WindowPlacement.Floating

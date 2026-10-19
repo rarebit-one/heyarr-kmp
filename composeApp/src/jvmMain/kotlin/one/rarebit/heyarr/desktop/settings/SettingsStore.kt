@@ -30,6 +30,12 @@ data class DesktopConfig(
      */
     val externalMetadata: Boolean = true,
     /**
+     * Take the app's colours from the desktop (Omarchy, KDE Plasma, pywal/wallust, or the XDG
+     * portal's accent) instead of heyarr's own Archive palette. `HEYARR_PALETTE` can pin or
+     * refuse a source for one launch; see `DesktopPalette.forThisDesktop`.
+     */
+    val systemColors: Boolean = true,
+    /**
      * The designated vault folder this machine keeps in sync (W4), or null when vault sync is
      * off. One local folder ⇄ one heyarr vault space.
      */
@@ -83,6 +89,7 @@ class FileSettingsStore(private val file: File = defaultConfigFile()) : Settings
             bearerToken = JsonScan.stringField(obj, "bearer_token").orEmpty(),
             uiScale = JsonScan.stringField(obj, "ui_scale")?.toFloatOrNull()?.takeIf { it in 0.5f..4f },
             externalMetadata = JsonScan.boolField(obj, "external_metadata") ?: true,
+            systemColors = JsonScan.boolField(obj, "system_colors") ?: true,
             vaultFolder = JsonScan.stringField(obj, "vault_folder")?.takeIf { it.isNotBlank() },
             vaultSpaceId = JsonScan.stringField(obj, "vault_space_id")?.takeIf { it.isNotBlank() },
         )
@@ -96,6 +103,7 @@ class FileSettingsStore(private val file: File = defaultConfigFile()) : Settings
             append("  \"bearer_token\": \"").append(escape(config.bearerToken)).append("\"")
             config.uiScale?.let { append(",\n  \"ui_scale\": \"").append(it.toString()).append("\"") }
             append(",\n  \"external_metadata\": ").append(if (config.externalMetadata) "true" else "false")
+            append(",\n  \"system_colors\": ").append(if (config.systemColors) "true" else "false")
             config.vaultFolder?.let { append(",\n  \"vault_folder\": \"").append(escape(it)).append("\"") }
             config.vaultSpaceId?.let { append(",\n  \"vault_space_id\": \"").append(escape(it)).append("\"") }
             append("\n}\n")

@@ -215,6 +215,9 @@ private fun AppearancePanel(session: AppSession) {
     val ap = session.appearance
     Panel("Appearance") {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip("Follow desktop colours", session.config.systemColors, {
+                session.save(session.config.copy(systemColors = !session.config.systemColors))
+            })
             FilterChip("Media-adaptive accents", ap.adaptiveAccents, {
                 session.appearance =
                     ap.copy(adaptiveAccents = !ap.adaptiveAccents)
@@ -232,8 +235,14 @@ private fun AppearancePanel(session: AppSession) {
             color = Tokens.textMuted,
         )
         Text(
-            "Adaptive accents use Fern, Pale Mint, Ochre and related muted Archive tones. " +
-                "Artwork keeps its original colors; app surfaces and text stay consistent.",
+            desktopColorsNote(session.config.systemColors, session.desktopColors),
+            style = MaterialTheme.typography.bodySmall,
+            color = Tokens.textMuted,
+        )
+        Text(
+            "Adaptive accents give each media type its own tone: Archive's Pale Mint, Ochre and " +
+                "related muted greens, or the matching hues of your desktop theme. Artwork keeps its " +
+                "original colors; app surfaces and text stay consistent.",
             style = MaterialTheme.typography.bodySmall,
             color = Tokens.textMuted,
         )
@@ -295,4 +304,22 @@ private fun TokenHelp() {
         "The token is saved to ~/.config/heyarr-desktop/config.json with mode 0600. Treat it as a secret.",
         label = "Where the token is kept",
     )
+}
+
+/**
+ * Says where the colours came from, so a theme that only half-applies (a light desktop theme
+ * keeps the dark surfaces) reads as intended rather than broken.
+ */
+internal fun desktopColorsNote(on: Boolean, source: String?): String = when {
+    !on ->
+        "Using heyarr's Archive palette. Turn on desktop colours to follow your Omarchy, KDE Plasma, " +
+            "pywal/wallust or GNOME theme."
+
+    source == null ->
+        "No desktop palette found, so heyarr's Archive palette is in use. Omarchy, KDE Plasma, " +
+            "pywal/wallust and the desktop accent (GNOME 47+, COSMIC) are followed when present."
+
+    else ->
+        "Following $source. Dark themes supply the surfaces, text and accents; light themes lend " +
+            "their accents to heyarr's dark surfaces. Colours are adjusted where needed to stay readable (WCAG AA)."
 }
