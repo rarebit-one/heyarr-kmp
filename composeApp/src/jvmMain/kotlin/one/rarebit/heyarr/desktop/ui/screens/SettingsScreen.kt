@@ -264,12 +264,17 @@ private fun AppearancePanel(session: AppSession) {
             Text("now $current×", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
         }
         Text(
-            "A JVM under XWayland on a HiDPI Wayland desktop reports 1× and ignores the JVM scale flags, so pick the scale here (or set HEYARR_UI_SCALE / GDK_SCALE).",
+            UI_SCALE_NOTE,
             style = MaterialTheme.typography.bodySmall,
             color = Tokens.textMuted,
         )
     }
 }
+
+private const val UI_SCALE_NOTE =
+    "A JVM under XWayland on a HiDPI Wayland desktop reports 1× and ignores the JVM scale flags. Auto " +
+        "follows HEYARR_UI_SCALE, then GDK_SCALE (Omarchy, most Hyprland setups), then the desktop's " +
+        "Xft.dpi (KDE Plasma); pick a scale here to override."
 
 /** One call-to-action per media type, each under its own accent — a live key for the paragraph above. */
 @Composable

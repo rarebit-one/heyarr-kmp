@@ -125,15 +125,24 @@ Tokens live in one place — `:ui`'s `theme/Tokens.kt` (surfaces, text ramp, rad
 spacing, type scale) — and the media table in `:ui`'s `theme/MediaThemes.kt`, keyed on
 `:core`'s `MediaType`:
 
-| Media | Accent | Card | CTA |
+| Media | Accent (Archive) | Card | CTA |
 |-------|--------|------|-----|
-| Movie | `#599C7B` fern | 16:9 | Play |
-| Series | `#78A58B` fern | 16:9 | Play / Next episode |
-| Book | `#C7B66D` ochre, spine shadow | 2:3 | Read |
-| Audiobook | `#6FA58C` fern | 1:1 | Listen |
-| Podcast | `#8DAE8D` fern | 1:1 | Play episode |
-| Music | `#83A876` fern | 1:1 | Play |
+| Movie | `#7EE0B3` pale mint | 16:9 | Play |
+| Series | `#8FD6C0` | 16:9 | Play / Next episode |
+| Book | `#F4B860` ochre, spine shadow | 2:3 | Read |
+| Audiobook | `#9CD9B0` | 1:1 | Listen |
+| Podcast | `#C4D98C` | 1:1 | Play episode |
+| Music | `#A8DC8A` | 1:1 | Play |
 | Feed / document / unknown | `#9CAAA0` slate | varies | Open |
+
+Those are the **Archive** palette, heyarr's own and the phone's. On the desktop, the colours
+follow the desktop instead (Settings → Appearance → "Follow desktop colours"; `HEYARR_PALETTE`
+pins or refuses a source for one launch). `:composeApp`'s `theme/` reads, most specific first,
+Omarchy's `colors.toml`, KDE Plasma's `kdeglobals`, pywal/wallust's `colors.json`, then the XDG
+portal's light/dark and accent (GNOME, Plasma, COSMIC), and watches them so a theme switch
+applies live. `:ui`'s `Palette.derive` turns any of them into a full palette, dark or light,
+holding the same WCAG AA contrast the Archive palette is tested to; media types take the
+theme's ANSI hues. The player stays a dark stage under a light theme.
 
 The accent marks the active destination, primary controls and progress bars; focus rings use the
 brighter hover tone to stay visible on raised surfaces. Sections and secondary lists use dashed rules.
@@ -172,6 +181,25 @@ Playback in the app is libmpv in-process (`libmpv.so` / `libmpv.dylib`, part of 
 `mpv` package on Arch and Homebrew): mpv decodes into memory frames the UI draws, so
 the transport and everything else sit over the picture. "Pop out" runs the `mpv`
 command in a window of its own, driven over the same control socket.
+
+### On other distributions
+
+`./gradlew :composeApp:packageRpm` / `packageDeb` build installable packages (jpackage, with
+the runtime bundled). Each declares the one library the app loads at run time:
+
+| Distribution | Package | Playback library |
+|---|---|---|
+| Fedora (KDE Plasma or Workstation) | `.rpm` | `mpv-libs`, in Fedora's own repositories |
+| Debian 12+ / Ubuntu 24.04+ | `.deb` | `libmpv2` |
+| Arch / Omarchy | `scripts/install-desktop.sh` | `mpv` |
+
+Fedora's ffmpeg leaves out patent-encumbered codecs such as HEVC; for those, enable RPM
+Fusion and swap in its ffmpeg (`sudo dnf swap ffmpeg-free ffmpeg --allowerasing`). The OS
+keychain (GNOME Keyring, or KWallet through its Secret Service API) is used when present;
+without one, device keys are sealed in a local key file instead.
+
+The UI scale follows the desktop with no setup on KDE Plasma (its `Xft.dpi`) as well as
+under `GDK_SCALE`. The colours follow the desktop too: see [Design system](#design-system).
 
 The screenshot task drives the real `App` with `preview/Fixtures.kt` — canned answers
 in the shapes observed on a live node — through Compose's `ImageComposeScene`, so a
