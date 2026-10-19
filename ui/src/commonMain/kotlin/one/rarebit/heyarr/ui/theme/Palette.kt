@@ -17,10 +17,10 @@ data class MediaAccent(val accent: Color, val hover: Color, val gradientEnd: Col
  * colours ([SystemColors], [Palette.derive]) so the app sits in an Omarchy or Plasma session
  * the way a native app does.
  *
- * The invariants every palette keeps, whichever source it came from (MediaThemeTest and
- * PaletteTest pin them): text and muted text clear WCAG AA (4.5:1) on every surface; the
- * ground ([bgBase]) is the label colour on every accent fill and clears 4.5:1 there too;
- * media accents clear 3:1 as marks on the ground.
+ * The invariants every palette keeps, whichever source it came from and whether it is [dark]
+ * or light (MediaThemeTest and PaletteTest pin them): text and muted text clear WCAG AA (4.5:1)
+ * on every surface; the ground ([bgBase]) is the label colour on every accent fill and clears
+ * 4.5:1 there too; media accents clear 3:1 as marks on the ground.
  */
 @Immutable
 data class Palette(
@@ -47,7 +47,19 @@ data class Palette(
     val slateGradEnd: Color,
     /** The media accents by type. Types missing here (feeds, unknown kinds) take the slate ramp. */
     val media: Map<MediaType, MediaAccent>,
+    /** A dark ground under light text (Archive), rather than a light ground under dark text. */
+    val dark: Boolean = true,
+    /**
+     * The dark sibling a light palette shows while media plays. Video is a dark stage whatever
+     * the desktop's theme — the player draws its controls over black — so a light palette
+     * carries the same theme's accents on a dark ground for it. Null means this palette is
+     * already dark and is its own stage.
+     */
+    private val darkStage: Palette? = null,
 ) {
+    /** The palette to show while media plays: this one if it is dark, else its dark sibling. */
+    val stage: Palette get() = darkStage ?: this
+
     /** The accent ramp a [type] wears; non-media kinds fall back to slate so they never look like a movie. */
     fun mediaAccent(type: MediaType): MediaAccent = media[type] ?: MediaAccent(slate, slateHover, slateGradEnd)
 

@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -175,38 +176,43 @@ val HeyarrShapes = Shapes(
     extraLarge = RoundedCornerShape(Tokens.radiusCard),
 )
 
-/** Constant dark surfaces + text from [Tokens], with the accent slots driven by [media]. */
-fun heyarrColorScheme(media: MediaTheme): ColorScheme = darkColorScheme(
-    primary = media.accent,
-    onPrimary = media.onAccent,
-    primaryContainer = media.tint(0.18f),
-    onPrimaryContainer = Tokens.textPrimary,
-    secondary = media.accentHover,
-    onSecondary = media.onAccent,
-    secondaryContainer = Tokens.surface2,
-    onSecondaryContainer = Tokens.textPrimary,
-    tertiary = Tokens.ratingGold,
-    background = Tokens.bgBase,
-    onBackground = Tokens.textPrimary,
-    surface = Tokens.surface1,
-    onSurface = Tokens.textPrimary,
-    surfaceVariant = Tokens.surface2,
-    onSurfaceVariant = Tokens.textMuted,
-    surfaceContainer = Tokens.surface1,
-    surfaceContainerHigh = Tokens.surface2,
-    surfaceContainerHighest = Tokens.surface3,
-    surfaceContainerLow = Tokens.surface1,
-    surfaceContainerLowest = Tokens.bgBase,
-    inverseSurface = Tokens.textPrimary,
-    inverseOnSurface = Tokens.bgBase,
-    outline = Tokens.border,
-    outlineVariant = Tokens.border,
-    error = Tokens.danger,
-    onError = Tokens.textPrimary,
-    errorContainer = Tokens.danger.copy(alpha = 0.18f),
-    onErrorContainer = Tokens.textPrimary,
-    scrim = Tokens.bgBase,
-)
+/**
+ * Surfaces + text from [Tokens], with the accent slots driven by [media]. Material's dark or
+ * light baseline follows the palette in force; every slot heyarr uses is set either way, so the
+ * baseline only decides the few Material defaults heyarr never names.
+ */
+fun heyarrColorScheme(media: MediaTheme): ColorScheme =
+    (if (Tokens.dark) darkColorScheme() else lightColorScheme()).copy(
+        primary = media.accent,
+        onPrimary = media.onAccent,
+        primaryContainer = media.tint(0.18f),
+        onPrimaryContainer = Tokens.textPrimary,
+        secondary = media.accentHover,
+        onSecondary = media.onAccent,
+        secondaryContainer = Tokens.surface2,
+        onSecondaryContainer = Tokens.textPrimary,
+        tertiary = Tokens.ratingGold,
+        background = Tokens.bgBase,
+        onBackground = Tokens.textPrimary,
+        surface = Tokens.surface1,
+        onSurface = Tokens.textPrimary,
+        surfaceVariant = Tokens.surface2,
+        onSurfaceVariant = Tokens.textMuted,
+        surfaceContainer = Tokens.surface1,
+        surfaceContainerHigh = Tokens.surface2,
+        surfaceContainerHighest = Tokens.surface3,
+        surfaceContainerLow = Tokens.surface1,
+        surfaceContainerLowest = Tokens.bgBase,
+        inverseSurface = Tokens.textPrimary,
+        inverseOnSurface = Tokens.bgBase,
+        outline = Tokens.border,
+        outlineVariant = Tokens.border,
+        error = Tokens.danger,
+        onError = Tokens.textPrimary,
+        errorContainer = Tokens.danger.copy(alpha = 0.18f),
+        onErrorContainer = Tokens.textPrimary,
+        scrim = Tokens.bgBase,
+    )
 
 /**
  * The app theme: constant dark surfaces + text from [Tokens], with the accent slots

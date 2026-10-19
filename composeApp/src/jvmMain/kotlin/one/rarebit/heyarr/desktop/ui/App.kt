@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -211,18 +212,20 @@ fun App(
         session.refreshIndex()
         initialQuery?.let { search.updateQuery(it) }
     }
-    // Follow the desktop's colours while the setting is on: re-derive on every change the
-    // sources report, and fall back to Archive when it is off or the desktop says nothing.
-    // Without a source (previews, tests) the palette in force is left alone.
+    // The palette the desktop asked for. Follow the desktop's colours while the setting is on:
+    // re-derive on every change the sources report, and fall back to Archive when it is off or
+    // the desktop says nothing. Without a source (previews, tests) the palette in force at
+    // first composition stands.
+    var desktopTheme by remember { mutableStateOf(ActivePalette.current) }
     LaunchedEffect(desktopPalette, session.config.systemColors) {
         if (desktopPalette == null) return@LaunchedEffect
         if (!session.config.systemColors) {
-            ActivePalette.current = Palette.Archive
+            desktopTheme = Palette.Archive
             session.desktopColors = null
             return@LaunchedEffect
         }
         desktopPalette.changes().collect { found ->
-            ActivePalette.current = found?.let { Palette.derive(it.colors) } ?: Palette.Archive
+            desktopTheme = found?.let { Palette.derive(it.colors) } ?: Palette.Archive
             session.desktopColors = found?.source
         }
     }
@@ -328,6 +331,10 @@ fun App(
         is Route.Player -> current.typeHint
         else -> MediaType.MOVIE
     }
+    // Video is a dark stage: the player draws its controls over black, so a light palette hands
+    // over to its dark sibling (the same accents on Archive's forest) while the player is up.
+    val inForce = if (current is Route.Player) desktopTheme.stage else desktopTheme
+    SideEffect { if (ActivePalette.current != inForce) ActivePalette.current = inForce }
     val shellTheme = if (session.appearance.adaptiveAccents) MediaThemes.of(focusType) else MediaThemes.default
 
     val uiScale = session.config.effectiveUiScale()

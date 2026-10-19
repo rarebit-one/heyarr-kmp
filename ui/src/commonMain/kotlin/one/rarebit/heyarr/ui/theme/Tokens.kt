@@ -20,6 +20,9 @@ object Tokens {
     // and the reasoning behind them live with [Palette.Archive].
     private val p: Palette get() = ActivePalette.current
 
+    /** Whether the palette in force is dark (Archive, a dark desktop theme) or light. */
+    val dark: Boolean get() = p.dark
+
     val bgBase: Color get() = p.bgBase // Forest Black
     val surface1: Color get() = p.surface1 // Raised Panel
     val surface2: Color get() = p.surface2

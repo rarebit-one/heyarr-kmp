@@ -5,6 +5,7 @@ import one.rarebit.heyarr.core.theme.MediaType
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -50,6 +51,13 @@ class PaletteTest {
         cyan = hex(0x179299), blue = hex(0x1e66f5), magenta = hex(0xea76cb),
     )
 
+    // A light theme with pale hues (its yellow is 2.3:1 on its paper): they must be deepened.
+    private val flexokiLight = SystemColors(
+        dark = false, background = hex(0xFFFCF0), foreground = hex(0x100F0F), accent = hex(0x205EA6),
+        red = hex(0xD14D41), orange = hex(0xd0772b), yellow = hex(0xD0A215), green = hex(0x879A39),
+        cyan = hex(0x3AA99F), blue = hex(0x205EA6), magenta = hex(0xCE5D97),
+    )
+
     /** Ground, text and accent all nearly the same grey: nothing readable as given. */
     private val murky = SystemColors(
         dark = true,
@@ -79,9 +87,17 @@ class PaletteTest {
             assertTrue(r(a.accent, p.bgBase) >= 3.0, "$name ${type.name} mark")
             assertTrue(r(a.hover, p.surface3) >= 3.0, "$name ${type.name} focus ring")
         }
-        // The surface ramp is four distinct steps, rising from the ground.
+        // The surface ramp is four distinct steps away from the ground: lighter panels on a
+        // dark palette, deeper ones on a light palette.
         val ramp = listOf(p.bgBase, p.surface1, p.surface2, p.surface3).map(Contrast::luminance)
-        assertEquals(ramp.sorted(), ramp, "$name surfaces rise")
+        assertEquals(if (p.dark) ramp.sorted() else ramp.sortedDescending(), ramp, "$name surfaces step away")
+        // Text sits on the far side of the ground from where the surfaces step.
+        assertEquals(p.dark, Contrast.luminance(p.textPrimary) > Contrast.luminance(p.bgBase), "$name text side")
+        // Whatever the palette, the player's stage is dark and holds the same invariants.
+        if (!p.dark) {
+            assertTrue(p.stage.dark, "$name stage is dark")
+            assertInvariants("$name stage", p.stage)
+        }
         assertEquals(4, ramp.distinct().size, "$name surfaces distinct")
     }
 
@@ -97,6 +113,8 @@ class PaletteTest {
             "catppuccin-latte" to catppuccinLatte,
             "murky" to murky,
             "portal" to portalAccent,
+            "portal light" to portalAccent.copy(dark = false),
+            "flexoki-light" to flexokiLight,
         )) {
             assertInvariants(name, Palette.derive(seed))
         }
@@ -123,17 +141,41 @@ class PaletteTest {
     }
 
     @Test
-    fun aLightThemeOrAnAccentOnlySourceRetintsArchive() {
-        for (seed in listOf(catppuccinLatte, portalAccent)) {
-            val p = Palette.derive(seed)
-            assertEquals(Palette.Archive.bgBase, p.bgBase)
-            assertEquals(Palette.Archive.surface3, p.surface3)
-            assertEquals(Palette.Archive.textPrimary, p.textPrimary)
-            assertNotEquals(Palette.Archive.accent, p.accent)
-        }
+    fun aLightThemeRebuildsALightGround() {
+        val p = Palette.derive(catppuccinLatte)
+        assertFalse(p.dark)
+        assertEquals(catppuccinLatte.background, p.bgBase)
+        assertEquals(catppuccinLatte.foreground, p.textPrimary)
+        // Latte's blue sits just under AA (4.4:1) against its own ground as a fill under a
+        // light label, so it is deepened a touch — and stays recognisably the same blue.
+        assertTrue(Contrast.ratio(p.bgBase, p.accent) >= 4.5)
+        assertTrue(Contrast.ratio(p.accent, catppuccinLatte.accent!!) < 1.1)
+        // While media plays, the same theme's accents sit on Archive's dark forest.
+        assertEquals(Palette.Archive.bgBase, p.stage.bgBase)
+        assertNotEquals(Palette.Archive.accent, p.stage.accent)
+    }
+
+    @Test
+    fun aLightPreferenceWithoutAGroundUsesArchivePaper() {
+        // GNOME or Plasma through the portal: "light", an accent, no colours of its own.
+        val p = Palette.derive(portalAccent.copy(dark = false))
+        assertFalse(p.dark)
+        assertEquals(Palette.Archive.readingPaper, p.bgBase)
+        assertEquals(Palette.Archive.readingInk, p.textPrimary)
+        assertTrue(Contrast.ratio(p.bgBase, p.accent) >= 4.5)
+    }
+
+    @Test
+    fun aDarkAccentOnlySourceRetintsArchive() {
+        val p = Palette.derive(portalAccent)
+        assertTrue(p.dark)
+        assertEquals(Palette.Archive.bgBase, p.bgBase)
+        assertEquals(Palette.Archive.surface3, p.surface3)
+        assertEquals(Palette.Archive.textPrimary, p.textPrimary)
+        assertNotEquals(Palette.Archive.accent, p.accent)
+        assertSame(p, p.stage)
         // The portal names no hues, so the other media types keep their Archive accents.
-        val portal = Palette.derive(portalAccent)
-        assertEquals(Palette.Archive.mediaAccent(MediaType.BOOK), portal.mediaAccent(MediaType.BOOK))
+        assertEquals(Palette.Archive.mediaAccent(MediaType.BOOK), p.mediaAccent(MediaType.BOOK))
     }
 
     @Test
