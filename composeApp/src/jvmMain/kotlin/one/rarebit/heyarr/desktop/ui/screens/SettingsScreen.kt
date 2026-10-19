@@ -307,8 +307,8 @@ private fun TokenHelp() {
 }
 
 /**
- * Says where the colours came from, so a theme that only half-applies (a light desktop theme
- * keeps the dark surfaces) reads as intended rather than broken.
+ * Says where the colours came from, so a palette that differs from the desktop's own (the dark
+ * player under a light theme, a nudged accent) reads as intended rather than broken.
  */
 internal fun desktopColorsNote(on: Boolean, source: String?): String = when {
     !on ->
@@ -320,6 +320,6 @@ internal fun desktopColorsNote(on: Boolean, source: String?): String = when {
             "pywal/wallust and the desktop accent (GNOME 47+, COSMIC) are followed when present."
 
     else ->
-        "Following $source. Dark themes supply the surfaces, text and accents; light themes lend " +
-            "their accents to heyarr's dark surfaces. Colours are adjusted where needed to stay readable (WCAG AA)."
+        "Following $source. The theme supplies the surfaces, text and accents, light or dark; the " +
+            "player stays dark in the same accents. Colours are adjusted where needed to stay readable (WCAG AA)."
 }

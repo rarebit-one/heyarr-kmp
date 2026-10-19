@@ -130,7 +130,7 @@ class DesktopPaletteTest {
     }
 
     @Test
-    fun anOmarchyLightThemeOnlyLendsItsAccents() {
+    fun anOmarchyLightThemeIsALightPalette() {
         val latte = """mode = "light"
             |accent = "#1e66f5"
             |background = "#eff1f5"
@@ -138,8 +138,10 @@ class DesktopPaletteTest {
         """.trimMargin()
         val c = OmarchyPalette.forHome(omarchyHome(latte, "catppuccin-latte")).read()!!.colors
         assertEquals(false, c.dark)
-        assertFalse(c.suppliesSurfaces)
-        assertEquals(Palette.Archive.bgBase, Palette.derive(c).bgBase)
+        val p = Palette.derive(c)
+        assertFalse(p.dark)
+        assertEquals(hex(0xeff1f5), p.bgBase)
+        assertTrue(p.stage.dark)
     }
 
     @Test
@@ -188,15 +190,61 @@ class DesktopPaletteTest {
     }
 
     @Test
-    fun portalWithoutAnAccentSaysNothing() {
+    fun portalWithoutAnAccentSaysNothingUnlessLight() {
         // What Omarchy's portal answers today: dark, and the accent key is not found.
         assertNull(PortalPalette(FakeBus(mapOf("color-scheme" to "(<uint32 1>,)"))).read())
         val gnome = PortalPalette(
             FakeBus(mapOf("color-scheme" to "(<uint32 1>,)", "accent-color" to "(<(0.2, 0.5, 0.9)>,)")),
         ).read()
         assertNotNull(gnome)
+        assertEquals("Desktop accent (XDG portal)", gnome.source)
         assertEquals(true, gnome.colors.dark)
         assertFalse(gnome.colors.suppliesSurfaces)
+
+        // A light desktop (GNOME's default) turns heyarr light even without an accent: Archive's
+        // light twin, on its own reading paper.
+        val light = PortalPalette(FakeBus(mapOf("color-scheme" to "(<uint32 2>,)"))).read()
+        assertNotNull(light)
+        assertEquals("Desktop light (XDG portal)", light.source)
+        val p = Palette.derive(light.colors)
+        assertFalse(p.dark)
+        assertEquals(Palette.Archive.readingPaper, p.bgBase)
+    }
+
+    @Test
+    fun breezeLightIsALightPaletteInBreezeBlue() {
+        // The roles KDE's own BreezeLight.colors scheme writes into kdeglobals (abridged).
+        val breezeLight = """
+            [Colors:View]
+            BackgroundNormal=255,255,255
+            ForegroundActive=61,174,233
+            ForegroundLink=41,128,185
+            ForegroundNegative=218,68,83
+            ForegroundNeutral=246,116,0
+            ForegroundNormal=35,38,41
+            ForegroundPositive=39,174,96
+            ForegroundVisited=155,89,182
+
+            [Colors:Window]
+            BackgroundNormal=239,240,241
+            ForegroundNormal=35,38,41
+
+            [Colors:Selection]
+            BackgroundNormal=61,174,233
+
+            [General]
+            ColorScheme=BreezeLight
+            Name=Breeze Light
+            Name[de]=Breeze Hell
+        """.trimIndent()
+        val c = KdePalette.colorsOf(KdePalette.parse(breezeLight))
+        assertNotNull(c)
+        assertEquals(false, c.dark)
+        val p = Palette.derive(c)
+        assertFalse(p.dark)
+        assertEquals(Color.White, p.bgBase)
+        // Breeze blue is 2.3:1 on white: deepened until a white label reads on it.
+        assertTrue(one.rarebit.heyarr.ui.theme.Contrast.ratio(p.bgBase, p.accent) >= 4.5)
     }
 
     @Test

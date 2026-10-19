@@ -8,14 +8,15 @@ import one.rarebit.heyarr.core.theme.MediaType
  * Omarchy's `colors.toml` fills everything, a Plasma colour scheme fills the ground, text and
  * its semantic roles, a pywal/wallust palette fills the ground and ANSI hues, and the XDG
  * portal (GNOME, Plasma, COSMIC, and Omarchy via its gsettings hook) gives only light/dark
- * and perhaps an accent. Absent fields fall back to [Palette.Archive], so a sparse source
- * re-tints heyarr rather than re-building it.
+ * and perhaps an accent. Absent fields fall back to [Palette.Archive] (or its light twin on
+ * paper, when a source asks for light but names no ground), so a sparse source re-tints
+ * heyarr rather than re-building it.
  *
  * The hue slots are named for the ANSI colours terminal themes ship, because that is the one
  * vocabulary every one of those sources shares.
  */
 data class SystemColors(
-    /** True dark, false light, null when the source has no opinion. */
+    /** True dark, false light, null when the source has no opinion. Only consulted when no ground is named. */
     val dark: Boolean? = null,
     val background: Color? = null,
     val foreground: Color? = null,
@@ -30,20 +31,8 @@ data class SystemColors(
     val blue: Color? = null,
     val magenta: Color? = null,
 ) {
-    /**
-     * Whether this source can supply heyarr's surfaces and text, not just its accents: it
-     * names both a ground and a text colour, and the ground is the dark one.
-     *
-     * Light themes are re-tinted only (the accents follow, the forest surfaces stay). The
-     * app was designed dark-first: artwork scrims, the player chrome and the hero gradients
-     * assume a dark ground, and inverting them is its own piece of work.
-     */
-    val suppliesSurfaces: Boolean
-        get() {
-            val bg = background ?: return false
-            val fg = foreground ?: return false
-            return dark != false && Contrast.luminance(bg) < Contrast.luminance(fg)
-        }
+    /** Whether this source names its own ground and text, so heyarr's surfaces can be rebuilt from them. */
+    val suppliesSurfaces: Boolean get() = background != null && foreground != null
 }
 
 /**
@@ -51,29 +40,47 @@ data class SystemColors(
  * [Palette] documents, nudging lightness only, so a theme whose muted text is too dim to read
  * (Omarchy's osaka-jade muted sits at 2.9:1 on its ground) still yields AA text, in its own hue.
  *
- * Two steps: a dark source first rebuilds the ground (surfaces, text, slate) from its own
- * colours; then any source re-tints the accents and semantic colours on whichever ground is in
- * force. A light or accent-only source skips the first step and keeps Archive's ground.
+ * Two steps. First the ground: a source that names a ground and text rebuilds the surfaces,
+ * text and slate from them, dark or light; a source that only says "light" gets Archive's own
+ * light twin, its reading paper and ink; anything else keeps Archive's forest. Then the accents
+ * and semantic colours are re-tinted onto that ground. A light palette also carries a dark
+ * [Palette.stage] (Archive's ground in the same accents) for the player.
  */
 fun Palette.Companion.derive(seed: SystemColors, base: Palette = Archive): Palette {
-    val rebuilt = seed.suppliesSurfaces
-    val ground = if (rebuilt) base.withGround(seed.background!!, seed.foreground!!) else base
-    return Retint(ground, rebuilt).apply(seed)
+    val ground = when {
+        seed.suppliesSurfaces -> base.withGround(seed.background!!, seed.foreground!!)
+        seed.dark == false -> base.withGround(base.readingPaper, base.readingInk)
+        else -> base
+    }
+    val palette = Retint(ground, rebuilt = ground !== base).apply(seed)
+    return if (palette.dark ||
+        !base.dark
+    ) {
+        palette
+    } else {
+        palette.copy(darkStage = Retint(base, rebuilt = false).apply(seed))
+    }
 }
 
-/** Surfaces, text and slate from a dark theme's ground and text colours. */
+/** The direction "more contrast" moves in on a ground: lighter on a dark one, darker on a light one. */
+private fun away(dark: Boolean): Color = if (dark) Color.White else Color.Black
+
+/** Surfaces, text and slate from a theme's own ground and text colours, dark or light. */
 @Suppress("MagicNumber") // The ramp steps are design values, tuned against the Archive palette.
 private fun Palette.withGround(bg: Color, foreground: Color): Palette {
+    val dark = Contrast.luminance(bg) < Contrast.luminance(foreground)
+    val away = away(dark)
     // Readable text first, so a ground and text that sit too close (a murky theme) still give
     // the surface ramp below a real distance to climb.
-    val fg = Contrast.atLeast(foreground, listOf(bg), Contrast.AA_TEXT, Color.White)
-    // The surface ramp rises from the ground toward the text, the way Archive's does
-    // (Forest Black → Raised Panel → …) — so any dark theme gets four distinct, quiet steps.
+    val fg = Contrast.atLeast(foreground, listOf(bg), Contrast.AA_TEXT, away)
+    // The surface ramp steps from the ground toward the text, the way Archive's does
+    // (Forest Black → Raised Panel → …): lighter panels on a dark theme, deeper ones on a
+    // light theme, four distinct quiet steps either way.
     val surface1 = Contrast.mix(bg, fg, 0.04f)
     val surface2 = Contrast.mix(bg, fg, 0.07f)
     val surface3 = Contrast.mix(bg, fg, 0.105f)
     val grounds = listOf(bg, surface1, surface2, surface3)
-    val textPrimary = Contrast.atLeast(fg, grounds, Contrast.AA_TEXT, Color.White)
+    val textPrimary = Contrast.atLeast(fg, grounds, Contrast.AA_TEXT, away)
     val slate = Contrast.atLeast(Contrast.mix(fg, bg, 0.36f), listOf(bg), Contrast.AA_TEXT, textPrimary)
     return copy(
         bgBase = bg,
@@ -90,9 +97,10 @@ private fun Palette.withGround(bg: Color, foreground: Color): Palette {
             Contrast.mix(slate, textPrimary, 0.4f),
             listOf(surface3),
             Contrast.AA_MARK,
-            Color.White,
+            away,
         ),
-        slateGradEnd = Contrast.mix(slate, Color.White, 0.6f),
+        slateGradEnd = Contrast.mix(slate, away, 0.6f),
+        dark = dark,
     )
 }
 
@@ -103,10 +111,10 @@ private fun Palette.withGround(bg: Color, foreground: Color): Palette {
  */
 @Suppress("MagicNumber") // The ramp steps are design values, tuned against the Archive palette.
 private class Retint(private val ground: Palette, private val rebuilt: Boolean) {
-    private val white = Color.White
+    private val away = away(ground.dark)
     private val grounds = listOf(ground.bgBase, ground.surface1, ground.surface2, ground.surface3)
 
-    private fun text(c: Color) = Contrast.atLeast(c, grounds, Contrast.AA_TEXT, white)
+    private fun text(c: Color) = Contrast.atLeast(c, grounds, Contrast.AA_TEXT, away)
 
     private fun textOr(hue: Color?, own: Color) = when {
         hue != null -> text(hue)
@@ -115,16 +123,17 @@ private class Retint(private val ground: Palette, private val rebuilt: Boolean) 
     }
 
     // An accent is a fill under a ground-coloured label (PrimaryButton, the CTA pill), so it
-    // must clear AA against the ground; on a dark ground that means lightening, never darkening.
+    // must clear AA against the ground: lightened on a dark ground, deepened on a light one.
+    // Hover and the gradient's far end step further the same way, so the label only gains.
     private fun ramp(c: Color): MediaAccent {
-        val accent = Contrast.atLeast(c, listOf(ground.bgBase), Contrast.AA_TEXT, white)
+        val accent = Contrast.atLeast(c, listOf(ground.bgBase), Contrast.AA_TEXT, away)
         val hover = Contrast.atLeast(
-            Contrast.mix(accent, white, 0.2f),
+            Contrast.mix(accent, away, 0.2f),
             listOf(ground.surface3),
             Contrast.AA_MARK,
-            white,
+            away,
         )
-        return MediaAccent(accent, hover, Contrast.mix(accent, white, 0.42f))
+        return MediaAccent(accent, hover, Contrast.mix(accent, away, 0.42f))
     }
 
     private fun rampOr(hue: Color?, own: MediaAccent) = when {

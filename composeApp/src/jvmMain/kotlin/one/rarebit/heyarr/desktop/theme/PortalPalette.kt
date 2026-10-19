@@ -9,8 +9,9 @@ import java.util.concurrent.TimeUnit
  * The XDG desktop portal's `org.freedesktop.appearance` settings: the one cross-desktop
  * standard for this. GNOME (47+ for the accent), Plasma and COSMIC answer it, and so does
  * Omarchy, whose theme hook sets GNOME's `color-scheme` that the GTK portal reports. It gives
- * only light/dark and an accent, never a ground or text colour, so it re-tints heyarr rather
- * than re-building it; it is the fallback behind the desktop-specific sources.
+ * only light/dark and an accent, never a ground or text colour: a dark desktop re-tints
+ * Archive, a light one gets Archive's light twin on its reading paper. It is the fallback
+ * behind the desktop-specific sources.
  *
  * Read through `gdbus` (glib, present wherever a portal is) rather than a JVM D-Bus library:
  * two one-shot calls and one monitor don't justify a new dependency in a desktop app.
@@ -21,9 +22,14 @@ class PortalPalette(private val bus: PortalBus = GdbusPortalBus()) : PaletteSour
     override fun read(): DesktopColors? {
         val scheme = bus.read("color-scheme")?.let(::parseScheme)
         val accent = bus.read("accent-color")?.let(::parseAccent)
-        // "No preference" and no accent is the portal saying nothing at all.
-        if (accent == null) return null
-        return DesktopColors("Desktop accent (XDG portal)", SystemColors(dark = scheme, accent = accent))
+        // Dark (or no preference) with no accent asks for nothing Archive isn't already; a
+        // light preference alone still turns heyarr light.
+        if (accent == null && scheme != false) return null
+        val what = listOfNotNull("light".takeIf { scheme == false }, "accent".takeIf { accent != null })
+        return DesktopColors(
+            "Desktop ${what.joinToString(" + ")} (XDG portal)",
+            SystemColors(dark = scheme, accent = accent),
+        )
     }
 
     /** Watch for appearance changes, calling [onChange] for each; null when no monitor can start. */
