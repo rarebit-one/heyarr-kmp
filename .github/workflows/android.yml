@@ -77,6 +77,14 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew :androidApp:assembleDebug --no-daemon --stacktrace
 
+      # The release variant's network-security config is generated (androidApp/build.gradle.kts);
+      # linking its resources proves the manifest's @xml/network_security_config resolves. Run
+      # with a sample cleartext host so the generator's host check is exercised too.
+      - name: Release resources link
+        run: >-
+          ./gradlew :androidApp:processReleaseResources -PheyarrCleartextHosts=192.0.2.10
+          --no-daemon --stacktrace
+
       - name: Upload debug APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

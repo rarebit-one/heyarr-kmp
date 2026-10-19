@@ -1,10 +1,33 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.compose.multiplatform)
+}
+
+// The deployment this build points at, from Gradle properties (locally
+// ~/.gradle/gradle.properties), written as a classpath resource SiteDefaults reads. Never
+// committed: this repository is public and a deployment's address is its own. Without them
+// the app starts at a reserved placeholder and finds its node by mDNS, or from Settings.
+//  - heyarrBaseUrl: the default node URL.  - heyarrDnsHost: the DNS name discovery tries.
+// The same property names configure :androidApp.
+val heyarrSiteDefaults = tasks.register("heyarrSiteDefaults") {
+    val values = listOf("heyarrBaseUrl", "heyarrDnsHost").associateWith { name ->
+        providers.gradleProperty(name).map { it.trim() }.orElse("")
+    }
+    values.forEach { (name, value) -> inputs.property(name, value) }
+    val out = layout.buildDirectory.dir("generated/heyarrSite/resources")
+    outputs.dir(out)
+    doLast {
+        val props = Properties()
+        values.forEach { (name, value) -> value.get().takeIf { it.isNotEmpty() }?.let { props.setProperty(name, it) } }
+        val file = out.get().file("heyarr-site.properties").asFile
+        file.parentFile.mkdirs()
+        file.outputStream().use { props.store(it, "Generated from Gradle properties; see composeApp/build.gradle.kts") }
+    }
 }
 
 kotlin {
@@ -72,6 +95,10 @@ kotlin {
                 implementation(libs.cryptography.core)
                 implementation(libs.cryptography.provider.optimal)
             }
+        }
+        jvmMain {
+            // The deployment this build points at (see heyarrSiteDefaults above).
+            resources.srcDir(heyarrSiteDefaults)
         }
         val jvmTest by getting {
             dependencies {

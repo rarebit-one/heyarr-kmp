@@ -52,6 +52,7 @@ import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
+import one.rarebit.heyarr.desktop.settings.SiteDefaults
 import one.rarebit.heyarr.ui.theme.Appearance
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
@@ -151,7 +152,7 @@ class AppSession(
     val isGuest: Boolean get() = mode == ClientMode.GUEST
 
     /** The auto-discovery fallback chain (mDNS → DNS name → manual), off `Dispatchers.IO`. */
-    private val discovery = NodeDiscovery(mdns)
+    private val discovery = NodeDiscovery(mdns, dnsHost = SiteDefaults.dnsHost)
 
     /** Resolve the server to default the connection field to, using the current saved URL as the manual fallback. */
     suspend fun discoverServer(): DiscoveredServer = withContext(Dispatchers.IO) { discovery.discover(config.baseUrl) }

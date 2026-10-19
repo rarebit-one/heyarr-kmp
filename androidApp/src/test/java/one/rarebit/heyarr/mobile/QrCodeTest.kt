@@ -14,7 +14,7 @@ import org.junit.Test
 class QrCodeTest {
 
     @Test fun loginTupleRoundTripsThroughTheQrMatrix() {
-        val tuple = LoginTuple.encode(rp = "http://192.168.16.224:7777", id = "9f1c2a3b")
+        val tuple = LoginTuple.encode(rp = "http://192.0.2.10:7777", id = "9f1c2a3b")
         val m = QrCode.matrix(tuple, sizePx = 240)
         assertTrue(m.width >= 240 && m.height >= 240)
 
@@ -27,7 +27,7 @@ class QrCodeTest {
 
         assertEquals(tuple, result.text)
         val decoded = LoginTuple.decode(result.text)
-        assertEquals("http://192.168.16.224:7777", decoded.rp)
+        assertEquals("http://192.0.2.10:7777", decoded.rp)
         assertEquals("9f1c2a3b", decoded.id)
     }
 }

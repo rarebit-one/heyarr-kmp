@@ -8,11 +8,11 @@ import org.junit.Test
 
 class VoidbindHandoffTest {
 
-    private val tuple = LoginTuple.encode(rp = "http://192.168.16.224:7777", id = "abc123")
+    private val tuple = LoginTuple.encode(rp = "http://192.0.2.10:7777", id = "abc123")
 
     @Test fun loginUriIsTheTuplePlusAnEncodedCallback() {
         assertEquals(
-            "void-which-binds:login?id=abc123&rp=http%3A%2F%2F192.168.16.224%3A7777" +
+            "void-which-binds:login?id=abc123&rp=http%3A%2F%2F192.0.2.10%3A7777" +
                 "&callback=heyarr-mobile%3A%2F%2Flogin",
             VoidbindHandoff.loginUri(tuple),
         )
@@ -23,7 +23,7 @@ class VoidbindHandoffTest {
         // The tuple still decodes with the callback appended (decode is tolerant of extra keys).
         val p = LoginTuple.decode(VoidbindHandoff.loginUri(tuple))
         assertEquals("abc123", p.id)
-        assertEquals("http://192.168.16.224:7777", p.rp)
+        assertEquals("http://192.0.2.10:7777", p.rp)
     }
 
     @Test fun pairUriIsVerbatimAndTyped() {

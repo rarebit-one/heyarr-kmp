@@ -116,7 +116,7 @@ class McpModelsTest {
         assertEquals("1 candidate(s), none acceptable", desired[2].detail)
 
         val r = RendererJson.list(Fixtures.renderers)
-        assertEquals("Devialet · Phantom II 95 dB", r[0].subtitle)
+        assertEquals("Acme · Bookshelf 2", r[0].subtitle)
 
         val p = PlaybackStatusJson.parse(Fixtures.playback)!!
         assertTrue(p.playing)
@@ -124,7 +124,7 @@ class McpModelsTest {
         assertEquals(5520L, p.durationSeconds)
 
         val bare = PlaybackStatusJson.parse(
-            """{"elapsed_seconds":0,"playing":false,"renderer":"Phantom II 95 dB-a98d","state":"NO_MEDIA_PRESENT"}""",
+            """{"elapsed_seconds":0,"playing":false,"renderer":"Bookshelf speaker-1f2e","state":"NO_MEDIA_PRESENT"}""",
         )!!
         assertEquals("NO_MEDIA_PRESENT", bare.state)
         assertNull(bare.durationSeconds)

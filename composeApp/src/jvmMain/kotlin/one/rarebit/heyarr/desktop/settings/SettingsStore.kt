@@ -64,7 +64,8 @@ data class DesktopConfig(
             ?: 1f
 
     companion object {
-        const val DEFAULT_BASE_URL = "https://heyarr.br.thesim.family:7777"
+        /** The build's configured node ([SiteDefaults]); a reserved placeholder in an unconfigured build. */
+        val DEFAULT_BASE_URL: String get() = SiteDefaults.baseUrl
         val UI_SCALES = listOf(1f, 1.25f, 1.5f, 1.75f, 2f)
         private val SCALE_RANGE = 0.5f..4f
         private const val BASE_DPI = 96f

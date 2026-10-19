@@ -94,6 +94,17 @@ fun SettingsScreen(session: AppSession, state: SettingsState, modifier: Modifier
     }
 }
 
+/** Run discovery and hand a found URL to [onFound]; finding nothing leaves the field as it is. */
+private suspend fun discoverInto(session: AppSession, onFound: (String) -> Unit) {
+    val found = session.discoverServer()
+    if (found.baseUrl.isBlank()) {
+        session.toast(Toast.Kind.INFO, "No node found", "Nothing answered on this network; type its address.")
+    } else {
+        onFound(found.baseUrl)
+        session.toast(Toast.Kind.INFO, "Found via ${found.source.name.lowercase()}", found.baseUrl)
+    }
+}
+
 @Composable
 private fun ConnectionPanel(session: AppSession) {
     val scope = rememberCoroutineScope()
@@ -109,10 +120,8 @@ private fun ConnectionPanel(session: AppSession) {
             SecondaryButton("Discover", {
                 discovering = true
                 scope.launch {
-                    val found = session.discoverServer()
-                    baseUrl = found.baseUrl
+                    discoverInto(session) { baseUrl = it }
                     discovering = false
-                    session.toast(Toast.Kind.INFO, "Found via ${found.source.name.lowercase()}", found.baseUrl)
                 }
             }, icon = HeyarrIcons.Sync, compact = true, enabled = !discovering)
             GhostButton("Reset URL", { baseUrl = DesktopConfig.DEFAULT_BASE_URL })

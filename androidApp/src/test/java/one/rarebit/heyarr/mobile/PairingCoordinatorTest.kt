@@ -40,7 +40,7 @@ class PairingCoordinatorTest {
     /** This phone's device key as the handshake renders it — what the one-tap report carries. */
     private val DEVICE_ID = "ed25519:" + "cd".repeat(32)
     private fun invite(session: String) =
-        Invite.encode("http://192.168.16.5:8788", session, ByteArray(32) { it.toByte() }, usr)
+        Invite.encode("http://192.0.2.5:8788", session, ByteArray(32) { it.toByte() }, usr)
 
     private val inviteA = invite("sessA")
     private val inviteB = invite("sessB")

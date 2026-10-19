@@ -12,7 +12,7 @@ import java.net.URI
  * default (`BuildConfig.HEYARR_BASE_URL`, gradle property `heyarrBaseUrl`).
  */
 data class HeyarrConfig(
-    /** e.g. `http://192.168.16.224:7777` (no trailing slash needed). */
+    /** e.g. `https://heyarr.example.test:7777` (no trailing slash needed). */
     val baseUrl: String = DEFAULT_BASE_URL,
     /**
      * The quality profile a Get-once want / Follow is created against, named (not by
@@ -61,9 +61,9 @@ data class HeyarrConfig(
         const val RELAY_SESSIONS_SUFFIX = "/v1/sessions"
 
         /**
-         * The build-time default origin (gradle property `heyarrBaseUrl`, defaulting to
-         * the live Bartley Ridge node). Not a secret — a LAN address the Settings
-         * screen can override at runtime.
+         * The build-time default origin: the `heyarrBaseUrl` Gradle property, or a reserved
+         * placeholder in a build made without it (androidApp/build.gradle.kts). The Settings
+         * screen can override it at runtime.
          */
         const val DEFAULT_BASE_URL: String = BuildConfig.HEYARR_BASE_URL
         const val DEFAULT_QUALITY_PROFILE = "living-room"
