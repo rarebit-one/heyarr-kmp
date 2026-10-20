@@ -111,6 +111,16 @@ object HeyarrIcons {
         )
     }
     val Verified by lazy { line("verified", "M12 3l7 3v5c0 4.5-3 8-7 10c-4-2-7-5.5-7-10V6z", "M8.5 12l2.5 2.5l4.5-5") }
+    val Game by lazy {
+        line(
+            "game",
+            "M7 8h10c2.5 0 4 2 4 5v2c0 2-2 3-3.5 1.5L15 14H9l-2.5 2.5C5 18 3 17 3 15v-2c0-3 1.5-5 4-5z",
+            "M8 10.5v3",
+            "M6.5 12h3",
+            "M15.5 11h.01",
+            "M17.5 13h.01",
+        )
+    }
     val Download by lazy { line("download", "M12 4v11", "M7 10l5 5l5-5", "M5 20h14") }
     val Save by lazy { line("save", "M4 4h13l3 3v13H4z", "M8 4v5h7V4", "M8 20v-6h8v6") }
     val Delete by lazy { line("delete", "M5 7h14", "M9 7V4h6v3", "M7 7l1 13h8l1-13", "M10.5 11v5", "M13.5 11v5") }

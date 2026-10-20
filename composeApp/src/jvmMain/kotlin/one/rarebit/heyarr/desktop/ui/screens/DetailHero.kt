@@ -228,6 +228,10 @@ private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, availabilit
         // Nothing held: get it, follow its progress in Manage, or (a guest) no primary CTA at all.
         asset == null -> NothingHeldAction(actions, availability, onGetIt)
 
+        // A game's held asset is its installer: the Play block below installs and
+        // launches it, and streaming or casting a setup .exe is never what Play means.
+        type == MediaType.GAME -> Unit
+
         type == MediaType.BOOK -> PrimaryButton(
             theme.ctaLabel,
             actions::openBook,
@@ -282,14 +286,15 @@ private fun HeroSecondaryActions(actions: HeroActions, first: Episode?) {
     val type = actions.type
     val asset = actions.detail.primaryAsset
     val castId = if (type == MediaType.SERIES) (first?.asset?.id) else asset?.assetId
-    if (castId != null && type != MediaType.BOOK &&
-        type != MediaType.FEED
-    ) {
+    // Books, articles and games are opened, read or installed — never cast.
+    if (castId != null && type !in NOT_CAST) {
         SecondaryButton("Play on…", {
             toggleCast(session, actions.state, castId, actions.scope)
         }, icon = HeyarrIcons.Cast)
     }
 }
+
+private val NOT_CAST = setOf(MediaType.BOOK, MediaType.FEED, MediaType.GAME)
 
 @Composable
 private fun CastPicker(session: AppSession, state: DetailState) {

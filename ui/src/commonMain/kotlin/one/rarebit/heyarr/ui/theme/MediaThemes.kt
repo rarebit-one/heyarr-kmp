@@ -93,6 +93,7 @@ object MediaThemes {
             metadataKeys = listOf("artist", "album", "track_count", "year"),
         ),
         Shape(MediaType.FEED, CardAspect.SQUARE, "Open", metadataKeys = listOf("source", "date")),
+        Shape(MediaType.GAME, CardAspect.POSTER, "Play", metadataKeys = listOf("year")),
         Shape(MediaType.UNKNOWN, CardAspect.POSTER, "Open", metadataKeys = listOf("year")),
     )
 

@@ -49,6 +49,7 @@ fun MediaType.icon(): ImageVector = when (this) {
     MediaType.PODCAST -> HeyarrIcons.Podcast
     MediaType.MUSIC -> HeyarrIcons.Music
     MediaType.FEED -> HeyarrIcons.Feed
+    MediaType.GAME -> HeyarrIcons.Game
     MediaType.UNKNOWN -> HeyarrIcons.Help
 }
 

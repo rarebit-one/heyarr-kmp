@@ -60,6 +60,7 @@ internal fun LazyListScope.titlePage(
         MediaType.SERIES -> item { SeasonsBlock(m.session, detail, m.seasons, m.state, m.wants) }
         MediaType.MUSIC, MediaType.AUDIOBOOK -> item { TracksBlock(m.session, detail, m.state) }
         MediaType.FEED, MediaType.PODCAST -> item { ArchiveBlock(m.session, m.state) }
+        MediaType.GAME -> item { GameBlock(m.session, detail, m.state) }
         else -> item { FileBlock(m.session, detail, m.state) }
     }
 }

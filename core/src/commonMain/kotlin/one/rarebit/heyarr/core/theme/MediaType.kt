@@ -20,6 +20,9 @@ enum class MediaType(val apiName: String?, val label: String, val plural: String
     PODCAST(null, "Podcast", "Podcasts"),
     MUSIC("music", "Music", "Music"),
     FEED(null, "Feed", "Feeds & articles"),
+
+    /** A game held as its store installers (heyarr-core ADR-0118); installed and run by the desktop. */
+    GAME("game", "Game", "Games"),
     UNKNOWN(null, "Other", "Other"),
     ;
 
@@ -39,6 +42,7 @@ enum class MediaType(val apiName: String?, val label: String, val plural: String
             "podcast", "podcast_episode" -> PODCAST
             "music", "album", "track", "artist" -> MUSIC
             "rss_feed", "feed", "article", "document", "youtube_channel", "video" -> FEED
+            "game", "games" -> GAME
             else -> UNKNOWN
         }
     }

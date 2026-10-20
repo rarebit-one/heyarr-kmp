@@ -71,7 +71,15 @@ private val COMING = setOf(Availability.ON_ITS_WAY, Availability.NOT_AVAILABLE)
 /** A pseudo-kind for the default filter: the four media kinds, no feeds or documents. */
 val MEDIA = MediaType.UNKNOWN
 internal val MEDIA_KINDS =
-    setOf(MediaType.MOVIE, MediaType.SERIES, MediaType.MUSIC, MediaType.BOOK, MediaType.AUDIOBOOK, MediaType.PODCAST)
+    setOf(
+        MediaType.MOVIE,
+        MediaType.SERIES,
+        MediaType.MUSIC,
+        MediaType.BOOK,
+        MediaType.AUDIOBOOK,
+        MediaType.PODCAST,
+        MediaType.GAME,
+    )
 
 /** One response may serve every shelf, while a shelf opened first can load only its kinds. */
 class CatalogLoad {

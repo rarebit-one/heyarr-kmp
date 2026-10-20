@@ -155,7 +155,8 @@ class ExternalMetadata(
 
         MediaType.FEED -> feedImage(key)
 
-        MediaType.UNKNOWN -> null
+        // No keyless source describes a game yet (IGDB needs a key, ADR-0118's follow-up).
+        MediaType.GAME, MediaType.UNKNOWN -> null
     }
 
     private suspend fun wikipedia(key: MetaKey): ExternalMeta? {
