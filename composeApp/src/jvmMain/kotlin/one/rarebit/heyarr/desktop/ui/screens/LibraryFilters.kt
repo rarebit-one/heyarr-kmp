@@ -114,6 +114,7 @@ internal fun KindFilterChips(
                     MediaType.BOOK,
                     MediaType.AUDIOBOOK,
                     MediaType.PODCAST,
+                    MediaType.GAME,
                 )
             )) {
             MediaScope(t) {

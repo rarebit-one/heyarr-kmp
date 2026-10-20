@@ -117,8 +117,9 @@ class OpenApiContractTest {
             val local = "a file this app writes and reads itself"
             // DaemonConfig, FileSyncIndexStore, FileDriveStateStore, VaultSyncDaemon moved to
             // rarebit-one/mnemosyne-kmp (Refs heyarr-core#733).
-            listOf("FileSettingsStore", "RecentSearches", "ReaderPosition")
+            listOf("FileSettingsStore", "RecentSearches", "ReaderPosition", "FileGameSettingsStore")
                 .forEach { put(it, local) }
+            put("GamePlan", "GOG's goggame-*.info shipped inside an installed game, not heyarr")
             put("ExternalMetadata", "its own on-disk cache of third-party metadata")
             put("ExternalParsers", "third-party public metadata APIs, not heyarr")
             put("WalPalette", "the desktop's pywal/wallust colours.json, a local theme file, not heyarr")
