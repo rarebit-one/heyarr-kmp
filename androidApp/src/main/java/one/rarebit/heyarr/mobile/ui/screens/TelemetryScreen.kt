@@ -110,6 +110,7 @@ fun TelemetryScreen(
                     Connection.ONLINE -> Tokens.success to "Connected"
                     Connection.OFFLINE -> Tokens.danger to "Offline"
                     Connection.UNAUTHORIZED -> Tokens.warning to "Credential refused"
+                    Connection.GUEST_REFUSED -> Tokens.warning to "Not a guest network — sign in to browse"
                     Connection.SIGNING_FAILED -> Tokens.warning to "Device authentication needed"
                     Connection.UNKNOWN -> Tokens.textDisabled to "Connecting…"
                 }

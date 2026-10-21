@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.auth.ProbeVerdict
 import one.rarebit.heyarr.core.auth.mode
 import one.rarebit.heyarr.core.heyarr.QualityProfile
 import one.rarebit.heyarr.core.heyarr.QualityProfiles
@@ -43,6 +44,14 @@ enum class Connection {
     UNAUTHORIZED,
 
     /**
+     * The node refused a request that carried NO credential: it does not admit this phone
+     * as a guest from where it is (its source is outside the node's guest trusted networks,
+     * or guest access is off). Nothing was presented, so nothing is blamed — the honest
+     * next step is to sign in (heyarr-kmp#185).
+     */
+    GUEST_REFUSED,
+
+    /**
      * The device signing key's post-authentication window has lapsed (see `BiometricGate`),
      * so signing refused before any request left the phone. The user re-authenticates
      * locally (biometric / PIN) and retries. This is not a network problem.
@@ -52,15 +61,16 @@ enum class Connection {
 
     companion object {
         /**
-         * Maps one liveness probe's HTTP status to a [Connection] state.
+         * Maps one liveness probe's HTTP status, sent in [mode], to a [Connection] state.
          * [status] is the HTTP status, or 0 when the transport could not connect at all.
-         * A refused credential is not "offline" — mirrors the desktop AppSession contract.
+         * A refused credential is not "offline", and a refused guest is not a refused
+         * credential: the rule is `:core`'s [ProbeVerdict], shared with the desktop.
          */
-        @Suppress("MagicNumber")
-        fun fromProbe(status: Int): Connection = when (status) {
-            200 -> ONLINE
-            401, 403 -> UNAUTHORIZED
-            else -> OFFLINE
+        fun fromProbe(status: Int, mode: ClientMode): Connection = when (ProbeVerdict.of(status, mode)) {
+            ProbeVerdict.ONLINE -> ONLINE
+            ProbeVerdict.OFFLINE -> OFFLINE
+            ProbeVerdict.CREDENTIAL_REFUSED -> UNAUTHORIZED
+            ProbeVerdict.GUEST_REFUSED -> GUEST_REFUSED
         }
     }
 }
@@ -167,7 +177,9 @@ class AppSession(
         val t0 = System.nanoTime()
         val result = withContext(Dispatchers.IO) {
             try {
-                Connection.fromProbe(api.ping())
+                // The heartbeat (`GET /works`) is a read a guest may make, so a 401 to a
+                // guest probe is the node declining this network, not a credential refusal.
+                Connection.fromProbe(api.ping(), mode)
             } catch (_: AuthenticationRequiredException) {
                 // Signing refused before the request was made: tell the user to
                 // re-authenticate, not to check their network.
@@ -188,11 +200,18 @@ class AppSession(
         connection = result
     }
 
-    /** Called by any screen whose call died on the transport — flips the banner immediately. */
+    /**
+     * Called by any screen whose call died on the transport — flips the banner immediately.
+     * A guest's 401/403 here is left to the heartbeat: the call may have been an
+     * enrolled-only read (expected, see [io]), so only the heartbeat's guest-allowed probe
+     * can tell a node that declines this network as a guest network ([Connection.GUEST_REFUSED]).
+     */
     fun noteTransportFailure(e: McpTransportException) {
         failures++
         lastFailure = e.message
-        connection = if (e.status == 401 || e.status == 403) Connection.UNAUTHORIZED else Connection.OFFLINE
+        val refused = e.status == 401 || e.status == 403
+        if (refused && isGuest) return
+        connection = if (refused) Connection.UNAUTHORIZED else Connection.OFFLINE
     }
 
     fun noteSuccess() {

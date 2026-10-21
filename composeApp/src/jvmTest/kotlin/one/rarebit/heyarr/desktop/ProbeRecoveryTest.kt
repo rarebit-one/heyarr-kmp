@@ -55,8 +55,8 @@ class ProbeRecoveryTest {
         }
     }
 
-    private fun session(transport: HttpTransport): AppSession = AppSession(
-        settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://h.example", bearerToken = "heyarr_1_test")),
+    private fun session(transport: HttpTransport, bearerToken: String = "heyarr_1_test"): AppSession = AppSession(
+        settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://h.example", bearerToken = bearerToken)),
         transport = transport,
         player = object : Player {
             override fun play(baseUrl: String, blobHash: String, token: String): PlayResult =
@@ -169,5 +169,37 @@ class ProbeRecoveryTest {
         s.noteTransportFailure(McpTransportException("heyarr refused the credential (HTTP 401)", null, 401))
         assertEquals(Connection.UNAUTHORIZED, s.connection)
         assertEquals(1, transport.resets, "an answer from the node is not a dead pool")
+    }
+
+    /** Answers every GET with [status]; the heartbeat's `GET /works` is all a probe sends. */
+    private class StatusTransport(private val status: Int) : HttpTransport {
+        override fun get(url: String, headers: Map<String, String>): HttpResponse = HttpResponse(status, "")
+        override fun post(
+            url: String,
+            body: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse = HttpResponse(405, "")
+    }
+
+    // heyarr-kmp#185: with no token configured the probe sends no credential, so the node's
+    // 401 says this network is not a guest network for it — not that a token was refused.
+    @Test
+    fun aGuestProbeRefusedIsAGuestRefusalNotARefusedToken() = runBlocking {
+        val s = session(StatusTransport(401), bearerToken = "")
+
+        s.probe()
+
+        assertEquals(Connection.GUEST_REFUSED, s.connection)
+    }
+
+    @Test
+    fun aGuestsRefusedCallLeavesTheBannerToTheHeartbeat() {
+        val s = session(StatusTransport(200), bearerToken = "")
+        val before = s.connection
+
+        s.noteTransportFailure(McpTransportException("HTTP 401", null, 401))
+
+        assertEquals(before, s.connection, "a guest's 401 must not read as a refused token")
     }
 }

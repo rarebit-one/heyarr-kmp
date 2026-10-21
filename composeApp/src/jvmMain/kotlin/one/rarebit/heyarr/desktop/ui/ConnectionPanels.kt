@@ -106,6 +106,7 @@ private fun ConnectionStatusLine(session: AppSession) {
         Connection.ONLINE -> Tokens.success to "Connected"
         Connection.OFFLINE -> Tokens.danger to "Offline"
         Connection.UNAUTHORIZED -> Tokens.warning to "Token refused"
+        Connection.GUEST_REFUSED -> Tokens.warning to "Not a guest network — sign in to browse"
         Connection.UNCONFIGURED -> Tokens.textDisabled to "Not configured"
         Connection.UNKNOWN -> Tokens.textDisabled to "Connecting…"
     }
@@ -137,7 +138,11 @@ internal fun CredentialPanel(info: SessionInfo?) {
                 KeyValue("scopes", s.scopes.joinToString(", ").ifBlank { "none" })
                 KeyValue(
                     "can write",
-                    if (s.canWrite) "yes — want, follow, acquire will succeed" else "no — this token is read-only; writes will be refused",
+                    if (s.canWrite) {
+                        "yes — want, follow, acquire will succeed"
+                    } else {
+                        "no — this token is read-only; writes will be refused"
+                    },
                     valueColor = if (s.canWrite) Tokens.success else Tokens.warning,
                 )
                 s.principalId?.let { KeyValue("principal", it, valueColor = Tokens.textMuted) }
