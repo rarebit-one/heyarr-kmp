@@ -401,6 +401,15 @@ fun HeyarrNavHost(
                                         onSettings = { open(Route.Settings) },
                                     )
 
+                                    // No credential was sent, so none is blamed (heyarr-kmp#185): the
+                                    // node just doesn't admit this network as a guest network.
+                                    Connection.GUEST_REFUSED -> OfflineBanner(
+                                        "This network isn't a guest network for this node",
+                                        "Sign in to browse.",
+                                        onRetry = { scope.launch { session.probe() } },
+                                        onSettings = { open(Route.Settings) },
+                                    )
+
                                     Connection.SIGNING_FAILED -> OfflineBanner(
                                         "Device authentication required",
                                         "Unlock with your fingerprint or PIN, then retry.",

@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.auth.ProbeVerdict
 import one.rarebit.heyarr.core.auth.mode
 import one.rarebit.heyarr.core.discovery.DiscoveredServer
 import one.rarebit.heyarr.core.discovery.MdnsResolver
@@ -61,15 +62,27 @@ enum class Connection {
     ONLINE,
     OFFLINE,
     UNAUTHORIZED,
+
+    /**
+     * The node refused a probe that carried NO credential: it does not admit this machine as
+     * a guest from where it is (outside the node's guest trusted networks, or guest access
+     * off). Nothing was presented, so no token is blamed (heyarr-kmp#185).
+     */
+    GUEST_REFUSED,
     UNCONFIGURED,
     ;
 
     companion object {
-        /** What one liveness probe says: its HTTP status, or 0 when the transport failed. A refused credential is not "offline". */
-        fun fromProbe(status: Int): Connection = when (status) {
-            200 -> ONLINE
-            401, 403 -> UNAUTHORIZED
-            else -> OFFLINE
+        /**
+         * What one liveness probe, sent in [mode], says: [status] is its HTTP status, or 0 when
+         * the transport failed. A refused credential is not "offline", and a refused guest is not
+         * a refused credential — the rule is `:core`'s [ProbeVerdict], shared with the phone.
+         */
+        fun fromProbe(status: Int, mode: ClientMode): Connection = when (ProbeVerdict.of(status, mode)) {
+            ProbeVerdict.ONLINE -> ONLINE
+            ProbeVerdict.OFFLINE -> OFFLINE
+            ProbeVerdict.CREDENTIAL_REFUSED -> UNAUTHORIZED
+            ProbeVerdict.GUEST_REFUSED -> GUEST_REFUSED
         }
     }
 }
@@ -297,7 +310,7 @@ class AppSession(
         }
         probes++
         lastLatencyMs = (nanoClock() - t0) / 1_000_000
-        connection = Connection.fromProbe(status)
+        connection = Connection.fromProbe(status, mode)
         when (status) {
             200 -> {
                 lastOkAt = System.currentTimeMillis()
@@ -339,7 +352,12 @@ class AppSession(
         failures++
         lastFailure = e.message
         if (e.status == null) transport.reset()
-        connection = if (e.status == 401 || e.status == 403) Connection.UNAUTHORIZED else Connection.OFFLINE
+        val refused = e.status == 401 || e.status == 403
+        // A guest's refused call may have been an enrolled-only read (expected, see [io]); only
+        // the heartbeat's guest-allowed probe can tell a node that declines this network as a
+        // guest network, so leave the banner to it rather than blame a token never sent.
+        if (refused && isGuest) return
+        connection = if (refused) Connection.UNAUTHORIZED else Connection.OFFLINE
     }
 
     fun noteSuccess() {

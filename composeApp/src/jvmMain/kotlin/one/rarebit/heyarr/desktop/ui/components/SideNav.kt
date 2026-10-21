@@ -210,6 +210,7 @@ private fun ConnectionGlyph(connection: NavConnectionInfo) {
         Connection.ONLINE -> Tokens.success to "Online"
         Connection.OFFLINE -> Tokens.danger to "Offline"
         Connection.UNAUTHORIZED -> Tokens.warning to "Refused"
+        Connection.GUEST_REFUSED -> Tokens.warning to "Not guest"
         Connection.UNCONFIGURED -> Tokens.textDisabled to "Not set up"
         Connection.UNKNOWN -> Tokens.textDisabled to "Connecting"
     }

@@ -274,6 +274,7 @@ fun HomeScreen(
                 one.rarebit.heyarr.mobile.state.Connection.ONLINE -> "Node connected" to Tokens.success
                 one.rarebit.heyarr.mobile.state.Connection.OFFLINE -> "Node offline" to Tokens.danger
                 one.rarebit.heyarr.mobile.state.Connection.UNAUTHORIZED -> "Node refused connection" to Tokens.warning
+                one.rarebit.heyarr.mobile.state.Connection.GUEST_REFUSED -> "Not a guest network here" to Tokens.warning
                 one.rarebit.heyarr.mobile.state.Connection.SIGNING_FAILED -> "Device locked" to Tokens.warning
                 one.rarebit.heyarr.mobile.state.Connection.UNKNOWN -> "Checking node" to Tokens.textMuted
             }
