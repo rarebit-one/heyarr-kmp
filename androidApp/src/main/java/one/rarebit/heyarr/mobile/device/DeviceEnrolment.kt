@@ -199,6 +199,33 @@ internal class DeviceEnrolment(
     }
 
     /**
+     * The node changed (`AppViewModel.switchNode`, after it dropped the old node's session
+     * authority, playback and login). A QR/web-login session token is only good at the node
+     * that minted it, so it goes. This phone's admission does not: there is one per phone (in
+     * [DeviceKeyring]) and heyarr-core verifies it at any node the user is pinned to.
+     *
+     *  - A live `Device` credential is kept as is — no re-mint, so no biometric prompt — and
+     *    the new node's session authority is read with it.
+     *  - Otherwise (a QR session, or nothing) the credential is dropped and the phone browses
+     *    as a guest. The stored admission is NOT re-adopted here: with no live device
+     *    credential the user either signed in by QR or explicitly signed out, and re-adopting
+     *    would silently undo that "Sign out" (Codex review on #186). App start still adopts it
+     *    ([attachDevice]), as it always has.
+     *
+     * Never [Host.signOut]: that is the user's explicit "Sign out" (heyarr-kmp#185).
+     */
+    fun onNodeChanged() {
+        if (host.deviceCredential != null && host.credential is Credential.Device) {
+            host.loadSessionAuthority()
+            return
+        }
+        host.credential = null
+        host.deviceCredential = null
+        host.setLoginState(LoginUiState.Idle)
+        host.startGuestBrowsing()
+    }
+
+    /**
      * An invite handed to us by Cruciform on this phone (the `heyarr-mobile://pair` deep
      * link). Already validated by [one.rarebit.heyarr.mobile.device.PairDeepLink] through
      * the library's parser; re-checked in [joinPairing] regardless. Joins straight away

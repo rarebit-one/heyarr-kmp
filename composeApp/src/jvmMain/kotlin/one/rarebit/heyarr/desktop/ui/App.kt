@@ -415,6 +415,14 @@ fun App(
                                         onSettings = { nav.go(Route.Settings) },
                                     )
 
+                                    // No token was sent, so none is blamed (heyarr-kmp#185).
+                                    Connection.GUEST_REFUSED -> OfflineBanner(
+                                        "This network isn't a guest network for this node",
+                                        "Sign in to browse.",
+                                        onRetry = { scope.launch { session.probe() } },
+                                        onSettings = { nav.go(Route.Settings) },
+                                    )
+
                                     else -> {}
                                 }
                             }

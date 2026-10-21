@@ -27,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
@@ -63,10 +64,10 @@ class SettingsState {
 }
 
 /**
- * Settings — the heyarr connection (node URL + default quality profile; a changed node
- * signs out), the connection telemetry sheet, this device's enrolment, followed
- * sources (`list_followed`, `follow_source`, `unfollow`), peers (`get_peer_status`,
- * `sync_peer`) and appearance (adaptive accents, reduce motion, public cover art).
+ * Settings — the heyarr connection (node URL + default quality profile; a new node ends a
+ * QR session, an enrolled device carries over), the connection telemetry sheet, this device's
+ * enrolment, followed sources (`list_followed`, `follow_source`, `unfollow`), peers
+ * (`get_peer_status`, `sync_peer`) and appearance (adaptive accents, reduce motion, public cover art).
  */
 @Composable
 fun SettingsScreen(
@@ -124,7 +125,8 @@ fun SettingsScreen(
             Panel("This device") {
                 Text(
                     deviceSummary
-                        ?: "Enrol this phone as a Voidbind device to sign in with its own key and to keep encrypted personal state here.",
+                        ?: "Enrol this phone as a Voidbind device to sign in with its own key " +
+                        "and to keep encrypted personal state here.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Tokens.textMuted,
                 )
@@ -166,9 +168,15 @@ fun ConnectionFields(config: HeyarrConfig, onSave: (String, String) -> Unit, onR
 
                 normalized.startsWith(
                     "http://",
-                ) -> "Plain http: release builds only allow cleartext to the build-default node; debug builds allow it everywhere."
+                ) ->
+                    "Plain http: release builds only allow cleartext to the build-default node; " +
+                        "debug builds allow it everywhere."
 
-                else -> "Build default: ${HeyarrConfig.DEFAULT_BASE_URL}. Changing the node signs out — a session is only good for the node that minted it."
+                // A QR/web sign-in is per node; the device admission is one per phone and
+                // verified at any node the user is pinned to, so it carries over (heyarr-kmp#185).
+                else ->
+                    "Build default: ${HeyarrConfig.DEFAULT_BASE_URL}. A QR sign-in is only good for the node " +
+                        "that minted it, so changing the node ends it; an enrolled device carries over."
             },
             style = MaterialTheme.typography.bodySmall,
             color = if (normalized ==
@@ -226,16 +234,23 @@ private fun FollowedPanel(session: AppSession, state: SettingsState, reload: () 
     }
 }
 
+/**
+ * The status row's tone and label for [connection]. Its own function so [ConnectionStatus]
+ * stays under detekt's complexity bar now that GUEST_REFUSED is a sixth state (#185).
+ */
+private fun connectionToneAndLabel(connection: Connection): Pair<Color, String> = when (connection) {
+    Connection.ONLINE -> Tokens.success to "connected"
+    Connection.OFFLINE -> Tokens.danger to "offline"
+    Connection.UNAUTHORIZED -> Tokens.warning to "credential refused"
+    Connection.GUEST_REFUSED -> Tokens.warning to "not a guest network — sign in to browse"
+    Connection.SIGNING_FAILED -> Tokens.warning to "device authentication needed"
+    Connection.UNKNOWN -> Tokens.textDisabled to "connecting…"
+}
+
 /** The connection's live status and what the credential is allowed to do. */
 @Composable
 private fun ConnectionStatus(session: AppSession, authority: SessionAuthority?, isGuest: Boolean) {
-    val (tone, label) = when (session.connection) {
-        Connection.ONLINE -> Tokens.success to "connected"
-        Connection.OFFLINE -> Tokens.danger to "offline"
-        Connection.UNAUTHORIZED -> Tokens.warning to "credential refused"
-        Connection.SIGNING_FAILED -> Tokens.warning to "device authentication needed"
-        Connection.UNKNOWN -> Tokens.textDisabled to "connecting…"
-    }
+    val (tone, label) = connectionToneAndLabel(session.connection)
     KeyValue("status", label + (session.lastLatencyMs?.let { " · $it ms" } ?: ""), valueColor = tone)
     KeyValue(
         "signed in",

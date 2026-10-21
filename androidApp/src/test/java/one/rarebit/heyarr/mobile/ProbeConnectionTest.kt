@@ -3,7 +3,9 @@ package one.rarebit.heyarr.mobile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import one.rarebit.heyarr.core.auth.ClientMode
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.state.ExternalMetadata
@@ -28,35 +30,44 @@ class ProbeConnectionTest {
     // ── Connection.fromProbe() ────────────────────────────────────────────────
 
     @Test fun `status 200 is online`() {
-        assertEquals("200 → ONLINE", Connection.ONLINE, Connection.fromProbe(200))
+        assertEquals("200 → ONLINE", Connection.ONLINE, Connection.fromProbe(200, ClientMode.ENROLLED))
+        assertEquals("200 → ONLINE (guest)", Connection.ONLINE, Connection.fromProbe(200, ClientMode.GUEST))
     }
 
-    @Test fun `status 401 is unauthorized`() {
-        assertEquals("401 → UNAUTHORIZED", Connection.UNAUTHORIZED, Connection.fromProbe(401))
+    @Test fun `status 401 with a credential is unauthorized`() {
+        assertEquals("401 → UNAUTHORIZED", Connection.UNAUTHORIZED, Connection.fromProbe(401, ClientMode.ENROLLED))
     }
 
-    @Test fun `status 403 is unauthorized`() {
-        assertEquals("403 → UNAUTHORIZED", Connection.UNAUTHORIZED, Connection.fromProbe(403))
+    @Test fun `status 403 with a credential is unauthorized`() {
+        assertEquals("403 → UNAUTHORIZED", Connection.UNAUTHORIZED, Connection.fromProbe(403, ClientMode.ENROLLED))
+    }
+
+    // heyarr-kmp#185: a guest sent no credential, so a refusal must not blame one.
+    @Test fun `status 401 or 403 as a guest is a guest refusal`() {
+        assertEquals("guest 401 → GUEST_REFUSED", Connection.GUEST_REFUSED, Connection.fromProbe(401, ClientMode.GUEST))
+        assertEquals("guest 403 → GUEST_REFUSED", Connection.GUEST_REFUSED, Connection.fromProbe(403, ClientMode.GUEST))
     }
 
     @Test fun `status 0 transport failure is offline`() {
-        assertEquals("0 → OFFLINE", Connection.OFFLINE, Connection.fromProbe(0))
+        assertEquals("0 → OFFLINE", Connection.OFFLINE, Connection.fromProbe(0, ClientMode.ENROLLED))
+        assertEquals("0 → OFFLINE (guest)", Connection.OFFLINE, Connection.fromProbe(0, ClientMode.GUEST))
     }
 
     @Test fun `non-200 non-auth statuses are offline`() {
-        assertEquals("404 → OFFLINE", Connection.OFFLINE, Connection.fromProbe(404))
-        assertEquals("500 → OFFLINE", Connection.OFFLINE, Connection.fromProbe(500))
+        assertEquals("404 → OFFLINE", Connection.OFFLINE, Connection.fromProbe(404, ClientMode.ENROLLED))
+        assertEquals("500 → OFFLINE", Connection.OFFLINE, Connection.fromProbe(500, ClientMode.GUEST))
     }
 
     // ── AppSession.probe() ────────────────────────────────────────────────────
 
-    private fun session(transport: HttpTransport): AppSession = AppSession(
-        api = HeyarrApi(transport, "https://node.example", Credential.Guest),
+    private fun session(transport: HttpTransport, credential: Credential = Credential.Guest): AppSession = AppSession(
+        api = HeyarrApi(transport, "https://node.example", credential),
         defaultProfile = "standard",
         settings = InMemorySettingsStore(),
         external = ExternalMetadata(File("/dev/null"), { false }, { null }),
         recent = RecentSearches(File("/dev/null")),
         scope = CoroutineScope(Dispatchers.Default),
+        credential = credential,
     )
 
     @Test fun `probe sets ONLINE on 200`() {
@@ -67,12 +78,40 @@ class ProbeConnectionTest {
         }
     }
 
-    @Test fun `probe sets UNAUTHORIZED on 401`() {
+    @Test fun `probe sets UNAUTHORIZED on 401 to a credential`() {
         runBlocking {
-            val s = session(SubstringTransport(listOf("GET /works" to HttpResponse(401, ""))))
+            val s = session(
+                SubstringTransport(listOf("GET /works" to HttpResponse(401, ""))),
+                credential = Credential.Session("tok"),
+            )
             s.probe()
             assertEquals("401 probe → UNAUTHORIZED", Connection.UNAUTHORIZED, s.connection)
         }
+    }
+
+    // heyarr-kmp#185: the heartbeat a guest sends carries no Authorization header, so the
+    // node's 401 means "not a guest network for this node", never "refused the credential".
+    @Test fun `probe sets GUEST_REFUSED on 401 to a guest`() {
+        runBlocking {
+            val s = session(SubstringTransport(listOf("GET /works" to HttpResponse(401, ""))))
+            s.probe()
+            assertEquals("guest 401 probe → GUEST_REFUSED", Connection.GUEST_REFUSED, s.connection)
+        }
+    }
+
+    @Test fun `a guest's refused call leaves the banner to the heartbeat`() {
+        val s = session(SubstringTransport(listOf("GET /works" to HttpResponse(200, ""))))
+        s.noteTransportFailure(McpTransportException("HTTP 401", null, status = 401))
+        assertEquals("not blamed on a credential", Connection.UNKNOWN, s.connection)
+    }
+
+    @Test fun `an enrolled refused call is still the credential's refusal`() {
+        val s = session(
+            SubstringTransport(listOf("GET /works" to HttpResponse(200, ""))),
+            credential = Credential.Session("tok"),
+        )
+        s.noteTransportFailure(McpTransportException("HTTP 401", null, status = 401))
+        assertEquals(Connection.UNAUTHORIZED, s.connection)
     }
 
     @Test fun `probe sets OFFLINE when transport throws IOException`() {

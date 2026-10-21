@@ -194,6 +194,7 @@ private fun ConnectionTile(connection: Connection, detail: String?, onClick: () 
         Connection.ONLINE -> Tokens.success to "Online"
         Connection.OFFLINE -> Tokens.danger to "Offline"
         Connection.UNAUTHORIZED -> Tokens.warning to "Refused"
+        Connection.GUEST_REFUSED -> Tokens.warning to "Not guest"
         Connection.UNCONFIGURED -> Tokens.textDisabled to "Set up"
         Connection.UNKNOWN -> Tokens.textDisabled to "Connecting"
     }
