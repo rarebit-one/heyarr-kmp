@@ -59,8 +59,9 @@ private object UnavailablePairingSteps : PairingSteps {
  *
  * The effective [config] is resolved from the build default plus the runtime
  * overrides in [settings] ([HeyarrConfig.resolve]); [updateSettings] re-resolves it
- * and, when the base URL changed, signs out (a session token is only good for the
- * node that minted it).
+ * and, when the base URL changed, ends the QR session (a session token is only good for
+ * the node that minted it) but keeps a live enrolled device's credential, which is
+ * node-independent ([switchNode], heyarr-kmp#185).
  */
 class AppViewModel internal constructor(
     private val settings: SettingsStore = InMemorySettingsStore(),
@@ -246,7 +247,8 @@ class AppViewModel internal constructor(
 
     /**
      * Persist new overrides (a value equal to the build default is stored as "no
-     * override") and re-resolve [config]. A changed base URL signs out.
+     * override") and re-resolve [config]. A changed base URL ends the per-node session
+     * ([switchNode]); an enrolled device stays signed in.
      */
     fun updateSettings(baseUrl: String, qualityProfile: String) {
         val normalized = HeyarrConfig.normalizeBaseUrl(baseUrl)
@@ -266,7 +268,26 @@ class AppViewModel internal constructor(
     private fun applyConfig(next: HeyarrConfig) {
         val baseChanged = next.baseUrl != _config.value.baseUrl
         _config.value = next
-        if (baseChanged) signOut()
+        if (baseChanged) switchNode()
+    }
+
+    /**
+     * The node changed (Settings, Discover). What was per node goes: the session authority
+     * read from the old node, whatever was playing from it and the QR login in flight
+     * there. Which credential survives is [DeviceEnrolment.onNodeChanged]'s call: a
+     * QR/web-login session token (only good at the node that minted it) is dropped, but a
+     * live `Device` credential is kept — it is node-independent, and dropping
+     * it left an enrolled phone browsing as a guest until the app restarted (heyarr-kmp#185).
+     *
+     * Not [signOut]: that is the user's explicit "Sign out" and still drops both.
+     */
+    private fun switchNode() {
+        _sessionAuthority.value = null
+        playback.stop()
+        // v0.12.x has no LoginCoordinator (#173 is main-only): a QR login in flight is
+        // dropped the way this release's signOut drops it, by resetting the login state.
+        _loginState.value = LoginUiState.Idle
+        enrolment.onNodeChanged()
     }
 
     /** Drop the credential and fall back to browsing as a guest (the new default), not a login wall. */

@@ -16,12 +16,15 @@ import one.rarebit.heyarr.mobile.device.PairingSteps
 import one.rarebit.heyarr.mobile.login.LoginUiState
 import one.rarebit.heyarr.mobile.personalstate.DevicePersonalState
 import one.rarebit.heyarr.mobile.personalstate.InMemorySpaceRegistry
+import one.rarebit.voidwhichbinds.Ed25519Signer
 import one.rarebit.voidwhichbinds.Invite
 import one.rarebit.voidwhichbinds.auth.DeviceCredential
 import one.rarebit.voidwhichbinds.flow.PairingFailureKind
 import one.rarebit.voidwhichbinds.flow.PairingOutcome
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -57,8 +60,12 @@ class DeviceEnrolmentTest {
                 calls += "credential"
                 field = value
             }
+
+        // Not `loginState`: a property's generated setter would clash with setLoginState on the JVM.
+        var lastLoginState: LoginUiState? = null
         override fun setLoginState(state: LoginUiState) {
             calls += "login"
+            lastLoginState = state
         }
         override fun loadSessionAuthority() {
             calls += "authority"
@@ -130,6 +137,56 @@ class DeviceEnrolmentTest {
     @Test fun theUnauthorizedHookBeforeAttachLetsTheRetryGoAhead() {
         assertTrue("no keyring: nothing learned, retry", enrolment.refreshMembership())
         assertTrue(host.calls.isEmpty())
+    }
+
+    // ── a node change (heyarr-kmp#185) ────────────────────────────────────────────
+
+    /** A live Device credential whose signer must never run: keeping it must not re-mint. */
+    private fun liveDevice() = DeviceCredential(
+        certToken = "eyJ2IjoyfQ.c2ln",
+        signer = Ed25519Signer { error("a node change must not re-mint the device proof") },
+        clock = { 1_000_000L },
+    )
+
+    @Test fun aNodeChangeKeepsTheLiveDeviceCredentialAndRereadsTheAuthority() {
+        val live = liveDevice()
+        val cred = Credential.Device("eyJ2IjoyfQ.c2ln", "proof")
+        host.deviceCredential = live
+        host.credential = cred
+        host.calls.clear()
+
+        enrolment.onNodeChanged()
+
+        assertSame("the device credential is node-independent: kept", live, host.deviceCredential)
+        assertSame("still presenting the Device credential", cred, host.credential)
+        assertEquals("only the new node's authority is read", listOf("authority"), host.calls)
+        assertFalse("never the explicit sign-out", "signOut" in host.calls)
+    }
+
+    @Test fun aNodeChangeDropsAQrSessionAndBrowsesAsGuestWithoutAStoredAdmission() {
+        host.credential = Credential.Session("tok")
+        host.calls.clear()
+
+        enrolment.onNodeChanged()
+
+        assertNull("the QR session is only good at the node that minted it", host.credential)
+        assertNull(host.deviceCredential)
+        assertEquals(LoginUiState.Idle, host.lastLoginState)
+        // No live device credential: guest, never a silent re-adopt of the stored admission.
+        assertEquals("guest", host.calls.last())
+        assertFalse("never the explicit sign-out", "signOut" in host.calls)
+    }
+
+    @Test fun aNodeChangeDropsAStaleDeviceShapeWithNoLiveCredential() {
+        // A Device-shaped credential without the live one behind it cannot sign anything at
+        // the new node: drop it and browse as a guest.
+        host.credential = Credential.Device("eyJ2IjoyfQ.c2ln", "proof")
+        host.calls.clear()
+
+        enrolment.onNodeChanged()
+
+        assertNull(host.credential)
+        assertEquals("guest", host.calls.last())
     }
 
     @Test fun personalStateNeedsTheDeviceKeys() {
