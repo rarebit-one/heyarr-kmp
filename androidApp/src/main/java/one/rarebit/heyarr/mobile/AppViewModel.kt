@@ -284,7 +284,9 @@ class AppViewModel internal constructor(
     private fun switchNode() {
         _sessionAuthority.value = null
         playback.stop()
-        login.cancel()
+        // v0.12.x has no LoginCoordinator (#173 is main-only): a QR login in flight is
+        // dropped the way this release's signOut drops it, by resetting the login state.
+        _loginState.value = LoginUiState.Idle
         enrolment.onNodeChanged()
     }
 
