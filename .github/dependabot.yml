@@ -1,0 +1,52 @@
+version: 2
+
+# settings.gradle.kts resolves one.rarebit.voidwhichbinds from GitHub Packages
+# (https://maven.pkg.github.com/rarebit-one/*), which needs credentials even for
+# public packages. Dependabot never sees CI's GITHUB_TOKEN, and without this
+# block a 401 there fails the WHOLE gradle update, not just that artifact
+# (sidekick-labs/sidekick-companion-kit hit exactly this).
+registries:
+  github-packages-rarebit-one:
+    type: maven-repository
+    url: https://maven.pkg.github.com/rarebit-one/*
+    # The registry ignores the username but requires it non-empty.
+    username: x-access-token
+    # A DEPENDABOT-scoped org secret: a classic PAT with `read:packages` (the
+    # Maven registry rejects App installation tokens).
+    password: ${{secrets.PACKAGES_READ_TOKEN}}
+    # No `replaces-base: true`: GitHub Packages is an ADDITIONAL source, scoped in
+    # settings.gradle.kts to the voidwhichbinds group; Maven Central and google()
+    # must keep resolving normally.
+
+updates:
+  - package-ecosystem: gradle
+    directory: "/"
+    # Load-bearing: the top-level `registries:` block does nothing unless the
+    # ecosystem entry lists it.
+    registries:
+      - github-packages-rarebit-one
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    open-pull-requests-limit: 10
+    groups:
+      gradle:
+        patterns:
+          - "*"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+    open-pull-requests-limit: 10
+    groups:
+      actions:
+        patterns:
+          - "*"
