@@ -123,7 +123,7 @@ jobs:
           } > notes.md
           if gh release view "$TAG" >/dev/null 2>&1; then
             gh release upload "$TAG" "$APK" --clobber
-            gh release edit "$TAG" --title "heyarr mobile $VERSION" --notes-file notes.md
+            gh release edit "$TAG" --title "$TAG" --notes-file notes.md
           else
-            gh release create "$TAG" "$APK" --title "heyarr mobile $VERSION" --notes-file notes.md
+            gh release create "$TAG" "$APK" --title "$TAG" --notes-file notes.md
           fi
