@@ -4,6 +4,8 @@ import one.rarebit.heyarr.core.state.ExternalMeta
 import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.core.state.MetaKey
 import java.io.File
+import java.io.IOException
+import java.net.HttpURLConnection.HTTP_NOT_FOUND
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -31,7 +33,7 @@ object DesktopExternalMetadata {
             .build()
     }
 
-    fun httpGet(url: String): String? = runCatching {
+    fun httpGet(url: String): String? {
         val req = HttpRequest.newBuilder(URI.create(url))
             .timeout(Duration.ofSeconds(REQUEST_TIMEOUT_S))
             .header("User-Agent", USER_AGENT)
@@ -39,8 +41,12 @@ object DesktopExternalMetadata {
             .GET()
             .build()
         val resp = client.send(req, HttpResponse.BodyHandlers.ofString())
-        if (resp.statusCode() == HTTP_OK) resp.body() else null
-    }.getOrNull()
+        return when (resp.statusCode()) {
+            HTTP_OK -> resp.body()
+            HTTP_NOT_FOUND -> null
+            else -> throw IOException("Metadata provider returned HTTP ${resp.statusCode()}")
+        }
+    }
 
     /** The desktop's instance: its cache dir and fetcher, and always a movie look-up (the v3 movie cache). */
     fun create(

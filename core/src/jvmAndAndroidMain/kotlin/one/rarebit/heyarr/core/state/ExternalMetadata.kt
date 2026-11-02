@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.core.state
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -87,7 +88,14 @@ class ExternalMetadata(
             ) {
                 return@withLock cached.also { synchronized(memory) { memory[id] = it } }
             }
-            val fresh = withContext(Dispatchers.IO) { runCatching { resolve(key) }.getOrNull() }
+            val fresh = try {
+                withContext(Dispatchers.IO) { resolve(key) }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                // A failed request is not a negative match. Leave it retryable after recovery.
+                return@withLock null
+            }
             val value = fresh ?: ExternalMeta(source = "none")
             writeCache(id, value)
             synchronized(memory) { memory[id] = value }
