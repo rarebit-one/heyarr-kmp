@@ -5,6 +5,7 @@ import one.rarebit.heyarr.desktop.device.DesktopEd25519
 import one.rarebit.heyarr.desktop.device.DesktopSecretStore
 import one.rarebit.heyarr.desktop.device.KeyTier
 import one.rarebit.heyarr.desktop.device.KeychainSecretStore
+import one.rarebit.heyarr.desktop.device.SecretStore
 import one.rarebit.voidwhichbinds.Ed25519Verifier
 import one.rarebit.voidwhichbinds.KeyRef
 import one.rarebit.voidwhichbinds.auth.DeviceCredential
@@ -15,6 +16,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -79,6 +81,33 @@ class DesktopDeviceStoreTest {
         val reloaded = DesktopDeviceKeyring(dataDir(), keyFile(), secrets = sealedStore())
         assertEquals(info.deviceKey, reloaded.info().deviceKey)
         assertEquals(info.deviceEncKey, reloaded.info().deviceEncKey)
+    }
+
+    @Test fun an_unreadable_signing_secret_does_not_replace_an_existing_device() {
+        val store = sealedStore()
+        val original = DesktopDeviceKeyring(dataDir(), keyFile(), secrets = store).info()
+        val unavailable = object : SecretStore by store {
+            override fun unseal(name: String): ByteArray? = null
+        }
+        val locked = DesktopDeviceKeyring(dataDir(), keyFile(), secrets = unavailable)
+
+        assertFailsWith<IllegalStateException> { locked.identity() }
+
+        assertEquals(original.deviceKey, DesktopDeviceKeyring(dataDir(), keyFile(), secrets = store).info().deviceKey)
+    }
+
+    @Test fun an_unreadable_encryption_secret_does_not_replace_an_existing_device() {
+        val store = sealedStore()
+        val original = DesktopDeviceKeyring(dataDir(), keyFile(), secrets = store).info()
+        val unavailable = object : SecretStore by store {
+            override fun unseal(name: String): ByteArray? = if (name == "vwb.enc") null else store.unseal(name)
+        }
+        val locked = DesktopDeviceKeyring(dataDir(), keyFile(), secrets = unavailable)
+
+        assertFailsWith<IllegalStateException> { locked.identity() }
+
+        val reopened = DesktopDeviceKeyring(dataDir(), keyFile(), secrets = store)
+        assertEquals(original.deviceEncKey, reopened.info().deviceEncKey)
     }
 
     // ── Gen2 namespace (ADR-0022): gen1 leftovers are never read, no migration ──────────
