@@ -6,6 +6,8 @@ import androidx.compose.runtime.produceState
 import one.rarebit.heyarr.core.state.ExternalMeta
 import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.ui.theme.CardAspect
+import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
 import one.rarebit.heyarr.mobile.state.AppSession
 
@@ -28,6 +30,12 @@ fun rememberCover(
     year: Int? = null,
     creator: String? = null,
     feedRef: String? = null,
+    /**
+     * Whether a public fallback should prefer the wide (landscape) image over the portrait
+     * one. Follows the card shape by default: a poster card wants the poster. The detail
+     * hero passes true when it is drawn wide.
+     */
+    preferLandscape: Boolean = MediaThemes.of(type).aspect == CardAspect.WIDE,
 ): State<Cover> = produceState(
     initialValue = Cover(
         nodeArtPath?.let {
@@ -37,6 +45,7 @@ fun rememberCover(
     nodeArtPath,
     title,
     type,
+    preferLandscape,
     session.externalMetadata,
 ) {
     if (nodeArtPath !=
@@ -52,12 +61,10 @@ fun rememberCover(
     val meta = session.external.lookup(MetaKey(type, title, year, creator, feedRef)) ?: return@produceState
     value =
         Cover(
-            if (type == MediaType.SERIES ||
-                type == MediaType.MOVIE
-            ) {
+            if (preferLandscape) {
                 meta.landscapeImageUrl ?: meta.imageUrl
             } else {
-                meta.imageUrl
+                meta.imageUrl ?: meta.landscapeImageUrl
             },
             meta,
         )

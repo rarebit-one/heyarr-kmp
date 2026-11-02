@@ -15,8 +15,8 @@ class MediaThemeTest {
     @Test
     fun accentsAndAspectsMatchTheTable() {
         val expect = mapOf(
-            MediaType.MOVIE to Triple(Color(0xFF7EE0B3), CardAspect.WIDE, "Play"),
-            MediaType.SERIES to Triple(Color(0xFF8FD6C0), CardAspect.WIDE, "Play"),
+            MediaType.MOVIE to Triple(Color(0xFF7EE0B3), CardAspect.POSTER, "Play"),
+            MediaType.SERIES to Triple(Color(0xFF8FD6C0), CardAspect.POSTER, "Play"),
             MediaType.BOOK to Triple(Color(0xFFF4B860), CardAspect.POSTER, "Read"),
             MediaType.AUDIOBOOK to Triple(Color(0xFF9CD9B0), CardAspect.SQUARE, "Listen"),
             MediaType.PODCAST to Triple(Color(0xFFC4D98C), CardAspect.SQUARE, "Play episode"),

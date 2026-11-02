@@ -65,6 +65,9 @@ internal fun DetailHero(m: DetailModel, detail: WorkDetail, onGetIt: (String, St
     val state = m.state
     val seasons = m.seasons
     val scope = rememberCoroutineScope()
+    // The hero is drawn wide only when the node has a backdrop to fill it; otherwise it
+    // shows the poster in the poster shape the cards use, never a centre-cropped poster.
+    val heroWide = detail.backdropPath != null && (type == MediaType.MOVIE || type == MediaType.SERIES)
     val cover by rememberCover(
         session,
         type,
@@ -72,6 +75,7 @@ internal fun DetailHero(m: DetailModel, detail: WorkDetail, onGetIt: (String, St
         detail.heroArtPath(type),
         detail.work.year,
         detail.work.artist ?: detail.work.author,
+        preferLandscape = heroWide,
     )
     val art = cover.bitmap
     val status = session.index.statusOf(detail.work.id)
@@ -89,6 +93,7 @@ internal fun DetailHero(m: DetailModel, detail: WorkDetail, onGetIt: (String, St
         IdentityBlock(
             title = work.title,
             type = type,
+            aspect = if (heroWide) CardAspect.WIDE else MediaThemes.of(type).aspect,
             meta = heroMeta(detail, type, seasons, state),
             artwork = art,
             availability = availability,
@@ -337,13 +342,13 @@ private fun CastPicker(session: AppSession, state: DetailState) {
 private fun IdentityBlock(
     title: String,
     type: MediaType,
+    aspect: CardAspect,
     meta: List<String?>,
     artwork: ImageBitmap?,
     availability: Availability?,
     synopsis: @Composable () -> Unit,
     actions: @Composable RowScope.() -> Unit,
 ) {
-    val aspect = MediaThemes.of(type).aspect
     val artWidth = when (aspect) {
         CardAspect.WIDE -> 420.dp
         CardAspect.POSTER -> 240.dp

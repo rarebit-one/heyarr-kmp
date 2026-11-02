@@ -59,10 +59,13 @@ object MediaThemes {
     )
 
     private val SHAPES = listOf(
-        Shape(MediaType.MOVIE, CardAspect.WIDE, "Play", metadataKeys = listOf("runtime", "year", "rating", "genre")),
+        // Films and series are POSTERS: the node stores each one's portrait poster
+        // (heyarr-core ADR-0122), so a card shows it whole rather than centre-cropping it
+        // into 16:9. The wide image is the separate backdrop, which the detail hero uses.
+        Shape(MediaType.MOVIE, CardAspect.POSTER, "Play", metadataKeys = listOf("runtime", "year", "rating", "genre")),
         Shape(
             MediaType.SERIES,
-            CardAspect.WIDE,
+            CardAspect.POSTER,
             "Play",
             ctaSecondaryLabel = "Next episode",
             metadataKeys = listOf("season", "episode", "air_status", "year"),
