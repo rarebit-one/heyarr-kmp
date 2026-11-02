@@ -3,10 +3,12 @@ package one.rarebit.heyarr.desktop
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.library.WorkDetailClient
 import one.rarebit.heyarr.desktop.library.WorkDetailJson
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -105,5 +107,63 @@ class WorkDetailTest {
         assertEquals(HASH, ok.primaryAsset!!.blobHash)
         assertNull(client.getWorkDetail("missing"))
         assertTrue(seenAuth.all { it == "Bearer heyarr_1_secret" })
+    }
+
+    private val BACKDROP = "blake3:" + "b".repeat(64)
+
+    /** A film the node enriched (heyarr-core ADR-0122): poster, backdrop and overview from the node. */
+    private val enrichedFilm = """
+        {
+          "id": "w9", "title": "A Held Movie", "year": 2016, "content_type": "movie",
+          "attributes": {"overview": "A film used to exercise enrichment.", "enrich_source": "tmdb"},
+          "external_ids": {"tmdb": "700"},
+          "artwork": {"asset_id": "p1", "blob_hash": "$HASH", "mime": "image/jpeg",
+                      "content_url": "/api/v1/blobs/$HASH/content"},
+          "backdrop": {"asset_id": "b1", "blob_hash": "$BACKDROP", "mime": "image/jpeg",
+                       "content_url": "/api/v1/blobs/$BACKDROP/content"},
+          "primary_asset": null
+        }
+    """.trimIndent()
+
+    @Test
+    fun parsesTheBackdropFromItsOwnEmbed() {
+        val detail = WorkDetailJson.parse(enrichedFilm)!!
+        assertEquals("/api/v1/blobs/$HASH/content", detail.artworkPath)
+        assertEquals("/api/v1/blobs/$BACKDROP/content", detail.backdropPath)
+        assertEquals(BACKDROP, detail.backdropHash)
+        assertEquals("A film used to exercise enrichment.", detail.attributes["overview"])
+    }
+
+    @Test
+    fun aWideHeroPrefersTheNodeBackdropAndOthersKeepThePoster() {
+        val detail = WorkDetailJson.parse(enrichedFilm)!!
+        assertEquals(detail.backdropPath, detail.heroArtPath(MediaType.MOVIE))
+        assertEquals(detail.backdropPath, detail.heroArtPath(MediaType.SERIES))
+        assertEquals(detail.artworkPath, detail.heroArtPath(MediaType.BOOK))
+    }
+
+    @Test
+    fun withoutABackdropTheHeroFallsBackToThePoster() {
+        // An older node sends no backdrop key at all; a newer one sends null. Both mean "none".
+        val backdropEmbed = Regex(""""backdrop": \{[^}]*\}""")
+        val absent = enrichedFilm.replace(Regex(backdropEmbed.pattern + ","), "")
+        val nulled = enrichedFilm.replace(backdropEmbed, "\"backdrop\": null")
+        for (body in listOf(absent, nulled)) {
+            val detail = WorkDetailJson.parse(body)!!
+            assertNull(detail.backdropPath)
+            assertEquals(detail.artworkPath, detail.heroArtPath(MediaType.MOVIE))
+        }
+    }
+
+    @Test
+    fun aFilmTheNodeDescribesSkipsThePublicLookup() {
+        val detail = WorkDetailJson.parse(enrichedFilm)!!
+        assertTrue(detail.nodeDescribes(MediaType.MOVIE))
+        // A series still asks: its unheld episodes' stills come from the lookup.
+        assertFalse(detail.nodeDescribes(MediaType.SERIES))
+        // No overview, or no poster: the node has not described it, so the device still asks.
+        val noOverview = WorkDetailJson.parse(enrichedFilm.replace("A film used to exercise enrichment.", ""))!!
+        assertFalse(noOverview.nodeDescribes(MediaType.MOVIE))
+        assertFalse(detail.copy(artworkPath = null).nodeDescribes(MediaType.MOVIE))
     }
 }

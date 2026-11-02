@@ -1,6 +1,7 @@
 package one.rarebit.heyarr.desktop.library
 
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.theme.MediaType
 
 /**
  * The one playable file a work-detail read hands back — heyarr-core `PrimaryAssetRef`
@@ -57,11 +58,40 @@ data class WorkDetail(
     /** The `artwork` embed's relative content path (`/api/v1/blobs/<hash>/content`), when the work has a poster. */
     val artworkPath: String? = null,
     val artworkHash: String? = null,
-    /** The work's string attributes (overview / synopsis when a provider filled them; empty today). */
+    /**
+     * The `backdrop` embed's relative content path, when the node holds a wide image for the
+     * work (heyarr-core ADR-0122: a shipped fanart, or the TMDB backdrop the node's enrich job
+     * stored). Null on a node that predates the embed, and null — never the poster — when the
+     * work has none.
+     */
+    val backdropPath: String? = null,
+    val backdropHash: String? = null,
+    /** The work's string attributes (overview / synopsis when a provider or the node's enrich job filled them). */
     val attributes: Map<String, String> = emptyMap(),
 ) {
     /** True when there is a blob we can hand to the player. */
     val isPlayable: Boolean get() = primaryAsset != null && primaryAsset.blobHash.isNotBlank()
+
+    /**
+     * The node image the WIDE detail hero should show: a film's or series' backdrop when the
+     * node has one, else its poster (centre-cropped, as before). Every other kind shows its
+     * poster/cover. The same landscape-first rule the external fallback applies in `Cover`.
+     */
+    fun heroArtPath(type: MediaType): String? = when (type) {
+        MediaType.MOVIE, MediaType.SERIES -> backdropPath ?: artworkPath
+        else -> artworkPath
+    }
+
+    /**
+     * True when the node already describes this work as fully as the per-device public lookup
+     * would, so the detail screen need not ask (and cache) it again on every device: a film with
+     * a node poster and a node overview. A series still asks, because the lookup is also where
+     * its unheld episodes' stills and air dates come from; other kinds are unchanged.
+     */
+    fun nodeDescribes(type: MediaType): Boolean =
+        type == MediaType.MOVIE &&
+            artworkPath != null &&
+            !attributes["overview"].isNullOrBlank()
 }
 
 /**
@@ -77,11 +107,14 @@ object WorkDetailJson {
         val work = WorksJson.parseOne(body) ?: return null
         val obj = JsonScan.rootObject(body) ?: return WorkDetail(work)
         val artwork = JsonScan.objectAt(obj, "artwork")
+        val backdrop = JsonScan.objectAt(obj, "backdrop")
         return WorkDetail(
             work,
             parsePrimaryAsset(obj),
             artworkPath = artwork?.let { JsonScan.stringField(it, "content_url") },
             artworkHash = artwork?.let { JsonScan.stringField(it, "blob_hash") },
+            backdropPath = backdrop?.let { JsonScan.stringField(it, "content_url") },
+            backdropHash = backdrop?.let { JsonScan.stringField(it, "blob_hash") },
             attributes =
             JsonScan.objectAt(obj, "attributes")?.let { a ->
                 listOf(
