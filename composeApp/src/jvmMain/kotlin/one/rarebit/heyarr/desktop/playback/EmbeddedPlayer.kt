@@ -275,7 +275,8 @@ class EmbeddedPlayer(
             // software render path cannot tone-map as fully as the GPU pop-out (default vo),
             // which stays the reference for HDR; this is the best the in-app surface offers.
             "tone-mapping" to "bt.2390",
-            "http-header-fields" to "Authorization: Bearer $token", "force-media-title" to title,
+            "http-header-fields" to if (token.isBlank()) "" else "Authorization: Bearer $token",
+            "force-media-title" to title,
         ) + listOfNotNull(start?.let { "start" to it.toString() })
         for ((k, v) in options) lib.mpv_set_option_string(h, k, v)
         val rc = lib.mpv_initialize(h)
@@ -321,7 +322,7 @@ class EmbeddedPlayer(
                 ),
             )
             start?.let { add("--start=$it") }
-            add("--http-header-fields=Authorization: Bearer $token")
+            if (token.isNotBlank()) add("--http-header-fields=Authorization: Bearer $token")
             add("--title=$title")
             add(url)
         }
