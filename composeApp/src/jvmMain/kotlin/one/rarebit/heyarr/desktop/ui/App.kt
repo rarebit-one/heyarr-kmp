@@ -472,8 +472,8 @@ fun App(
                                     )
 
                                     Connection.UNAUTHORIZED -> OfflineBanner(
-                                        "heyarr refused the token",
-                                        "Check the bearer token in Settings.",
+                                        "heyarr refused the sign-in credential",
+                                        "Check this device's sign-in or bearer token in Settings.",
                                         onRetry = { scope.launch { session.probe() } },
                                         onSettings = { nav.go(Route.Settings) },
                                     )

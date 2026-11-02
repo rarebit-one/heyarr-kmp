@@ -179,6 +179,33 @@ class KeychainSecretStoreTest {
      * (headless / no session bus / locked), so it never fails CI's runner and never leaves an
      * item behind.
      */
+    @Test fun concurrent_linux_keychain_reads_survive_schema_marshalling_and_gc() {
+        if (!System.getProperty("os.name").lowercase().contains("linux")) return
+        val backend = LibSecretBackend(service = "one.rarebit.heyarr.desktop.test")
+        if (!backend.isAvailable()) return
+        val account = "concurrent-roundtrip-" + System.nanoTime()
+        val secret = ByteArray(32) { 42 }
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(8)
+        try {
+            assertTrue(backend.store(account, secret))
+            val reads = (0 until 160).map { index ->
+                pool.submit<Boolean> {
+                    val reader = LibSecretBackend(service = "one.rarebit.heyarr.desktop.test")
+                    if (index % 10 == 0) System.gc()
+                    reader.isAvailable() && secret.contentEquals(reader.retrieve(account))
+                }
+            }
+            reads.forEach {
+                val matches = it.get(30, java.util.concurrent.TimeUnit.SECONDS)
+                assertTrue(matches, "keychain read returned the original bytes")
+            }
+        } finally {
+            pool.shutdownNow()
+            pool.awaitTermination(30, java.util.concurrent.TimeUnit.SECONDS)
+            backend.remove(account)
+        }
+    }
+
     @Test fun real_linux_libsecret_round_trips_when_reachable() {
         val os = System.getProperty("os.name")?.lowercase().orEmpty()
         if (!os.contains("linux")) return
