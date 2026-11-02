@@ -102,7 +102,7 @@ class PlaybackSession {
     private fun subtitleUrlsFor(item: Route.Player): List<String> = queue.firstOrNull { it.asset.id == item.assetId }
         ?.subtitles.orEmpty()
         .mapNotNull { it.blobHash }
-        .map { HeyarrApi.blobUrl(baseUrl, it) }
+        .map { mediaUrl(HeyarrApi.blobUrl(baseUrl, it)) }
 
     /**
      * Attach the current item's `.srt`/`.vtt` sidecars to the running player. Idempotent
@@ -146,6 +146,7 @@ class PlaybackSession {
     var pendingStart: Boolean by mutableStateOf(false)
     var baseUrl: String = ""
     var token: String = ""
+    var mediaUrl: (String) -> String = { it }
 
     /**
      * Resolves the URL to play an item from. The default hands over the direct blob

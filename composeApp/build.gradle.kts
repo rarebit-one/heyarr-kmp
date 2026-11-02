@@ -117,7 +117,7 @@ compose.desktop {
             // The bundled runtime is a jlink image: name every module the app reaches
             // beyond the defaults. java.net.http backs JdkHttpTransport / ArtworkLoader;
             // jdk.crypto.ec carries the TLS elliptic-curve suites heyarr's cert needs.
-            modules("java.net.http", "jdk.crypto.ec", "jdk.unsupported")
+            modules("java.net.http", "jdk.httpserver", "jdk.crypto.ec", "jdk.unsupported")
             // Linux packaging via jpackage. Declared (not run) here — `build` does not
             // package; `packageDeb` / `packageReleaseDeb` (and Rpm) would. AppImage is
             // NOT a jpackage format: it is produced out-of-band by wrapping the
