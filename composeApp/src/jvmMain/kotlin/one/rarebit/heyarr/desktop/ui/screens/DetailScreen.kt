@@ -329,7 +329,9 @@ private fun loadDetail(
         scope.launch {
             session.io { a.seriesVariantsOf(d.work, catalogWorks) }.onSuccess { state.variants = it }
         }
-        if (session.config.externalMetadata) {
+        // The node stores a film's poster and overview centrally (heyarr-core ADR-0122); when it
+        // has them, every device reads the same answer and none repeats the public lookup.
+        if (session.config.externalMetadata && !d.nodeDescribes(MediaType.from(d.work.kind))) {
             val t = MediaType.from(d.work.kind)
             val feedRef = if (t == MediaType.FEED ||
                 t == MediaType.PODCAST

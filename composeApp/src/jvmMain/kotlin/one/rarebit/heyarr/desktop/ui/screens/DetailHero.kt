@@ -69,7 +69,7 @@ internal fun DetailHero(m: DetailModel, detail: WorkDetail, onGetIt: (String, St
         session,
         type,
         detail.work.title,
-        detail.artworkPath,
+        detail.heroArtPath(type),
         detail.work.year,
         detail.work.artist ?: detail.work.author,
     )

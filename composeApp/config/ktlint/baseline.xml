@@ -112,7 +112,4 @@
     <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/SeriesTest.kt">
         <error line="33" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/jvmTest/kotlin/one/rarebit/heyarr/desktop/WorkDetailTest.kt">
-        <error line="20" column="17" source="standard:property-naming" />
-    </file>
 </baseline>

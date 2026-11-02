@@ -565,7 +565,6 @@
     <ID>UseCheckOrError:Libmpv.kt$MpvRenderer$throw IllegalStateException("libmpv render context: ${lib.mpv_error_string(rc)}")</ID>
     <ID>VariableNaming:MpvPlayerTest.kt$MpvPlayerTest$private val HASH = "blake3:" + "0123456789abcdef".repeat(4)</ID>
     <ID>VariableNaming:MpvPlayerTest.kt$MpvPlayerTest$private val TOKEN = "heyarr_1_supersecret"</ID>
-    <ID>VariableNaming:WorkDetailTest.kt$WorkDetailTest$private val HASH = "blake3:" + "a".repeat(64)</ID>
     <ID>WildcardImport:ArchiveExperienceTest.kt$import kotlin.test.*</ID>
     <ID>WildcardImport:ArchiveExperienceTest.kt$import one.rarebit.heyarr.desktop.ui.*</ID>
     <ID>WildcardImport:ArtworkLoader.kt$import one.rarebit.heyarr.core.state.*</ID>
