@@ -88,10 +88,9 @@ data class WorkDetail(
      * a node poster and a node overview. A series still asks, because the lookup is also where
      * its unheld episodes' stills and air dates come from; other kinds are unchanged.
      */
-    fun nodeDescribes(type: MediaType): Boolean =
-        type == MediaType.MOVIE &&
-            artworkPath != null &&
-            !attributes["overview"].isNullOrBlank()
+    fun nodeDescribes(type: MediaType): Boolean = type == MediaType.MOVIE &&
+        artworkPath != null &&
+        !attributes["overview"].isNullOrBlank()
 }
 
 /**
