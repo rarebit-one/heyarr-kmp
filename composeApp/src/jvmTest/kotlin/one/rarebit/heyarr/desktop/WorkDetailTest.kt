@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
  */
 class WorkDetailTest {
 
-    private val HASH = "blake3:" + "a".repeat(64)
+    private val testHash = "blake3:" + "a".repeat(64)
 
     @Test
     fun parsesPrimaryAssetHashAndMime() {
@@ -30,12 +30,12 @@ class WorkDetailTest {
               "year": 1982,
               "content_type": "movie",
               "external_ids": {"imdb": "tt0083658"},
-              "artwork": {"asset_id": "art1", "blob_hash": "$HASH", "mime": "image/jpeg",
-                          "content_url": "/api/v1/blobs/$HASH/content"},
+              "artwork": {"asset_id": "art1", "blob_hash": "$testHash", "mime": "image/jpeg",
+                          "content_url": "/api/v1/blobs/$testHash/content"},
               "primary_asset": {
-                "asset_id": "a1", "edition_id": "e1", "blob_hash": "$HASH",
+                "asset_id": "a1", "edition_id": "e1", "blob_hash": "$testHash",
                 "mime": "video/mp4", "size": 4294967296, "duration_seconds": 6900.0,
-                "content_url": "/api/v1/blobs/$HASH/content"
+                "content_url": "/api/v1/blobs/$testHash/content"
               }
             }
         """.trimIndent()
@@ -46,7 +46,7 @@ class WorkDetailTest {
         assertTrue(detail.isPlayable)
         val asset = detail.primaryAsset!!
         // The hash comes from primary_asset's OWN slice, not the artwork embed.
-        assertEquals(HASH, asset.blobHash)
+        assertEquals(testHash, asset.blobHash)
         assertEquals("video/mp4", asset.mime)
         assertEquals("a1", asset.assetId)
         assertEquals("e1", asset.editionId)
@@ -95,7 +95,7 @@ class WorkDetailTest {
                 return if (url.endsWith("/missing")) {
                     HttpResponse(404, "")
                 } else {
-                    HttpResponse(200, """{"id":"w1","title":"One","primary_asset":{"blob_hash":"$HASH"}}""")
+                    HttpResponse(200, """{"id":"w1","title":"One","primary_asset":{"blob_hash":"$testHash"}}""")
                 }
             }
             override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
@@ -104,7 +104,7 @@ class WorkDetailTest {
         val client = WorkDetailClient(transport, "https://h.example", Credential.Bearer("heyarr_1_secret"))
 
         val ok = client.getWorkDetail("w1")!!
-        assertEquals(HASH, ok.primaryAsset!!.blobHash)
+        assertEquals(testHash, ok.primaryAsset!!.blobHash)
         assertNull(client.getWorkDetail("missing"))
         assertTrue(seenAuth.all { it == "Bearer heyarr_1_secret" })
     }
@@ -117,8 +117,8 @@ class WorkDetailTest {
           "id": "w9", "title": "A Held Movie", "year": 2016, "content_type": "movie",
           "attributes": {"overview": "A film used to exercise enrichment.", "enrich_source": "tmdb"},
           "external_ids": {"tmdb": "700"},
-          "artwork": {"asset_id": "p1", "blob_hash": "$HASH", "mime": "image/jpeg",
-                      "content_url": "/api/v1/blobs/$HASH/content"},
+          "artwork": {"asset_id": "p1", "blob_hash": "$testHash", "mime": "image/jpeg",
+                      "content_url": "/api/v1/blobs/$testHash/content"},
           "backdrop": {"asset_id": "b1", "blob_hash": "$backdropHash", "mime": "image/jpeg",
                        "content_url": "/api/v1/blobs/$backdropHash/content"},
           "primary_asset": null
@@ -128,7 +128,7 @@ class WorkDetailTest {
     @Test
     fun parsesTheBackdropFromItsOwnEmbed() {
         val detail = WorkDetailJson.parse(enrichedFilm)!!
-        assertEquals("/api/v1/blobs/$HASH/content", detail.artworkPath)
+        assertEquals("/api/v1/blobs/$testHash/content", detail.artworkPath)
         assertEquals("/api/v1/blobs/$backdropHash/content", detail.backdropPath)
         assertEquals(backdropHash, detail.backdropHash)
         assertEquals("A film used to exercise enrichment.", detail.attributes["overview"])
