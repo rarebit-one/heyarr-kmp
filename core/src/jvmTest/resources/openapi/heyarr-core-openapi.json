@@ -323,7 +323,7 @@
       "schema": {
        "type": "string"
       },
-      "description": "Comma-separated browse embeds to add to each row (ADR-0075):\n`artwork` (the poster) and `primary_asset` (the file a tap plays).\nAn embed not asked for is absent; one asked for that the work\nlacks is `null`. With no `include` the rows are plain `Work`s. An\nunknown name is a 400.\n"
+      "description": "Comma-separated browse embeds to add to each row (ADR-0075):\n`artwork` (the poster), `backdrop` (the wide scene image a detail\nscreen shows behind the title — a film's or series' backdrop, never\nthe poster again, ADR-0122) and `primary_asset` (the file a tap plays).\nAn embed not asked for is absent; one asked for that the work\nlacks is `null`. With no `include` the rows are plain `Work`s. An\nunknown name is a 400.\n"
      }
     ],
     "responses": {
@@ -507,6 +507,142 @@
     }
    }
   },
+  "/api/v1/works/{id}/backdrop": {
+   "get": {
+    "tags": [
+     "content"
+    ],
+    "operationId": "getWorkBackdrop",
+    "summary": "A work's backdrop, by redirect to its blob (ADR-0122).",
+    "description": "The sibling of `GET /works/{id}/artwork` for the work's other face: a\n`307` to the blob route for its representative BACKDROP — an\n`artwork`-role asset named `backdrop*` or `fanart*` (a release's shipped\nfanart, or the backdrop the enrich job fetched from TMDB), one the\nrelease shipped before one that was fetched, the id breaking ties.\n\nIt never falls back to the poster. A work with a poster and no\nbackdrop answers `404` here while `/artwork` answers `307`, so a client\ndecides for itself whether to show the poster in a wide slot; the node\ndoes not make that substitution silently.\n\n`?size=N` behaves exactly as on `/artwork` (ADR-0109). The guest\nboundary applies (ADR-0074).\n",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/id"
+     },
+     {
+      "name": "size",
+      "in": "query",
+      "required": false,
+      "description": "Requested thumbnail long-edge bucket in pixels (ADR-0109).",
+      "schema": {
+       "type": "integer",
+       "enum": [
+        256,
+        512,
+        1024
+       ]
+      }
+     },
+     {
+      "name": "v",
+      "in": "query",
+      "required": false,
+      "description": "Cache-busting token (the source blob's hash); accepted and ignored.",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "307": {
+      "description": "Redirect to the blob route — the thumb blob when the derived thumbnail is ready, the original otherwise.",
+      "headers": {
+       "Location": {
+        "schema": {
+         "type": "string"
+        },
+        "description": "`/api/v1/blobs/{hash}/content`"
+       },
+       "Cache-Control": {
+        "schema": {
+         "type": "string"
+        },
+        "description": "`private, max-age=300` for ready/undecodable responses; `no-store` while derivation is pending."
+       }
+      }
+     },
+     "400": {
+      "description": "`size` is present but not one of the supported values (256, 512, 1024).",
+      "content": {
+       "application/problem+json": {
+        "schema": {
+         "$ref": "#/components/schemas/Problem"
+        }
+       }
+      }
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "description": "No such work, or the work has no backdrop (the detail says which).",
+      "content": {
+       "application/problem+json": {
+        "schema": {
+         "$ref": "#/components/schemas/Problem"
+        }
+       }
+      }
+     }
+    }
+   },
+   "head": {
+    "tags": [
+     "content"
+    ],
+    "operationId": "headWorkBackdrop",
+    "summary": "The backdrop redirect, headers only.",
+    "description": "Identical to `get`: a `307` with the same `Location`, so a client can learn whether a backdrop exists without following the redirect.",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/id"
+     },
+     {
+      "name": "size",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "enum": [
+        256,
+        512,
+        1024
+       ]
+      }
+     },
+     {
+      "name": "v",
+      "in": "query",
+      "required": false,
+      "description": "Cache-busting token; accepted and ignored by the server.",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "307": {
+      "description": "Redirect to the blob route."
+     },
+     "400": {
+      "description": "size is not one of the supported values."
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "description": "No such work",
+      "or the work has no backdrop.": null
+     }
+    }
+   }
+  },
   "/api/v1/artists": {
    "get": {
     "tags": [
@@ -671,7 +807,7 @@
     ],
     "operationId": "patchWork",
     "summary": "Correct a work's catalogue facts.",
-    "description": "Changes the title, year or content type (#428). Every field is optional;\nomitting one leaves it alone, and `\"year\": 0` clears the year — the two\nare different requests.\n\n**`work_key` is deliberately not recomputed.** It is the normalised\nidentity a rescan converges on, derived from the title a SCANNER sees,\nnot from the one a person prefers to read. Re-deriving it on a rename\nwould make the next scan create a second work instead of finding this\none. `sort_title` does follow the title, because it is the listing's\nsort key.\n\nThe title is stored as typed, not passed through the scanner's display\nnormaliser — that normaliser would read \"(Extended)\" as a release tag\nand drop it.\n",
+    "description": "Changes the title, year, content type or music artist (#428). Every\nfield is optional; omitting one leaves it alone. `\"year\": 0` clears\nthe year. `\"artist\": \"\"` clears the artist and its manual override.\nArtist corrections are accepted only for music works and take precedence\nover later provider enrichment.\n\n**`work_key` is deliberately not recomputed.** It is the normalised\nidentity a rescan converges on, derived from the title a SCANNER sees,\nnot from the one a person prefers to read. Re-deriving it on a rename\nwould make the next scan create a second work instead of finding this\none. `sort_title` does follow the title, because it is the listing's\nsort key.\n\nThe title is stored as typed, not passed through the scanner's display\nnormaliser — that normaliser would read \"(Extended)\" as a release tag\nand drop it.\n",
     "parameters": [
      {
       "$ref": "#/components/parameters/id"
@@ -4363,6 +4499,9 @@
      },
      "403": {
       "$ref": "#/components/responses/Forbidden"
+     },
+     "503": {
+      "description": "Garbage collection reclaimed a released blob of the same hash while this upload was being recorded (#779). Nothing was recorded; upload it again."
      }
     }
    }
@@ -4436,6 +4575,88 @@
      },
      "403": {
       "$ref": "#/components/responses/Forbidden"
+     }
+    }
+   }
+  },
+  "/api/v1/vault/blobs/{hash}/placement": {
+   "parameters": [
+    {
+     "name": "hash",
+     "in": "path",
+     "required": true,
+     "description": "The BLAKE3 digest that names the ciphertext blob, as `blake3:<64 lowercase hex characters>`.",
+     "schema": {
+      "type": "string",
+      "pattern": "^blake3:[0-9a-f]{64}$"
+     }
+    }
+   ],
+   "get": {
+    "tags": [
+     "personal-state"
+    ],
+    "operationId": "getVaultBlobPlacement",
+    "summary": "Where a vault blob is wanted and where it is held. Requires `read`.",
+    "description": "Two-site vault placement (ADR-0114). `pinned_to` is every peer a placement names for the blob, in this node's peer ids: device pins, plus this node's configured siblings when the blob is pinned or taken here. `held_at` is every Full Peer recorded as holding the bytes, including this node, and a sibling once it has pulled them and said so, while that claim is fresh. `sites_durable` is how many distinct sites `held_at` spans: a client that deletes its own copy once a blob is safe (\"move\" ingest) waits until it reaches the number of sites it wants. A restricted caller needs a write grant on some space, as for pinning (ADR-0104).",
+    "responses": {
+     "200": {
+      "description": "The blob's placement status.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "blob_hash",
+          "pinned_to",
+          "held_at",
+          "taken_from",
+          "sites_durable"
+         ],
+         "additionalProperties": false,
+         "properties": {
+          "blob_hash": {
+           "type": "string"
+          },
+          "pinned_to": {
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          },
+          "held_at": {
+           "type": "array",
+           "items": {
+            "type": "string"
+           }
+          },
+          "taken_from": {
+           "type": "array",
+           "description": "The sibling sites this node took the placement from (ADR-0114).",
+           "items": {
+            "type": "string"
+           }
+          },
+          "sites_durable": {
+           "type": "integer",
+           "description": "How many distinct sites (by peer site label; a peer with none is its own site) hold the bytes, counting another peer only while its claim is fresh (the hour GC's last-copy rule uses)."
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "503": {
+      "description": "This node reports no placement status."
      }
     }
    }
@@ -5256,8 +5477,8 @@
      "enrich"
     ],
     "operationId": "backfillEnrich",
-    "summary": "Enrich held music/book works now (ADR-0087).",
-    "description": "Queues an `enrich_work` job for every held music/book work in scope that\nstill lacks a cover or a canonical id, ignoring the enrich beat's backoff\nschedule.\n\nEnrichment otherwise runs on a background beat. This is the operator's\nlever to enrich a scope now — after wiring an enrich provider, or after\ningesting a shelf of books. A scope is required — `library_id`, `work_id`,\n`author`, or `all` — so \"this one author\" is never one forgotten flag\nfrom \"every book on the node\". Only under-enriched works are touched and\nthe enrich job is idempotent, so a re-run is cheap and safe. Refused with\n400 when the node has no enrich provider configured (the jobs would never\nrun).\n",
+    "summary": "Enrich held works now (ADR-0087, ADR-0122).",
+    "description": "Queues an `enrich_work` job for every held work in scope that is still\nunder-enriched, ignoring the enrich beat's backoff schedule. A music or\nbook work is under-enriched without a cover or its MusicBrainz/Open\nLibrary id; a movie or series without a poster, a backdrop or its TMDB\nid.\n\nEnrichment otherwise runs on a background beat. This is the operator's\nlever to enrich a scope now — after wiring an enrich provider, or after\ningesting a shelf of books or a batch of films. A scope is required —\n`library_id`, `work_id`, `author`, or `all` — so \"this one author\" is\nnever one forgotten flag from \"every book on the node\". `content_type`\nnarrows any scope to one kind. Only under-enriched works are touched,\nthe job fetches only the images a work is missing, and it dedupes per\nwork, so a re-run is cheap and safe. Refused with 400 when the node has\nno enrich provider configured (the jobs would never run) or the\n`content_type` is not one enrichment covers.\n",
     "requestBody": {
      "required": true,
      "content": {
@@ -5273,6 +5494,16 @@
          },
          "author": {
           "type": "string"
+         },
+         "content_type": {
+          "type": "string",
+          "enum": [
+           "movie",
+           "series",
+           "music",
+           "book"
+          ],
+          "description": "Narrows the scope to one content type."
          },
          "all": {
           "type": "boolean"
@@ -5319,8 +5550,8 @@
      "enrich"
     ],
     "operationId": "enrichStatus",
-    "summary": "How many held music/book works still need enrichment (ADR-0087).",
-    "description": "Reports the enrich backlog: how many held music/book works still lack a\ncover or a canonical id, out of the total held, so a person can watch a\nbackfill drain.\n",
+    "summary": "How many held works still need enrichment (ADR-0087).",
+    "description": "Reports the enrich backlog: how many held works enrichment covers\n(movie, series, music, book) are still under-enriched, out of the total\nheld — overall and per content type — so a person can watch a backfill\ndrain.\n",
     "responses": {
      "200": {
       "description": "The enrich backlog.",
@@ -5337,6 +5568,21 @@
           },
           "enriched": {
            "type": "integer"
+          },
+          "by_content_type": {
+           "type": "object",
+           "description": "The same counts per content type, for every covered type the node holds at least one work of.",
+           "additionalProperties": {
+            "type": "object",
+            "properties": {
+             "under_enriched": {
+              "type": "integer"
+             },
+             "total": {
+              "type": "integer"
+             }
+            }
+           }
           }
          }
         }
@@ -6331,6 +6577,249 @@
      },
      "404": {
       "$ref": "#/components/responses/NotFound"
+     }
+    }
+   }
+  },
+  "/api/v1/desired/{id}/blocked": {
+   "get": {
+    "tags": [
+     "desired"
+    ],
+    "operationId": "listBlocked",
+    "summary": "List the releases a want will not choose again, and why.",
+    "description": "A release is blocked for a want when its download or verification\nfailed in a way that is the release's fault (a dead transfer, bytes\nthat did not verify). A fault of this node's configuration (no\nlibrary for the content type, a path map) does not block (#813).\n",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The want's blocked releases.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "desired_item_id": {
+           "type": "string"
+          },
+          "blocked": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "properties": {
+             "provider": {
+              "type": "string"
+             },
+             "candidate_id": {
+              "type": "string"
+             },
+             "title": {
+              "type": "string"
+             },
+             "reason": {
+              "type": "string",
+              "description": "verification_failed, ingest_failed, grab_failed or manual"
+             },
+             "detail": {
+              "type": "string",
+              "description": "What failed. A release refused for being a program\nposing as media (#819) reads `payload_executable: …`.\n"
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     }
+    }
+   },
+   "post": {
+    "tags": [
+     "desired"
+    ],
+    "operationId": "blockRelease",
+    "summary": "Block a release by hand, so the want will not choose it. Requires `write`.",
+    "description": "The operator's lever for a release that is bad in a way nothing\ndetected (#819): a fake, a wrong cut. Recorded with reason `manual`.\nThe provider is resolved from the want's last search when that search\noffered the candidate from exactly one provider; name it otherwise (a\nfan-out release, one a later search may find, or an id two providers\noffered). Lift it again with DELETE …/blocked/{candidate}.\n",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "candidate_id"
+        ],
+        "properties": {
+         "candidate_id": {
+          "type": "string"
+         },
+         "provider": {
+          "type": "string",
+          "description": "whose candidate id this is; needed when the last search did not offer it, or offered it from two providers"
+         },
+         "detail": {
+          "type": "string",
+          "description": "why, for whoever reads the block later; defaults to \"blocked by hand\""
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "description": "Blocked.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "provider": {
+           "type": "string"
+          },
+          "candidate_id": {
+           "type": "string"
+          },
+          "title": {
+           "type": "string"
+          },
+          "reason": {
+           "type": "string"
+          },
+          "detail": {
+           "type": "string"
+          }
+         }
+        }
+       }
+      }
+     },
+     "200": {
+      "description": "It was already blocked; nothing changed.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "provider": {
+           "type": "string"
+          },
+          "candidate_id": {
+           "type": "string"
+          },
+          "title": {
+           "type": "string"
+          },
+          "reason": {
+           "type": "string"
+          },
+          "detail": {
+           "type": "string"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     },
+     "409": {
+      "$ref": "#/components/responses/Conflict"
+     }
+    }
+   }
+  },
+  "/api/v1/desired/{id}/blocked/{candidate}": {
+   "delete": {
+    "tags": [
+     "desired"
+    ],
+    "operationId": "unblockRelease",
+    "summary": "Lift a block, so the want may choose that release again.",
+    "description": "The operator's lever for a block that was wrong (#813), most often one\nrecorded before a node-configuration fault stopped blocking releases.\nEmits `acquisition.release_unblocked`. Percent-escape the candidate id:\nit can carry a slash. A candidate id is unique only within its\nprovider, so when two providers blocked the same id, `provider` names\nwhich one; without it the request is refused with 409. An\n`infohash:` id names the bytes whoever offered them, so it is lifted\nunder every provider that blocked it.\n",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "candidate",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "provider",
+      "in": "query",
+      "required": false,
+      "description": "The provider whose candidate id this is, as the blocked list names it.",
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Lifted."
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     },
+     "409": {
+      "$ref": "#/components/responses/Conflict"
      }
     }
    }
@@ -7973,7 +8462,7 @@
     ],
     "operationId": "listAccessLeases",
     "summary": "This peer's access leases, for a sibling to cache (§54, ADR-0048).",
-    "description": "Returns the signed access-lease tokens this peer has issued and that are\nstill live — unrevoked, and unexpired on this peer's clock — so a sibling\ncan cache them and, once this peer is unreachable, still answer a read on\nwhose authority (§53, §54, #285).\n\n**The tokens carry their own authority.** Each is a capability grant\n(ADR-0048) signed by this peer's identity key; a fetching peer verifies\nit against the key it already pinned for this one (ADR-0012), never\nagainst the connection that served it — a lease served by A stays A's\nsigned statement however it travelled (the ADR-0043 caution). Serving\nthem to a member therefore discloses nothing a member could not be\ngranted, which is why the route needs no authorisation beyond membership.\n",
+    "description": "Returns the signed device write leases this peer has issued and that are\nstill live — unrevoked, and unexpired on this peer's clock — so a sibling\ncan cache them and, once this peer is unreachable, still lift a device\nthis peer authorised to write there (§53, §54, ADR-0048, #285). Only\ndevice write leases are served (principal `device:<key>`, resource\n`site:<peer key>`, capability `write`); a guest lease (ADR-0094) is\nnode-local and never leaves this peer.\n\n**The tokens carry their own authority.** Each is a capability grant\n(ADR-0048) signed by this peer's identity key; a fetching peer verifies\nit against the key it already pinned for this one (ADR-0012), never\nagainst the connection that served it — a lease served by A stays A's\nsigned statement however it travelled (the ADR-0043 caution). Serving\nthem to a member therefore discloses nothing a member could not be\ngranted, which is why the route needs no authorisation beyond membership.\n",
     "security": [
      {
       "peerCertificate": []
@@ -7981,7 +8470,7 @@
     ],
     "responses": {
      "200": {
-      "description": "The signed tokens of this peer's active leases (possibly empty).",
+      "description": "The signed tokens of this peer's active device write leases (possibly empty).",
       "content": {
        "application/json": {
         "schema": {
@@ -8446,6 +8935,149 @@
      },
      "503": {
       "description": "This node keeps no encrypted personal state to sync."
+     }
+    }
+   }
+  },
+  "/peer/v1/placements": {
+   "post": {
+    "tags": [
+     "peer"
+    ],
+    "operationId": "peerAskPlacements",
+    "summary": "Ask a sibling which blobs it holds and wants kept at the asker's site too (ADR-0114).",
+    "description": "Two-site vault placement. The DESTINATION calls the site that holds the\nbytes, which is the direction its pull will travel, so a\none-way-reachable pair still converges (ADR-0038). The request names\nno peer: peer ids are node-local, and the asker is the certificate's\npeer (ADR-0033).\n\nAn exchange covers one hash range `[lo, hi)` over the digest's hex (an\nempty `hi` is the end of the space). The answer is the WHOLE set the\nsource offers the asker inside it, and the asker replaces what it took\nfrom this source in that range with it, so a withdrawn placement is\nsimply absent and a lost exchange changes nothing. When the asker's\n`digest` of what it took matches the source's, the answer is\n`unchanged` with no entries.\n\nWith `claim`, `held` is the asker's COMPLETE claim about its OWN disk\nin the range, folded as an inventory (see\n`/peer/v1/inventory`): what it lists is present, and any of the asker's\npresent replicas in the range it omits becomes missing. It is how the\nsource learns a blob is held at two sites, and stops believing it.\n\nA source offers the blobs a device pinned to the asker, plus, when the\nasker is one of its configured siblings, every blob pinned here, each\nwith whether it holds the bytes now. It never offers a placement it\ntook from another peer.\n",
+    "security": [
+     {
+      "peerCertificate": []
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "lo",
+         "hi",
+         "digest",
+         "observed_at"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "lo": {
+          "type": "string",
+          "pattern": "^[0-9a-f]*$"
+         },
+         "hi": {
+          "type": "string",
+          "pattern": "^[0-9a-f]*$"
+         },
+         "digest": {
+          "type": "string",
+          "description": "`sha256:<hex>` over the sorted, newline-joined `\"<blob_hash> <size> <held>\"` lines (`held` as `true`/`false`) of what the asker took from this source in the range, as last offered."
+         },
+         "observed_at": {
+          "type": "string",
+          "format": "date-time"
+         },
+         "claim": {
+          "type": "boolean",
+          "description": "`held` is included and is the asker's COMPLETE claim for the range: any of its present replicas here that it omits is marked missing."
+         },
+         "held": {
+          "type": "array",
+          "description": "Every blob in the range the asker holds `present` (only with `claim`).",
+          "items": {
+           "$ref": "#/components/schemas/InventoryEntry"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "What the source offers the asker inside the range.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "lo",
+          "hi",
+          "digest",
+          "unchanged",
+          "entries"
+         ],
+         "additionalProperties": false,
+         "properties": {
+          "lo": {
+           "type": "string"
+          },
+          "hi": {
+           "type": "string"
+          },
+          "digest": {
+           "type": "string"
+          },
+          "unchanged": {
+           "type": "boolean"
+          },
+          "entries": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "required": [
+             "blob_hash",
+             "size",
+             "held"
+            ],
+            "additionalProperties": false,
+            "properties": {
+             "blob_hash": {
+              "type": "string"
+             },
+             "size": {
+              "type": "integer",
+              "format": "int64"
+             },
+             "held": {
+              "type": "boolean",
+              "description": "Whether the source holds the bytes now. A pinned blob it lost is still offered, with `held` false, and is not a withdrawal."
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "The question is malformed, or its `held` claim is not a valid incremental inventory.",
+      "content": {
+       "application/problem+json": {
+        "schema": {
+         "$ref": "#/components/schemas/Problem"
+        }
+       }
+      }
+     },
+     "403": {
+      "description": "The asker is a member with no catalog row, so its claim cannot be recorded.",
+      "content": {
+       "application/problem+json": {
+        "schema": {
+         "$ref": "#/components/schemas/Problem"
+        }
+       }
+      }
+     },
+     "503": {
+      "description": "This node offers no placements (only the personal profile does)."
      }
     }
    }
@@ -10679,7 +11311,7 @@
     "description": "The identifiers this entity is known by outside heyarr, keyed by source\n(`tmdb`, `imdb`, `tvdb`) — ADR-0050's REST twin, read-only (#431).\n`{}` when nothing has been reconciled: an absent identifier is \"no\nmatch\", never an error (ADR-0025).\n\nWhere the catalog holds more than one identifier for one source, the\nlexically-first value is reported — an arbitrary but STABLE answer,\nthe same determinism rule `/search`'s `tvdb_id` takes.\n"
    },
    "WorkDetail": {
-    "description": "A work with its external identifiers and its browse embeds (ADR-0075).\nReturned by `GET /works/{id}`. The embeds are always present here —\none row, two cheap lookups — and `null` when the work has none.\n",
+    "description": "A work with its external identifiers and its browse embeds (ADR-0075).\nReturned by `GET /works/{id}`. The embeds are always present here —\none row, three cheap lookups — and `null` when the work has none.\n`artwork` and `backdrop` are two faces resolved independently: a work\nwith only a poster has a `null` backdrop, never the poster twice.\n",
     "allOf": [
      {
       "$ref": "#/components/schemas/Work"
@@ -10689,6 +11321,7 @@
       "required": [
        "external_ids",
        "artwork",
+       "backdrop",
        "primary_asset"
       ],
       "properties": {
@@ -10696,6 +11329,16 @@
         "$ref": "#/components/schemas/ExternalIDs"
        },
        "artwork": {
+        "oneOf": [
+         {
+          "$ref": "#/components/schemas/ArtworkRef"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "backdrop": {
         "oneOf": [
          {
           "$ref": "#/components/schemas/ArtworkRef"
@@ -10729,6 +11372,16 @@
       "type": "object",
       "properties": {
        "artwork": {
+        "oneOf": [
+         {
+          "$ref": "#/components/schemas/ArtworkRef"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "backdrop": {
         "oneOf": [
          {
           "$ref": "#/components/schemas/ArtworkRef"
@@ -10782,7 +11435,7 @@
    },
    "ArtworkRef": {
     "type": "object",
-    "description": "A work's representative poster (ADR-0075): the `artwork`-role asset\nthat ranks first — `poster`/`cover`/`folder`/`front` before an unnamed\nimage before `fanart`/`backdrop`/`banner` — among those that hold\nbytes and are not missing. `content_url` is the ordinary blob route\n(ADR-0013); `GET /works/{id}/artwork` redirects to the same place.\n\n`sizes` maps each supported thumbnail bucket (256, 512, 1024) to the\nartwork redirect URL with `?size=N&v=<blob_hash>` appended (ADR-0109).\nA client follows that URL to receive the derived JPEG thumbnail when\nready, or the original while derivation is in progress. The `v`\nparameter carries the source blob hash so that Android image caches\n(which ignore `Cache-Control`) treat a changed poster as a new URL; the\nserver accepts and ignores it. `sizes` is present only on artwork\nembedded in work cards, not on group (artist/author) artwork.\n",
+    "description": "One of a work's images (ADR-0075). As `artwork` it is the\nrepresentative poster — the `artwork`-role asset that ranks first — `poster`/`cover`/`folder`/`front` before an unnamed\nimage before `fanart`/`backdrop`/`banner` — among those that hold\nbytes and are not missing. As `backdrop` (ADR-0122) it is the\nrepresentative `backdrop*`/`fanart*` image, shipped before fetched, or\n`null` — never the poster. `content_url` is the ordinary blob route\n(ADR-0013); `GET /works/{id}/artwork` (or `/backdrop`) redirects to the\nsame place.\n\nAn image the enrich job fetched (ADR-0087) is an ordinary managed asset\nlike a shipped one, so it reaches every client through these same\nembeds; the provider that produced it is recorded on the asset\n(`attributes.source`), not here.\n\n`sizes` maps each supported thumbnail bucket (256, 512, 1024) to the\nwork's `/artwork` (or `/backdrop`) redirect URL with\n`?size=N&v=<blob_hash>` appended (ADR-0109).\nA client follows that URL to receive the derived JPEG thumbnail when\nready, or the original while derivation is in progress. The `v`\nparameter carries the source blob hash so that Android image caches\n(which ignore `Cache-Control`) treat a changed poster as a new URL; the\nserver accepts and ignores it. `sizes` is present only on artwork\nembedded in work cards, not on group (artist/author) artwork.\n",
     "required": [
      "asset_id",
      "blob_hash",
@@ -10901,6 +11554,10 @@
      "content_type": {
       "type": "string",
       "description": "Must be a content type this node knows."
+     },
+     "artist": {
+      "type": "string",
+      "description": "Music works only. A nonempty value overrides later provider\ncorrections; an empty string clears the artist and that override.\n"
      }
     }
    },
@@ -12302,6 +12959,59 @@
      },
      "schema": {
       "$ref": "#/components/schemas/SchemaDrift"
+     },
+     "placement": {
+      "$ref": "#/components/schemas/PlacementDrift"
+     }
+    }
+   },
+   "PlacementDrift": {
+    "type": "object",
+    "description": "How far a two-site vault is from being held at both sites (ADR-0114).\nPresent only on a node with placement siblings. A distance, not a\nboolean: a site mid-backfill is behind by exactly the blobs still to\ncross. A sibling's copy counts only while its claim is fresh.\n",
+    "required": [
+     "status",
+     "uploads",
+     "uploads_behind",
+     "taken",
+     "taken_behind",
+     "taken_unservable"
+    ],
+    "properties": {
+     "status": {
+      "type": "string",
+      "enum": [
+       "unknown",
+       "current",
+       "behind"
+      ]
+     },
+     "uploads": {
+      "type": "integer",
+      "format": "int64",
+      "description": "Blobs uploaded here (self-pinned)."
+     },
+     "uploads_behind": {
+      "type": "integer",
+      "format": "int64",
+      "description": "Uploads not known to be at both sites: lost here, or not freshly confirmed at a sibling."
+     },
+     "taken": {
+      "type": "integer",
+      "format": "int64",
+      "description": "Placements taken from siblings."
+     },
+     "taken_behind": {
+      "type": "integer",
+      "format": "int64",
+      "description": "Taken placements whose bytes are not held here yet."
+     },
+     "taken_unservable": {
+      "type": "integer",
+      "format": "int64",
+      "description": "Taken placements behind that no usable peer holds whole: no whole-blob source (a swarm may still assemble one from pieces)."
+     },
+     "detail": {
+      "type": "string"
      }
     }
    },
@@ -13569,6 +14279,10 @@
       "type": "string",
       "description": "Present only at edition scope — absent, not null, at work scope."
      },
+     "item_id": {
+      "type": "string",
+      "description": "The item an item-scoped want names (one episode, one track). Present only at item scope."
+     },
      "quality_profile_id": {
       "type": "string"
      },
@@ -13698,6 +14412,10 @@
      "work": {
       "$ref": "#/components/schemas/WorkDescriptor"
      },
+     "store_ref": {
+      "type": "string",
+      "description": "With `work_id` only: names that existing game on its store\n(`gog:<gamename>`), recorded on the Work so the store fetch can find\nit (ADR-0120). A new work carries its own `work.store_ref`; giving\nthis alongside `work` is a 400, as is a malformed ref or a non-game.\n"
+     },
      "quality_profile_id": {
       "type": "string"
      },
@@ -13731,7 +14449,17 @@
      },
      "year": {
       "type": "integer",
-      "description": "Optional, and part of the identity when present. A year in the\ntitle (`\"Blade Runner (1982)\"`) is understood too; an explicit year\nwins, because the caller said so.\n"
+      "description": "Optional, and part of the identity when present. A year in the\ntitle (`\"Blade Runner (1982)\"`) is understood too; an explicit year\nwins, because the caller said so. A game's year is never part of its\nidentity (ADR-0118).\n"
+     },
+     "store_ref": {
+      "type": "string",
+      "description": "A game only: the store it is owned on and the store's own name for\nit, as `gog:<gamename>` (lower-case letters, digits, underscores).\nMatched before the title, recorded as the Work's external id, and\nwhat the store fetch looks for (ADR-0120). Malformed or on another\ncontent type: 400.\n",
+      "example": "gog:the_witcher_3"
+     },
+     "platform": {
+      "type": "string",
+      "description": "A rom only, and required for one: the console it is for, as an\nES-DE system name (`snes`, `gba`, `ps2`, `n3ds`, …). Part of the\nidentity — the same title on two consoles is two works — and the\nsearch keeps only releases whose name spells out this console\n(ADR-0121). Unknown, missing on a rom, or on another content type:\n400.\n",
+      "example": "snes"
      }
     }
    },

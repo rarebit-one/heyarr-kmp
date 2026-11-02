@@ -109,7 +109,7 @@ class WorkDetailTest {
         assertTrue(seenAuth.all { it == "Bearer heyarr_1_secret" })
     }
 
-    private val BACKDROP = "blake3:" + "b".repeat(64)
+    private val backdropHash = "blake3:" + "b".repeat(64)
 
     /** A film the node enriched (heyarr-core ADR-0122): poster, backdrop and overview from the node. */
     private val enrichedFilm = """
@@ -119,8 +119,8 @@ class WorkDetailTest {
           "external_ids": {"tmdb": "700"},
           "artwork": {"asset_id": "p1", "blob_hash": "$HASH", "mime": "image/jpeg",
                       "content_url": "/api/v1/blobs/$HASH/content"},
-          "backdrop": {"asset_id": "b1", "blob_hash": "$BACKDROP", "mime": "image/jpeg",
-                       "content_url": "/api/v1/blobs/$BACKDROP/content"},
+          "backdrop": {"asset_id": "b1", "blob_hash": "$backdropHash", "mime": "image/jpeg",
+                       "content_url": "/api/v1/blobs/$backdropHash/content"},
           "primary_asset": null
         }
     """.trimIndent()
@@ -129,8 +129,8 @@ class WorkDetailTest {
     fun parsesTheBackdropFromItsOwnEmbed() {
         val detail = WorkDetailJson.parse(enrichedFilm)!!
         assertEquals("/api/v1/blobs/$HASH/content", detail.artworkPath)
-        assertEquals("/api/v1/blobs/$BACKDROP/content", detail.backdropPath)
-        assertEquals(BACKDROP, detail.backdropHash)
+        assertEquals("/api/v1/blobs/$backdropHash/content", detail.backdropPath)
+        assertEquals(backdropHash, detail.backdropHash)
         assertEquals("A film used to exercise enrichment.", detail.attributes["overview"])
     }
 
