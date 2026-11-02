@@ -93,10 +93,12 @@ class DesktopDeviceKeyring(
     fun peek(): DeviceKeyInfo? = if (isProvisioned()) info() else null
 
     /** The raw signing seed, generating + sealing it on first use. */
+    @Synchronized
     private fun signSeed(): ByteArray {
         val sealed = secrets.unseal(SIGN_SEED)
         val pubFile = signPubFile()
         if (sealed != null && pubFile.exists()) return sealed
+        check(!pubFile.exists()) { "The device signing key could not be unlocked; refusing to replace an existing key" }
         val fresh = DesktopEd25519.generate()
         secrets.seal(SIGN_SEED, fresh.seed)
         stateDir.mkdirs()
@@ -110,10 +112,14 @@ class DesktopDeviceKeyring(
     }
 
     /** The sealed X25519 encryption keypair, generated once on first use. */
+    @Synchronized
     private fun encryptionKey(): DeviceIdentity.EncryptionKey {
         val priv = secrets.unseal(ENC_SECRET)
         val pubFile = encPubFile()
         if (priv != null && pubFile.exists()) return DeviceIdentity.EncryptionKey(priv, pubFile.readBytes())
+        check(!pubFile.exists()) {
+            "The device encryption key could not be unlocked; refusing to replace an existing key"
+        }
         val fresh = DeviceIdentity.generateEncryptionKey()
         secrets.seal(ENC_SECRET, fresh.privateKey)
         stateDir.mkdirs()
