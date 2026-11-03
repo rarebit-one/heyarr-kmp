@@ -22,6 +22,7 @@ data class Cover(val url: String?, val external: ExternalMeta? = null)
  * the card is composed, and Coil fetches nothing until it is drawn.
  */
 @Composable
+@Suppress("LongParameterList") // the lookup key's parts plus the shape preference, all optional after the first four.
 fun rememberCover(
     session: AppSession,
     type: MediaType,

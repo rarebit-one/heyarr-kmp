@@ -21,6 +21,7 @@ data class Cover(val bitmap: ImageBitmap?, val external: ExternalMeta? = null)
  * until the card is composed.
  */
 @Composable
+@Suppress("LongParameterList") // the lookup key's parts plus the shape preference, all optional after the first four.
 fun rememberCover(
     session: AppSession,
     type: MediaType,
