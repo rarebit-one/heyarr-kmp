@@ -7,9 +7,9 @@ import androidx.compose.ui.graphics.ImageBitmap
 import one.rarebit.heyarr.core.state.ExternalMeta
 import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.ui.theme.CardAspect
 import one.rarebit.heyarr.ui.theme.MediaThemes
-import one.rarebit.heyarr.desktop.state.AppSession
 
 /** A cover and where it came from. [external] is set only when a public source supplied it. */
 data class Cover(val bitmap: ImageBitmap?, val external: ExternalMeta? = null)
