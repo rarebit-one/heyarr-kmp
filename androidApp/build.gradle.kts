@@ -5,6 +5,9 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    // Writes res/raw/aboutlibraries.json (libraries, versions, licence texts) for
+    // Settings → Open-source licences.
+    alias(libs.plugins.aboutlibraries.android)
 }
 
 // ── The deployment this build points at ──────────────────────────────────────
@@ -281,6 +284,8 @@ dependencies {
 
     // ── Unit tests (pure JVM — no Android runtime) ──────────────────────────────
     testImplementation(libs.junit)
+    // LicencesScreen's parser reads JSON with org.json, which android.jar only stubs.
+    testImplementation(libs.org.json)
     testImplementation(libs.kotlinx.coroutines.test)
     // ── On-device smoke test (.github/workflows/instrumented.yml) ───────────────
     // The JVM unit tests cannot see Android-only behaviour — the Series regex that
@@ -291,4 +296,12 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+}
+
+// Corrections to what the AboutLibraries plugin reads from POMs: CameraX core is
+// Apache-2.0 and bundles libyuv (BSD-3-Clause), whose POM entry carries a URL only.
+aboutLibraries {
+    collect {
+        configPath = file("aboutlibraries")
+    }
 }

@@ -63,6 +63,9 @@ sealed interface Route {
     /** This phone's Voidbind device enrolment. */
     @Serializable data object Device : Route
 
+    /** The third-party libraries in this build and their licences. */
+    @Serializable data object Licences : Route
+
     // ── Playlists (encrypted personal state, decrypted on this device) ───────────
     @Serializable data object Playlists : Route
 

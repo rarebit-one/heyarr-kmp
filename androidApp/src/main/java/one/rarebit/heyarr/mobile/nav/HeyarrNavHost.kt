@@ -77,6 +77,7 @@ import one.rarebit.heyarr.mobile.ui.screens.DiscoverScreen
 import one.rarebit.heyarr.mobile.ui.screens.GetItByTitle
 import one.rarebit.heyarr.mobile.ui.screens.HomeScreen
 import one.rarebit.heyarr.mobile.ui.screens.LibraryScreen
+import one.rarebit.heyarr.mobile.ui.screens.LicencesScreen
 import one.rarebit.heyarr.mobile.ui.screens.ManageDownloads
 import one.rarebit.heyarr.mobile.ui.screens.ManageScreen
 import one.rarebit.heyarr.mobile.ui.screens.MissingScreen
@@ -510,6 +511,7 @@ fun HeyarrNavHost(
                                         onResetConnection = vm::resetSettings,
                                         onSignOut = vm::signOut,
                                         onTelemetry = { open(Route.Telemetry) }, onDevice = { open(Route.Device) },
+                                        onLicences = { open(Route.Licences) },
                                         onSourcesChanged = {
                                             holder.search.invalidateSources()
                                         },
@@ -526,6 +528,9 @@ fun HeyarrNavHost(
                                             }
                                         },
                                     )
+                                }
+                                composable<Route.Licences> {
+                                    LicencesScreen(onBack = ::back, modifier = content)
                                 }
                                 composable<Route.Telemetry> {
                                     TelemetryScreen(

@@ -88,6 +88,8 @@ fun SettingsScreen(
     onSignInToSave: () -> Unit = {},
     /** Run the mDNS → DNS discovery chain and save the node it finds. */
     onDiscover: () -> Unit = {},
+    /** Open Settings → Open-source licences. */
+    onLicences: () -> Unit = {},
 ) {
     val scope = rememberCoroutineScope()
     fun load() {
@@ -148,6 +150,7 @@ fun SettingsScreen(
         }
         if (!isGuest) item { PeersPanel(session, state) }
         item { AppearancePanel(session) }
+        item { AboutPanel(onLicences) }
     }
 }
 

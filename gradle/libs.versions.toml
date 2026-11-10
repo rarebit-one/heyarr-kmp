@@ -5,6 +5,9 @@
 [versions]
 kotlin = "2.3.20"
 agp = "8.7.3"
+# Generates the open-source licences list (res/raw/aboutlibraries.json) for the Android app;
+# 13.2.1 is the newest line that wires its output into resources on AGP 8.7.
+aboutlibraries = "13.2.1"
 compose-multiplatform = "1.9.3"
 # void-which-binds-kmp's published client (GitHub Packages — see settings.gradle.kts). ONE
 # version for every module: :core puts it on each consumer's runtime classpath anyway, so a lower pin in a
@@ -81,6 +84,8 @@ coil-compose = { module = "io.coil-kt:coil-compose", version = "2.7.0" }
 zxing-core = { module = "com.google.zxing:core", version = "3.5.3" }
 
 junit = { module = "junit:junit", version = "4.13.2" }
+# The real org.json for JVM unit tests (android.jar only stubs it).
+org-json = { module = "org.json:json", version = "20260814" }
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version = "1.2.1" }
 androidx-test-runner = { module = "androidx.test:runner", version = "1.6.2" }
 
@@ -92,5 +97,6 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
+aboutlibraries-android = { id = "com.mikepenz.aboutlibraries.plugin.android", version.ref = "aboutlibraries" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
