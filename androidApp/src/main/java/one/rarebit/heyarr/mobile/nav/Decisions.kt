@@ -39,7 +39,7 @@ object Decisions {
         Route.Library, Route.Playlists, is Route.Playlist -> NavSection.LIBRARY
 
         Route.Manage, Route.Missing, Route.Downloads, Route.AllWorks, Route.Cast,
-        Route.Settings, Route.Telemetry, Route.Device,
+        Route.Settings, Route.Telemetry, Route.Device, Route.Licences,
         -> NavSection.MANAGE
 
         is Route.Detail -> when (route.from) {
