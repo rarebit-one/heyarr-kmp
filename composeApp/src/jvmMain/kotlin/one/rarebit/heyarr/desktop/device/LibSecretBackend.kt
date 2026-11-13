@@ -114,7 +114,11 @@ private interface GLib : Library {
     fun g_error_free(error: Pointer)
 }
 
-private val LIBSECRET: LibSecret by lazy { Native.load("secret-1", LibSecret::class.java) }
+// JNA auto-writes the shared schema before each call. Concurrent calls can replace its
+// native string storage while libsecret is still reading it, corrupting key lookups.
+private val LIBSECRET: LibSecret by lazy {
+    Native.synchronizedLibrary(Native.load("secret-1", LibSecret::class.java)) as LibSecret
+}
 private val GLIB: GLib by lazy { Native.load("glib-2.0", GLib::class.java) }
 
 /** The static heyarr-desktop schema: one string attribute, "account". Mirrors libsecret's
