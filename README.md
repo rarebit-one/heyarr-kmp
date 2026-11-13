@@ -291,3 +291,12 @@ Media cards use wide 16:9 video frames, square audio covers and tall 2:3 books.
 Artwork fits inside the frame without cropping the source image. Desktop Search
 now includes Library and Discover views sharing one query; Discover asks the
 metadata provider for TV series to add, even when local results already exist.
+
+## Privacy
+
+heyarr's QR scanner uses Google's ML Kit (`com.google.mlkit:barcode-scanning`). It decodes the
+camera image on the device, and the image never leaves it. ML Kit does contact Google from time
+to time for model and compatibility updates, and sends Google metrics about how the API performs
+and is used. Google processes them as described in its [Privacy Policy](https://policies.google.com/privacy)
+and the [ML Kit terms](https://developers.google.com/ml-kit/terms). The app's own licences screen
+(Open-source licences) says the same.
