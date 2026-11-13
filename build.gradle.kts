@@ -117,6 +117,14 @@ listOf(":core", ":vault-client").forEach { path ->
                             },
                         )
                         url.set("https://github.com/rarebit-one/heyarr-kmp")
+                        // Licensing audit H-2/H-9: the libraries are Apache-2.0 (see core/ and
+                        // vault-client/ LICENSE and COPYRIGHT); the apps stay AGPL-3.0.
+                        licenses {
+                            license {
+                                name.set("The Apache Software License, Version 2.0")
+                                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                            }
+                        }
                     }
                 }
                 repositories {

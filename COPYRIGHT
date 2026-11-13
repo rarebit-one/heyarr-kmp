@@ -1,0 +1,11 @@
+Copyright (C) 2026 Rarebit One
+
+This repository holds two things under two licences.
+
+- The heyarr client libraries in core/ and vault-client/ (published as
+  one.rarebit.heyarr:core and one.rarebit.heyarr:vault-client) are licensed
+  under the Apache License, Version 2.0. See the LICENSE, NOTICE and COPYRIGHT
+  files in each of those folders.
+- Everything else, including the heyarr apps (composeApp/, androidApp/) and the
+  shared ui/ module, is licensed under the GNU Affero General Public License,
+  version 3. See LICENSE in this folder.

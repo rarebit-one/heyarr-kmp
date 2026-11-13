@@ -292,6 +292,15 @@ Artwork fits inside the frame without cropping the source image. Desktop Search
 now includes Library and Discover views sharing one query; Discover asks the
 metadata provider for TV series to add, even when local results already exist.
 
+## Licence
+
+Copyright (C) 2026 Rarebit One. The client libraries in `core/` and `vault-client/`
+(published as `one.rarebit.heyarr:core` and `one.rarebit.heyarr:vault-client`) are
+[Apache-2.0](core/LICENSE); their POMs say so. Everything else, including the desktop and
+Android apps and `ui/`, is [AGPL-3.0](LICENSE). Each library's `COPYRIGHT` notes the code it
+carries over from heyarr-core and heyarr-mobile, relicensed by Rarebit One as their sole
+copyright holder, and the test-only files that stay under heyarr-core's AGPL licence.
+
 ## Privacy
 
 heyarr's QR scanner uses Google's ML Kit (`com.google.mlkit:barcode-scanning`). It decodes the
