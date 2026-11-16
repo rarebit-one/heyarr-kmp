@@ -1,8 +1,12 @@
 package one.rarebit.heyarr.desktop
 
+import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.desktop.device.DesktopDeviceEnroller
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DesktopEd25519
 import one.rarebit.heyarr.desktop.device.DesktopSecretStore
+import one.rarebit.heyarr.desktop.device.DevicePairingSteps
 import one.rarebit.heyarr.desktop.device.KeyTier
 import one.rarebit.heyarr.desktop.device.KeychainSecretStore
 import one.rarebit.heyarr.desktop.device.SecretStore
@@ -10,6 +14,8 @@ import one.rarebit.voidwhichbinds.Ed25519Verifier
 import one.rarebit.voidwhichbinds.KeyRef
 import one.rarebit.voidwhichbinds.auth.DeviceCredential
 import one.rarebit.voidwhichbinds.auth.PossessionProof
+import one.rarebit.voidwhichbinds.flow.PairingFailureKind
+import one.rarebit.voidwhichbinds.flow.PairingOutcome
 import java.io.File
 import java.nio.file.Files
 import kotlin.test.AfterTest
@@ -108,6 +114,41 @@ class DesktopDeviceStoreTest {
 
         val reopened = DesktopDeviceKeyring(dataDir(), keyFile(), secrets = store)
         assertEquals(original.deviceEncKey, reopened.info().deviceEncKey)
+    }
+
+    /** An enrolled desktop whose keychain will not unlock its signing seed. */
+    private fun lockedEnrolledKeyring(): DesktopDeviceKeyring {
+        val store = sealedStore()
+        DesktopDeviceKeyring(dataDir(), keyFile(), secrets = store).info()
+        File(File(dataDir(), DesktopDeviceKeyring.GEN2_DIR), "cert.token").writeText("an-admitting-op")
+        val unavailable = object : SecretStore by store {
+            override fun unseal(name: String): ByteArray? = null
+        }
+        return DesktopDeviceKeyring(dataDir(), keyFile(), secrets = unavailable)
+    }
+
+    @Test fun a_locked_device_key_reads_as_not_enrolled_instead_of_throwing() {
+        // enrolled() runs during composition: a throw there would take the app down.
+        assertNull(DesktopDeviceEnroller(lockedEnrolledKeyring()).enrolled())
+    }
+
+    @Test fun a_locked_device_key_fails_the_pairing_handshake_instead_of_throwing() {
+        val steps = DevicePairingSteps(
+            keyring = lockedEnrolledKeyring(),
+            nodeTransport = object : HttpTransport {
+                override fun get(url: String, headers: Map<String, String>) = error("no node call expected")
+                override fun post(url: String, body: String?, contentType: String?, headers: Map<String, String>) =
+                    error("no node call expected")
+            },
+            baseUrl = { "http://127.0.0.1:1" },
+            deviceName = { "locked-desktop" },
+            credential = { Credential.Guest },
+        )
+
+        val outcome = steps.handshake("void-which-binds:pair?v=4", deadlineMillis = Long.MAX_VALUE)
+
+        assertTrue(outcome is PairingOutcome.Failed, "a locked key ends the pairing as a failure")
+        assertEquals(PairingFailureKind.PROTOCOL, outcome.kind)
     }
 
     // ── Gen2 namespace (ADR-0022): gen1 leftovers are never read, no migration ──────────

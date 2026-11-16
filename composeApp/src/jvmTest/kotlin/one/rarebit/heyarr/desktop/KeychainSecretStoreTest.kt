@@ -170,14 +170,11 @@ class KeychainSecretStoreTest {
     // ── real Linux libsecret / Secret Service (skips where unreachable) ──────────────
 
     /**
-     * Exercises the actual libsecret / freedesktop Secret Service JNA binding on a Linux host
-     * with a reachable Secret Service (gnome-keyring / KWallet on the session D-Bus): it seals a
-     * random secret through the REAL backend, reads it back for a full round-trip, and asserts
-     * the store reports the OS-backed [KeyTier.KEYCHAIN] tier (not the sealed-file fallback). It
-     * also drives the overwrite (store-over-existing) and delete paths against a throwaway
-     * account. Skips (returns) on any non-Linux host and whenever no Secret Service is reachable
-     * (headless / no session bus / locked), so it never fails CI's runner and never leaves an
-     * item behind.
+     * The incident behind serializing [LibSecretBackend]: JNA re-marshals the shared schema
+     * struct before every native call, so concurrent reads could free its strings while
+     * libsecret was still reading them (`g_variant_new_string(): requires valid UTF-8`) and the
+     * lookup failed. Many parallel readers plus forced GCs must all get the original bytes back.
+     * Skips like the round-trip test below wherever no Secret Service is reachable.
      */
     @Test fun concurrent_linux_keychain_reads_survive_schema_marshalling_and_gc() {
         if (!System.getProperty("os.name").lowercase().contains("linux")) return
@@ -206,6 +203,16 @@ class KeychainSecretStoreTest {
         }
     }
 
+    /**
+     * Exercises the actual libsecret / freedesktop Secret Service JNA binding on a Linux host
+     * with a reachable Secret Service (gnome-keyring / KWallet on the session D-Bus): it seals a
+     * random secret through the REAL backend, reads it back for a full round-trip, and asserts
+     * the store reports the OS-backed [KeyTier.KEYCHAIN] tier (not the sealed-file fallback). It
+     * also drives the overwrite (store-over-existing) and delete paths against a throwaway
+     * account. Skips (returns) on any non-Linux host and whenever no Secret Service is reachable
+     * (headless / no session bus / locked), so it never fails CI's runner and never leaves an
+     * item behind.
+     */
     @Test fun real_linux_libsecret_round_trips_when_reachable() {
         val os = System.getProperty("os.name")?.lowercase().orEmpty()
         if (!os.contains("linux")) return

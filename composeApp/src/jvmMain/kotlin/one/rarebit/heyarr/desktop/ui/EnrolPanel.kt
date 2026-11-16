@@ -63,6 +63,16 @@ fun EnrolPanel(session: AppSession) {
     // Read the device keys lazily and only once per composition — info() provisions on first
     // call (generates + seals the signing seed), so keep it off the initial render path.
     var info by remember { mutableStateOf<DeviceKeyInfo?>(null) }
+    // The keyring refuses (throws) rather than replace an enrolled key the keychain will not
+    // unlock; say so here instead of letting a click handler take the app down.
+    var keyError by remember { mutableStateOf<String?>(null) }
+    fun loadInfo() {
+        runCatching { keyring.info() }
+            .onSuccess {
+                info = it
+                keyError = null
+            }.onFailure { keyError = it.message ?: "The device key could not be read." }
+    }
     var invite by remember { mutableStateOf("") }
 
     // When enrolment lands (or is forgotten), rebuild the session so guest-only surfaces flip.
@@ -72,7 +82,7 @@ fun EnrolPanel(session: AppSession) {
     }
 
     Panel("Sign in to save — this device", trailing = {
-        if (info == null) GhostButton("Show device key", { info = keyring.info() })
+        if (info == null) GhostButton("Show device key", { loadInfo() })
     }) {
         Text(
             "Saving wants, follows and your place needs a signed-in device. Add this desktop from " +
@@ -82,6 +92,8 @@ fun EnrolPanel(session: AppSession) {
             color = Tokens.textMuted,
         )
 
+        keyError?.let { Notice(it, tone = Tokens.danger) }
+
         info?.let { i ->
             KeyValue("device key", i.deviceKey)
             KeyValue("protection", protectionText(i.tier), valueColor = Tokens.textMuted)
@@ -90,7 +102,7 @@ fun EnrolPanel(session: AppSession) {
                 SecondaryButton("Forget this device", {
                     keyring.clearCert()
                     coordinator.cancel()
-                    info = keyring.info()
+                    loadInfo()
                     session.reauthenticated()
                 }, compact = true, danger = true)
             }
@@ -158,7 +170,7 @@ fun EnrolPanel(session: AppSession) {
                     }
                     GhostButton("Done", {
                         coordinator.dismiss()
-                        info = keyring.info()
+                        loadInfo()
                     })
                 }
             }
