@@ -23,8 +23,9 @@ import java.util.Collections
 
 /**
  * Authenticated artwork loading. Poster/cover bytes live behind
- * `GET /api/v1/blobs/{hash}/content` with the same bearer as everything else, so no
- * plain image URL can be handed to a widget — this fetches with the credential,
+ * `GET /api/v1/blobs/{hash}/content` with the same credential as everything else, so no
+ * plain image URL can be handed to a widget — this fetches with the session's credential
+ * (read per request, so a device's possession proof is fresh; heyarr-kmp#208),
  * decodes off the UI thread, and caches twice: decoded bitmaps in a small in-memory
  * LRU, and raw bytes on disk under the XDG cache dir keyed by hash, so a relaunch shows
  * art instantly. Concurrency is capped so a 200-card grid does not open 200 sockets.
@@ -34,7 +35,7 @@ import java.util.Collections
  */
 class ArtworkLoader(
     private val baseUrl: () -> String,
-    private val token: () -> String,
+    private val credential: () -> one.rarebit.heyarr.core.auth.Credential,
     private val cacheDir: File = defaultCacheDir(),
     maxInMemory: Int = 160,
     parallelism: Int = 6,
@@ -68,7 +69,7 @@ class ArtworkLoader(
 
     fun peek(contentPath: String): ImageBitmap? = memory[contentPath]
 
-    /** Forget failures (e.g. after the token changed) so cards retry. */
+    /** Forget failures (e.g. after the credential changed) so cards retry. */
     fun reset() {
         failed.clear()
     }
@@ -82,7 +83,7 @@ class ArtworkLoader(
         val builder = HttpRequest.newBuilder(URI.create(if (external) contentPath else base + contentPath))
             .timeout(Duration.ofSeconds(20))
             .header("User-Agent", DesktopExternalMetadata.USER_AGENT)
-        if (!external) builder.header("Authorization", "Bearer " + token())
+        if (!external) credential().asHeader().forEach { (name, value) -> builder.header(name, value) }
         val req = builder.GET().build()
         val resp = client.send(req, HttpResponse.BodyHandlers.ofByteArray())
         if (resp.statusCode() == 200) resp.body() else null
@@ -115,7 +116,7 @@ class ArtworkLoader(
         }
 
         /** A loader that never fetches — for tests and screenshots. */
-        val NONE = ArtworkLoader({ "" }, { "" }, fetcher = { null })
+        val NONE = ArtworkLoader({ "" }, { one.rarebit.heyarr.core.auth.Credential.Guest }, fetcher = { null })
     }
 }
 

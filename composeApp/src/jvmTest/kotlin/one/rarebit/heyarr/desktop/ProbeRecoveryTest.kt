@@ -8,6 +8,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
@@ -69,8 +70,12 @@ class ProbeRecoveryTest {
         },
         openExternally = OpenExternally(
             object : BlobDownloader {
-                override fun download(baseUrl: String, blobHash: String, token: String, ext: String): DownloadResult =
-                    DownloadResult.Failed("no downloads")
+                override fun download(
+                    baseUrl: String,
+                    blobHash: String,
+                    credential: Credential,
+                    ext: String,
+                ): DownloadResult = DownloadResult.Failed("no downloads")
             },
             object : ExternalOpener {
                 override fun open(file: File): OpenResult = OpenResult.Opened

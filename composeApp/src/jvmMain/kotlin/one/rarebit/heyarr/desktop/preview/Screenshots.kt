@@ -5,6 +5,7 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.use
 import kotlinx.coroutines.*
+import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.open.BlobDownloader
 import one.rarebit.heyarr.desktop.open.DownloadResult
@@ -118,7 +119,8 @@ private fun render(
         )
     // A throwaway disk cache: the loader reads its cache before the fetcher, so pointing it at
     // the user's real artwork cache made screenshots depend on whatever that machine had seen.
-    val art = ArtworkLoader({ "" }, { "" }, cacheDir = previewCacheDir, fetcher = { PlaceholderArt.bytes(it) })
+    val art =
+        ArtworkLoader({ "" }, { Credential.Guest }, cacheDir = previewCacheDir, fetcher = { PlaceholderArt.bytes(it) })
     var session: one.rarebit.heyarr.desktop.state.AppSession? = null
     ImageComposeScene(width = width, height = height, density = Density(1f)).use { scene ->
         scene.setContent {
@@ -243,7 +245,7 @@ private object NoOpener : ExternalOpener {
 }
 
 private object NoDownloader : BlobDownloader {
-    override fun download(baseUrl: String, blobHash: String, token: String, ext: String): DownloadResult =
+    override fun download(baseUrl: String, blobHash: String, credential: Credential, ext: String): DownloadResult =
         DownloadResult.Failed("no download in preview")
 }
 
@@ -258,7 +260,7 @@ private fun verifyShelfSwitch() {
         NoPlayer,
         one.rarebit.heyarr.desktop.open.OpenExternally(NoDownloader, NoOpener),
         scope,
-        ArtworkLoader({ "" }, { "" }, fetcher = { PlaceholderArt.bytes(it) }),
+        ArtworkLoader({ "" }, { Credential.Guest }, fetcher = { PlaceholderArt.bytes(it) }),
         one.rarebit.heyarr.desktop.state.DesktopExternalMetadata.NONE,
     )
     val selected = mutableStateOf(Experience.WATCH)

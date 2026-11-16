@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.desktop
 
+import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.desktop.open.BlobDownloader
 import one.rarebit.heyarr.desktop.open.DownloadResult
 import one.rarebit.heyarr.desktop.open.ExternalOpener
@@ -52,7 +53,12 @@ class OpenExternallyTest {
         var downloadedExt: String? = null
         val downloaded = File("/tmp/heyarr-xyz.epub")
         val fakeDownloader = object : BlobDownloader {
-            override fun download(baseUrl: String, blobHash: String, token: String, ext: String): DownloadResult {
+            override fun download(
+                baseUrl: String,
+                blobHash: String,
+                credential: Credential,
+                ext: String,
+            ): DownloadResult {
                 downloadedExt = ext
                 return DownloadResult.Downloaded(downloaded)
             }
@@ -68,7 +74,7 @@ class OpenExternallyTest {
         val status = OpenExternally(fakeDownloader, fakeOpener).open(
             baseUrl = "https://h.example",
             blobHash = "blake3:${"a".repeat(64)}",
-            token = "secret",
+            credential = Credential.Bearer("secret"),
             filename = "the-dispossessed.epub",
             mime = "application/epub+zip",
             displayName = "The Dispossessed",
@@ -82,7 +88,7 @@ class OpenExternallyTest {
     @Test
     fun openExternallyReturnsDownloadFailureWithoutOpening() {
         val fakeDownloader = object : BlobDownloader {
-            override fun download(baseUrl: String, blobHash: String, token: String, ext: String) =
+            override fun download(baseUrl: String, blobHash: String, credential: Credential, ext: String) =
                 DownloadResult.Failed("Download failed: HTTP 404.")
         }
         var openCalled = false
@@ -93,7 +99,7 @@ class OpenExternallyTest {
             }
         }
         val status = OpenExternally(fakeDownloader, fakeOpener)
-            .open("https://h.example", "blake3:${"a".repeat(64)}", "s", null, "text/html", "Article")
+            .open("https://h.example", "blake3:${"a".repeat(64)}", Credential.Bearer("s"), null, "text/html", "Article")
         assertTrue(status.contains("404"))
         assertTrue(!openCalled)
     }

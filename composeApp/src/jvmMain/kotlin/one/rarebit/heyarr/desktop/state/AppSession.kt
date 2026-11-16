@@ -204,7 +204,7 @@ class AppSession(
         if (mediaProxy.isInitialized()) mediaProxy.value.close()
     }
 
-    val artwork: ArtworkLoader = artworkLoader ?: ArtworkLoader({ config.baseUrl }, { config.bearerToken.trim() })
+    val artwork: ArtworkLoader = artworkLoader ?: ArtworkLoader({ config.baseUrl }, { credential })
     val external: ExternalMetadata =
         externalMetadata ?: DesktopExternalMetadata.create(enabled = { config.externalMetadata }, movieLookup = { key ->
             val result = checkNotNull(api) { "No node configured for movie metadata" }.discover(key.title)
@@ -286,6 +286,8 @@ class AppSession(
         index = LibraryIndex.EMPTY
         indexLoaded = false
         generation++
+        // Artwork fetched with the old credential may have been refused; let cards retry.
+        artwork.reset()
         connection = if (config.baseUrl.isBlank()) Connection.UNCONFIGURED else Connection.UNKNOWN
         refreshIndex()
         startHeartbeat()

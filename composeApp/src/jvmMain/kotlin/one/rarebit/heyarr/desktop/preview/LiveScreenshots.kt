@@ -3,6 +3,7 @@ package one.rarebit.heyarr.desktop.preview
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.use
+import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.net.JdkHttpTransport
 import one.rarebit.heyarr.desktop.open.BlobDownloader
@@ -57,7 +58,7 @@ fun main(args: Array<String>) {
     val settings = InMemorySettingsStore(
         DesktopConfig(baseUrl = baseUrl, bearerToken = token, uiScale = 1f, externalMetadata = externalMetadata),
     )
-    val art = ArtworkLoader({ baseUrl }, { token }, cacheDir = File(out, ".art-cache"))
+    val art = ArtworkLoader({ baseUrl }, { Credential.Bearer(token) }, cacheDir = File(out, ".art-cache"))
     val external = if (externalMetadata) null else DesktopExternalMetadata.NONE
 
     val shots = buildList {
@@ -155,6 +156,6 @@ private object LiveNoOpener : ExternalOpener {
 }
 
 private object LiveNoDownloader : BlobDownloader {
-    override fun download(baseUrl: String, blobHash: String, token: String, ext: String): DownloadResult =
+    override fun download(baseUrl: String, blobHash: String, credential: Credential, ext: String): DownloadResult =
         DownloadResult.Failed("no download in a live screenshot")
 }
