@@ -37,7 +37,17 @@ class DevicePairingSteps(
     private var handshake: DevicePairing.Handshake? = null
 
     override fun handshake(inviteQr: String, deadlineMillis: Long): PairingOutcome<PairingSteps.Handshaked> {
-        val identity = keyring.identity()
+        // A locked keychain makes identity() refuse rather than replace the key; that must end
+        // this pairing as a failure, not escape the coordinator's coroutine and take the app down.
+        val identity = try {
+            keyring.identity()
+        } catch (e: Exception) {
+            return PairingOutcome.Failed(
+                PairingFailureKind.PROTOCOL,
+                "The device key could not be unlocked: ${e.message}",
+                "",
+            )
+        }
         val p = DevicePairing(
             PatientRelayTransport(relayTransport, deadlineMillis, clockMillis),
             identity,

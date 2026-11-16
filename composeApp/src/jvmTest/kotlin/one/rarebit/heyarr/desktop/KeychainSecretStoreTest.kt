@@ -170,6 +170,40 @@ class KeychainSecretStoreTest {
     // ── real Linux libsecret / Secret Service (skips where unreachable) ──────────────
 
     /**
+     * The incident behind serializing [LibSecretBackend]: JNA re-marshals the shared schema
+     * struct before every native call, so concurrent reads could free its strings while
+     * libsecret was still reading them (`g_variant_new_string(): requires valid UTF-8`) and the
+     * lookup failed. Many parallel readers plus forced GCs must all get the original bytes back.
+     * Skips like the round-trip test below wherever no Secret Service is reachable.
+     */
+    @Test fun concurrent_linux_keychain_reads_survive_schema_marshalling_and_gc() {
+        if (!System.getProperty("os.name").lowercase().contains("linux")) return
+        val backend = LibSecretBackend(service = "one.rarebit.heyarr.desktop.test")
+        if (!backend.isAvailable()) return
+        val account = "concurrent-roundtrip-" + System.nanoTime()
+        val secret = ByteArray(32) { 42 }
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(8)
+        try {
+            assertTrue(backend.store(account, secret))
+            val reads = (0 until 160).map { index ->
+                pool.submit<Boolean> {
+                    val reader = LibSecretBackend(service = "one.rarebit.heyarr.desktop.test")
+                    if (index % 10 == 0) System.gc()
+                    reader.isAvailable() && secret.contentEquals(reader.retrieve(account))
+                }
+            }
+            reads.forEach {
+                val matches = it.get(30, java.util.concurrent.TimeUnit.SECONDS)
+                assertTrue(matches, "keychain read returned the original bytes")
+            }
+        } finally {
+            pool.shutdownNow()
+            pool.awaitTermination(30, java.util.concurrent.TimeUnit.SECONDS)
+            backend.remove(account)
+        }
+    }
+
+    /**
      * Exercises the actual libsecret / freedesktop Secret Service JNA binding on a Linux host
      * with a reachable Secret Service (gnome-keyring / KWallet on the session D-Bus): it seals a
      * random secret through the REAL backend, reads it back for a full round-trip, and asserts
