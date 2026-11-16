@@ -1,5 +1,6 @@
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryTarget
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -10,7 +11,12 @@ plugins {
 // (settings.gradle.kts detects the SDK once and hands every project `hasAndroidSdk`).
 val hasAndroidSdk = extra["hasAndroidSdk"] as Boolean
 
-if (hasAndroidSdk) apply(plugin = "com.android.library")
+if (hasAndroidSdk) {
+    apply(plugin = "com.android.kotlin.multiplatform.library")
+    // Android Lint over the android variant, as `:<module>:build` (desktop CI) ran it under
+    // com.android.library; the Android-KMP plugin leaves it to this separate plugin.
+    apply(plugin = "com.android.lint")
+}
 
 kotlin {
     // The TRUSTED space plumbing, published for other first-party clients: open an encrypted
@@ -28,11 +34,19 @@ kotlin {
     }
 
     if (hasAndroidSdk) {
-        androidTarget {
+        // The Android-KMP library plugin's target (AGP 9), configured by type because the plugin
+        // is applied conditionally (see :core). Its single variant is what gets published, as
+        // the old plugin's `release` was.
+        (this as ExtensionAware).extensions.configure<KotlinMultiplatformAndroidLibraryTarget> {
+            namespace = "one.rarebit.heyarr.vault"
+            compileSdk = 37
+            minSdk = 33
+            // Keep the published AAR's minCompileSdk at 1 (AGP 9 defaults it to compileSdk).
+            aarMetadata { minCompileSdk = 1 }
             compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
-            // Publish only the release variant: what a consuming app resolves (the same
-            // choice void-which-binds-kmp makes for its client).
-            publishLibraryVariants("release")
+            // The golden vectors also run as Android host (unit) tests, which this plugin
+            // leaves off unless asked for.
+            withHostTest {}
         }
     }
 
@@ -45,7 +59,9 @@ kotlin {
         common {
             group("jvmAndAndroid") {
                 withJvm()
-                withAndroidTarget()
+                // withAndroidTarget() matches only the legacy com.android.library target; the
+                // Android-KMP plugin's target is picked out by its platform type instead.
+                withCompilations { it.target.platformType == KotlinPlatformType.androidJvm }
             }
         }
     }
@@ -70,29 +86,15 @@ kotlin {
             }
         }
         // The golden-vector tests read their vectors as classpath resources (java.*), so they live
-        // in jvmTest — and are compiled into the Android unit tests too, so the frame codec, key
+        // in jvmTest — and are compiled, with those resources, into the Android host tests too, so the frame codec, key
         // chain and drive CRDT are proven on the android variant consumers ship, not only the JVM.
         // (They stay under src/jvmTest so detekt and ktlint treat them as the tests they are.)
         if (hasAndroidSdk) {
-            named("androidUnitTest") { kotlin.srcDir("src/jvmTest/kotlin") }
+            named("androidHostTest") {
+                kotlin.srcDir("src/jvmTest/kotlin")
+                resources.srcDir("src/jvmTest/resources")
+            }
         }
-    }
-}
-
-if (hasAndroidSdk) {
-    extensions.configure<LibraryExtension>("android") {
-        namespace = "one.rarebit.heyarr.vault"
-        compileSdk = 35
-        defaultConfig {
-            minSdk = 33
-        }
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
-        }
-        // AGP builds the unit-test classpath's Java resources from its own source sets only, so
-        // the golden vectors the shared jvmTest sources read are added here too.
-        sourceSets.getByName("test").resources.srcDir("src/jvmTest/resources")
     }
 }
 

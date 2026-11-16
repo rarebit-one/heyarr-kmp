@@ -70,7 +70,7 @@ jobs:
 
       - name: Test before publishing
         run: >-
-          ./gradlew :core:jvmTest :vault-client:jvmTest :vault-client:testDebugUnitTest
+          ./gradlew :core:jvmTest :vault-client:jvmTest :vault-client:testAndroidHostTest
           --no-daemon --stacktrace
 
       - name: Publish core + vault-client to GitHub Packages

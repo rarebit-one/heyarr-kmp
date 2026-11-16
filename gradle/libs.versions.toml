@@ -1,13 +1,17 @@
-# The one place every module's plugin and library versions live. Toolchain matches the rest
-# of the org: Kotlin 2.3.20, Gradle 8.9, AGP 8.7.3, JDK 21. Compose Multiplatform is NEW to
-# the org — this project establishes it.
+# The one place every module's plugin and library versions live. Toolchain: Kotlin 2.3.20,
+# Gradle 9.9, AGP 9.5, JDK 21. Compose Multiplatform is NEW to the org — this project
+# establishes it.
 
 [versions]
 kotlin = "2.3.20"
-agp = "8.7.3"
-# Generates the open-source licences list (res/raw/aboutlibraries.json) for the Android app;
-# 13.2.1 is the newest line that wires its output into resources on AGP 8.7.
-aboutlibraries = "13.2.1"
+# AGP 9: built-in Kotlin (no kotlin-android plugin) and, for the KMP library modules, the
+# Android-KMP library plugin (com.android.kotlin.multiplatform.library) — AGP 9 refuses
+# com.android.library beside kotlin.multiplatform. Needs Gradle >= 9.1 and build-tools 36.
+agp = "9.5.1"
+# Generates the open-source licences list (res/raw/aboutlibraries.json) for the Android app.
+# Moves with AGP: 13.2.1 was the newest line that wired its output into resources on AGP 8.7,
+# and it no longer does on AGP 9 (R.raw.aboutlibraries goes missing); 15.x needs AGP >= 8.13.
+aboutlibraries = "15.3.0"
 compose-multiplatform = "1.9.3"
 # void-which-binds-kmp's published client (GitHub Packages — see settings.gradle.kts). ONE
 # version for every module: :core puts it on each consumer's runtime classpath anyway, so a lower pin in a
@@ -91,11 +95,10 @@ androidx-test-runner = { module = "androidx.test:runner", version = "1.6.2" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
-android-library = { id = "com.android.library", version.ref = "agp" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 aboutlibraries-android = { id = "com.mikepenz.aboutlibraries.plugin.android", version.ref = "aboutlibraries" }
 # The JVM flavour, for the desktop app: exports the same licence data as JSON (no Android resources).

@@ -12,11 +12,11 @@ commit messages or PR bodies.
 
 | Module | Plugin | What belongs here |
 |--------|--------|-------------------|
-| `:core` | `kotlin.multiplatform` (jvm + android when an SDK is present) | The pure client layer: `net/` (`HttpTransport`, `JsonScan`, `JsonEscapes`, `JsonArrays`), `mcp/` (`McpClient`, `JsonWrite`, `McpModels`), `heyarr/` (REST + telemetry models), `auth/` (`Credential`, `ClientMode`, `GuestGate`), `state/` (library status, search grouping and the shared `SearchController` behind its `SearchBackend` seam, toasts), `library/` (`Series` episode grouping and `Variants`, over the `EpisodeFile` / `CatalogWork` seams each app's models implement), `theme/MediaType`, `crypto/Blake3`, `jvmAndAndroidMain` (JVM-API code both apps share: `state/ExternalMetadata`, the public cover/synopsis cache, behind each app's fetcher), `feeds/`, `discovery/`. Published alongside `:vault-client`, which exposes it. |
+| `:core` | `kotlin.multiplatform` (jvm + android when an SDK is present, via `com.android.kotlin.multiplatform.library`) | The pure client layer: `net/` (`HttpTransport`, `JsonScan`, `JsonEscapes`, `JsonArrays`), `mcp/` (`McpClient`, `JsonWrite`, `McpModels`), `heyarr/` (REST + telemetry models), `auth/` (`Credential`, `ClientMode`, `GuestGate`), `state/` (library status, search grouping and the shared `SearchController` behind its `SearchBackend` seam, toasts), `library/` (`Series` episode grouping and `Variants`, over the `EpisodeFile` / `CatalogWork` seams each app's models implement), `theme/MediaType`, `crypto/Blake3`, `jvmAndAndroidMain` (JVM-API code both apps share: `state/ExternalMetadata`, the public cover/synopsis cache, behind each app's fetcher), `feeds/`, `discovery/`. Published alongside `:vault-client`, which exposes it. |
 | `:vault-client` | `kotlin.multiplatform` (jvm + android when an SDK is present) + `maven-publish` | The trusted space plumbing (package `one.rarebit.heyarr.vault`), **published** as `one.rarebit.heyarr:vault-client`: `SpaceOpen` / `SpaceKeyring` (ADR-0103), `SnapshotEnvelope`, `PersonalStateId`, `VaultSpaceClient` and `StrictJson`, which is all heyarr's media personal state needs. The vault codec (the drive CRDT, `VaultFrame`, `VaultRef` / `VaultObjects`, the `VaultBlobStore` seam) moved to `rarebit-one/mnemosyne-kmp`'s `:vault-codec` at 0.4.0; don't add vault-drive code back here. Its golden-vector tests live in `jvmTest` and also run as Android unit tests. Its public API is a contract with other repos: bump `publishedLibraryVersion` (root `build.gradle.kts`) on any API or wire change. |
 | `:ui` | `kotlin.multiplatform` + Compose MP | Compose-typed but platform-free design layer: `theme/Tokens`, `theme/MediaThemes` (the media → accent table), `theme/HeyarrFonts` (the self-hosted fonts, shipped once as Compose resources), `theme/HeyarrTheme` (Material mapping, `MediaScope`, `HeyarrPlatform`), `components/` (Primitives, Table, Reasons, card parts) and shared glyphs. `api(project(":core"))`. |
 | `:composeApp` | `kotlin.multiplatform` (jvm only) + Compose MP desktop | The desktop app. JVM-only code (jmdns, JNA/libmpv, OS keychains) lives here. The vault-sync engine, custody, daemon and CLI were moved to `rarebit-one/mnemosyne-kmp` (Refs heyarr-core#733). |
-| `:androidApp` | `com.android.application` + `kotlin.android` | The Android app. Only included when an Android SDK is detected. |
+| `:androidApp` | `com.android.application` (AGP 9 built-in Kotlin) | The Android app. Only included when an Android SDK is detected. |
 
 Rules:
 
@@ -79,8 +79,11 @@ CI: `desktop.yml` (desktop + shared modules), `android.yml` (unit tests + debug 
 
 Plugin and library versions live in `gradle/libs.versions.toml`. Build scripts reference
 `libs.*` and never hard-code a version. `void-which-binds-client` has a single version for every
-module; bump it there, once. Toolchain: Kotlin 2.3.20, Gradle 8.9, AGP 8.7.3, Compose MP
-1.9.3, compileSdk 35 / minSdk 33, JDK 21. Android bytecode remains at Java 17.
+module; bump it there, once. Toolchain: Kotlin 2.3.20, Gradle 9.9, AGP 9.5.1, Compose MP
+1.9.3, compileSdk 37 / targetSdk 35 / minSdk 33, JDK 21. Android bytecode remains at Java 17.
+AGP 9 has built-in Kotlin (no `kotlin.android` plugin), and the KMP library modules use the
+Android-KMP library plugin: one variant, Android unit tests are host tests
+(`:vault-client:testAndroidHostTest`), configured inside `kotlin { }`, not a top-level `android { }`.
 
 ## Conventions
 

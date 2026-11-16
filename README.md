@@ -46,7 +46,7 @@ host, runs the command there, and syncs reports and screenshots back.
 | Workflow | Runs | Triggered by |
 |----------|------|--------------|
 | `desktop.yml` | `:core:build :ui:build :vault-client:build :composeApp:build`, the vault-sync uber JAR, screenshots | PRs + `main`, path-filtered |
-| `android.yml` | `:androidApp:testDebugUnitTest :vault-client:testDebugUnitTest :androidApp:assembleDebug` | PRs + `main`, path-filtered |
+| `android.yml` | `:androidApp:testDebugUnitTest :vault-client:testAndroidHostTest :androidApp:assembleDebug` | PRs + `main`, path-filtered |
 | `instrumented.yml` | an on-device Compose smoke test on an emulator | PRs + `main`, path-filtered |
 | `android-release.yml` | the signed release APK, attached to a GitHub Release | `v*` tags |
 | `publish.yml` | publishes `one.rarebit.heyarr:{core,vault-client}` to GitHub Packages | `lib-v*` tags |
@@ -72,9 +72,9 @@ Android `minSdk` of at least 33.
 | Piece | Version |
 |-------|---------|
 | Kotlin | 2.3.20 (matches the org) |
-| Gradle | 8.9 |
+| Gradle | 9.9 |
 | JDK | 21 (Temurin) |
-| AGP | 8.7.3 (compileSdk 35, minSdk 33) |
+| AGP | 9.5.1 (built-in Kotlin; Android-KMP library plugin for `:core` / `:ui` / `:vault-client`; compileSdk 37, targetSdk 35, minSdk 33) |
 | Compose Multiplatform | 1.9.3 (desktop, `:ui`) |
 | Compose compiler | bundled with Kotlin (`org.jetbrains.kotlin.plugin.compose`) |
 | void-which-binds-client | 0.12.0 (GitHub Packages, private; gen2-only, ADR-0022; canonical key renderings, void-which-binds-go #116) |
