@@ -1,5 +1,6 @@
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryTarget
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -8,13 +9,13 @@ plugins {
 }
 
 // Register the android target only when an SDK is actually available (CI, or a dev box
-// with one). Applying `com.android.library` unconditionally makes AGP demand an SDK at
-// CONFIGURATION time, which would break plain JVM/desktop builds on an SDK-less machine.
+// with one). Applying the Android-KMP library plugin unconditionally makes AGP demand an SDK
+// at CONFIGURATION time, which would break plain JVM/desktop builds on an SDK-less machine.
 // Detection (ANDROID_HOME / ANDROID_SDK_ROOT env, or a `sdk.dir` line in local.properties)
 // happens once, in settings.gradle.kts, which hands every project the result.
 val hasAndroidSdk = extra["hasAndroidSdk"] as Boolean
 
-if (hasAndroidSdk) apply(plugin = "com.android.library")
+if (hasAndroidSdk) apply(plugin = "com.android.kotlin.multiplatform.library")
 
 kotlin {
     // The shared, PURE domain module: the hand-rolled JSON codec, the HttpTransport seam,
@@ -31,11 +32,19 @@ kotlin {
     }
 
     if (hasAndroidSdk) {
-        androidTarget {
-            // Android artifacts retain the bytecode level supported by the app's minSdk.
+        // The Android-KMP library plugin's target (AGP 9). Configured by type: the plugin is
+        // applied conditionally above, so the `android { }` accessor is not generated. It has a
+        // single variant, which is what gets published (the old plugin's `release`).
+        (this as ExtensionAware).extensions.configure<KotlinMultiplatformAndroidLibraryTarget> {
+            namespace = "one.rarebit.heyarr.core"
+            compileSdk = 37
+            minSdk = 33
+            // AGP 9 would otherwise stamp the published AAR with minCompileSdk = compileSdk,
+            // forcing every consumer onto compileSdk 37. Keep the floor the AAR always had.
+            aarMetadata { minCompileSdk = 1 }
+            // Android artifacts retain the bytecode level supported by the app's minSdk (this
+            // sets Kotlin's and Java's target for the android compilations).
             compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
-            // Publish only the release variant (what a consuming app resolves).
-            publishLibraryVariants("release")
         }
     }
 
@@ -49,7 +58,9 @@ kotlin {
         common {
             group("jvmAndAndroid") {
                 withJvm()
-                withAndroidTarget()
+                // withAndroidTarget() matches only the legacy com.android.library target; the
+                // Android-KMP plugin's target is picked out by its platform type instead.
+                withCompilations { it.target.platformType == KotlinPlatformType.androidJvm }
             }
         }
     }
@@ -81,20 +92,6 @@ kotlin {
                 // throws at runtime with no compile error.
                 implementation(libs.cryptography.provider.optimal)
             }
-        }
-    }
-}
-
-if (hasAndroidSdk) {
-    extensions.configure<LibraryExtension>("android") {
-        namespace = "one.rarebit.heyarr.core"
-        compileSdk = 35
-        defaultConfig {
-            minSdk = 33
-        }
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
         }
     }
 }

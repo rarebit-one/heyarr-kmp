@@ -1,8 +1,8 @@
 import java.util.Base64
 
 plugins {
+    // AGP 9 compiles this module's Kotlin itself (built-in Kotlin): no kotlin-android plugin.
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     // Writes res/raw/aboutlibraries.json (libraries, versions, licence texts) for
@@ -60,7 +60,9 @@ val releaseKeystore: File? = releaseKeystoreBase64?.let { encoded ->
 
 android {
     namespace = "one.rarebit.heyarr.mobile"
-    compileSdk = 35
+    // 37 for the androidx libraries that require it to compile against; targetSdk (below) is
+    // what sets the platform behaviour the app opts into, and it stays 35.
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "one.rarebit.heyarr.mobile"
@@ -116,6 +118,16 @@ android {
             // minify stays OFF until proguard rules exist for the reflective bits.
             isMinifyEnabled = false
             signingConfig = releaseKeystore?.let { signingConfigs.getByName("release") }
+        }
+    }
+
+    packaging {
+        resources {
+            // :ui's Compose resources (fonts, artwork) ship as assets/composeResources/…, where
+            // Compose's Android reader looks first. Under the Android-KMP library plugin they are
+            // also packed as Java resources at the APK root; the reader only falls back to those
+            // when the asset is missing, so that second copy is dead weight. Keep one, as before.
+            excludes += "composeResources/**"
         }
     }
 

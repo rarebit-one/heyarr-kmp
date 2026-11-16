@@ -1,4 +1,4 @@
-import com.android.build.gradle.LibraryExtension
+import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryTarget
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -12,7 +12,7 @@ plugins {
 // desktop app builds unaffected; CI (setup-android) builds the android variant.
 val hasAndroidSdk = extra["hasAndroidSdk"] as Boolean
 
-if (hasAndroidSdk) apply(plugin = "com.android.library")
+if (hasAndroidSdk) apply(plugin = "com.android.kotlin.multiplatform.library")
 
 kotlin {
     // The shared Compose-Multiplatform design layer: the design tokens (`Tokens`), the
@@ -25,7 +25,16 @@ kotlin {
     }
 
     if (hasAndroidSdk) {
-        androidTarget {
+        // The Android-KMP library plugin's target (AGP 9), configured by type because the plugin
+        // is applied conditionally (see :core).
+        (this as ExtensionAware).extensions.configure<KotlinMultiplatformAndroidLibraryTarget> {
+            namespace = "one.rarebit.heyarr.ui"
+            compileSdk = 37
+            minSdk = 33
+            aarMetadata { minCompileSdk = 1 }
+            // Compose resources (the self-hosted fonts) reach the app through the Android
+            // resource pipeline, which this plugin leaves off unless asked for.
+            androidResources { enable = true }
             // Android artifacts retain the bytecode level supported by the app's minSdk.
             compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
         }
@@ -64,18 +73,4 @@ kotlin {
 compose.resources {
     packageOfResClass = "one.rarebit.heyarr.ui.generated.resources"
     publicResClass = false
-}
-
-if (hasAndroidSdk) {
-    extensions.configure<LibraryExtension>("android") {
-        namespace = "one.rarebit.heyarr.ui"
-        compileSdk = 35
-        defaultConfig {
-            minSdk = 33
-        }
-        compileOptions {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
-        }
-    }
 }
