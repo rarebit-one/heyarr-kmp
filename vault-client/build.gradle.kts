@@ -11,7 +11,12 @@ plugins {
 // (settings.gradle.kts detects the SDK once and hands every project `hasAndroidSdk`).
 val hasAndroidSdk = extra["hasAndroidSdk"] as Boolean
 
-if (hasAndroidSdk) apply(plugin = "com.android.kotlin.multiplatform.library")
+if (hasAndroidSdk) {
+    apply(plugin = "com.android.kotlin.multiplatform.library")
+    // Android Lint over the android variant, as `:<module>:build` (desktop CI) ran it under
+    // com.android.library; the Android-KMP plugin leaves it to this separate plugin.
+    apply(plugin = "com.android.lint")
+}
 
 kotlin {
     // The TRUSTED space plumbing, published for other first-party clients: open an encrypted

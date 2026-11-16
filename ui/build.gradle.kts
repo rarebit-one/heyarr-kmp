@@ -12,7 +12,12 @@ plugins {
 // desktop app builds unaffected; CI (setup-android) builds the android variant.
 val hasAndroidSdk = extra["hasAndroidSdk"] as Boolean
 
-if (hasAndroidSdk) apply(plugin = "com.android.kotlin.multiplatform.library")
+if (hasAndroidSdk) {
+    apply(plugin = "com.android.kotlin.multiplatform.library")
+    // Android Lint over the android variant, as `:<module>:build` (desktop CI) ran it under
+    // com.android.library; the Android-KMP plugin leaves it to this separate plugin.
+    apply(plugin = "com.android.lint")
+}
 
 kotlin {
     // The shared Compose-Multiplatform design layer: the design tokens (`Tokens`), the

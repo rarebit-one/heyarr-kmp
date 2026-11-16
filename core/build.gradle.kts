@@ -15,7 +15,12 @@ plugins {
 // happens once, in settings.gradle.kts, which hands every project the result.
 val hasAndroidSdk = extra["hasAndroidSdk"] as Boolean
 
-if (hasAndroidSdk) apply(plugin = "com.android.kotlin.multiplatform.library")
+if (hasAndroidSdk) {
+    apply(plugin = "com.android.kotlin.multiplatform.library")
+    // Android Lint over the android variant, as `:<module>:build` (desktop CI) ran it under
+    // com.android.library; the Android-KMP plugin leaves it to this separate plugin.
+    apply(plugin = "com.android.lint")
+}
 
 kotlin {
     // The shared, PURE domain module: the hand-rolled JSON codec, the HttpTransport seam,
