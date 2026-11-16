@@ -77,6 +77,16 @@ jobs:
       - name: Assemble debug APK
         run: ./gradlew :androidApp:assembleDebug --no-daemon --stacktrace
 
+      # 16 KB-page devices (Android 15+) refuse a 64-bit native library whose LOAD
+      # segments, or stored zip offset, are not 16 KB-aligned (#162). Same gate as
+      # void-which-binds-kmp's. The --known libraries are Readium 3.1.1's PDFium natives:
+      # every Readium with aligned ones pulls its PDF viewer from JitPack, which this build
+      # does not use yet (#162). Drop them from the list when that lands.
+      - name: 64-bit native libraries are 16 KB-aligned
+        run: >-
+          python3 scripts/check-16kb-alignment.py androidApp/build/outputs/apk/debug/androidApp-debug.apk
+          --known libjniPdfium.so --known libmodft2.so --known libmodpdfium.so --known libmodpng.so
+
       # The release variant's network-security config is generated (androidApp/build.gradle.kts);
       # linking its resources proves the manifest's @xml/network_security_config resolves. Run
       # with a sample cleartext host so the generator's host check is exercised too.
