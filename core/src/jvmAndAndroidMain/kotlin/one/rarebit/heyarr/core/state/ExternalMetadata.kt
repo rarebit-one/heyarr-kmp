@@ -51,7 +51,9 @@ data class MetaKey(
  * Cover art and synopses from public, keyless sources — used only where the node
  * holds nothing, and always labelled as external in the UI. One resolver per media
  * kind; every answer (including "nothing found") is cached on disk under [cacheDir] so
- * a title is asked about at most once a week. Look-ups are single-flighted per key and
+ * a title is asked about at most once a week. A FAILED request is not an answer: [fetch]
+ * throws for it (a 404 is "nothing found", returned as null), and the key is retried after
+ * a short in-memory back-off rather than cached as a miss. Look-ups are single-flighted per key and
  * rate-limited per host (MusicBrainz asks for 1 req/s and a real User-Agent; each app's
  * [fetch] sends one).
  *
@@ -75,6 +77,17 @@ class ExternalMetadata(
     private val lastHit = HashMap<String, Long>()
     private val memory = HashMap<String, ExternalMeta?>()
 
+    /**
+     * When each key's last look-up FAILED (the node or a provider was unreachable, not "no
+     * match"). Failures are never cached on disk, so without this every cover on screen would
+     * re-queue its requests on each recomposition while a provider is down; instead a failed
+     * key rests for [FAILURE_RETRY_MS], in memory only, and then is asked again.
+     */
+    private val failedAt = HashMap<String, Long>()
+
+    /** The wall clock, swappable so tests can step past the failure back-off. */
+    internal var clock: () -> Long = System::currentTimeMillis
+
     suspend fun lookup(key: MetaKey): ExternalMeta? {
         if (!enabled()) return null
         val id = cacheKey(key)
@@ -82,6 +95,8 @@ class ExternalMetadata(
         val gate = synchronized(inFlight) { inFlight.getOrPut(id) { Mutex() } }
         return gate.withLock {
             synchronized(memory) { if (memory.containsKey(id)) return@withLock memory[id] }
+            val failed = synchronized(failedAt) { failedAt[id] }
+            if (failed != null && clock() - failed < FAILURE_RETRY_MS) return@withLock null
             val cached = readCache(id)
             if (cached != null &&
                 !stale(cached)
@@ -94,8 +109,10 @@ class ExternalMetadata(
                 throw e
             } catch (_: Exception) {
                 // A failed request is not a negative match. Leave it retryable after recovery.
+                synchronized(failedAt) { failedAt[id] = clock() }
                 return@withLock null
             }
+            synchronized(failedAt) { failedAt.remove(id) }
             val value = fresh ?: ExternalMeta(source = "none")
             writeCache(id, value)
             synchronized(memory) { memory[id] = value }
@@ -119,8 +136,14 @@ class ExternalMetadata(
         }.getOrNull()
         val body =
             cached
-                ?: withContext(Dispatchers.IO) {
-                    get("https://api.tvmaze.com/shows/$tvmazeId/episodes")
+                ?: try {
+                    withContext(Dispatchers.IO) { get("https://api.tvmaze.com/shows/$tvmazeId/episodes") }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    // The fetcher throws on a failed request (so lookups stay retryable); an
+                    // unreachable TVmaze just means no episode list this time, never a crash.
+                    null
                 }?.also {
                     runCatching {
                         cacheDir.mkdirs()
@@ -291,6 +314,9 @@ class ExternalMetadata(
         private const val TTL_MS = 7L * 24 * 3600 * 1000
         private const val NEGATIVE_TTL_MS = 24L * 3600 * 1000
         private const val PER_HOST_MS = 1100L
+
+        /** How long a FAILED look-up rests before it is asked again (in memory only). */
+        internal const val FAILURE_RETRY_MS = 60_000L
 
         fun enc(s: String): String = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
     }

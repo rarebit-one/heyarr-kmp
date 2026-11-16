@@ -2,6 +2,7 @@ package one.rarebit.heyarr.mobile.state
 
 import one.rarebit.heyarr.core.state.ExternalMetadata
 import java.io.File
+import java.io.IOException
 
 /**
  * The phone's side of `:core`'s [ExternalMetadata]: an OkHttp fetcher over a bare client
@@ -9,17 +10,26 @@ import java.io.File
  */
 object PhoneExternalMetadata {
     private const val HTTP_OK = 200
+    private const val HTTP_NOT_FOUND = 404
     const val USER_AGENT = "heyarr-mobile/0.3 (+https://github.com/rarebit-one/heyarr-mobile)"
 
-    /** A fetcher over a bare OkHttp client: a 200 body, else null. Never the app's authenticated client. */
+    /**
+     * A fetcher over a bare OkHttp client: a 200 body, null for a 404 ("nothing found"), and a
+     * throw for any other failure, so `:core`'s [ExternalMetadata] retries it later instead of
+     * caching an outage as a miss. Never the app's authenticated client.
+     */
     fun okHttpFetch(client: okhttp3.OkHttpClient): (String) -> String? = { url ->
-        runCatching {
-            val req = okhttp3.Request.Builder().url(url)
-                .header("User-Agent", USER_AGENT)
-                .header("Accept", ExternalMetadata.ACCEPT)
-                .get().build()
-            client.newCall(req).execute().use { resp -> if (resp.code == HTTP_OK) resp.body?.string() else null }
-        }.getOrNull()
+        val req = okhttp3.Request.Builder().url(url)
+            .header("User-Agent", USER_AGENT)
+            .header("Accept", ExternalMetadata.ACCEPT)
+            .get().build()
+        client.newCall(req).execute().use { resp ->
+            when (resp.code) {
+                HTTP_OK -> resp.body?.string()
+                HTTP_NOT_FOUND -> null
+                else -> throw IOException("Metadata provider returned HTTP ${resp.code}")
+            }
+        }
     }
 
     /** The disabled instance for previews and tests. */

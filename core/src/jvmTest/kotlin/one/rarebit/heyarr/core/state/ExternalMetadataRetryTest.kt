@@ -22,14 +22,31 @@ class ExternalMetadataRetryTest {
                 if (++calls == 1) throw IOException("temporary connection failure")
                 cover
             })
+            var now = 1_000_000L
+            metadata.clock = { now }
             assertNull(metadata.lookup(key))
             assertTrue(cache.listFiles().orEmpty().isEmpty(), "failed requests must not persist a negative match")
+            // Inside the back-off a failed key is not asked again (no request storm while down).
+            assertNull(metadata.lookup(key))
+            assertEquals(1, calls)
+            now += ExternalMetadata.FAILURE_RETRY_MS
             assertEquals(cover, metadata.lookup(key))
             assertEquals(2, calls)
             val reopened = ExternalMetadata(cache, fetch = { error("cached cover expected") }, movieLookup = {
                 error("cached cover expected")
             })
             assertEquals(cover, reopened.lookup(key))
+        } finally {
+            cache.deleteRecursively()
+        }
+    }
+
+    @Test fun an_unreachable_episode_list_is_empty_not_a_crash() = runBlocking {
+        val cache = Files.createTempDirectory("metadata-episodes").toFile()
+        try {
+            val metadata = ExternalMetadata(cache, fetch = { throw IOException("provider unreachable") })
+            assertEquals(emptyList(), metadata.episodes(42))
+            assertTrue(cache.listFiles().orEmpty().isEmpty(), "a failed episode fetch is not cached")
         } finally {
             cache.deleteRecursively()
         }
