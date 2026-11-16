@@ -44,7 +44,7 @@ data class Episode<A : EpisodeFile>(
     val title: String?,
     /** The `-thumb.jpg` sidecar the scan recorded for this file, when there is one. */
     val thumbnail: A? = null,
-    /** Subtitle sidecars that share this episode's stem. */
+    /** Subtitle sidecars that share this episode's stem, or name its season and episode. */
     val subtitles: List<A> = emptyList(),
     /**
      * Other held files of the SAME numbered episode (a second release the node kept —
@@ -127,7 +127,8 @@ object Series {
 
     /**
      * A series' files as seasons, each with its episodes in order, each episode paired
-     * with the thumbnail and subtitle sidecars that share its filename stem. Only
+     * with the thumbnail and subtitle sidecars that share its filename stem (subtitles also
+     * by season/episode marker, see [subtitleEpisodeKey]). Only
      * episode files take part as rows; sidecars attach to them. Numbered seasons come
      * first in order, then Specials, then whatever named no season; within a season the
      * episodes order by number, the unnumbered last, ties by filename.
@@ -137,11 +138,19 @@ object Series {
      */
     fun <A : EpisodeFile> seasons(assets: List<A>): List<Season<A>> {
         val thumbs = assets.filter { isThumbnail(it) }.associateBy { stemKey(it, stripThumb = true) }
-        val subs = assets.filter { isSubtitle(it) }.groupBy { stemKey(it, stripThumb = false, stripLang = true) }
+        val subtitleFiles = assets.filter { isSubtitle(it) }
+        val subs = subtitleFiles.groupBy { stemKey(it, stripThumb = false, stripLang = true) }
+        // A remux or replacement release can carry a different filename stem from the
+        // captions already catalogued for that episode. Its SxxExx, scoped to the season,
+        // still pairs them, so those captions reach the player (heyarr-kmp#200).
+        val subsByEpisode = subtitleFiles.mapNotNull { sub -> subtitleEpisodeKey(sub)?.let { it to sub } }
+            .groupBy({ it.first }, { it.second })
         val files = assets.mapNotNull { a ->
             episode(a)?.let { e ->
                 val key = stemKey(a, stripThumb = false)
-                e.copy(thumbnail = thumbs[key], subtitles = preferredSubtitles(subs[key].orEmpty()))
+                val paired = (subs[key].orEmpty() + e.number?.let { subsByEpisode[e.season to it] }.orEmpty())
+                    .distinctBy { it.id }
+                e.copy(thumbnail = thumbs[key], subtitles = preferredSubtitles(paired))
             }
         }
         if (files.isEmpty()) return emptyList()
@@ -312,6 +321,15 @@ object Series {
         return stem
     }
 
+    /** The (season, episode) a subtitle's filename names once its language suffix is off, or null. */
+    private fun subtitleEpisodeKey(asset: EpisodeFile): Pair<Int?, Int>? {
+        val name = (asset.filename ?: asset.sourcePath?.substringAfterLast('/') ?: asset.id)
+            .substringBeforeLast('.').lowercase().replace(RE_LANG_SUFFIX, "")
+        val marker = markerIn(name) ?: return null
+        val season = seasonOfLabel(asset.editionLabel) ?: marker.season ?: seasonOfPath(asset.sourcePath)
+        return season to marker.number
+    }
+
     // ── Internals ────────────────────────────────────────────────────────────────
 
     private class Marker(val season: Int?, val number: Int, val end: Int)
@@ -424,7 +442,8 @@ object Series {
     private val RE_LANG_SUFFIX =
         Regex(
             """\.(en|eng|es|spa|fr|fre|fra|de|ger|deu|it|ita|pt|por|ja|jpn|zh|chi|nl|dut|sv|swe|""" +
-                """forced|sdh|cc)(\.(forced|sdh|cc))?$""",
+                """cs|ces|cze|da|dan|el|ell|gre|fi|fin|hu|hun|ko|kor|no|nor|pl|pol|ro|ron|rum|sk|slk|slo|tr|tur|""" +
+                """forced|sdh|cc)(\.[a-z]+(?:-[a-z]+)*)?$""",
         )
 
     private val NOISE = setOf(

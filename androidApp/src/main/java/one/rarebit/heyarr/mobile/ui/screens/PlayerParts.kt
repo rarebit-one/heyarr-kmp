@@ -142,6 +142,7 @@ internal fun ImmersivePlayer(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                AudioTrackMenu(video)
                 TrackMenu(video)
             }
             Column(
@@ -303,6 +304,7 @@ private fun PlayerClockRow(video: VideoSession) {
             )
         }
         Spacer(Modifier.weight(1f))
+        AudioTrackMenu(video)
         TrackMenu(video)
     }
 }

@@ -45,15 +45,17 @@ class PlaybackClient(
      * range-capable blob endpoint under this client's credential — so the player pulls
      * them through the same authenticated data source as the video. The MIME is hinted
      * from the filename (a blob URL has no extension), falling back to the asset's own;
-     * the language is read from the filename's tag. Assets with no blob are dropped.
+     * the language and its variant label are read from the filename suffix
+     * (`….eng.sdh.srt` → "English (SDH)"), never the raw filename, falling back to "Track N".
+     * Assets with no blob are dropped.
      */
-    fun subtitleSidecars(assets: List<WorkAsset>): List<PlaybackTarget.Sidecar> = assets.mapNotNull { a ->
-        val hash = a.blobHash?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+    fun subtitleSidecars(assets: List<WorkAsset>): List<PlaybackTarget.Sidecar> = assets.mapIndexedNotNull { index, a ->
+        val hash = a.blobHash?.takeIf { it.isNotBlank() } ?: return@mapIndexedNotNull null
         PlaybackTarget.Sidecar(
             url = blobContentUrl(baseUrl, hash),
             mimeType = Subtitles.externalMimeType(a.filename) ?: a.mime,
             language = Subtitles.languageTag(a.filename),
-            label = a.filename,
+            label = Subtitles.sidecarLabel(a.filename) ?: "Track ${index + 1}",
         )
     }
 
