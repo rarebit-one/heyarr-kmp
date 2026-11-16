@@ -177,4 +177,32 @@ class CanonicalLookupTest {
         }
         assertEquals(2, calls, "an answer from the current generation is cached")
     }
+
+    @Test fun concurrentLookupsAndClearsStayConsistent() {
+        // resolveFor runs on an IO dispatcher while a Refresh clear()s from the UI thread
+        // (#147). Hammer both from several threads: every answer must still be the right
+        // canonical, and nothing may throw from a corrupted cache.
+        val lookup = CanonicalLookup()
+        val works: List<CatalogWork> = (1..40).map { TestWork("v$it", "Show $it Season 2", "series") }
+        val pool = java.util.concurrent.Executors.newFixedThreadPool(8)
+        try {
+            val tasks = (0 until 400).map { round ->
+                pool.submit<Resolution> {
+                    if (round % 7 == 0) lookup.clear()
+                    lookup.resolveFor(works) { q, kind -> listOf(TestWork("c-$q", q, kind)) }
+                }
+            }
+            for (task in tasks) {
+                val resolution = task.get(30, java.util.concurrent.TimeUnit.SECONDS)
+                assertTrue(resolution.complete, "no lookup failed")
+                assertEquals(
+                    (1..40).map { "c-Show $it" }.toSet(),
+                    resolution.resolved.map { it.id }.toSet(),
+                    "each variant resolved to its own canonical",
+                )
+            }
+        } finally {
+            pool.shutdownNow()
+        }
+    }
 }
