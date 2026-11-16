@@ -336,7 +336,7 @@ private fun openArchived(session: AppSession, item: FollowedItem, scope: Corouti
                 session.openExternally.open(
                     session.config.baseUrl,
                     asset.blobHash,
-                    session.config.bearerToken.trim(),
+                    session.credential,
                     null,
                     asset.mime ?: "text/html",
                     item.title,

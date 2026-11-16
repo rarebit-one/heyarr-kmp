@@ -78,14 +78,7 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
             loading = false
             return@LaunchedEffect
         }
-        val bytes = withContext(Dispatchers.IO) {
-            runCatching {
-                val req = HttpRequest.newBuilder(URI.create(HeyarrApi.blobUrl(session.config.baseUrl, route.blobHash)))
-                    .header("Authorization", "Bearer " + session.config.bearerToken.trim()).GET().build()
-                val resp = HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofByteArray())
-                resp.takeIf { it.statusCode() == 200 }?.body()
-            }.getOrNull()
-        }
+        val bytes = withContext(Dispatchers.IO) { fetchBook(session, route) }
         if (bytes == null) {
             error = "Couldn't fetch this book from the library."
             loading = false
@@ -102,7 +95,7 @@ fun ReaderScreen(session: AppSession, route: Route.Reader, onBack: () -> Unit) {
                 session.openExternally.open(
                     session.config.baseUrl,
                     route.blobHash,
-                    session.config.bearerToken.trim(),
+                    session.credential,
                     route.filename,
                     route.mime,
                     route.title,
@@ -234,3 +227,16 @@ private fun Centered(text: String) {
         Text(text, style = MaterialTheme.typography.bodyLarge, color = Tokens.textMuted)
     }
 }
+
+/**
+ * The book's bytes, read with the session's live credential rather than the saved bearer: a
+ * device-enrolled desktop has no bearer token, and a guest sends no header at all
+ * (heyarr-kmp#208). Null when the node does not hand them over. Blocking.
+ */
+private fun fetchBook(session: AppSession, route: Route.Reader): ByteArray? = runCatching {
+    val req = HttpRequest.newBuilder(URI.create(HeyarrApi.blobUrl(session.config.baseUrl, route.blobHash)))
+        .apply { session.credential.asHeader().forEach { (name, value) -> header(name, value) } }
+        .GET().build()
+    val resp = HttpClient.newHttpClient().send(req, HttpResponse.BodyHandlers.ofByteArray())
+    resp.takeIf { it.statusCode() == 200 }?.body()
+}.getOrNull()

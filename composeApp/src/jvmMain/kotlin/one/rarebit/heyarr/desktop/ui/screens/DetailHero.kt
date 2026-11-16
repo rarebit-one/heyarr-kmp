@@ -183,7 +183,7 @@ private class HeroActions(
                 session.openExternally.open(
                     session.config.baseUrl,
                     a.blobHash,
-                    session.config.bearerToken.trim(),
+                    session.credential,
                     null,
                     a.mime,
                     detail.work.title,

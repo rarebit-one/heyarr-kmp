@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.use
+import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.open.BlobDownloader
 import one.rarebit.heyarr.desktop.open.DownloadResult
@@ -65,7 +66,7 @@ class AppPaletteTest {
     }
 
     private object NoDownloader : BlobDownloader {
-        override fun download(baseUrl: String, blobHash: String, token: String, ext: String) =
+        override fun download(baseUrl: String, blobHash: String, credential: Credential, ext: String) =
             DownloadResult.Failed("no download in test")
     }
 
