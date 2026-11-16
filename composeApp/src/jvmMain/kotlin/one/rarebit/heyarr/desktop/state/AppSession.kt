@@ -205,7 +205,11 @@ class AppSession(
     val artwork: ArtworkLoader = artworkLoader ?: ArtworkLoader({ config.baseUrl }, { config.bearerToken.trim() })
     val external: ExternalMetadata =
         externalMetadata ?: DesktopExternalMetadata.create(enabled = { config.externalMetadata }, movieLookup = { key ->
-            val hits = api?.discover(key.title)?.getOrNull().orEmpty()
+            val result = checkNotNull(api) { "No node configured for movie metadata" }.discover(key.title)
+            val hits = when (result) {
+                is McpResult.Ok -> result.value
+                is McpResult.Refused -> error(result.message)
+            }
             one.rarebit.heyarr.desktop.state.MovieArtwork.select(key, hits)
         })
     val recent = RecentSearches(RecentSearches.defaultFile())
