@@ -174,7 +174,9 @@ class AppSession(
 
     // A configured base URL always yields an API — as a guest when there is no credential —
     // so the desktop browses on a trusted network before any login.
-    val api: HeyarrApi? get() = config.baseUrl.trim().takeIf { it.isNotEmpty() }?.let {
+    val api: HeyarrApi? get() = apiFor(credential)
+
+    private fun apiFor(credential: Credential): HeyarrApi? = config.baseUrl.trim().takeIf { it.isNotEmpty() }?.let {
         HeyarrApi(transport, config.baseUrl, credential)
     }
 
@@ -316,7 +318,11 @@ class AppSession(
      * attempt is bounded, so a dead pool costs seconds, not the request timeout.
      */
     suspend fun probe() {
-        val a = api
+        // Read the credential ONCE, build the probe's client from it, and classify the answer
+        // in ITS mode: a token saved or removed while a retry probe was in flight must not
+        // blame (or spare) the wrong credential (heyarr-kmp#188).
+        val sent = credential
+        val a = apiFor(sent)
         if (a == null) {
             connection = Connection.UNCONFIGURED
             return
@@ -329,7 +335,7 @@ class AppSession(
         }
         probes++
         lastLatencyMs = (nanoClock() - t0) / 1_000_000
-        connection = Connection.fromProbe(status, mode)
+        connection = Connection.fromProbe(status, sent.mode())
         when (status) {
             200 -> {
                 lastOkAt = System.currentTimeMillis()

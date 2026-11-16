@@ -2,6 +2,7 @@ package one.rarebit.heyarr.desktop
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
@@ -55,7 +56,11 @@ class ProbeRecoveryTest {
         }
     }
 
-    private fun session(transport: HttpTransport, bearerToken: String = "heyarr_1_test"): AppSession = AppSession(
+    private fun session(
+        transport: HttpTransport,
+        bearerToken: String = "heyarr_1_test",
+        scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+    ): AppSession = AppSession(
         settings = InMemorySettingsStore(DesktopConfig(baseUrl = "https://h.example", bearerToken = bearerToken)),
         transport = transport,
         player = object : Player {
@@ -71,7 +76,7 @@ class ProbeRecoveryTest {
                 override fun open(file: File): OpenResult = OpenResult.Opened
             },
         ),
-        scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+        scope = scope,
     )
 
     @Test
@@ -201,5 +206,36 @@ class ProbeRecoveryTest {
         s.noteTransportFailure(McpTransportException("HTTP 401", null, 401))
 
         assertEquals(before, s.connection, "a guest's 401 must not read as a refused token")
+    }
+
+    @Test
+    fun aProbeIsClassifiedInTheModeItWasSentWith() = runBlocking {
+        // The probe goes out with a bearer token; while it is in flight the user removes the
+        // token (now a guest). The node's 401 refused the TOKEN, so the verdict must blame the
+        // credential, not report a refused guest (#188).
+        lateinit var s: AppSession
+        var switched = false
+        val transport = object : HttpTransport {
+            override fun get(url: String, headers: Map<String, String>): HttpResponse {
+                if (!switched) {
+                    switched = true
+                    s.save(s.config.copy(bearerToken = ""))
+                }
+                return HttpResponse(401, "")
+            }
+            override fun post(
+                url: String,
+                body: String?,
+                contentType: String?,
+                headers: Map<String, String>,
+            ): HttpResponse = HttpResponse(405, "")
+        }
+        // A dead scope: save() would also restart the heartbeat, whose fresh guest probe rightly
+        // lands GUEST_REFUSED for the NEW state. Only the in-flight probe's verdict is under test.
+        s = session(transport, scope = CoroutineScope(Job().apply { cancel() }))
+
+        s.probe()
+
+        assertEquals(Connection.UNAUTHORIZED, s.connection, "the bearer token that was sent is what the node refused")
     }
 }
