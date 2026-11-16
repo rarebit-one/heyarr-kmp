@@ -26,7 +26,13 @@ class CanonicalLookup {
     // the current generation are read. clear() bumps the generation, so a lookup that
     // started before a Refresh and lands after it is written under the old stamp and never
     // served: no lock needed around the check and the write (#142, Codex on #146).
-    private val cache = HashMap<Pair<String, String?>, Pair<Int, List<CatalogWork>>>()
+    //
+    // resolveFor runs on an IO dispatcher while clear() runs on the UI thread, so the map is
+    // shared across threads, and commonMain has no `synchronized`. Rather than mutate one
+    // HashMap from both (undefined on the JVM: a racing resize can corrupt the table), every
+    // write publishes a fresh immutable map through this @Volatile field. Two racing writers
+    // can still drop one entry, which only costs a repeat lookup; nothing can be corrupted (#147).
+    @Volatile private var cache: Map<Pair<String, String?>, Pair<Int, List<CatalogWork>>> = emptyMap()
 
     @Volatile private var generation = 0
 
@@ -67,7 +73,7 @@ class CanonicalLookup {
         val resolved = keys.flatMap { (key, raw) ->
             cache[key]?.takeIf { it.first == started }?.second
                 ?: runCatching { lookup(raw, key.second) }
-                    .onSuccess { cache[key] = started to it }
+                    .onSuccess { cache = cache + (key to (started to it)) }
                     .onFailure { anyFailed = true }
                     .getOrDefault(emptyList())
         }
@@ -81,6 +87,6 @@ class CanonicalLookup {
      */
     fun clear() {
         generation++
-        cache.clear()
+        cache = emptyMap()
     }
 }
