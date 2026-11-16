@@ -45,11 +45,13 @@ import one.rarebit.heyarr.desktop.device.PairingCoordinator
 import one.rarebit.heyarr.desktop.heyarr.CastResult
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.McpResult
+import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
 import one.rarebit.heyarr.desktop.login.BearerTokenLogin
 import one.rarebit.heyarr.desktop.login.DeviceEnroller
 import one.rarebit.heyarr.desktop.login.DeviceLogin
 import one.rarebit.heyarr.desktop.login.EnrolUpgrade
 import one.rarebit.heyarr.desktop.open.OpenExternally
+import one.rarebit.heyarr.desktop.playback.AuthenticatedMediaProxy
 import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
@@ -186,6 +188,19 @@ class AppSession(
 
     /** App-wide playback: one mpv for the session, surface owned by the shell. */
     val playback = PlaybackSession()
+
+    private val mediaProxy = lazy { AuthenticatedMediaProxy({ config.baseUrl }, { credential }) }
+
+    fun mediaUrl(url: String): String = mediaProxy.value.urlFor(url)
+
+    fun mediaTarget(target: PlaybackTarget): PlaybackTarget = target.copy(
+        url = mediaUrl(target.url),
+        streamBaseUrl = target.streamBaseUrl?.let(::mediaUrl),
+    )
+
+    fun closeMediaProxy() {
+        if (mediaProxy.isInitialized()) mediaProxy.value.close()
+    }
 
     val artwork: ArtworkLoader = artworkLoader ?: ArtworkLoader({ config.baseUrl }, { config.bearerToken.trim() })
     val external: ExternalMetadata =

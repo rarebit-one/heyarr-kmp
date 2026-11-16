@@ -194,6 +194,9 @@ fun App(
     val details = remember { mutableStateMapOf<String, DetailState>() }
     val playerScreen = remember { PlayerScreenState() }
     val playback = session.playback
+    DisposableEffect(session) {
+        onDispose { session.closeMediaProxy() }
+    }
     val fullscreen = playback.fullscreen
     fun setFullscreen(on: Boolean) {
         playback.fullscreen = on
@@ -260,17 +263,23 @@ fun App(
     // The session player streams with the saved connection; the pop-out OSC takes the media accent.
     LaunchedEffect(session.config, playback.current?.assetId) {
         playback.baseUrl = session.config.baseUrl
-        playback.token = session.config.bearerToken.trim()
+        // The loopback media bridge supplies fresh credentials on every upstream read.
+        playback.token = ""
+        playback.mediaUrl = session::mediaUrl
         // Resolve each play URL through the server's playback plan, so a 4K/HEVC asset
         // is transcoded down to a smoothly-decodable stream; falls back to the direct
         // blob when there is no connection.
         playback.resolvePlaybackTarget = { item ->
-            session.api?.playbackTarget(item.assetId, item.blobHash)
-                ?: PlaybackTarget(HeyarrApi.blobUrl(playback.baseUrl, item.blobHash))
+            session.mediaTarget(
+                session.api?.playbackTarget(item.assetId, item.blobHash)
+                    ?: PlaybackTarget(HeyarrApi.blobUrl(playback.baseUrl, item.blobHash)),
+            )
         }
         playback.resolveAudioTarget = { item, ordinal ->
-            session.api?.playbackTarget(item.assetId, item.blobHash, audioTrack = ordinal)
-                ?: error("Audio track selection requires a connection")
+            session.mediaTarget(
+                session.api?.playbackTarget(item.assetId, item.blobHash, audioTrack = ordinal)
+                    ?: error("Audio track selection requires a connection"),
+            )
         }
         playback.accentHex = accentHex(MediaThemes.of(playback.type).accent)
     }
