@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Audiotrack
 import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.Forward10
@@ -80,6 +81,7 @@ import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.playback.PlaybackTarget
 import one.rarebit.heyarr.mobile.playback.QueueEntry
+import one.rarebit.heyarr.mobile.playback.Subtitles
 import one.rarebit.heyarr.mobile.playback.VideoSession
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.theme.Tokens
@@ -218,9 +220,13 @@ internal fun Transport(
         IconButtonRound(Icons.Rounded.Replay10, "Back 10 seconds", {
             video.seekBy(-10.0)
         }, size = 40.dp, enabled = seekable)
-        IconButtonRound(if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause, if (ps.paused) "Play" else "Pause", {
-            video.togglePause()
-        }, size = 52.dp, filled = true)
+        IconButtonRound(
+            if (ps.paused) Icons.Rounded.PlayArrow else Icons.Rounded.Pause,
+            if (ps.paused) "Play" else "Pause",
+            { video.togglePause() },
+            size = 52.dp,
+            filled = true,
+        )
         IconButtonRound(Icons.Rounded.Forward10, "Forward 10 seconds", {
             video.seekBy(10.0)
         }, size = 40.dp, enabled = seekable)
@@ -255,6 +261,54 @@ internal fun TrackMenu(video: VideoSession) {
             open = !open
         }, icon = Icons.Rounded.ClosedCaption, compact = true, enabled = ps.textTracks.isNotEmpty())
         CaptionMenu(video, open) { open = false }
+    }
+}
+
+/**
+ * Embedded audio tracks (dubs, commentary, a stereo downmix) as a language menu; Media3 switches
+ * the selected track in place (heyarr-kmp#200). Hidden with fewer than two tracks: a node-repackaged
+ * stream, or a file with one audio track, has nothing to pick.
+ */
+@Suppress("FunctionNaming") // a composable is PascalCase by Compose convention
+@UnstableApi
+@Composable
+internal fun AudioTrackMenu(video: VideoSession) {
+    val ps = video.state
+    if (ps.audioTracks.size < 2) return
+    var open by remember { mutableStateOf(false) }
+    val current = ps.audioTracks.firstOrNull { it.id == ps.selectedAudioTrackId }
+    Box {
+        SecondaryButton(current?.label ?: "Audio", { open = !open }, icon = Icons.Rounded.Audiotrack, compact = true)
+        DropdownMenu(expanded = open, onDismissRequest = {
+            open = false
+        }, modifier = Modifier.background(Tokens.surface3)) {
+            Text(
+                "Audio",
+                style = MaterialTheme.typography.labelSmall,
+                color = Tokens.textMuted,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            )
+            for (track in ps.audioTracks) {
+                val selected = track.id == ps.selectedAudioTrackId
+                DropdownMenuItem(
+                    text = {
+                        Column {
+                            Text(
+                                track.label,
+                                color = if (selected) LocalMediaTheme.current.accentGradientEnd else Tokens.textPrimary,
+                            )
+                            Subtitles.audioDetails(track.sampleMimeType, track.channelCount)?.let {
+                                Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+                            }
+                        }
+                    },
+                    onClick = {
+                        video.selectAudio(track)
+                        open = false
+                    },
+                )
+            }
+        }
     }
 }
 
@@ -346,22 +400,18 @@ private fun CaptionMenu(video: VideoSession, open: Boolean, onDismiss: () -> Uni
         })
         for (t in ps.textTracks) {
             DropdownMenuItem(
+                // The label already names the language ("English (SDH)"); no raw code beneath it.
                 text = {
-                    Column {
-                        Text(
-                            t.label,
-                            color = if (t.id ==
-                                ps.selectedTrackId
-                            ) {
-                                LocalMediaTheme.current.accentGradientEnd
-                            } else {
-                                Tokens.textPrimary
-                            },
-                        )
-                        t.language?.let {
-                            Text(it, style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
-                        }
-                    }
+                    Text(
+                        t.label,
+                        color = if (t.id ==
+                            ps.selectedTrackId
+                        ) {
+                            LocalMediaTheme.current.accentGradientEnd
+                        } else {
+                            Tokens.textPrimary
+                        },
+                    )
                 },
                 onClick = {
                     video.selectText(t)

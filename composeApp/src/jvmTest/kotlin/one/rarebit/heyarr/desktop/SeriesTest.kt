@@ -111,6 +111,20 @@ class SeriesTest {
         assertEquals(listOf("sdh", "english", "italian"), episode.subtitles.map { it.id })
     }
 
+    @Test fun aRemuxWithAnotherStemStillGetsItsEpisodesCaptions() {
+        // The captions were catalogued against the first release; the file held now is a
+        // remux whose stem differs. Its SxxExx, within the same season, still pairs them
+        // (heyarr-kmp#200), and the same episode number in another season does not.
+        val files = listOf(
+            file("remux", "Show.S02E03.Title.2160p.REMUX.mkv", "Season 02"),
+            file("sdh", "Show.S02E03.Title.1080p.WEB-DL.eng.sdh.srt", "Season 02", role = "subtitle"),
+            file("spa", "Show.S02E03.Title.1080p.WEB-DL.spa.latin-american.srt", "Season 02", role = "subtitle"),
+            file("other-season", "Show.S01E03.Title.1080p.WEB-DL.eng.srt", "Season 01", role = "subtitle"),
+        )
+        val episode = Series.seasons(files).single().episodes.single()
+        assertEquals(listOf("sdh", "spa"), episode.subtitles.map { it.id })
+    }
+
     @Test fun groupsAShowIntoSeasonsThenEpisodesInOrderWithSidecarsAttached() {
         val seasons = Series.seasons(yellowstone)
         assertEquals(listOf("Season 4", "Season 5", "Specials"), seasons.map { it.label })

@@ -66,6 +66,20 @@ class VideoSession(
         val trackIndex: Int,
     )
 
+    /**
+     * One selectable embedded audio track (a dub, a commentary, a stereo downmix): the Media3
+     * group + index behind a language label, with its format for the picker's detail line.
+     */
+    data class AudioTrack(
+        val id: String,
+        val label: String,
+        val language: String?,
+        val channelCount: Int,
+        val sampleMimeType: String?,
+        val group: Tracks.Group,
+        val trackIndex: Int,
+    )
+
     data class State(
         val paused: Boolean = true,
         val positionMs: Long = 0,
@@ -73,6 +87,8 @@ class VideoSession(
         val bufferedMs: Long = 0,
         val buffering: Boolean = false,
         val ended: Boolean = false,
+        val audioTracks: List<AudioTrack> = emptyList(),
+        val selectedAudioTrackId: String? = null,
         val textTracks: List<TextTrack> = emptyList(),
         val selectedTrackId: String? = null,
         val error: String? = null,
@@ -282,6 +298,7 @@ class VideoSession(
                 state = state.copy(issue = issue.message)
                 onIssue(issue)
             }
+            val audio = collectAudio(tracks)
             val collected = ArrayList<TextTrack>()
             var n = 0
             tracks.groups.forEachIndexed { gi, g ->
@@ -294,6 +311,8 @@ class VideoSession(
             }
             state =
                 state.copy(
+                    audioTracks = audio,
+                    selectedAudioTrackId = audio.firstOrNull { it.group.isTrackSelected(it.trackIndex) }?.id,
                     textTracks = collected,
                     selectedTrackId = collected.firstOrNull {
                         it.group.isTrackSelected(it.trackIndex)
@@ -425,6 +444,47 @@ class VideoSession(
         streamStart = atSeconds.coerceAtLeast(0.0)
         resumed = true
         start(np.target.atStreamStart(streamStart).copy(streamBaseUrl = base), np.title)
+    }
+
+    /**
+     * The embedded audio tracks the device can decode. The ordinal counts every audio track,
+     * supported or not, so an unnamed track's "Track N" matches its position in the file.
+     */
+    private fun collectAudio(tracks: Tracks): List<AudioTrack> {
+        val audio = ArrayList<AudioTrack>()
+        var ordinal = 0
+        tracks.groups.forEachIndexed { gi, g ->
+            if (g.type != C.TRACK_TYPE_AUDIO) return@forEachIndexed
+            for (ti in 0 until g.length) {
+                val index = ordinal++
+                if (!g.isTrackSupported(ti)) continue
+                val f = g.getTrackFormat(ti)
+                audio.add(
+                    AudioTrack(
+                        id = "g${gi}t$ti",
+                        label = Subtitles.label(f.language, f.label, index),
+                        language = f.language,
+                        channelCount = f.channelCount,
+                        sampleMimeType = f.sampleMimeType,
+                        group = g,
+                        trackIndex = ti,
+                    ),
+                )
+            }
+        }
+        return audio
+    }
+
+    /** Switch the audio language/track in place, leaving the text-track selection alone. */
+    fun selectAudio(track: AudioTrack) {
+        val selector = trackSelector ?: return
+        selector.setParameters(
+            selector.buildUponParameters()
+                .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
+                .setOverrideForType(TrackSelectionOverride(track.group.mediaTrackGroup, track.trackIndex))
+                .build(),
+        )
+        state = state.copy(selectedAudioTrackId = track.id)
     }
 
     /** Pick a text track (or turn subtitles off): an override + enabling the text renderer. */

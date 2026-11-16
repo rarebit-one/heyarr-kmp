@@ -3,6 +3,7 @@ package one.rarebit.heyarr.mobile
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.playback.ClientCapabilities
 import one.rarebit.heyarr.mobile.playback.PlaybackClient
 import one.rarebit.heyarr.mobile.playback.PlaybackTarget
@@ -41,6 +42,27 @@ private const val HASH = "blake3:a617353faeec5b99c042ceb349976d8171e5b7efc6fb192
 private val CAPS = ClientCapabilities(video = listOf("h264", "hevc"), audio = listOf("aac", "mp3"), maxHeight = 2412)
 
 class PlaybackClientTest {
+
+    @Test fun subtitleSidecarsAreLabelledByLanguageNotFilename() {
+        val client = PlaybackClient(RecordingTransport(null), "https://h.example", Credential.Guest)
+        val sidecars = client.subtitleSidecars(
+            listOf(
+                WorkAsset(
+                    "a",
+                    "e",
+                    role = "subtitle",
+                    filename = "Show.S01E01.1080p.eng.sdh.srt",
+                    blobHash = HASH,
+                ),
+                WorkAsset("b", "e", role = "subtitle", filename = "Show.S01E01.unknown.srt", blobHash = HASH),
+                WorkAsset("c", "e", role = "subtitle", filename = "Show.S01E01.fr.srt", blobHash = null),
+            ),
+        )
+        assertEquals("the blobless sidecar is dropped", 2, sidecars.size)
+        assertEquals("English (SDH)", sidecars[0].label)
+        assertEquals("en", sidecars[0].language)
+        assertEquals("no language in the name: an ordinal, never the raw filename", "Track 2", sidecars[1].label)
+    }
 
     @Test fun blobTargetPointsAtRangeCapableUrlUnderCredential() {
         val client =
