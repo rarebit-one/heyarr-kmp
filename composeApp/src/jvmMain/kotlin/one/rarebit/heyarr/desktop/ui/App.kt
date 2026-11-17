@@ -272,17 +272,27 @@ fun App(
         // is transcoded down to a smoothly-decodable stream; falls back to the direct
         // blob when there is no connection. `max_height` is this machine's real screen
         // (heyarr-kmp#225), never above the software-decode ceiling.
-        val declaredMaxHeight =
-            Copies.declaredMaxHeight(null, DesktopDisplay.fit, ceiling = DesktopDisplay.CEILING)
+        // A film's copy declares the preference's cap, lifted to the copy when it was picked by
+        // hand or best quality is preferred; anything else the screen as the preference caps it.
+        fun declaredMaxHeight(item: Route.Player): Int {
+            val copy = playback.copies.firstOrNull { it.asset.id == item.assetId }
+            return Copies.declaredMaxHeight(
+                copy,
+                DesktopDisplay.fit,
+                session.playbackPreference,
+                chosen = copy != null && session.chosenCopy(item.workId) == item.assetId,
+                ceiling = DesktopDisplay.CEILING,
+            )
+        }
         playback.resolvePlaybackTarget = { item ->
             session.mediaTarget(
-                session.api?.playbackTarget(item.assetId, item.blobHash, maxHeight = declaredMaxHeight)
+                session.api?.playbackTarget(item.assetId, item.blobHash, maxHeight = declaredMaxHeight(item))
                     ?: PlaybackTarget(HeyarrApi.blobUrl(playback.baseUrl, item.blobHash)),
             )
         }
         playback.resolveAudioTarget = { item, ordinal ->
             session.mediaTarget(
-                session.api?.playbackTarget(item.assetId, item.blobHash, declaredMaxHeight, audioTrack = ordinal)
+                session.api?.playbackTarget(item.assetId, item.blobHash, declaredMaxHeight(item), audioTrack = ordinal)
                     ?: error("Audio track selection requires a connection"),
             )
         }

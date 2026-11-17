@@ -90,6 +90,7 @@ fun SettingsScreen(session: AppSession, state: SettingsState, modifier: Modifier
         } else {
             item { PeersPanel(session, state) }
         }
+        item { playbackPanel(session) }
         item { AppearancePanel(session) }
     }
 }

@@ -349,6 +349,7 @@ fun PlayerScreen(
                     Spacer(Modifier.weight(1f))
                     captionMenu(ps, p)
                     Spacer(Modifier.width(8.dp))
+                    versionMenu(ps, session)
                     audioMenu(ps, p, playback, session)
                     Spacer(Modifier.width(8.dp))
                     VolumeControl(ps, p)

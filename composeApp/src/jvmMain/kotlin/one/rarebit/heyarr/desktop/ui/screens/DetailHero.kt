@@ -28,7 +28,7 @@ import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
-import one.rarebit.heyarr.core.playback.Copies
+import one.rarebit.heyarr.core.playback.CopyChoice
 import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
@@ -38,8 +38,8 @@ import one.rarebit.heyarr.desktop.library.PrimaryAsset
 import one.rarebit.heyarr.desktop.library.Season
 import one.rarebit.heyarr.desktop.library.WorkDetail
 import one.rarebit.heyarr.desktop.music.Track
-import one.rarebit.heyarr.desktop.playback.DesktopDisplay
 import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.desktop.state.FilmCopies
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
 import one.rarebit.heyarr.desktop.ui.components.Hero
@@ -90,13 +90,18 @@ internal fun DetailHero(m: DetailModel, detail: WorkDetail, onGetIt: (String, St
     val work = detail.work
     val first = Series.firstPlayable(seasons)
     val actions = HeroActions(session, state, detail, type, scope)
+    val copies = if (type == MediaType.MOVIE) {
+        session.copiesFor(state.workId, state.assets.orEmpty(), detail.primaryAsset?.assetId)
+    } else {
+        null
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         IdentityBlock(
             title = work.title,
             type = type,
             aspect = if (heroWide) CardAspect.WIDE else MediaThemes.of(type).aspect,
-            meta = heroMeta(detail, type, seasons, state),
+            meta = heroMeta(detail, type, seasons, state, copies),
             artwork = art,
             availability = availability,
             synopsis = { SynopsisBlock(detail, type, seasons, state) },
@@ -110,8 +115,29 @@ internal fun DetailHero(m: DetailModel, detail: WorkDetail, onGetIt: (String, St
     }
 }
 
+/**
+ * A film's meta line: the year, then the picture and size of the copy that plays on this
+ * machine (heyarr-kmp#225) — not merely the node's oldest — and how many copies are held.
+ */
+private fun movieMeta(detail: WorkDetail, state: DetailState, copies: CopyChoice<Track>?): List<String?> {
+    val asset = detail.primaryAsset
+    val file = copies?.picked?.asset ?: state.assets?.firstOrNull { it.blobHash == asset?.blobHash }
+    return listOf(
+        detail.work.year?.toString(),
+        copies?.picked?.picture ?: file?.let { Series.qualityTags(it).joinToString(" · ").ifBlank { null } },
+        (file?.sizeBytes ?: asset?.sizeBytes)?.let { PrimaryAsset.formatBytes(it) },
+        copies?.copies?.size?.takeIf { it > 1 }?.let { "$it copies" },
+    )
+}
+
 /** The hero's meta line: the facts that matter for this kind of work. */
-private fun heroMeta(detail: WorkDetail, type: MediaType, seasons: List<Season>, state: DetailState): List<String?> {
+private fun heroMeta(
+    detail: WorkDetail,
+    type: MediaType,
+    seasons: List<Season>,
+    state: DetailState,
+    copies: CopyChoice<Track>?,
+): List<String?> {
     val asset = detail.primaryAsset
     val work = detail.work
     val held = seasons.sumOf { it.held }
@@ -134,22 +160,7 @@ private fun heroMeta(detail: WorkDetail, type: MediaType, seasons: List<Season>,
             },
         )
 
-        MediaType.MOVIE -> listOf(
-            work.year?.toString(),
-            asset?.let {
-                Series.qualityTags(
-                    Track(
-                        "x",
-                        "x",
-                        filename = state.assets?.firstOrNull { t ->
-                            t.blobHash ==
-                                it.blobHash
-                        }?.filename,
-                    ),
-                ).joinToString(" · ").ifBlank { null }
-            },
-            asset?.sizeBytes?.let { PrimaryAsset.formatBytes(it) },
-        )
+        MediaType.MOVIE -> movieMeta(detail, state, copies)
 
         MediaType.BOOK -> listOf(work.author, work.year?.toString(), asset?.mime?.substringAfter('/')?.uppercase())
 
@@ -183,17 +194,24 @@ private class HeroActions(
      * oldest copy, which may be a 2160p remux this machine has re-encoded for it.
      */
     fun playWork(asset: PrimaryAsset) {
-        val copy = if (type == MediaType.SERIES) {
+        val choice = if (type == MediaType.SERIES) {
             null
         } else {
-            Copies.pick(Copies.of(state.assets.orEmpty()), DesktopDisplay.fit, defaultId = asset.assetId)?.asset
+            session.copiesFor(state.workId, state.assets.orEmpty(), asset.assetId)
         }
-        val hash = copy?.blobHash
-        if (copy != null && hash != null) {
-            play(hash, detail.work.title, copy.id)
-        } else {
-            play(asset.blobHash, detail.work.title, asset.assetId)
-        }
+        if (choice != null) playCopy(choice) else play(asset.blobHash, detail.work.title, asset.assetId)
+    }
+
+    /**
+     * Play [choice]'s picked copy, offering every copy to the player's Version menu; [chosen]
+     * (the detail screen's list) remembers it as this work's copy on this machine.
+     */
+    fun playCopy(choice: CopyChoice<Track>, chosen: Boolean = false) {
+        val copy = choice.picked
+        val hash = copy.asset.blobHash ?: return
+        if (chosen) session.chooseCopy(state.workId, copy.asset.id)
+        session.playback.filmCopies = FilmCopies(state.workId, choice.copies)
+        play(hash, detail.work.title, copy.asset.id)
     }
 
     fun openLocal() {

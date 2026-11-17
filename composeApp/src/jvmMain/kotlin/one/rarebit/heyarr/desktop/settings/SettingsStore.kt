@@ -46,6 +46,16 @@ data class DesktopConfig(
      * mints one; the app records the minted id here so later launches OPEN it rather than mint again.
      */
     val vaultSpaceId: String? = null,
+    /**
+     * Which copy of a film to prefer on this machine — a `QualityPreference` key (`best` /
+     * `fit` / `data_saver`); null is the default, "fit this screen" (heyarr-kmp#225).
+     */
+    val playbackPreference: String? = null,
+    /**
+     * The copy picked for each film on this machine (work id → asset id), from the player's
+     * Version menu or the detail screen's copies list. Machine-local, like the preference.
+     */
+    val chosenCopies: Map<String, String> = emptyMap(),
 ) {
     /**
      * The scale to render at: the saved value, else the environment, else what the desktop
@@ -136,6 +146,8 @@ class FileSettingsStore(private val file: File = defaultConfigFile()) : Settings
             systemColors = JsonScan.boolField(obj, "system_colors") ?: true,
             vaultFolder = JsonScan.stringField(obj, "vault_folder")?.takeIf { it.isNotBlank() },
             vaultSpaceId = JsonScan.stringField(obj, "vault_space_id")?.takeIf { it.isNotBlank() },
+            playbackPreference = JsonScan.stringField(obj, "playback_preference")?.takeIf { it.isNotBlank() },
+            chosenCopies = JsonScan.stringMap(obj, "chosen_copies"),
         )
     }
 
@@ -150,6 +162,17 @@ class FileSettingsStore(private val file: File = defaultConfigFile()) : Settings
             append(",\n  \"system_colors\": ").append(if (config.systemColors) "true" else "false")
             config.vaultFolder?.let { append(",\n  \"vault_folder\": \"").append(escape(it)).append("\"") }
             config.vaultSpaceId?.let { append(",\n  \"vault_space_id\": \"").append(escape(it)).append("\"") }
+            config.playbackPreference?.let {
+                append(",\n  \"playback_preference\": \"").append(escape(it)).append("\"")
+            }
+            if (config.chosenCopies.isNotEmpty()) {
+                append(",\n  \"chosen_copies\": {")
+                config.chosenCopies.entries.forEachIndexed { i, (work, asset) ->
+                    if (i > 0) append(", ")
+                    append('"').append(escape(work)).append("\": \"").append(escape(asset)).append('"')
+                }
+                append("}")
+            }
             append("\n}\n")
         }
         file.writeText(json)

@@ -110,6 +110,17 @@ class CopiesTest {
         }
     }
 
+    @Test fun chooseSaysWhetherThePickWasThePersons() {
+        val byRule = Copies.choose(listOf(uhdHdr, fhd), phone, defaultId = "uhd")!!
+        assertEquals("fhd", byRule.picked.asset.id)
+        assertEquals(false, byRule.chosen)
+        assertEquals(2, byRule.copies.size)
+        val byHand = Copies.choose(listOf(uhdHdr, fhd), phone, chosenId = "uhd")!!
+        assertEquals("uhd", byHand.picked.asset.id)
+        assertTrue(byHand.chosen)
+        assertNull(Copies.choose(emptyList<F>(), phone))
+    }
+
     @Test fun aProbeBeatsTheReleaseName() {
         // The label says 2160p HDR; the node measured a 1080-line SDR frame.
         val mislabelled =

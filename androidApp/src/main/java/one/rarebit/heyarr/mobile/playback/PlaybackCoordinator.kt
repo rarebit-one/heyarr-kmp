@@ -48,8 +48,8 @@ data class NowPlaying(
     val maxHeight: Int? = null,
 )
 
-/** A film's copies as this phone sees them: all of them, the one to play, and whether the person chose it. */
-data class CopyChoice(val copies: List<Copy<WorkAsset>>, val picked: Copy<WorkAsset>, val chosen: Boolean)
+/** A film's copies as this phone sees them — `:core`'s, over the phone's asset model. */
+typealias CopyChoice = one.rarebit.heyarr.core.playback.CopyChoice<WorkAsset>
 
 /**
  * What is playing, and how it came to be: the one place that turns a tapped work or
@@ -97,12 +97,8 @@ class PlaybackCoordinator(
      * phone. Null for a work with no video copies; the caller then plays the node's primary
      * asset as before.
      */
-    fun copiesFor(workId: String, assets: List<WorkAsset>, defaultId: String?): CopyChoice? {
-        val held = Copies.of(assets)
-        val chosenId = copyChoices.chosen(workId)
-        val picked = Copies.pick(held, display, preference(), chosenId, defaultId) ?: return null
-        return CopyChoice(held, picked, chosen = picked.asset.id == chosenId)
-    }
+    fun copiesFor(workId: String, assets: List<WorkAsset>, defaultId: String?): CopyChoice? =
+        Copies.choose(assets, display, preference(), copyChoices.chosen(workId), defaultId)
 
     /**
      * Play [work] from the start on [choice]'s picked copy, carrying every copy so the player
