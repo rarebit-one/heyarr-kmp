@@ -284,14 +284,16 @@ dependencies {
     // Activity); the app talks to it through a MediaController behind the AudioPlayer seam.
     implementation(libs.androidx.media3.session)
 
-    // ── The reader (Readium Kotlin toolkit) ─────────────────────────────────────
-    // EPUB, PDF (pdfium) and comic archives, fetched over the authenticated blob route
-    // through a DefaultHttpClient callback (reader/ReaderHttp). Readium needs core
-    // library desugaring (compileOptions below).
+    // ── The reader ──────────────────────────────────────────────────────────────
+    // EPUB and comic archives through the Readium Kotlin toolkit, fetched over the
+    // authenticated blob route through a DefaultHttpClient callback (reader/ReaderHttp).
+    // Readium needs core library desugaring (compileOptions below).
     implementation(libs.readium.shared)
     implementation(libs.readium.streamer)
     implementation(libs.readium.navigator)
-    implementation(libs.readium.adapter.pdfium)
+    // PDF through Jetpack's PdfViewerFragment (reader/PdfReaderFragment), not Readium's
+    // PDFium adapter, whose natives do not load on a 16 KB-page device (#162).
+    implementation(libs.androidx.pdf.viewer.fragment)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     // ── Unit tests (pure JVM — no Android runtime) ──────────────────────────────
@@ -308,6 +310,9 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
+    // PdfReaderSmokeTest hosts the PDF reader fragment in an empty FragmentActivity.
+    androidTestImplementation(libs.androidx.fragment.testing)
+    debugImplementation(libs.androidx.fragment.testing.manifest)
 }
 
 // Corrections to what the AboutLibraries plugin reads from POMs: CameraX core is

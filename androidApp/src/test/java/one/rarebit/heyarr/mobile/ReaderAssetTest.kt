@@ -16,4 +16,11 @@ class ReaderAssetTest {
         assertNull(ReaderFormat.of("video/mp4", "film.mp4"))
         assertNull(ReaderFormat.of(null, null))
     }
+
+    @Test fun theIntentExtraNamesAFormat() {
+        assertEquals("a PDF opens the PDF viewer", ReaderFormat.PDF, ReaderFormat.fromExtra("PDF"))
+        assertEquals(ReaderFormat.EPUB, ReaderFormat.fromExtra(ReaderFormat.EPUB.name))
+        assertNull("no extra falls back to Readium", ReaderFormat.fromExtra(null))
+        assertNull(ReaderFormat.fromExtra("pdf"))
+    }
 }

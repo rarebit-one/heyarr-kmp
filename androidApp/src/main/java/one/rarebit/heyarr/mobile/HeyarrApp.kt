@@ -2,6 +2,7 @@ package one.rarebit.heyarr.mobile
 
 import android.app.Application
 import android.content.Intent
+import android.os.Process
 import androidx.media3.common.util.UnstableApi
 import coil.ImageLoader
 import coil.ImageLoaderFactory
@@ -139,6 +140,11 @@ class HeyarrApp :
 
     override fun onCreate() {
         super.onCreate()
+        // The PDF viewer parses documents in androidx.pdf's isolatedProcess service, and
+        // Android creates this Application there too. An isolated process has no storage,
+        // so reading SharedPreferences (the pairing and login stores below) crashes it, and
+        // no PDF ever loads (#162). Nothing app-wide belongs in that process.
+        if (Process.isIsolated()) return
         dropStaleImageCache()
         // Keep a foreground service up for exactly as long as a pairing is in flight.
         appScope.launch {
