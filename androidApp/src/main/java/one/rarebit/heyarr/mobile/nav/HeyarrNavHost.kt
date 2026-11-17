@@ -95,6 +95,8 @@ import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.ToastCard
 import one.rarebit.heyarr.ui.theme.LocalAppearance
 import one.rarebit.heyarr.ui.theme.MediaThemes
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.DurationUnit
 
 /**
  * The signed-in app: the design system's shell — a bottom bar on a phone, a left rail
@@ -167,6 +169,8 @@ fun HeyarrNavHost(
     }
     LaunchedEffect(video) {
         video.onIssue = vm.playback::onIssue
+        video.onSwitchCopy =
+            { copy -> vm.playback.switchCopy(copy, video.state.positionMs.milliseconds.toDouble(DurationUnit.SECONDS)) }
     }
     // What the coordinator resolved is what the session plays; a new asset puts the player in front.
     var lastStartedAsset by remember { mutableStateOf<String?>(null) }
@@ -337,7 +341,12 @@ fun HeyarrNavHost(
                 )
             }
         },
-        pickCopy = { assets, defaultId -> vm.playback.pickCopy(assets, defaultId)?.asset },
+        copies = { work, assets -> vm.playback.copiesFor(work.id, assets, work.primaryAssetId) },
+        playCopy = { work, choice, art, chosen ->
+            audio.stop()
+            video.queue = emptyList()
+            vm.playback.playCopy(work, choice, art, chosen)
+        },
     )
 
     /** Play a playlist (its playable works) as an audio queue. */

@@ -22,7 +22,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
+import one.rarebit.heyarr.core.playback.Copy
 import one.rarebit.heyarr.core.playback.SeekCoalescer
+import one.rarebit.heyarr.mobile.library.WorkAsset
 
 /** One episode the player can move on to after the current one (the work's other playable files). */
 data class QueueEntry(
@@ -153,6 +155,9 @@ class VideoSession(
 
     /** A renderer type Media3 cannot decode — the shell may re-plan for a stream. */
     var onIssue: (PlaybackDiagnostics.Issue) -> Unit = {}
+
+    /** The Version menu picked another copy of the film (heyarr-kmp#225) — the shell re-plans it here. */
+    var onSwitchCopy: (Copy<WorkAsset>) -> Unit = {}
 
     val active: Boolean get() = current != null
 

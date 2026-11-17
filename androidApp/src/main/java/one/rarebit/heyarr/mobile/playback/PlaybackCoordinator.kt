@@ -13,6 +13,7 @@ import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.playback.Copies
 import one.rarebit.heyarr.core.playback.Copy
 import one.rarebit.heyarr.core.playback.DisplayFit
+import one.rarebit.heyarr.core.playback.QualityPreference
 import one.rarebit.heyarr.mobile.consumption.ProgressReporter
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
@@ -37,7 +38,18 @@ data class NowPlaying(
     val kind: String? = null,
     /** The work's poster, for the now-playing bar. */
     val artworkUrl: String? = null,
+    /** The work this item belongs to, when the caller knew it — what a copy choice is remembered under. */
+    val workId: String? = null,
+    /** Every copy of the work held (heyarr-kmp#225); two or more is what shows the Version menu. */
+    val copies: List<Copy<WorkAsset>> = emptyList(),
+    /** Which of [copies] is playing, null when the item is not one of a film's copies. */
+    val copy: Copy<WorkAsset>? = null,
+    /** The `max_height` the plan declared, so a re-plan asks for the same picture. */
+    val maxHeight: Int? = null,
 )
+
+/** A film's copies as this phone sees them: all of them, the one to play, and whether the person chose it. */
+data class CopyChoice(val copies: List<Copy<WorkAsset>>, val picked: Copy<WorkAsset>, val chosen: Boolean)
 
 /**
  * What is playing, and how it came to be: the one place that turns a tapped work or
@@ -59,23 +71,105 @@ class PlaybackCoordinator(
     private val reporter: ProgressReporter = ProgressReporter.NoOp,
 ) {
     /**
+     * Settings → Playback and the copy of each film picked on this phone (Version menu, detail
+     * list). In memory with the default preference until the ViewModel hands over the phone's.
+     */
+    @Volatile
+    var copies: CopyPreferences = CopyPreferences()
+
+    private val copyChoices: CopyChoiceStore get() = copies.choices
+
+    private fun preference(): QualityPreference = copies.preference()
+
+    /**
      * What this phone can decode, for `POST /playback/plan`. Null (tests, or before the
      * Activity probes `MediaCodecList`) means "don't plan — stream the blob directly".
      */
     @Volatile
     var capabilities: ClientCapabilities? = null
 
+    /** The screen [capabilities] were probed on; before the probe, a 1080-line SDR screen — the cautious guess. */
+    private val display: DisplayFit get() = capabilities?.display ?: DisplayFit(DEFAULT_DISPLAY_HEIGHT)
+
     /**
-     * Which of a film's copies this phone plays (heyarr-kmp#225): `:core`'s [Copies] over
-     * the screen [capabilities] were probed on. Before the probe has run, a 1080-line SDR
-     * screen — the cautious guess, and what most phones are. Null for a work with no video
-     * copies; the caller then plays the node's primary asset as before.
+     * Which of a film's copies this phone plays (heyarr-kmp#225): `:core`'s [Copies] over the
+     * screen, the Settings → Playback preference and the copy picked for [workId] on this
+     * phone. Null for a work with no video copies; the caller then plays the node's primary
+     * asset as before.
      */
-    fun pickCopy(assets: List<WorkAsset>, defaultId: String?): Copy<WorkAsset>? = Copies.pick(
-        Copies.of(assets),
-        capabilities?.display ?: DisplayFit(DEFAULT_DISPLAY_HEIGHT),
-        defaultId = defaultId,
-    )
+    fun copiesFor(workId: String, assets: List<WorkAsset>, defaultId: String?): CopyChoice? {
+        val held = Copies.of(assets)
+        val chosenId = copyChoices.chosen(workId)
+        val picked = Copies.pick(held, display, preference(), chosenId, defaultId) ?: return null
+        return CopyChoice(held, picked, chosen = picked.asset.id == chosenId)
+    }
+
+    /**
+     * Play [work] from the start on [choice]'s picked copy, carrying every copy so the player
+     * can offer the others. [chosen] marks a copy the person picked just now (the detail
+     * screen's list), which is remembered for the work like a Version-menu switch.
+     */
+    fun playCopy(work: Work, choice: CopyChoice, artworkUrl: String? = null, chosen: Boolean = choice.chosen) {
+        val copy = choice.picked
+        val hash = copy.asset.blobHash ?: return
+        if (chosen) copyChoices.choose(work.id, copy.asset.id)
+        val mime = copy.asset.mime ?: work.mime
+        playCopyAt(work.id, work.title, work.kind, copy, choice.copies, hash, mime, chosen, 0.0, artworkUrl)
+    }
+
+    /**
+     * The Version menu: switch the playing film to [copy] at [atSeconds], and remember it as
+     * this work's copy on this phone. A plan, not a seek — a different file, so the node is
+     * asked again with the cap lifted to the copy (the person asked for that picture).
+     */
+    fun switchCopy(copy: Copy<WorkAsset>, atSeconds: Double) {
+        val playing = _nowPlaying.value ?: return
+        val workId = playing.workId
+        val hash = copy.asset.blobHash
+        if (workId == null || hash == null || copy.asset.id == playing.assetId) return
+        copyChoices.choose(workId, copy.asset.id)
+        val mime = copy.asset.mime ?: playing.target.mimeType
+        playCopyAt(
+            workId, playing.title, playing.kind, copy, playing.copies, hash, mime, true, atSeconds, playing.artworkUrl,
+        )
+    }
+
+    @Suppress("LongParameterList") // one play of one copy: who, what, which file, from where
+    private fun playCopyAt(
+        workId: String,
+        title: String,
+        kind: String?,
+        copy: Copy<WorkAsset>,
+        copies: List<Copy<WorkAsset>>,
+        hash: String,
+        mime: String?,
+        chosen: Boolean,
+        atSeconds: Double,
+        artworkUrl: String?,
+    ) {
+        val client = PlaybackClient(transport, baseUrl(), effectiveCred())
+        val isVideo = PlaybackTarget.looksLikeVideo(mime, kind)
+        val maxHeight = Copies.declaredMaxHeight(copy, display, preference(), chosen)
+        val np = NowPlaying(
+            target = client.blobTarget(hash, isVideo, mime),
+            title = title,
+            assetId = copy.asset.id,
+            blobHash = hash,
+            verb = verbFor(isVideo),
+            kind = kind,
+            artworkUrl = artworkUrl,
+            workId = workId,
+            copies = copies,
+            copy = copy,
+            maxHeight = maxHeight,
+        )
+        val caps = capabilities
+        if (caps == null) {
+            present(np, atSeconds)
+        } else {
+            resolveInto(client, np, caps.forMaxHeight(maxHeight), atSeconds)
+        }
+    }
 
     // When there is no credential the caller is browsing as a guest. Play as [Credential.Guest]
     // (sends no Authorization header) so heyarr's trusted-network guest path applies. A vault
@@ -233,25 +327,39 @@ class PlaybackCoordinator(
         artworkUrl: String? = null,
         subtitles: List<PlaybackTarget.Sidecar> = emptyList(),
     ) {
+        // Every other play (an episode, a continue card) declares the screen as the
+        // preference caps it; only a film's copies lift it to the copy (`playCopyAt`).
+        val maxHeight = Copies.declaredMaxHeight(null, display, preference())
+        val np = NowPlaying(
+            target = client.blobTarget(hash, isVideo, mime).copy(subtitles = subtitles),
+            title = title,
+            assetId = assetId,
+            blobHash = hash,
+            verb = verbFor(isVideo),
+            kind = kind,
+            artworkUrl = artworkUrl,
+            maxHeight = maxHeight,
+        )
+        resolveInto(client, np, caps.forMaxHeight(maxHeight), knownStart)
+    }
+
+    /**
+     * Plan [np]'s asset with [caps] and present it on whatever came back. [np] carries the
+     * direct blob target (its subtitles ride over onto the planned one) and everything else
+     * the player shows.
+     */
+    private fun resolveInto(client: PlaybackClient, np: NowPlaying, caps: ClientCapabilities, knownStart: Double?) {
+        val assetId = np.assetId ?: return present(np, knownStart)
+        val hash = np.blobHash ?: return present(np, knownStart)
+        val direct = np.target
         // Plan first: the node may repackage for this phone. A node that predates the
         // contract answers 400 and `resolve` falls back to the blob.
         scope.launch {
             val target = withContext(io) {
-                runCatching { client.resolve(assetId, hash, isVideo, mime, caps) }
-                    .getOrElse { client.blobTarget(hash, isVideo, mime).copy(reason = it.message) }
-            }.copy(subtitles = subtitles)
-            present(
-                NowPlaying(
-                    target = target,
-                    title = title,
-                    assetId = assetId,
-                    blobHash = hash,
-                    verb = verbFor(isVideo),
-                    kind = kind,
-                    artworkUrl = artworkUrl,
-                ),
-                knownStart,
-            )
+                runCatching { client.resolve(assetId, hash, direct.isVideo, direct.mimeType, caps) }
+                    .getOrElse { direct.copy(reason = it.message) }
+            }.copy(subtitles = direct.subtitles)
+            present(np.copy(target = target), knownStart)
         }
     }
 
@@ -269,10 +377,17 @@ class PlaybackCoordinator(
         val hash = playing.blobHash ?: return
         val codec = issue.codec ?: return
         val client = PlaybackClient(transport, baseUrl(), cred)
+        val declared = playing.maxHeight?.let { caps.forMaxHeight(it) } ?: caps
         scope.launch {
             val replanned = withContext(io) {
                 runCatching {
-                    client.resolve(assetId, hash, playing.target.isVideo, playing.target.mimeType, caps.without(codec))
+                    client.resolve(
+                        assetId,
+                        hash,
+                        playing.target.isVideo,
+                        playing.target.mimeType,
+                        declared.without(codec),
+                    )
                 }.getOrNull()
             }
             if (_nowPlaying.value !== playing) return@launch // the user moved on
