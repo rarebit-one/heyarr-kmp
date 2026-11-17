@@ -18,6 +18,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import one.rarebit.heyarr.mobile.reader.PdfCache
 import one.rarebit.heyarr.mobile.reader.PdfReaderFragment
+import one.rarebit.heyarr.mobile.reader.PrefsReadingPositionStore
 import one.rarebit.heyarr.mobile.reader.ReaderActivity
 import one.rarebit.heyarr.mobile.reader.ReaderFormat
 import org.junit.After
@@ -65,6 +66,8 @@ class PdfReaderSearchButtonTest {
         }
         file.outputStream().use { doc.writeTo(it) }
         doc.close()
+        // No remembered page: the reader would restore it over the scrolls below.
+        PrefsReadingPositionStore(ctx).put(ASSET, "{}")
         cutoutsBefore = cutoutOverlays().filter { it.second }.map { it.first }
     }
 
@@ -74,7 +77,7 @@ class PdfReaderSearchButtonTest {
     }
 
     @Test fun theSearchButtonClearsTheThumbAndPageChipWithNoCutout() {
-        useCutout(NO_CUTOUT)
+        useCutout(null)
         checkBothOrientations(expectCutout = false)
     }
 
@@ -94,7 +97,10 @@ class PdfReaderSearchButtonTest {
         ActivityScenario.launch<ReaderActivity>(intent).use { scenario ->
             // The cutout overlay applies asynchronously; the scenario follows the recreation.
             val cutout = if (expectCutout) "present" else "absent"
-            scenario.await("the portrait cutout to be $cutout (overlays: ${cutoutOverlays()})") { activity ->
+            scenario.await(
+                "the portrait cutout to be $cutout",
+                seen = { "cutout=${it.window.decorView.rootWindowInsets?.displayCutout} overlays=${cutoutOverlays()}" },
+            ) { activity ->
                 (activity.window.decorView.rootWindowInsets?.displayCutout != null) == expectCutout
             }
             scenario.checkBothEnds("portrait", Configuration.ORIENTATION_PORTRAIT)
@@ -124,9 +130,19 @@ class PdfReaderSearchButtonTest {
         page: Int,
         settled: (PdfView, Rect) -> Boolean,
     ) {
-        onActivity { it.reader()?.scrollTo(page) }
-        await("the thumb to be drawn at the $where") { activity ->
+        await(
+            "the thumb to be drawn at the $where",
+            seen = { a ->
+                a.pdfView()?.let {
+                    "scrollY=${it.scrollY} height=${it.height} thumb=${it.drawnBounds(THUMB_BOUNDS)}"
+                }.orEmpty()
+            },
+        ) { activity ->
             val pdf = activity.pdfView() ?: return@await false
+            // Re-issued each poll: once a document lays out, the reader restores the page it
+            // remembers (after the rotation, the last page, recorded in portrait) over a single
+            // earlier scroll, and a scroll sent before that layout goes nowhere.
+            activity.reader()?.scrollTo(page)
             pdf.invalidate()
             val thumb = pdf.drawnBounds(THUMB_BOUNDS)
             !thumb.isEmpty && settled(pdf, thumb)
@@ -200,27 +216,33 @@ class PdfReaderSearchButtonTest {
     }
 
     /** Wait (on the test thread) until [check], read on the main thread, holds. */
-    private fun ActivityScenario<ReaderActivity>.await(what: String, check: (ReaderActivity) -> Boolean) {
+    private fun ActivityScenario<ReaderActivity>.await(
+        what: String,
+        seen: (ReaderActivity) -> String = { "" },
+        check: (ReaderActivity) -> Boolean,
+    ) {
         val deadline = SystemClock.uptimeMillis() + TIMEOUT_MS
+        var last = ""
         while (SystemClock.uptimeMillis() < deadline) {
             var ok = false
-            onActivity { ok = check(it) }
+            onActivity {
+                ok = check(it)
+                last = seen(it)
+            }
             if (ok) return
             SystemClock.sleep(POLL_MS)
         }
-        fail("timed out waiting for $what")
+        fail("timed out waiting for $what ($last)")
     }
 
-    /**
-     * Show only [overlay]'s emulated cutout. The emulator's device profile has a cutout of its
-     * own, which disabling the other emulation overlays leaves in place; `noCutout` hides it.
-     */
-    private fun useCutout(overlay: String) {
+    /** Show only [overlay]'s emulated cutout, or none of them for null. */
+    private fun useCutout(overlay: String?) {
         val overlays = cutoutOverlays()
-        val names = overlays.map { it.first }
-        assertTrue("this emulator has no $overlay overlay ($names)", overlay in names)
         overlays.filter { it.second && it.first != overlay }.forEach { shell("cmd overlay disable ${it.first}") }
-        shell("cmd overlay enable $overlay")
+        if (overlay != null) {
+            assertTrue("this emulator has no $overlay overlay ($overlays)", overlays.any { it.first == overlay })
+            shell("cmd overlay enable $overlay")
+        }
     }
 
     /** The emulator's cutout-emulation overlays and whether each is enabled (`[x]`). */
@@ -244,7 +266,6 @@ class PdfReaderSearchButtonTest {
         const val CHIP_BOUNDS = "getIndicatorScreenBounds\$pdf_viewer"
         const val CUTOUT_OVERLAY_PREFIX = "com.android.internal.display.cutout.emulation."
         const val TALL_CUTOUT = CUTOUT_OVERLAY_PREFIX + "tall"
-        const val NO_CUTOUT = CUTOUT_OVERLAY_PREFIX + "noCutout"
         const val TIMEOUT_MS = 20_000L
         const val POLL_MS = 100L
     }
