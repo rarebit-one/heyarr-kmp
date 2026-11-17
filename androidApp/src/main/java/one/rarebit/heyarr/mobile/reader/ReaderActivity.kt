@@ -4,7 +4,9 @@ package one.rarebit.heyarr.mobile.reader
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -26,6 +29,7 @@ import androidx.compose.material.icons.rounded.ExpandLess
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material.icons.rounded.VolumeUp
@@ -68,14 +72,10 @@ import one.rarebit.heyarr.ui.components.DashedDivider
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
-import org.readium.adapter.pdfium.document.PdfiumDocumentFactory
-import org.readium.adapter.pdfium.navigator.PdfiumEngineProvider
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.epub.EpubNavigatorFactory
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.image.ImageNavigatorFragment
-import org.readium.r2.navigator.pdf.PdfNavigatorFactory
-import org.readium.r2.navigator.pdf.PdfNavigatorFragment
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.AbsoluteUrl
@@ -84,21 +84,27 @@ import org.readium.r2.shared.util.getOrElse
 import org.readium.r2.shared.util.http.DefaultHttpClient
 import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.DefaultPublicationParser
+import java.io.File
+import java.util.concurrent.TimeUnit
 
 private const val READER_STATUS_PADDING_PX = 48
 
 /**
- * The reader: opens the file over the authenticated blob route with Readium and hosts
- * the navigator that fits it — EPUB, PDF (pdfium) or a comic archive — resuming from
- * the locally kept Locator, saving it as it moves, and telling the node the page
- * through the consumption reporter (`read`).
+ * The reader: opens the file over the authenticated blob route and hosts the navigator
+ * that fits it, resuming from the locally kept Locator and saving it as it moves. EPUB and
+ * comic archives go through Readium; a PDF goes through Jetpack's PDF viewer
+ * ([PdfReaderFragment]) over a cached download ([PdfDownload]), because Readium's PDFium
+ * natives are not 16 KB-aligned and every Readium with aligned ones needs JitPack (#162).
  *
- * Its own Activity because Readium's navigators are Fragments and the app is Compose;
+ * Its own Activity because both kinds of navigator are Fragments and the app is Compose;
  * the fragment-hosting boundary is cleanest at an Activity.
  */
-class ReaderActivity : FragmentActivity() {
+class ReaderActivity :
+    FragmentActivity(),
+    PdfReaderFragment.Host {
 
     private var publication: Publication? = null
+    private var status: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -135,21 +141,88 @@ class ReaderActivity : FragmentActivity() {
             )
         }
         container.addView(status)
+        this.status = status
 
         val assetId = intent.getStringExtra(EXTRA_ASSET_ID) ?: return finish()
         val url = intent.getStringExtra(EXTRA_URL) ?: return finish()
         val title = intent.getStringExtra(EXTRA_TITLE) ?: ""
-        val positions = PrefsReadingPositionStore(this)
+        val format = ReaderFormat.fromExtra(intent.getStringExtra(EXTRA_FORMAT))
 
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    finish()
+                    // An open PDF search closes before the reader does.
+                    val pdf = supportFragmentManager.findFragmentByTag(TAG_READER) as? PdfReaderFragment
+                    if (pdf?.isTextSearchActive == true) pdf.isTextSearchActive = false else finish()
                 }
             },
         )
+        setTitle(title)
 
+        if (format == ReaderFormat.PDF) {
+            openPdf(app, assetId, url, container, status)
+        } else {
+            openReadium(app, assetId, url, container, status)
+        }
+    }
+
+    /**
+     * Download the PDF (through the app's OkHttp, so the live credential is stamped) and
+     * show it. The shared client's 30 s call timeout suits API reads, not a whole book, so
+     * the download drops it and keeps only a per-read timeout.
+     */
+    private fun openPdf(app: HeyarrApp, assetId: String, url: String, container: FrameLayout, status: TextView) {
+        lifecycleScope.launch {
+            val client = app.graph.okHttp.newBuilder()
+                .callTimeout(0, TimeUnit.SECONDS)
+                .readTimeout(PDF_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .build()
+            val file = try {
+                PdfDownload(client, File(cacheDir, PDF_CACHE_DIR)).fetch(url) { percent ->
+                    status.post { status.text = "Downloading… $percent%" }
+                }
+            } catch (e: PdfDownload.Failed) {
+                status.text = "Could not fetch the file: ${e.message}"
+                return@launch
+            }
+            container.removeView(status)
+            val fragment = PdfReaderFragment.newInstance(assetId)
+            supportFragmentManager.beginTransaction().replace(R.id.reader_container, fragment, TAG_READER).commitNow()
+            fragment.documentUri = Uri.fromFile(file)
+            container.addView(
+                ComposeView(this@ReaderActivity).apply {
+                    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                    setContent {
+                        HeyarrTheme(MediaThemes.of(one.rarebit.heyarr.core.theme.MediaType.BOOK)) {
+                            IconButtonRound(
+                                Icons.Rounded.Search,
+                                "Search in this PDF",
+                                { fragment.isTextSearchActive = true },
+                                modifier = Modifier.statusBarsPadding().padding(12.dp),
+                                size = 44.dp,
+                            )
+                        }
+                    }
+                },
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT,
+                    Gravity.TOP or Gravity.END,
+                ),
+            )
+        }
+    }
+
+    override fun onPdfFailed(reason: String) {
+        val container = findViewById<FrameLayout>(R.id.reader_container)
+        val status = status ?: return
+        status.text = "Could not open the file: $reason"
+        if (status.parent == null) container.addView(status)
+    }
+
+    private fun openReadium(app: HeyarrApp, assetId: String, url: String, container: FrameLayout, status: TextView) {
+        val positions = PrefsReadingPositionStore(this)
         lifecycleScope.launch {
             val http = ReaderHttp.client(baseUrl = { app.graph.baseUrl() }, header = { app.graph.authHeader.current() })
             val pub = openPublication(http, url, status) ?: return@launch
@@ -164,8 +237,7 @@ class ReaderActivity : FragmentActivity() {
             fragment.setup(pub, initial) { locator ->
                 positions.put(assetId, locator.toJSON().toString())
             }
-            supportFragmentManager.beginTransaction().replace(R.id.reader_container, fragment, "reader").commitNow()
-            setTitle(title)
+            supportFragmentManager.beginTransaction().replace(R.id.reader_container, fragment, TAG_READER).commitNow()
         }
     }
 
@@ -177,7 +249,8 @@ class ReaderActivity : FragmentActivity() {
                 this@ReaderActivity,
                 httpClient = http,
                 assetRetriever = retriever,
-                pdfFactory = PdfiumDocumentFactory(this@ReaderActivity),
+                // No PDF factory: PDFs never reach Readium (openPdf), and its PDFium adapter is gone (#162).
+                pdfFactory = null,
             ),
         )
         val absolute = AbsoluteUrl(url) ?: run {
@@ -206,9 +279,21 @@ class ReaderActivity : FragmentActivity() {
         const val EXTRA_URL = "url"
         const val EXTRA_TITLE = "title"
 
-        fun intent(context: Context, assetId: String, url: String, title: String): Intent =
-            Intent(context, ReaderActivity::class.java)
-                .putExtra(EXTRA_ASSET_ID, assetId).putExtra(EXTRA_URL, url).putExtra(EXTRA_TITLE, title)
+        /** The [ReaderFormat] name the detail screen decided from the asset; PDF picks the PDF viewer. */
+        const val EXTRA_FORMAT = "format"
+        private const val TAG_READER = "reader"
+        private const val PDF_CACHE_DIR = "reader-pdf"
+        private const val PDF_READ_TIMEOUT_SECONDS = 60L
+
+        fun intent(
+            context: Context,
+            assetId: String,
+            url: String,
+            title: String,
+            format: ReaderFormat? = null,
+        ): Intent = Intent(context, ReaderActivity::class.java)
+            .putExtra(EXTRA_ASSET_ID, assetId).putExtra(EXTRA_URL, url).putExtra(EXTRA_TITLE, title)
+            .putExtra(EXTRA_FORMAT, format?.name)
     }
 }
 
@@ -375,7 +460,7 @@ private fun CompanionTrackRow(index: Int, state: AudioState, audio: AudioPlayer)
     }
 }
 
-/** Hosts the Readium navigator fragment that fits the publication and relays its locator. */
+/** Hosts the Readium navigator fragment that fits the publication (EPUB or a comic) and relays its locator. */
 class ReaderFragment : Fragment() {
 
     private var publication: Publication? = null
@@ -392,10 +477,6 @@ class ReaderFragment : Fragment() {
         val pub = publication
         if (pub != null) {
             childFragmentManager.fragmentFactory = when {
-                pub.conformsTo(
-                    Publication.Profile.PDF,
-                ) -> PdfNavigatorFactory(pub, PdfiumEngineProvider()).createFragmentFactory(initialLocator = initial)
-
                 pub.conformsTo(
                     Publication.Profile.DIVINA,
                 ) -> ImageNavigatorFragment.createFactory(pub, initialLocator = initial)
@@ -415,7 +496,6 @@ class ReaderFragment : Fragment() {
         val pub = publication ?: return host
         if (savedInstanceState == null) {
             val cls: Class<out Fragment> = when {
-                pub.conformsTo(Publication.Profile.PDF) -> PdfNavigatorFragment::class.java
                 pub.conformsTo(Publication.Profile.DIVINA) -> ImageNavigatorFragment::class.java
                 else -> EpubNavigatorFragment::class.java
             }

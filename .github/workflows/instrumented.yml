@@ -86,16 +86,25 @@ jobs:
           from pathlib import Path
           import xml.etree.ElementTree as ET
 
-          expected = {"aMovieDetailRenders", "aFeedDetailRenders", "aSeriesDetailRenders"}
+          pkg = "one.rarebit.heyarr.mobile."
+          expected = {
+              (pkg + "DetailScreenSmokeTest", "aMovieDetailRenders"),
+              (pkg + "DetailScreenSmokeTest", "aFeedDetailRenders"),
+              (pkg + "DetailScreenSmokeTest", "aSeriesDetailRenders"),
+              # The PDF viewer on a device (#162): a real PDF loads, resumes, records its page.
+              (pkg + "PdfReaderSmokeTest", "aPdfOpensAtTheRememberedPageAndRecordsTheNext"),
+              (pkg + "PdfReaderSmokeTest", "aPdfWithNoRememberedPageOpensAtTheStart"),
+          }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")
           for report in reports.rglob("TEST-*.xml"):
               for case in ET.parse(report).iter("testcase"):
-                  if case.get("classname") != "one.rarebit.heyarr.mobile.DetailScreenSmokeTest":
+                  key = (case.get("classname"), case.get("name"))
+                  if key not in expected:
                       continue
                   if any(case.find(tag) is not None for tag in ("skipped", "failure", "error")):
                       raise SystemExit(f"Smoke test did not pass: {case.get('name')} ({report})")
-                  executed.add(case.get("name"))
+                  executed.add(key)
           missing = expected - executed
           if missing:
               raise SystemExit(f"Smoke tests were not exercised: {sorted(missing)}")

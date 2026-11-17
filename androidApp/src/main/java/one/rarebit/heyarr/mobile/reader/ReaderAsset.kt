@@ -10,6 +10,9 @@ enum class ReaderFormat(val label: String) {
     ;
 
     companion object {
+        /** The format an intent extra names ([name]), or null for none or an unknown one. */
+        fun fromExtra(name: String?): ReaderFormat? = entries.firstOrNull { it.name == name }
+
         fun of(mime: String?, filename: String?): ReaderFormat? {
             when (mime?.lowercase()?.substringBefore(';')?.trim()) {
                 "application/epub+zip" -> return EPUB

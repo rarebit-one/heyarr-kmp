@@ -8,4 +8,12 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+    <!-- The PDF viewer only (reader/PdfReaderFragment): Jetpack's PdfViewerFragment builds
+         its search bar, page indicator and fast scroller from Material Components, which
+         refuse a non-Material theme. Dark, on the reader's base surface. -->
+    <style name="Theme.Heyarr.Pdf" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="android:windowBackground">#FF0A1410</item>
+        <item name="colorSurface">#FF0A1410</item>
+    </style>
 </resources>

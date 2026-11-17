@@ -62,6 +62,7 @@ import one.rarebit.heyarr.mobile.playlist.PlaylistViewModel
 import one.rarebit.heyarr.mobile.playlist.PlaylistsScreen
 import one.rarebit.heyarr.mobile.playlist.PlaylistsViewModel
 import one.rarebit.heyarr.mobile.reader.ReaderActivity
+import one.rarebit.heyarr.mobile.reader.ReaderFormat
 import one.rarebit.heyarr.mobile.state.Connection
 import one.rarebit.heyarr.mobile.theme.HeyarrTheme
 import one.rarebit.heyarr.mobile.theme.Tokens
@@ -331,6 +332,7 @@ fun HeyarrNavHost(
                         asset.id,
                         PlaybackClient.blobContentUrl(env.baseUrl, hash),
                         work.title,
+                        ReaderFormat.of(asset.mime, asset.filename),
                     ),
                 )
             }

@@ -124,8 +124,9 @@
             android:name=".login.LoginForegroundService"
             android:exported="false"
             android:foregroundServiceType="dataSync" />
-        <!-- The reader: a Readium navigator in its own activity (fragment-hosted), launched
-             from the reader entry screen with the file's authenticated blob URL. -->
+        <!-- The reader in its own activity (fragment-hosted): a Readium navigator for EPUB and
+             comics, Jetpack's PDF viewer for PDFs (#162). Launched from the detail screen with
+             the file's authenticated blob URL. -->
         <activity
             android:name=".reader.ReaderActivity"
             android:exported="false"
