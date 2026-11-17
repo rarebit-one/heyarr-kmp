@@ -238,10 +238,16 @@ class ReaderActivity :
                         }
                     }
                 },
+                // Top LEFT, not top end (#223): the viewer draws its scroll thumb and the page
+                // chip ("11/439") against the right edge, and they travel its whole height with
+                // the scroll, so a button anywhere on that edge covers them at some page. The
+                // viewer pins that edge to the right even in RTL, hence LEFT rather than START.
+                // The root's system-bar and cutout padding keeps the button clear of a side
+                // cutout or navigation bar in landscape.
                 FrameLayout.LayoutParams(
                     FrameLayout.LayoutParams.WRAP_CONTENT,
                     FrameLayout.LayoutParams.WRAP_CONTENT,
-                    Gravity.TOP or Gravity.END,
+                    Gravity.TOP or Gravity.LEFT,
                 ),
             )
         }
