@@ -74,7 +74,7 @@ class PdfReaderSearchButtonTest {
     }
 
     @Test fun theSearchButtonClearsTheThumbAndPageChipWithNoCutout() {
-        useCutout(null)
+        useCutout(NO_CUTOUT)
         checkBothOrientations(expectCutout = false)
     }
 
@@ -93,7 +93,8 @@ class PdfReaderSearchButtonTest {
         )
         ActivityScenario.launch<ReaderActivity>(intent).use { scenario ->
             // The cutout overlay applies asynchronously; the scenario follows the recreation.
-            scenario.await("the portrait cutout to be ${if (expectCutout) "present" else "absent"}") { activity ->
+            val cutout = if (expectCutout) "present" else "absent"
+            scenario.await("the portrait cutout to be $cutout (overlays: ${cutoutOverlays()})") { activity ->
                 (activity.window.decorView.rootWindowInsets?.displayCutout != null) == expectCutout
             }
             scenario.checkBothEnds("portrait", Configuration.ORIENTATION_PORTRAIT)
@@ -210,20 +211,16 @@ class PdfReaderSearchButtonTest {
         fail("timed out waiting for $what")
     }
 
-    /** Show only [overlay]'s emulated cutout, or none for null. */
-    private fun useCutout(overlay: String?) {
+    /**
+     * Show only [overlay]'s emulated cutout. The emulator's device profile has a cutout of its
+     * own, which disabling the other emulation overlays leaves in place; `noCutout` hides it.
+     */
+    private fun useCutout(overlay: String) {
         val overlays = cutoutOverlays()
+        val names = overlays.map { it.first }
+        assertTrue("this emulator has no $overlay overlay ($names)", overlay in names)
         overlays.filter { it.second && it.first != overlay }.forEach { shell("cmd overlay disable ${it.first}") }
-        if (overlay != null) {
-            assertTrue(
-                "this emulator has no $overlay overlay (${overlays.map { it.first }})",
-                overlays.any {
-                    it.first ==
-                        overlay
-                },
-            )
-            shell("cmd overlay enable $overlay")
-        }
+        shell("cmd overlay enable $overlay")
     }
 
     /** The emulator's cutout-emulation overlays and whether each is enabled (`[x]`). */
@@ -247,6 +244,7 @@ class PdfReaderSearchButtonTest {
         const val CHIP_BOUNDS = "getIndicatorScreenBounds\$pdf_viewer"
         const val CUTOUT_OVERLAY_PREFIX = "com.android.internal.display.cutout.emulation."
         const val TALL_CUTOUT = CUTOUT_OVERLAY_PREFIX + "tall"
+        const val NO_CUTOUT = CUTOUT_OVERLAY_PREFIX + "noCutout"
         const val TIMEOUT_MS = 20_000L
         const val POLL_MS = 100L
     }
