@@ -29,6 +29,9 @@ import one.rarebit.heyarr.core.mcp.McpError
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.playback.Copies
+import one.rarebit.heyarr.core.playback.CopyChoice
+import one.rarebit.heyarr.core.playback.QualityPreference
 import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.DiscoveryAnswer
 import one.rarebit.heyarr.core.state.DiscoveryBackend
@@ -50,8 +53,10 @@ import one.rarebit.heyarr.desktop.login.BearerTokenLogin
 import one.rarebit.heyarr.desktop.login.DeviceEnroller
 import one.rarebit.heyarr.desktop.login.DeviceLogin
 import one.rarebit.heyarr.desktop.login.EnrolUpgrade
+import one.rarebit.heyarr.desktop.music.Track
 import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.playback.AuthenticatedMediaProxy
+import one.rarebit.heyarr.desktop.playback.DesktopDisplay
 import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
@@ -272,6 +277,36 @@ class AppSession(
         }
         refreshIndex()
         startHeartbeat()
+    }
+
+    // ── which copy of a film plays here (heyarr-kmp#225) ─────────────────────────
+
+    /** Settings → Playback: which copy of a film this machine prefers. Machine-local. */
+    val playbackPreference: QualityPreference get() = QualityPreference.of(config.playbackPreference)
+
+    fun updatePlaybackPreference(next: QualityPreference) = keepLocally(config.copy(playbackPreference = next.key))
+
+    /** The copy picked for [workId] on this machine, if any. */
+    fun chosenCopy(workId: String): String? = config.chosenCopies[workId]
+
+    /** Remember [assetId] as [workId]'s copy on this machine (the Version menu, the detail list). */
+    fun chooseCopy(workId: String, assetId: String) {
+        if (config.chosenCopies[workId] != assetId) {
+            keepLocally(config.copy(chosenCopies = config.chosenCopies + (workId to assetId)))
+        }
+    }
+
+    /**
+     * A film's copies as this machine sees them: `:core`'s [Copies] over the screen, the
+     * preference and the copy picked here. Null for a work with no video copies.
+     */
+    fun copiesFor(workId: String, assets: List<Track>, defaultId: String?): CopyChoice<Track>? =
+        Copies.choose(assets, DesktopDisplay.fit, playbackPreference, chosenCopy(workId), defaultId)
+
+    // A preference is not a node change: persist it without [save]'s reconnect and reloads.
+    private fun keepLocally(updated: DesktopConfig) {
+        settings.save(updated)
+        config = updated
     }
 
     /**

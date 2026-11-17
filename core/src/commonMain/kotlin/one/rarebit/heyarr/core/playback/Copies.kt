@@ -75,6 +75,9 @@ data class Copy<A : CopyFile>(
             .ifBlank { asset.filename ?: asset.id }
 }
 
+/** A film's copies as this device sees them: all of them, the one to play, and whether the person chose it. */
+data class CopyChoice<A : CopyFile>(val copies: List<Copy<A>>, val picked: Copy<A>, val chosen: Boolean)
+
 /**
  * Choosing which copy of a film to play on this device (heyarr-kmp#225).
  *
@@ -127,6 +130,23 @@ object Copies {
             hdr = names.firstNotNullOfOrNull { ReleaseName.hdr(it) } ?: false,
             probed = false,
         )
+    }
+
+    /**
+     * [assets] read as copies and [pick]ed in one step, for an app's detail screen and Play
+     * button; null when the work has no video copies. [CopyChoice.chosen] says whether the
+     * pick is the person's own ([chosenId]) rather than the rule's.
+     */
+    fun <A : CopyFile> choose(
+        assets: List<A>,
+        display: DisplayFit,
+        preference: QualityPreference = QualityPreference.DEFAULT,
+        chosenId: String? = null,
+        defaultId: String? = null,
+    ): CopyChoice<A>? {
+        val held = of(assets)
+        val picked = pick(held, display, preference, chosenId, defaultId) ?: return null
+        return CopyChoice(held, picked, chosen = picked.asset.id == chosenId)
     }
 
     /** The tallest line count [preference] allows on [display]; [Int.MAX_VALUE] for best quality. */

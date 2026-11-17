@@ -3,13 +3,15 @@ package one.rarebit.heyarr.desktop.state
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import one.rarebit.heyarr.core.state.*
+import one.rarebit.heyarr.core.playback.Copy
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
 import one.rarebit.heyarr.desktop.heyarr.SourceAudioTrack
 import one.rarebit.heyarr.desktop.library.Episode
+import one.rarebit.heyarr.desktop.music.Track
 import one.rarebit.heyarr.desktop.playback.EmbeddedPlayer
+import one.rarebit.heyarr.desktop.playback.PlaybackResume
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.isListening
 
@@ -39,6 +41,17 @@ class PlaybackSession {
     var selectedAudioTrack: Int? by mutableStateOf(null)
     var audioSwitching: Boolean by mutableStateOf(false)
     var currentTarget: PlaybackTarget? = null
+
+    /**
+     * Every copy held of the film playing (heyarr-kmp#225); two or more shows the Version
+     * menu. The detail screen offers them before it opens the player, and they are kept
+     * while the same work plays.
+     */
+    var filmCopies: FilmCopies? by mutableStateOf(null)
+    val copies: List<Copy<Track>> get() = filmCopies?.copies.orEmpty()
+
+    /** Where the next load picks up: set by a Version switch, taken once by the host. */
+    var pendingResume: PlaybackResume? = null
 
     fun useTarget(target: PlaybackTarget) {
         currentTarget = target
@@ -79,6 +92,7 @@ class PlaybackSession {
     /** Begin (or replace) playback. The host starts mpv when one is needed. */
     fun play(item: Route.Player) {
         val same = current?.assetId == item.assetId
+        if (item.workId != filmCopies?.workId) filmCopies = null
         current = item
         startError = null
         if (same && player.isRunning) {
@@ -137,6 +151,8 @@ class PlaybackSession {
         audioTracks = emptyList()
         selectedAudioTrack = null
         currentTarget = null
+        filmCopies = null
+        pendingResume = null
         pendingStart = false
         fullscreen = false
         popout = false
@@ -163,3 +179,6 @@ class PlaybackSession {
 
     fun title(item: Route.Player): String = item.title + (item.subtitle?.let { " — $it" } ?: "")
 }
+
+/** A film's copies, offered to the player for the work they belong to (heyarr-kmp#225). */
+data class FilmCopies(val workId: String, val copies: List<Copy<Track>>)

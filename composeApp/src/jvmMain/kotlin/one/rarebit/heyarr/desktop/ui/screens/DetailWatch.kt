@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.feeds.FollowedItem
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
+import one.rarebit.heyarr.core.playback.CopyChoice
 import one.rarebit.heyarr.core.state.ExternalEpisode
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
@@ -346,17 +347,32 @@ private fun openArchived(session: AppSession, item: FollowedItem, scope: Corouti
     }
 }
 
-/** A film / single-file work: the one file, its quality, and what plays it. */
+/**
+ * A film / single-file work: the copy that plays here, its quality, and what plays it. With
+ * more than one copy held (heyarr-kmp#225) every copy is listed — `2160p HDR · 46.6 GB`,
+ * `1080p · 6.0 GB` — the one this machine plays marked, and Play on another plays it and
+ * remembers it for this work, the same as the player's Version menu.
+ */
 @Composable
 internal fun FileBlock(session: AppSession, detail: WorkDetail, state: DetailState) {
     val asset = detail.primaryAsset ?: return
-    val file = state.assets?.firstOrNull { it.blobHash == asset.blobHash }
-    Panel("This copy") {
-        // Quality and size as plain facts; the container type and rule codes live in Manage → Health.
-        MetaLine(
-            file?.let { Series.qualityTags(it) }.orEmpty() +
-                listOfNotNull(asset.sizeBytes?.let { PrimaryAsset.formatBytes(it) }),
-        )
+    val choice = session.copiesFor(state.workId, state.assets.orEmpty(), asset.assetId)
+    val file = choice?.picked?.asset ?: state.assets?.firstOrNull { it.blobHash == asset.blobHash }
+    val many = choice != null && choice.copies.size > 1
+    Panel(if (many) "Copies held" else "This copy") {
+        if (choice != null && many) {
+            for (copy in choice.copies) {
+                copyRow(copy, copy == choice.picked) {
+                    playCopyFromDetail(session, state, detail, choice.copy(picked = copy))
+                }
+            }
+        } else {
+            // Quality and size as plain facts; the container type and rule codes live in Manage → Health.
+            MetaLine(
+                file?.let { Series.qualityTags(it) }.orEmpty() +
+                    listOfNotNull((file?.sizeBytes ?: asset.sizeBytes)?.let { PrimaryAsset.formatBytes(it) }),
+            )
+        }
         val subs = state.assets.orEmpty().filter { Series.isSubtitle(it) }
         Text(
             if (subs.isEmpty()) {

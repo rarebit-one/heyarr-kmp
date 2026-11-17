@@ -71,7 +71,9 @@ fun PlaybackHost(session: AppSession) {
                 playback.player.switchTo(embedded)
             } else if (playback.player.isRunning) {
                 playback.resolvePlaybackTarget(item).let { t ->
-                    playback.player.load(t.url, playback.title(item), t.durationSeconds, t.streamBaseUrl)
+                    // A Version switch hands over where the old copy was (heyarr-kmp#225).
+                    val resume = playback.pendingResume.also { playback.pendingResume = null }
+                    playback.player.load(t.url, playback.title(item), t.durationSeconds, t.streamBaseUrl, resume)
                     playback.useTarget(t)
                     null
                 }
