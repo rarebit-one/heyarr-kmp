@@ -5,6 +5,7 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.os.SystemClock
+import androidx.core.os.bundleOf
 import androidx.fragment.app.testing.FragmentScenario
 import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -49,7 +50,12 @@ class PdfReaderSmokeTest {
     }
 
     private fun open(): FragmentScenario<PdfReaderFragment> {
-        val scenario = launchFragmentInContainer(themeResId = R.style.Theme_Heyarr) {
+        // FragmentScenario replaces the instance's arguments with fragmentArgs, so the
+        // asset id goes in here as well as through newInstance (which the reader uses).
+        val scenario = launchFragmentInContainer(
+            fragmentArgs = bundleOf(PdfReaderFragment.ARG_ASSET_ID to ASSET),
+            themeResId = R.style.Theme_Heyarr,
+        ) {
             PdfReaderFragment.newInstance(ASSET)
         }
         scenario.onFragment { it.documentUri = Uri.fromFile(pdf) }
