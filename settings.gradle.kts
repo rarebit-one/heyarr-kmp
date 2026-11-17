@@ -5,9 +5,6 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
         google()
-        // Compose Multiplatform's dev/EAP artifacts (harmless for stable, kept for parity
-        // with the wider Compose MP ecosystem). Stable releases resolve from the portal.
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     }
 }
 
@@ -16,7 +13,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 
         // ── `void-which-binds-client` from void-which-binds-kmp (GitHub Packages, private) ──
         // The shared Voidbind identity/net/flow brain (WebLoginClient, LoginQr,
