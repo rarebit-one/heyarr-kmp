@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.mobile
 
-import android.app.UiAutomation
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Paint
@@ -40,7 +40,6 @@ import java.io.File
  * emulator's own hole punch and an emulated tall notch. The button also has to stay inside the
  * reader's system-bar and cutout padding (#222) and off the cutout itself.
  *
- * Each orientation is frozen before the reader opens, so no rotation recreates it mid-check.
  * The PDF is seeded into the reader's download cache, so ReaderActivity opens it without a
  * node; the URL's port has nothing listening, so a cache miss fails rather than hangs.
  */
@@ -75,10 +74,9 @@ class PdfReaderSearchButtonTest {
         cutoutsBefore = cutoutOverlays().filter { it.second }.map { it.first }
     }
 
-    @After fun restoreTheDevice() {
+    @After fun restoreTheCutout() {
         cutoutOverlays().filter { it.second }.forEach { shell("cmd overlay disable ${it.first}") }
         cutoutsBefore.forEach { shell("cmd overlay enable $it") }
-        instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_UNFREEZE)
     }
 
     @Test fun theSearchButtonClearsTheThumbAndPageChipWithNoCutout() = checkBothOrientations(Cutout.NONE)
@@ -89,12 +87,6 @@ class PdfReaderSearchButtonTest {
 
     private fun checkBothOrientations(cutout: Cutout) {
         useCutout(if (cutout == Cutout.TALL) TALL_CUTOUT else null)
-        checkIn(cutout, "portrait", UiAutomation.ROTATION_FREEZE_0, Configuration.ORIENTATION_PORTRAIT)
-        checkIn(cutout, "landscape", UiAutomation.ROTATION_FREEZE_90, Configuration.ORIENTATION_LANDSCAPE)
-    }
-
-    private fun checkIn(cutout: Cutout, orientation: String, rotation: Int, expected: Int) {
-        assertTrue("could not freeze the rotation for $orientation", instrumentation.uiAutomation.setRotation(rotation))
         // No remembered page: the reader would restore it over the scrolls below.
         PrefsReadingPositionStore(ctx).put(ASSET, "{}")
         val intent = ReaderActivity.intent(
@@ -105,24 +97,49 @@ class PdfReaderSearchButtonTest {
             format = ReaderFormat.PDF,
         )
         ActivityScenario.launch<ReaderActivity>(intent).use { scenario ->
-            val where = "$orientation, ${cutout.name.lowercase()} cutout"
-            scenario.await(
-                "the $where PDF to load",
-                seen = { "orientation=${it.resources.configuration.orientation} cutout=${it.displayCutout()}" },
-            ) { activity ->
-                // Applied here, not once: a late cutout-overlay change recreates the activity.
-                activity.useCutoutMode(cutout)
-                activity.resources.configuration.orientation == expected && activity.hasCutout(cutout) &&
-                    activity.pdfView() != null && activity.reader()?.loadedPageCount == PAGES &&
-                    activity.searchButton()?.isLaidOut == true
-            }
-            // The thumb and chip fade out between scrolls; keep them drawn so their bounds are current.
-            scenario.onActivity { it.pdfView()?.fastScrollVisibility = PdfView.FastScrollVisibility.ALWAYS_SHOW }
-            scenario.checkAt("$where, first page", page = 0) { pdf, thumb -> thumb.centerY() < pdf.height / 2 }
-            scenario.checkAt("$where, last page", page = PAGES - 1) { pdf, thumb ->
-                !pdf.canScrollVertically(1) && thumb.centerY() > pdf.height / 2
-            }
+            scenario.checkIn(
+                cutout,
+                "portrait",
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT,
+                Configuration.ORIENTATION_PORTRAIT,
+            )
+            scenario.checkIn(
+                cutout,
+                "landscape",
+                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE,
+                Configuration.ORIENTATION_LANDSCAPE,
+            )
         }
+    }
+
+    /**
+     * Rotate the reader to [requested] and check both ends of the document. The rotation
+     * recreates the activity and reloads the PDF; the scenario follows the new instance.
+     */
+    private fun ActivityScenario<ReaderActivity>.checkIn(
+        cutout: Cutout,
+        orientation: String,
+        requested: Int,
+        expected: Int,
+    ) {
+        onActivity { it.requestedOrientation = requested }
+        val where = "$orientation, ${cutout.name.lowercase()} cutout"
+        await(
+            "the $where PDF to load",
+            seen = { "orientation=${it.resources.configuration.orientation} cutout=${it.displayCutout()}" },
+        ) { activity ->
+            // Applied here, not once: a rotation or a late cutout-overlay change recreates the activity.
+            activity.useCutoutMode(cutout)
+            activity.resources.configuration.orientation == expected && activity.hasCutout(cutout) &&
+                activity.pdfView() != null && activity.reader()?.loadedPageCount == PAGES &&
+                activity.searchButton()?.isLaidOut == true
+        }
+        // The thumb and chip fade out between scrolls; keep them drawn so their bounds are current.
+        onActivity { it.pdfView()?.fastScrollVisibility = PdfView.FastScrollVisibility.ALWAYS_SHOW }
+        // Where the thumb is drawn, not the scroll offset: the viewer's offsets at either end are
+        // not 0 / the scroll range in landscape.
+        checkAt("$where, first page", page = 0) { pdf, thumb -> thumb.centerY() < pdf.height / 2 }
+        checkAt("$where, last page", page = PAGES - 1) { pdf, thumb -> thumb.centerY() > pdf.height / 2 }
     }
 
     /**
