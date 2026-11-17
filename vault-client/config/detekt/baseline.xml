@@ -11,6 +11,6 @@
     <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$204</ID>
     <ID>MagicNumber:VaultSpaceClient.kt$VaultSpaceClient$404</ID>
     <ID>NestedBlockDepth:VaultSpaceClient.kt$VaultSpaceClient$private fun stringArray(array: String?): List&lt;String&gt;</ID>
-    <ID>TooManyFunctions:VaultSpaceClient.kt$VaultSpaceClient : VaultSpaceVaultKeys</ID>
+    <ID>TooManyFunctions:VaultSpaceClient.kt$VaultSpaceClient : VaultSpaceVaultKeysBlobConfirmer</ID>
   </CurrentIssues>
 </SmellBaseline>
