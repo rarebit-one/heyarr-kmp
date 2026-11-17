@@ -5,10 +5,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
+import one.rarebit.heyarr.core.playback.QualityPreference
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.library.WorkDetailJson
 import one.rarebit.heyarr.mobile.playback.ClientCapabilities
+import one.rarebit.heyarr.mobile.playback.CopyPreferences
 import one.rarebit.heyarr.mobile.playback.PlaybackCoordinator
 import one.rarebit.heyarr.mobile.playback.PlaybackDiagnostics
 import one.rarebit.heyarr.mobile.playback.PlaybackTarget
@@ -54,13 +56,65 @@ class PlaybackCoordinatorTest {
             """"filename":"Film.en.srt","blob_mime":"text/plain","edition_label":"WEBDL-1080p"}"""
         val assets = WorkDetailJson.parseAssets("""{"items":[$uhd,$fhd,$sub]}""")
         val (c, _) = coordinator(emptyMap())
+        fun picked() = c.copiesFor("w1", assets, defaultId = "uhd")?.picked?.asset?.id
         // Before the probe: the cautious 1080-line guess.
-        assertEquals("unprobed phone takes 1080p", "fhd", c.pickCopy(assets, defaultId = "uhd")?.asset?.id)
+        assertEquals("unprobed phone takes 1080p", "fhd", picked())
         c.capabilities = caps.copy(maxHeight = 1080, supportsHdr = true)
-        assertEquals("1080-line HDR phone takes 1080p", "fhd", c.pickCopy(assets, defaultId = "uhd")?.asset?.id)
+        assertEquals("1080-line HDR phone takes 1080p", "fhd", picked())
+        assertEquals("two copies, the subtitle is not one", 2, c.copiesFor("w1", assets, "uhd")!!.copies.size)
         c.capabilities = caps.copy(maxHeight = 2160, supportsHdr = true)
-        assertEquals("2160-line HDR screen takes 2160p", "uhd", c.pickCopy(assets, defaultId = "uhd")?.asset?.id)
-        assertNull("a work without video copies plays its primary", c.pickCopy(emptyList(), defaultId = "uhd"))
+        assertEquals("2160-line HDR screen takes 2160p", "uhd", picked())
+        assertNull("a work without video copies plays its primary", c.copiesFor("w1", emptyList(), defaultId = "uhd"))
+    }
+
+    private fun filmAssets(): List<WorkAsset> {
+        val uhd = """{"id":"uhd","edition_id":"e1","role":"primary","blob_hash":"$hash",""" +
+            """"filename":"Film.2160p.HDR.mkv","blob_mime":"video/x-matroska","blob_size":50000000000}"""
+        val fhd = """{"id":"fhd","edition_id":"e2","role":"primary","blob_hash":"$hash",""" +
+            """"filename":"Film.1080p.mkv","blob_mime":"video/x-matroska","blob_size":6000000000}"""
+        return WorkDetailJson.parseAssets("""{"items":[$uhd,$fhd]}""")
+    }
+
+    @Test fun playCopyDeclaresTheScreenAndCarriesEveryCopy() {
+        val (c, t) = coordinator(mapOf("POST /playback/plan" to HttpResponse(200, """{"mode":"direct"}""")))
+        c.capabilities = caps.copy(maxHeight = 1080, supportsHdr = true)
+        val film = Work(id = "w1", title = "Film", kind = "movie", blobHash = hash, primaryAssetId = "uhd")
+        c.playCopy(film, c.copiesFor("w1", filmAssets(), "uhd")!!)
+        val np = c.nowPlaying.value!!
+        assertEquals("the 1080p copy plays", "fhd", np.assetId)
+        assertEquals("the player can offer both copies", 2, np.copies.size)
+        assertEquals("fit this screen declares the screen", 1080, np.maxHeight)
+        assertTrue("the plan asked for the 1080p copy", t.calls.single().third!!.contains("\"asset_id\":\"fhd\""))
+        assertTrue("…at 1080 lines", t.calls.single().third!!.contains("\"max_height\":1080"))
+    }
+
+    @Test fun theVersionMenuSwitchesAtThePositionAndIsRemembered() {
+        val (c, t) = coordinator(mapOf("POST /playback/plan" to HttpResponse(200, """{"mode":"direct"}""")))
+        c.capabilities = caps.copy(maxHeight = 1080, supportsHdr = true)
+        val film = Work(id = "w1", title = "Film", kind = "movie", blobHash = hash, primaryAssetId = "uhd")
+        c.playCopy(film, c.copiesFor("w1", filmAssets(), "uhd")!!)
+        val uhd = c.nowPlaying.value!!.copies.first { it.asset.id == "uhd" }
+        c.switchCopy(uhd, atSeconds = 754.0)
+        val np = c.nowPlaying.value!!
+        assertEquals("the 2160p copy plays", "uhd", np.assetId)
+        assertEquals("from where the 1080p copy was", 754.0, np.startSeconds, 0.001)
+        assertEquals("the copies survive the switch", 2, np.copies.size)
+        assertTrue("a chosen copy is not downscaled", t.calls.last().third!!.contains("\"max_height\":2160"))
+        assertEquals(
+            "the choice is remembered for the work",
+            "uhd",
+            c.copiesFor("w1", filmAssets(), "uhd")?.picked?.asset?.id,
+        )
+        assertTrue("…and marked as chosen", c.copiesFor("w1", filmAssets(), "uhd")!!.chosen)
+    }
+
+    @Test fun theDataSaverPreferenceCapsEveryPlan() {
+        val t = RoutedTransport(mapOf("POST /playback/plan" to HttpResponse(200, """{"mode":"direct"}""")))
+        val c = PlaybackCoordinator(t, { base }, { Credential.Session("tok") }, scope, dispatcher)
+        c.copies = CopyPreferences(preference = { QualityPreference.DATA_SAVER })
+        c.capabilities = caps.copy(maxHeight = 1080)
+        c.playFile("Ep 1", "a1", hash, "video/mp4", "series")
+        assertTrue("data saver declares 720 lines", t.calls.single().third!!.contains("\"max_height\":720"))
     }
 
     @Test fun aRowWithoutAHashIsANoticeNotAPlayer() {

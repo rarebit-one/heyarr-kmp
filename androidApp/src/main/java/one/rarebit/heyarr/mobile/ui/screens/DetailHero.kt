@@ -69,6 +69,7 @@ import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.music.Tracks
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.personalstate.ItemRef
+import one.rarebit.heyarr.mobile.playback.CopyChoice
 import one.rarebit.heyarr.mobile.playback.QueueEntry
 import one.rarebit.heyarr.mobile.reader.ReaderFormat
 import one.rarebit.heyarr.mobile.search.FollowedItem
@@ -138,6 +139,10 @@ private class HeroWork(
         Availability.of(status, playable)
     }
 
+    /** The film's copies, for Play and the meta line; null for a series, a book, a work with none. */
+    fun copies(play: DetailPlayback): CopyChoice? =
+        if (type == MediaType.SERIES || isFeed) null else play.copies(work, state.assets.orEmpty())
+
     /** Play the series' first playable episode. */
     fun playFirst(play: DetailPlayback) {
         val first = first ?: return
@@ -158,11 +163,9 @@ private class HeroWork(
      * the oldest copy — a 2160p HDR remux, re-encoded on the fly for a 1080p screen.
      */
     fun playPrimary(play: DetailPlayback) {
-        val copy = if (type == MediaType.SERIES) null else play.pickCopy(state.assets.orEmpty(), work.primaryAssetId)
-        val copyHash = copy?.blobHash
-        if (copy != null && copyHash != null) {
-            val mime = copy.mime ?: work.mime
-            play.playVideo(work, copy.id, copyHash, mime, work.title, null, emptyList(), art, emptyList())
+        val choice = copies(play)
+        if (choice != null && choice.picked.asset.blobHash != null) {
+            play.playCopy(work, choice, art, choice.chosen)
             return
         }
         play.playVideo(
@@ -171,10 +174,25 @@ private class HeroWork(
     }
 }
 
+/** A film's meta line: year, the picture and size of the copy that plays here, and how many copies are held. */
+private fun movieMeta(work: Work, file: WorkAsset?, copies: CopyChoice?): List<String?> = listOf(
+    work.year?.toString(),
+    copies?.picked?.picture ?: file?.let { Series.qualityTags(it).joinToString(" · ").ifBlank { null } },
+    file?.sizeBytes?.let { WorkAsset.formatBytes(it) },
+    copies?.copies?.size?.takeIf { it > 1 }?.let { "$it copies" },
+)
+
 /** The hero's meta line: what matters at a glance for this [type] of work. */
-private fun heroMeta(work: Work, type: MediaType, seasons: List<Season>, state: DetailState): List<String?> {
+private fun heroMeta(
+    work: Work,
+    type: MediaType,
+    seasons: List<Season>,
+    state: DetailState,
+    copies: CopyChoice?,
+): List<String?> {
     val held = seasons.sumOf { it.held }
-    val primaryFile = state.assets?.firstOrNull { it.blobHash == work.blobHash }
+    // A film says which copy plays on this phone (heyarr-kmp#225), not merely the oldest one.
+    val primaryFile = copies?.picked?.asset ?: state.assets?.firstOrNull { it.blobHash == work.blobHash }
     return when (type) {
         MediaType.SERIES -> listOf(
             work.year?.toString(),
@@ -194,13 +212,7 @@ private fun heroMeta(work: Work, type: MediaType, seasons: List<Season>, state: 
             },
         )
 
-        MediaType.MOVIE -> listOf(
-            work.year?.toString(),
-            primaryFile?.let {
-                Series.qualityTags(it).joinToString(" · ").ifBlank { null }
-            },
-            primaryFile?.sizeBytes?.let { WorkAsset.formatBytes(it) },
-        )
+        MediaType.MOVIE -> movieMeta(work, primaryFile, copies)
 
         MediaType.BOOK -> listOf(work.author, work.year?.toString(), work.mime?.substringAfter('/')?.uppercase())
 
@@ -233,7 +245,7 @@ internal fun DetailHero(
         Hero(
             title = work.title,
             type = type,
-            meta = heroMeta(work, type, seasons, state),
+            meta = heroMeta(work, type, seasons, state, h.copies(play)),
             artwork = art,
             availability = h.availability,
             height = 300.dp,

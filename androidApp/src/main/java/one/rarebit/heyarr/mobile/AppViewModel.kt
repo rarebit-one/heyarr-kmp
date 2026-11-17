@@ -18,6 +18,7 @@ import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.discovery.NodeDiscovery
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.playback.QualityPreference
 import one.rarebit.heyarr.mobile.device.DeviceEnrolment
 import one.rarebit.heyarr.mobile.device.DeviceKeyring
 import one.rarebit.heyarr.mobile.device.EnrolClient
@@ -33,6 +34,7 @@ import one.rarebit.heyarr.mobile.login.LoginUiState
 import one.rarebit.heyarr.mobile.login.QrLoginClient
 import one.rarebit.heyarr.mobile.net.DeviceAuthTransport
 import one.rarebit.heyarr.mobile.net.OkHttpTransport
+import one.rarebit.heyarr.mobile.playback.CopyPreferences
 import one.rarebit.heyarr.mobile.playback.PlaybackCoordinator
 import one.rarebit.heyarr.mobile.search.SessionAuthority
 import one.rarebit.heyarr.mobile.search.SessionClient
@@ -164,7 +166,10 @@ class AppViewModel internal constructor(
             baseUrl = { config.baseUrl },
             credential = { credential },
             scope = viewModelScope,
-        )
+        ).also {
+            // Settings → Playback and the per-film copy choices, both kept on this phone (heyarr-kmp#225).
+            it.copies = CopyPreferences({ QualityPreference.of(settings.playbackPreference) }, settings)
+        }
     }
 
     private val _config = MutableStateFlow(resolveConfig())

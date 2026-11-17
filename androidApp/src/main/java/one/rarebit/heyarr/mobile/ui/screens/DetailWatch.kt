@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
+import one.rarebit.heyarr.core.playback.Copy
 import one.rarebit.heyarr.core.state.ExternalEpisode
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
@@ -71,6 +73,7 @@ import one.rarebit.heyarr.ui.components.PrimaryButton
 import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.components.SectionHeader
 import one.rarebit.heyarr.ui.components.focusRing
+import one.rarebit.heyarr.ui.theme.LocalMediaTheme
 import one.rarebit.heyarr.core.library.Episode as CoreEpisode
 
 /** The synopsis: the node's when it has one, else a public source's (labelled), else an honest line. */
@@ -348,20 +351,34 @@ internal fun ArchiveBlock(state: DetailState, onOpen: (Route) -> Unit) {
     }
 }
 
-/** A film / single-file work: the one file, its quality, and what plays it. */
+/**
+ * A film / single-file work: the copy that plays here, its quality, and what plays it. With
+ * more than one copy held (heyarr-kmp#225) every copy is listed — `2160p HDR · 46.6 GB`,
+ * `1080p · 6.0 GB` — the one this phone plays marked, and a tap plays another and remembers
+ * it for this work, the same as the player's Version menu.
+ */
 @Composable
-internal fun FileBlock(work: Work, state: DetailState) {
+internal fun FileBlock(work: Work, state: DetailState, play: DetailPlayback, art: String?) {
     val hash = work.blobHash ?: return
-    val file = state.assets?.firstOrNull { it.blobHash == hash }
-    Panel("This copy") {
-        Row(
-            Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Quality and size as plain facts; the container type and rule codes live in Manage.
-            val size = file?.sizeBytes?.let { WorkAsset.formatBytes(it) }
-            MetaLine(file?.let { Series.qualityTags(it) }.orEmpty() + listOfNotNull(size))
+    val choice = play.copies(work, state.assets.orEmpty())
+    val file = choice?.picked?.asset ?: state.assets?.firstOrNull { it.blobHash == hash }
+    Panel(if (choice != null && choice.copies.size > 1) "Copies held" else "This copy") {
+        if (choice != null && choice.copies.size > 1) {
+            for (copy in choice.copies) {
+                CopyRow(copy, copy == choice.picked) {
+                    play.playCopy(work, choice.copy(picked = copy), art, true)
+                }
+            }
+        } else {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Quality and size as plain facts; the container type and rule codes live in Manage.
+                val size = file?.sizeBytes?.let { WorkAsset.formatBytes(it) }
+                MetaLine(file?.let { Series.qualityTags(it) }.orEmpty() + listOfNotNull(size))
+            }
         }
         val subs = state.assets.orEmpty().filter { Series.isSubtitle(it) }
         Text(
@@ -374,6 +391,30 @@ internal fun FileBlock(work: Work, state: DetailState) {
             style = MaterialTheme.typography.bodySmall,
             color = Tokens.textMuted,
         )
+    }
+}
+
+/** One held copy: its picture and size, the release tags under it, and whether it is the one that plays here. */
+@Suppress("FunctionNaming") // a composable is PascalCase by Compose convention
+@Composable
+private fun CopyRow(copy: Copy<WorkAsset>, playsHere: Boolean, onPlay: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onPlay).padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                copy.label,
+                style = MaterialTheme.typography.titleSmall,
+                color = if (playsHere) LocalMediaTheme.current.accentGradientEnd else Tokens.textPrimary,
+            )
+            MetaLine(Series.qualityTags(copy.asset).filterNot { copy.picture?.contains(it, ignoreCase = true) == true })
+        }
+        if (playsHere) {
+            Text("Plays here", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+        }
+        Icon(Icons.Rounded.PlayArrow, contentDescription = "Play ${copy.label}", tint = Tokens.textMuted)
     }
 }
 

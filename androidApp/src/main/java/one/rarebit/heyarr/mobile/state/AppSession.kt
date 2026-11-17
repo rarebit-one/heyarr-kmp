@@ -22,6 +22,7 @@ import one.rarebit.heyarr.core.heyarr.QualityProfiles
 import one.rarebit.heyarr.core.mcp.McpError
 import one.rarebit.heyarr.core.mcp.McpRefusedException
 import one.rarebit.heyarr.core.mcp.McpTransportException
+import one.rarebit.heyarr.core.playback.QualityPreference
 import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.DiscoveryAnswer
 import one.rarebit.heyarr.core.state.DiscoveryBackend
@@ -131,6 +132,15 @@ class AppSession(
     fun updateExternalMetadata(on: Boolean) {
         settings.externalMetadata = on
         externalMetadata = on
+    }
+
+    /** Which copy of a film this phone prefers (Settings → Playback, heyarr-kmp#225). Device-local. */
+    var playbackPreference: QualityPreference by mutableStateOf(QualityPreference.of(settings.playbackPreference))
+        private set
+
+    fun updatePlaybackPreference(next: QualityPreference) {
+        settings.playbackPreference = next.key
+        playbackPreference = next
     }
 
     var connection: Connection by mutableStateOf(Connection.UNKNOWN)

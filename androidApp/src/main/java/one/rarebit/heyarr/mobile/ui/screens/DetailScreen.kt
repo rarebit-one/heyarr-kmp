@@ -67,6 +67,7 @@ import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.music.Tracks
 import one.rarebit.heyarr.mobile.nav.Route
 import one.rarebit.heyarr.mobile.personalstate.ItemRef
+import one.rarebit.heyarr.mobile.playback.CopyChoice
 import one.rarebit.heyarr.mobile.playback.QueueEntry
 import one.rarebit.heyarr.mobile.reader.ReaderFormat
 import one.rarebit.heyarr.mobile.search.FollowedItem
@@ -141,10 +142,13 @@ data class DetailPlayback(
     /** Open a readable file (EPUB / PDF / comic) in the reader. */
     val read: (work: Work, asset: WorkAsset) -> Unit,
     /**
-     * The copy of a film this phone should play among the work's files, given the node's
-     * default (heyarr-kmp#225); null to play the primary file as before.
+     * A film's copies as this phone sees them — every copy, the one to play, whether it was
+     * picked by hand (heyarr-kmp#225); null for a work with no video copies, which plays its
+     * primary file as before.
      */
-    val pickCopy: (assets: List<WorkAsset>, defaultId: String?) -> WorkAsset? = { _, _ -> null },
+    val copies: (work: Work, assets: List<WorkAsset>) -> CopyChoice? = { _, _ -> null },
+    /** Play [CopyChoice.picked]; `chosen` remembers it as this work's copy on this phone. */
+    val playCopy: (work: Work, choice: CopyChoice, artworkUrl: String?, chosen: Boolean) -> Unit = { _, _, _, _ -> },
 )
 
 /**
@@ -329,7 +333,7 @@ fun DetailScreen(
 
                         MediaType.BOOK -> item { BookFilesBlock(detail, state, play, personal) }
 
-                        else -> item { FileBlock(detail, state) }
+                        else -> item { FileBlock(detail, state, play, cover.url) }
                     }
                 }
             } else {

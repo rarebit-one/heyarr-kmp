@@ -149,6 +149,7 @@ fun SettingsScreen(
             }
         }
         if (!isGuest) item { PeersPanel(session, state) }
+        item { PlaybackPanel(session) }
         item { AppearancePanel(session) }
         item { AboutPanel(onLicences) }
     }
