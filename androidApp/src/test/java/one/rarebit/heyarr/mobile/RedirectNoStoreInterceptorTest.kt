@@ -1,8 +1,5 @@
 package one.rarebit.heyarr.mobile
 
-import okhttp3.Call
-import okhttp3.Connection
-import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
 import okhttp3.Response
@@ -12,7 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.concurrent.TimeUnit
 
 /**
  * The pending-thumbnail redirect (heyarr-core ADR-0109) must not let its full-size target
@@ -44,20 +40,9 @@ class RedirectNoStoreInterceptorTest {
         .body("jpeg".toResponseBody(null))
         .build()
 
-    private class FakeChain(private val response: Response) : Interceptor.Chain {
-        override fun request(): Request = response.request
-        override fun proceed(request: Request): Response = response
-        override fun connection(): Connection? = null
-        override fun call(): Call = error("not used")
-        override fun connectTimeoutMillis(): Int = 0
-        override fun withConnectTimeout(timeout: Int, unit: TimeUnit): Interceptor.Chain = this
-        override fun readTimeoutMillis(): Int = 0
-        override fun withReadTimeout(timeout: Int, unit: TimeUnit): Interceptor.Chain = this
-        override fun writeTimeoutMillis(): Int = 0
-        override fun withWriteTimeout(timeout: Int, unit: TimeUnit): Interceptor.Chain = this
-    }
-
-    private fun intercept(response: Response) = RedirectNoStoreInterceptor().intercept(FakeChain(response))
+    /** What [RedirectNoStoreInterceptor] hands back when the network answered with [response]. */
+    private fun intercept(response: Response) =
+        runThrough(RedirectNoStoreInterceptor(), Request.Builder().url(sized).build()) { response }
 
     @Test fun pendingRedirectMakesTheOriginalNoStore() {
         val out = intercept(blobResponse(redirect("no-store")))
