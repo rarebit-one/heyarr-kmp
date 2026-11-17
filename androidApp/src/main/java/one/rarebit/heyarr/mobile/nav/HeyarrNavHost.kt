@@ -337,6 +337,7 @@ fun HeyarrNavHost(
                 )
             }
         },
+        pickCopy = { assets, defaultId -> vm.playback.pickCopy(assets, defaultId)?.asset },
     )
 
     /** Play a playlist (its playable works) as an audio queue. */

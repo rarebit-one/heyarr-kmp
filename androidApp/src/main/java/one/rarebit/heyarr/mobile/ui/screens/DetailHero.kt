@@ -152,8 +152,19 @@ private class HeroWork(
         )
     }
 
-    /** Play the work's primary file from the start. */
+    /**
+     * Play the work from the start: the copy of it that suits this phone when the work holds
+     * several (heyarr-kmp#225), else its primary file. The node's `primary_asset` is merely
+     * the oldest copy — a 2160p HDR remux, re-encoded on the fly for a 1080p screen.
+     */
     fun playPrimary(play: DetailPlayback) {
+        val copy = if (type == MediaType.SERIES) null else play.pickCopy(state.assets.orEmpty(), work.primaryAssetId)
+        val copyHash = copy?.blobHash
+        if (copy != null && copyHash != null) {
+            val mime = copy.mime ?: work.mime
+            play.playVideo(work, copy.id, copyHash, mime, work.title, null, emptyList(), art, emptyList())
+            return
+        }
         play.playVideo(
             work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList(),
         )

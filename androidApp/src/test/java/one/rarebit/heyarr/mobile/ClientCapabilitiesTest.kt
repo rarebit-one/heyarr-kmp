@@ -2,7 +2,9 @@ package one.rarebit.heyarr.mobile
 
 import one.rarebit.heyarr.mobile.playback.ClientCapabilities
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ClientCapabilitiesTest {
@@ -35,6 +37,19 @@ class ClientCapabilitiesTest {
         assertEquals(
             """{"asset_id":"a\"b","client":{"containers":["mp4","mkv","webm"],"video":["h264"],"audio":["aac","opus"],"max_height":1080}}""",
             caps.planRequestBody("a\"b"),
+        )
+    }
+
+    @Test fun hdrChoosesACopyButIsNotSentToANodeThatMayRefuseIt() {
+        // A node before heyarr-core#885 may 400 an unknown field, and a 400 means "plan nothing".
+        val caps =
+            ClientCapabilities(video = listOf("hevc"), audio = listOf("aac"), maxHeight = 1080, supportsHdr = true)
+        assertEquals("the display is the probed screen", 1080, caps.display.height)
+        assertTrue("the display is the probed screen", caps.display.supportsHdr)
+        assertFalse("supports_hdr is not sent yet", caps.planRequestBody("a").contains("hdr"))
+        assertTrue(
+            "the declared cap is sent",
+            caps.forMaxHeight(720).planRequestBody("a").contains("\"max_height\":720"),
         )
     }
 

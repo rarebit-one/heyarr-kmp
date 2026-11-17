@@ -1,7 +1,8 @@
 package one.rarebit.heyarr.mobile.library
 
-import one.rarebit.heyarr.core.library.EpisodeFile
+import one.rarebit.heyarr.core.library.Bytes
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.playback.CopyFile
 import one.rarebit.heyarr.mobile.net.Timestamps
 
 /**
@@ -23,11 +24,11 @@ data class WorkAsset(
     override val sourcePath: String? = null,
     /** Set when the source path vanished (not a deletion). */
     val missingSince: String? = null,
-    val sizeBytes: Long? = null,
+    override val sizeBytes: Long? = null,
     val createdAt: String? = null,
     /** The edition's label (`GET /editions/{id}` → `label`), e.g. "1080p BluRay". */
     override val editionLabel: String? = null,
-) : EpisodeFile {
+) : CopyFile {
     override val isPlayable: Boolean get() = !blobHash.isNullOrBlank() && missingSince == null
     val isMissing: Boolean get() = missingSince != null
 
@@ -42,24 +43,8 @@ data class WorkAsset(
         ).joinToString(" · ")
 
     companion object {
-        /** `1.4 GB`, `812 MB`, `3.2 KB` — base-1024, one decimal above KB. Pure, unit-tested. */
-        fun formatBytes(bytes: Long): String {
-            if (bytes < 1024) return "$bytes B"
-            val units = arrayOf("KB", "MB", "GB", "TB")
-            var value = bytes.toDouble()
-            var unit = -1
-            while (value >= 1024 && unit < units.size - 1) {
-                value /= 1024
-                unit++
-            }
-            return if (value >=
-                100
-            ) {
-                "${value.toLong()} ${units[unit]}"
-            } else {
-                String.format(java.util.Locale.ROOT, "%.1f %s", value, units[unit])
-            }
-        }
+        /** `1.4 GB`, `812 MB`, `3.2 KB` — base-1024, one decimal above KB. Shared with the desktop in `:core`. */
+        fun formatBytes(bytes: Long): String = Bytes.format(bytes)
     }
 }
 

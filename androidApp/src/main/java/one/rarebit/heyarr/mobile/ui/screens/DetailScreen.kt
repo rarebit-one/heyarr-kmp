@@ -140,6 +140,11 @@ data class DetailPlayback(
     val playAudio: (work: Work, tracks: List<WorkAsset>, start: Int) -> Unit,
     /** Open a readable file (EPUB / PDF / comic) in the reader. */
     val read: (work: Work, asset: WorkAsset) -> Unit,
+    /**
+     * The copy of a film this phone should play among the work's files, given the node's
+     * default (heyarr-kmp#225); null to play the primary file as before.
+     */
+    val pickCopy: (assets: List<WorkAsset>, defaultId: String?) -> WorkAsset? = { _, _ -> null },
 )
 
 /**

@@ -10,6 +10,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.playback.Copies
+import one.rarebit.heyarr.core.playback.Copy
+import one.rarebit.heyarr.core.playback.DisplayFit
 import one.rarebit.heyarr.mobile.consumption.ProgressReporter
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
@@ -61,6 +64,18 @@ class PlaybackCoordinator(
      */
     @Volatile
     var capabilities: ClientCapabilities? = null
+
+    /**
+     * Which of a film's copies this phone plays (heyarr-kmp#225): `:core`'s [Copies] over
+     * the screen [capabilities] were probed on. Before the probe has run, a 1080-line SDR
+     * screen — the cautious guess, and what most phones are. Null for a work with no video
+     * copies; the caller then plays the node's primary asset as before.
+     */
+    fun pickCopy(assets: List<WorkAsset>, defaultId: String?): Copy<WorkAsset>? = Copies.pick(
+        Copies.of(assets),
+        capabilities?.display ?: DisplayFit(DEFAULT_DISPLAY_HEIGHT),
+        defaultId = defaultId,
+    )
 
     // When there is no credential the caller is browsing as a guest. Play as [Credential.Guest]
     // (sends no Authorization header) so heyarr's trusted-network guest path applies. A vault
@@ -278,5 +293,9 @@ class PlaybackCoordinator(
     /** Clear the transient notice once shown. */
     fun clearNotice() {
         _notice.value = null
+    }
+
+    private companion object {
+        const val DEFAULT_DISPLAY_HEIGHT = 1080
     }
 }

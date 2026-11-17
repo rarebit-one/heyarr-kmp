@@ -1,7 +1,7 @@
 package one.rarebit.heyarr.desktop.music
 
-import one.rarebit.heyarr.core.library.EpisodeFile
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.playback.CopyFile
 import one.rarebit.heyarr.desktop.library.PrimaryAsset
 
 /**
@@ -20,13 +20,13 @@ data class Track(
     override val filename: String? = null,
     override val mime: String? = null,
     override val role: String? = null,
-    val sizeBytes: Long? = null,
+    override val sizeBytes: Long? = null,
     val missingSince: String? = null,
     override val editionLabel: String? = null,
     override val sourcePath: String? = null,
     override val language: String? = null,
     override val hearingImpaired: Boolean = false,
-) : EpisodeFile {
+) : CopyFile {
     /** A blob we can stream, and the file is present. */
     override val isPlayable: Boolean get() = !blobHash.isNullOrBlank() && missingSince.isNullOrBlank()
 
