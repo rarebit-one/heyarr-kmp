@@ -6,8 +6,8 @@
   "summary": "Headless content lifecycle, replication and consumption for homelabs.",
   "description": "Every error is an RFC 9457 problem document with a stable `type` URI. Clients\nbranch on `type` — not on the title, not on the detail, and not on the HTTP\nstatus alone, which several different conditions share.\n\nCollections are paginated by keyset with an opaque cursor. `next_cursor` is\nabsent on the last page, so \"keep going while next_cursor is set\" is the\nwhole client loop. The cursor's contents are not a contract: it encodes the\nsort key of the last row returned, and a client that parses it breaks the\nfirst time a sort order changes.\n",
   "license": {
-   "name": "AGPL-3.0-only",
-   "identifier": "AGPL-3.0-only"
+   "name": "AGPL-3.0-or-later",
+   "identifier": "AGPL-3.0-or-later"
   }
  },
  "servers": [
@@ -4506,6 +4506,94 @@
     }
    }
   },
+  "/api/v1/vault/blobs/confirm": {
+   "post": {
+    "tags": [
+     "personal-state"
+    ],
+    "operationId": "confirmVaultBlobs",
+    "summary": "Make this node's upload pins on the named blobs permanent. Requires `write`.",
+    "description": "ADR-0096 amendment (#714). With `placement.provisional_upload_pins` on, an upload's pin is provisional for 24 hours and then released to garbage collection unless its writer confirms it. A writer calls this after the drive change naming the blobs (its manifest and content) was accepted, never before. Confirming is idempotent and never removes anything, and it is served whether or not the flag is on, so a client can always send it. Each blob is answered on its own. A restricted executor (ADR-0104) may confirm only blobs it uploaded itself.",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "blobs"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "blobs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1000,
+          "items": {
+           "type": "string",
+           "pattern": "^blake3:[0-9a-f]{64}$"
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "One result per blob named, in request order.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "results"
+         ],
+         "additionalProperties": false,
+         "properties": {
+          "results": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "required": [
+             "blob",
+             "status"
+            ],
+            "additionalProperties": false,
+            "properties": {
+             "blob": {
+              "type": "string"
+             },
+             "status": {
+              "type": "string",
+              "enum": [
+               "confirmed",
+               "already_permanent",
+               "not_held",
+               "not_uploader"
+              ],
+              "description": "`confirmed`: the pin was provisional and is now permanent. `already_permanent`: nothing to do. `not_held`: this node holds no upload pin for the blob. `not_uploader`: a restricted caller named a blob another principal uploaded."
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     }
+    }
+   }
+  },
   "/api/v1/vault/placements": {
    "post": {
     "tags": [
@@ -6165,7 +6253,8 @@
        "type": "string",
        "enum": [
         "work",
-        "edition"
+        "edition",
+        "item"
        ]
       }
      },
@@ -6251,7 +6340,18 @@
     ],
     "operationId": "createDesired",
     "summary": "Want something.",
-    "description": "**A want must work when you have nothing.** That is the whole point of\nthis endpoint and the requirement most easily lost: every fixture in\nthis repository has assets, so a design that only works once something\nexists passes every test and fails the first real use.\n\nName the work either by `work_id`, or — when it does not exist yet — by\na `work` descriptor of content type, title and year. The descriptor\nresolves through the **same** `(content_type, work_key)` get-or-create\nthe scanner uses, so wanting a film and later scanning it converge on\none Work rather than producing two.\n\nName the quality profile by `quality_profile_id` or by\n`quality_profile` (its name) — a person writing this by hand knows\n`living-room`, not a UUID. A profile is **required**: \"this should\nexist\", with no statement of what would count as existing, cannot be\nevaluated (§56).\n\n`monitor` defaults to **true**. Wanting something and then silently\nnever looking for anything better is the surprising default.\n\nTwo wants over the same target with **different** profiles are legal\nand are the point (§61 — never one version per title): the living-room\ncopy and the phone-sized copy are two wants. The same target with the\nsame profile is one want written twice, and is a `409`.\n",
+    "description": "**A want must work when you have nothing.** That is the whole point of\nthis endpoint and the requirement most easily lost: every fixture in\nthis repository has assets, so a design that only works once something\nexists passes every test and fails the first real use.\n\nName the work either by `work_id`, or — when it does not exist yet — by\na `work` descriptor of content type, title and year. The descriptor\nresolves through the **same** `(content_type, work_key)` get-or-create\nthe scanner uses, so wanting a film and later scanning it converge on\none Work rather than producing two.\n\nName the quality profile by `quality_profile_id` or by\n`quality_profile` (its name) — a person writing this by hand knows\n`living-room`, not a UUID. A profile is **required**: \"this should\nexist\", with no statement of what would count as existing, cannot be\nevaluated (§56).\n\n`monitor` defaults to **true**. Wanting something and then silently\nnever looking for anything better is the surprising default.\n\nTwo wants over the same target with **different** profiles are legal\nand are the point (§61 — never one version per title): the living-room\ncopy and the phone-sized copy are two wants. The same target with the\nsame profile is one want written twice, and is a `409`.\n\n`?dry_run=true` previews the want and writes nothing (#794). It runs the\nsame resolution and the same insert in a transaction it rolls back, so it\nis refused exactly as the real request would be (`400`, `409`). When the\nwant would succeed it answers `200` with the Work it would want. A\nwhole-series want's follow (ADR-0089) is previewed as an ordinary want.\n",
+    "parameters": [
+     {
+      "name": "dry_run",
+      "in": "query",
+      "required": false,
+      "description": "`true` to preview the want without writing anything.",
+      "schema": {
+       "type": "boolean"
+      }
+     }
+    ],
     "requestBody": {
      "required": true,
      "content": {
@@ -6263,6 +6363,30 @@
      }
     },
     "responses": {
+     "200": {
+      "description": "`dry_run=true`: the want would be accepted. Nothing was written.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "new_work"
+         ],
+         "additionalProperties": false,
+         "properties": {
+          "work_id": {
+           "type": "string",
+           "description": "The existing Work the want would attach to. Absent when it would create one."
+          },
+          "new_work": {
+           "type": "boolean",
+           "description": "The want would create its Work."
+          }
+         }
+        }
+       }
+      }
+     },
      "201": {
       "description": "The want.",
       "headers": {
@@ -6831,7 +6955,7 @@
     ],
     "operationId": "selectCandidate",
     "summary": "Take this release, whatever the ranking says.",
-    "description": "§60's **manual override**, and it is a different feature from manual\nsearch: a search asks what is out there, an override says which one to\ntake.\n\nIt **records that it was an override**, and what the scorer had chosen\ninstead. An override that left no trace would look exactly like an\nordinary selection, and \"why did it take that one\" would then have no\nanswer — which is the property §60's deterministic scoring exists to\ngive.\n\n### It refuses a candidate the profile rejected\n\nA `409`, deliberately. The gates in §62 are the operator's own\nstatement of what is acceptable, and an override that could ignore them\nwould quietly turn `accept` into a suggestion. Wanting something\noutside the profile is perfectly expressible — by **changing the\nprofile**, which is visible and durable, rather than by a one-off that\nleaves the profile saying something nobody means.\n\nNaming the candidate the scorer already chose is a selection rather\nthan an override, and is not recorded as a disagreement: putting a\ndeparture in the audit trail that never happened is its own kind of\nwrong.\n",
+    "description": "§60's **manual override**, and it is a different feature from manual\nsearch: a search asks what is out there, an override says which one to\ntake.\n\nIt **records that it was an override**, and what the scorer had chosen\ninstead. An override that left no trace would look exactly like an\nordinary selection, and \"why did it take that one\" would then have no\nanswer — which is the property §60's deterministic scoring exists to\ngive.\n\n### It refuses a candidate the profile rejected\n\nA `409`, deliberately. The gates in §62 are the operator's own\nstatement of what is acceptable, and an override that could ignore them\nwould quietly turn `accept` into a suggestion. Wanting something\noutside the profile is perfectly expressible — by **changing the\nprofile**, which is visible and durable, rather than by a one-off that\nleaves the profile saying something nobody means.\n\nNaming the candidate the scorer already chose is a selection rather\nthan an override, and is not recorded as a disagreement: putting a\ndeparture in the audit trail that never happened is its own kind of\nwrong.\n\n### Or hand over a URL as the want's direct release\n\nSend `url` instead of `candidate_id` to fetch that http(s) link as the\nwant's only release (#836): ADR-0060's direct release, with the\noperator as its provenance. It is recorded as a selected candidate\nfrom provider `operator` with protocol `direct`, so the grab offers it\nonly to the `http` download client whatever the client order, and\n`transfer.provider` in the acquisition status names that client. The\ncandidate's id is a digest of the link and its title is the file the\nlink names, so a token in the URL never reaches a response.\n\nA magnet or a `.torrent` link is refused (`400`): it is a torrent\nrelease, which a want still gets from a search, as a candidate. So is\na URL on a node with no `http` download client (`400`), and a URL for a\nwant that is not resting in `MISSING` (`409`) — a direct release does\nnot replace a transfer in flight or bytes already held.\n",
     "parameters": [
      {
       "name": "id",
@@ -6848,13 +6972,16 @@
       "application/json": {
        "schema": {
         "type": "object",
-        "required": [
-         "candidate_id"
-        ],
+        "description": "Exactly one of `candidate_id` and `url`.",
         "properties": {
          "candidate_id": {
           "type": "string",
           "description": "The **provider's** id for the release, as returned by\n`/candidates`.\n"
+         },
+         "url": {
+          "type": "string",
+          "format": "uri",
+          "description": "An http(s) link to the file itself, fetched as the want's\ndirect release. Not a magnet or a `.torrent`.\n"
          }
         }
        }
@@ -6892,7 +7019,7 @@
       }
      },
      "409": {
-      "description": "That candidate was rejected by the quality profile.",
+      "description": "That candidate was rejected by the quality profile, or a `url` was\nhanded over for a want that is not resting in `MISSING`.\n",
       "content": {
        "application/problem+json": {
         "schema": {
@@ -14267,9 +14394,10 @@
       "type": "string",
       "enum": [
        "work",
-       "edition"
+       "edition",
+       "item"
       ],
-      "description": "How much of the work is wanted — the whole thing, or one edition of\nit (a season, a particular release, a language).\n\n**There is no `episode` scope, and that is a limitation rather than\nan omission.** §11 makes the *series* the Work and an edition the\nseason, so an episode is an Asset — a file that exists — and there\nis no entity anywhere for an episode nobody has yet. Knowing which\nepisodes *should* exist is what a metadata provider is for, and\nthat is deferred out of Milestone 3.\n\nWhat this costs today, stated rather than papered over: with no\nmetadata provider, content satisfaction for a series-scoped want is\n\"an acceptable asset exists\", **not** \"every episode exists\". A\nwant for a series is not a completeness guarantee in this\nmilestone.\n"
+      "description": "How much of the work is wanted: the whole thing, one edition of it\n(a season, a particular release, a language), or one item of it\n(an episode, a podcast entry, a video, an article; ADR-0056).\n\nAn item is the byte-less thing a source emitted. Item-scoped wants\nare not created through `POST /desired`: a followed source projects\none onto each item its feed provider enumerates (ADR-0057, ADR-0058),\nand wanting a whole series is following it (ADR-0089), so each\nepisode arrives as its own item-scoped want.\n"
      },
      "work_id": {
       "type": "string",
@@ -14400,7 +14528,8 @@
        "work",
        "edition"
       ],
-      "default": "work"
+      "default": "work",
+      "description": "`item` is not accepted here: item-scoped wants are projected by a\nfollowed source (ADR-0057), never asked for directly.\n"
      },
      "work_id": {
       "type": "string"

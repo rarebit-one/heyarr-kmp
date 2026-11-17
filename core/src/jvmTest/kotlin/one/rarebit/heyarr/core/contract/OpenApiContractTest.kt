@@ -74,7 +74,8 @@ class OpenApiContractTest {
             "ConsumptionClient" to listOf("POST /api/v1/consumption/sessions", "POST /api/v1/devices"),
             "EnrolClient" to listOf("POST /enrol", "#Problem"),
             // + #Problem: pushChange reads a refusal's `code` (change_key_epoch_mismatch, heyarr-core#712).
-            "VaultSpaceClient" to SPACES + "#Problem",
+            // + confirm: confirmBlobs reads each upload's answer (ADR-0096 amendment, heyarr-core#714).
+            "VaultSpaceClient" to SPACES + "#Problem" + "POST /api/v1/vault/blobs/confirm",
             "PersonalStateClient" to SPACES,
             "EncryptedChange" to listOf("#EncryptedChange"),
             "EncryptedSnapshot" to listOf("#EncryptedSnapshot"),

@@ -131,9 +131,9 @@ interface VaultKeys : SpaceKeySource {
 }
 
 /**
- * The encrypted personal-state sync pipe for a vault space (`/api/v1/spaces/{id}/…` and
- * `/api/v1/vault/placements`). It moves only OPAQUE ciphertext — the server and peers
- * hold no key and merge nothing (Invariant 6). Follows the desktop client pattern
+ * The encrypted personal-state sync pipe for a vault space (`/api/v1/spaces/{id}/…`,
+ * `/api/v1/vault/placements` and `/api/v1/vault/blobs/confirm`). It moves only OPAQUE
+ * ciphertext — the server and peers hold no key and merge nothing (Invariant 6). Follows the desktop client pattern
  * (`LibraryClient`): constructed with an [HttpTransport], base URL and [Credential];
  * blocking, call off the UI thread.
  *
@@ -147,7 +147,8 @@ class VaultSpaceClient(
     private val baseUrl: String,
     private val credential: Credential,
 ) : VaultSpace,
-    VaultKeys {
+    VaultKeys,
+    BlobConfirmer {
     override fun keyEpoch(spaceId: String): Int = spaceKeys(spaceId).keyEpoch
 
     /** Pull every opaque change the server holds for [spaceId]. */
@@ -290,6 +291,30 @@ class VaultSpaceClient(
         expectStatus(resp, 204, 200) { "vault: DELETE placement failed: HTTP ${resp.status}" }
     }
 
+    /**
+     * Make this node's upload pins on [blobs] permanent: `POST /api/v1/vault/blobs/confirm`
+     * (heyarr-core ADR-0096 amendment, #714). Call it only once the change naming them was
+     * accepted — [UploadConfirmations] does the ordering and the retry. The node answers each blob
+     * on its own, and serves the route whether or not provisional pins are on, so it is always
+     * safe to send. A node that predates the route answers 404; its upload pins are all permanent,
+     * so that reads back as no results rather than a failure (as the Go client's
+     * `ConfirmVaultBlobs` does). More than the route's 1000-blob cap goes in several requests.
+     */
+    override fun confirmBlobs(blobs: List<String>): List<BlobConfirmation> {
+        for (b in blobs) require(isVaultBlobId(b)) { "vault: $b is not a blob id (blake3:<64 lowercase hex>)" }
+        val out = ArrayList<BlobConfirmation>(blobs.size)
+        for (chunk in blobs.distinct().chunked(CONFIRM_MAX_BLOBS)) {
+            val body = JsonWrite.obj(linkedMapOf("blobs" to chunk))
+            val resp = http.post(confirmUrl(baseUrl), body, "application/json", credential.asHeader())
+            if (resp.status == 404) return emptyList()
+            expectStatus(resp, 200) { "vault: POST blobs/confirm failed: HTTP ${resp.status}" }
+            JsonScan.objectsOf(resp.body, listOf("results")).mapTo(out) {
+                BlobConfirmation(JsonScan.stringField(it, "blob") ?: "", JsonScan.stringField(it, "status") ?: "")
+            }
+        }
+        return out
+    }
+
     /** A refusal keeps its HTTP status ([VaultHttpException]) so a caller can tell "not granted" from a failure. */
     private inline fun expectStatus(resp: HttpResponse, vararg ok: Int, message: () -> String) {
         if (resp.status !in ok) throw VaultHttpException(resp.status, message())
@@ -338,6 +363,10 @@ class VaultSpaceClient(
         fun keysUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/keys"
         fun keyHistoryUrl(baseUrl: String, spaceId: String) = base(baseUrl) + "/spaces/" + enc(spaceId) + "/key-history"
         fun placementsUrl(baseUrl: String) = base(baseUrl) + "/vault/placements"
+        fun confirmUrl(baseUrl: String) = base(baseUrl) + "/vault/blobs/confirm"
+
+        /** The route's `maxItems` (heyarr-core api/openapi.yaml, confirmVaultBlobs). */
+        const val CONFIRM_MAX_BLOBS = 1000
     }
 }
 

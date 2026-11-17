@@ -96,7 +96,11 @@ allprojects {
 // VaultFrame, VaultBlobStore + UrlConnectionVaultBlobStore, VaultRef and VaultObjects /
 // VaultRecipient. StrictJson becomes public so the codec can keep reading strictly. A consumer
 // of the codec stays on 0.3.x until it takes :vault-codec.
-val publishedLibraryVersion = "0.4.0"
+// 0.4.1 (additive): VaultSpaceClient.confirmBlobs (POST /vault/blobs/confirm) behind the
+// BlobConfirmer seam, and UploadConfirmations, which confirms a write's blobs once the change
+// naming them is accepted and retries a failed confirm on the next write (heyarr-core ADR-0096
+// amendment, #714; heyarr-kmp#219).
+val publishedLibraryVersion = "0.4.1"
 
 listOf(":core", ":vault-client").forEach { path ->
     project(path) {
