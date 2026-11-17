@@ -46,6 +46,7 @@ import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.heyarr.QualityProfile
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.playback.Copies
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
@@ -56,6 +57,7 @@ import one.rarebit.heyarr.desktop.open.ExternalOpener
 import one.rarebit.heyarr.desktop.open.JdkBlobDownloader
 import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.open.XdgOpen
+import one.rarebit.heyarr.desktop.playback.DesktopDisplay
 import one.rarebit.heyarr.desktop.playback.MpvPlayer
 import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.SettingsStore
@@ -268,16 +270,19 @@ fun App(
         playback.mediaUrl = session::mediaUrl
         // Resolve each play URL through the server's playback plan, so a 4K/HEVC asset
         // is transcoded down to a smoothly-decodable stream; falls back to the direct
-        // blob when there is no connection.
+        // blob when there is no connection. `max_height` is this machine's real screen
+        // (heyarr-kmp#225), never above the software-decode ceiling.
+        val declaredMaxHeight =
+            Copies.declaredMaxHeight(null, DesktopDisplay.fit, ceiling = DesktopDisplay.CEILING)
         playback.resolvePlaybackTarget = { item ->
             session.mediaTarget(
-                session.api?.playbackTarget(item.assetId, item.blobHash)
+                session.api?.playbackTarget(item.assetId, item.blobHash, maxHeight = declaredMaxHeight)
                     ?: PlaybackTarget(HeyarrApi.blobUrl(playback.baseUrl, item.blobHash)),
             )
         }
         playback.resolveAudioTarget = { item, ordinal ->
             session.mediaTarget(
-                session.api?.playbackTarget(item.assetId, item.blobHash, audioTrack = ordinal)
+                session.api?.playbackTarget(item.assetId, item.blobHash, declaredMaxHeight, audioTrack = ordinal)
                     ?: error("Audio track selection requires a connection"),
             )
         }

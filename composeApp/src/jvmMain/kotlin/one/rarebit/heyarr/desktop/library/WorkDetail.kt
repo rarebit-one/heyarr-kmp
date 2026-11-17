@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.desktop.library
 
+import one.rarebit.heyarr.core.library.Bytes
 import one.rarebit.heyarr.core.net.JsonScan
 import one.rarebit.heyarr.core.theme.MediaType
 
@@ -27,22 +28,8 @@ data class PrimaryAsset(
         ).joinToString(" · ")
 
     companion object {
-        /** `1.4 GB`, `812 MB`, `3.2 KB` — base-1024, one decimal above KB. Copied from mobile's WorkAsset. */
-        fun formatBytes(bytes: Long): String {
-            if (bytes < 1024) return "$bytes B"
-            val units = arrayOf("KB", "MB", "GB", "TB")
-            var value = bytes.toDouble()
-            var unit = -1
-            while (value >= 1024 && unit < units.size - 1) {
-                value /= 1024
-                unit++
-            }
-            return if (value >= 100) {
-                "${value.toLong()} ${units[unit]}"
-            } else {
-                String.format(java.util.Locale.ROOT, "%.1f %s", value, units[unit])
-            }
-        }
+        /** `1.4 GB`, `812 MB`, `3.2 KB` — base-1024, one decimal above KB. Shared with the phone in `:core`. */
+        fun formatBytes(bytes: Long): String = Bytes.format(bytes)
     }
 }
 

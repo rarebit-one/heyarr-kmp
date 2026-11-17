@@ -1,10 +1,18 @@
 package one.rarebit.heyarr.mobile.playback
 
+import one.rarebit.heyarr.core.playback.DisplayFit
+
 /**
  * What THIS phone can play, as `POST /api/v1/playback/plan` wants to hear it
  * (heyarr-core #432): the containers Media3 demuxes, the video/audio codecs the
  * device has a decoder for (short names — `h264`, `hevc`, `aac`, `ac3`…), and the
- * tallest frame worth sending. The planner answers `direct` (play the blob as-is) or
+ * tallest frame worth sending.
+ *
+ * [maxHeight] is the screen's short edge — the most lines a landscape picture can show —
+ * and the request sends it after `:core`'s `Copies` has capped it for the copy and the
+ * preference ([forMaxHeight]). [supportsHdr] is what the screen reports; it chooses
+ * between copies on the phone and is NOT sent: a node before heyarr-core#885 may refuse
+ * a field it does not know, and a 400 here means "plan nothing". The planner answers `direct` (play the blob as-is) or
  * `stream` (a phone-friendly fMP4 the node repackages), so an honest list here is
  * what stops a 5.1 AC-3 track playing as silence.
  *
@@ -16,7 +24,14 @@ data class ClientCapabilities(
     val video: List<String>,
     val audio: List<String>,
     val maxHeight: Int,
+    val supportsHdr: Boolean = false,
 ) {
+    /** The screen these capabilities were probed on, for choosing a copy. */
+    val display: DisplayFit get() = DisplayFit(maxHeight, supportsHdr)
+
+    /** The same capabilities declaring [height] lines — the cap `Copies.declaredMaxHeight` chose. */
+    fun forMaxHeight(height: Int): ClientCapabilities = copy(maxHeight = height)
+
     /** The same capabilities with one codec struck off — a decoder that exists but fails. */
     fun without(codec: String): ClientCapabilities =
         copy(video = video.filterNot { it == codec }, audio = audio.filterNot { it == codec })
@@ -65,7 +80,11 @@ data class ClientCapabilities(
          * Fold a list of decodable `MediaCodec` MIMEs into the planner's (video, audio)
          * short-name lists — deduplicated, in first-seen order, unknowns dropped.
          */
-        fun fromDecoderMimes(mimes: Iterable<String>, maxHeight: Int): ClientCapabilities {
+        fun fromDecoderMimes(
+            mimes: Iterable<String>,
+            maxHeight: Int,
+            supportsHdr: Boolean = false,
+        ): ClientCapabilities {
             val video = LinkedHashSet<String>()
             val audio = LinkedHashSet<String>()
             for (mime in mimes) {
@@ -76,7 +95,12 @@ data class ClientCapabilities(
                     audio.add(name)
                 }
             }
-            return ClientCapabilities(video = video.toList(), audio = audio.toList(), maxHeight = maxHeight)
+            return ClientCapabilities(
+                video = video.toList(),
+                audio = audio.toList(),
+                maxHeight = maxHeight,
+                supportsHdr = supportsHdr,
+            )
         }
 
         private fun array(items: List<String>): String = items.joinToString(",", "[", "]") { quote(it) }

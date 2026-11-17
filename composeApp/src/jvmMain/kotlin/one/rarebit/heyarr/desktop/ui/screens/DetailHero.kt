@@ -28,6 +28,7 @@ import one.rarebit.heyarr.core.auth.GuestGate
 import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.heyarr.DesiredItem
 import one.rarebit.heyarr.core.library.Series
+import one.rarebit.heyarr.core.playback.Copies
 import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.state.Toast
@@ -37,6 +38,7 @@ import one.rarebit.heyarr.desktop.library.PrimaryAsset
 import one.rarebit.heyarr.desktop.library.Season
 import one.rarebit.heyarr.desktop.library.WorkDetail
 import one.rarebit.heyarr.desktop.music.Track
+import one.rarebit.heyarr.desktop.playback.DesktopDisplay
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.desktop.ui.components.Artwork
@@ -175,6 +177,25 @@ private class HeroActions(
         playLocal(session, state, blobHash, label, scope, assetId = assetId, type = type)
     }
 
+    /**
+     * Play the work from the start: the copy of it that suits this screen when the work
+     * holds several (heyarr-kmp#225), else [asset], the node's `primary_asset` — merely the
+     * oldest copy, which may be a 2160p remux this machine has re-encoded for it.
+     */
+    fun playWork(asset: PrimaryAsset) {
+        val copy = if (type == MediaType.SERIES) {
+            null
+        } else {
+            Copies.pick(Copies.of(state.assets.orEmpty()), DesktopDisplay.fit, defaultId = asset.assetId)?.asset
+        }
+        val hash = copy?.blobHash
+        if (copy != null && hash != null) {
+            play(hash, detail.work.title, copy.id)
+        } else {
+            play(asset.blobHash, detail.work.title, asset.assetId)
+        }
+    }
+
     fun openLocal() {
         val a = detail.primaryAsset ?: return
         scope.launch {
@@ -253,7 +274,7 @@ private fun HeroPrimaryAction(actions: HeroActions, first: Episode?, availabilit
 
         else -> PrimaryButton(
             theme.ctaLabel,
-            { actions.play(asset.blobHash, work.title, asset.assetId) },
+            { actions.playWork(asset) },
             icon = HeyarrIcons.Play,
             enabled = idle,
         )

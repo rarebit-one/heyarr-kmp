@@ -7,6 +7,7 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
+import one.rarebit.heyarr.mobile.library.WorkDetailJson
 import one.rarebit.heyarr.mobile.playback.ClientCapabilities
 import one.rarebit.heyarr.mobile.playback.PlaybackCoordinator
 import one.rarebit.heyarr.mobile.playback.PlaybackDiagnostics
@@ -38,6 +39,28 @@ class PlaybackCoordinatorTest {
     ): Pair<PlaybackCoordinator, RoutedTransport> {
         val t = RoutedTransport(routes)
         return PlaybackCoordinator(t, { base }, { cred }, scope, dispatcher) to t
+    }
+
+    @Test fun aPhoneScreenPicksTheTenEightyCopyOverTheOldestFourKCopy() {
+        // heyarr-kmp#225's acceptance case, off the wire shape `GET /works/{id}/assets` sends.
+        // Concatenated, so the JSON is still one line (JsonScan is a field scanner, not a parser).
+        val uhd = """{"id":"uhd","edition_id":"e1","role":"primary","blob_hash":"$hash",""" +
+            """"filename":"Film.2160p.HDR.mkv","blob_mime":"video/x-matroska","blob_size":50000000000,""" +
+            """"edition_label":"Remux-2160p"}"""
+        val fhd = """{"id":"fhd","edition_id":"e2","role":"primary","blob_hash":"$hash",""" +
+            """"filename":"Film.1080p.mkv","blob_mime":"video/x-matroska","blob_size":6000000000,""" +
+            """"edition_label":"WEBDL-1080p"}"""
+        val sub = """{"id":"sub","edition_id":"e2","role":"subtitle","blob_hash":"$hash",""" +
+            """"filename":"Film.en.srt","blob_mime":"text/plain","edition_label":"WEBDL-1080p"}"""
+        val assets = WorkDetailJson.parseAssets("""{"items":[$uhd,$fhd,$sub]}""")
+        val (c, _) = coordinator(emptyMap())
+        // Before the probe: the cautious 1080-line guess.
+        assertEquals("unprobed phone takes 1080p", "fhd", c.pickCopy(assets, defaultId = "uhd")?.asset?.id)
+        c.capabilities = caps.copy(maxHeight = 1080, supportsHdr = true)
+        assertEquals("1080-line HDR phone takes 1080p", "fhd", c.pickCopy(assets, defaultId = "uhd")?.asset?.id)
+        c.capabilities = caps.copy(maxHeight = 2160, supportsHdr = true)
+        assertEquals("2160-line HDR screen takes 2160p", "uhd", c.pickCopy(assets, defaultId = "uhd")?.asset?.id)
+        assertNull("a work without video copies plays its primary", c.pickCopy(emptyList(), defaultId = "uhd"))
     }
 
     @Test fun aRowWithoutAHashIsANoticeNotAPlayer() {
