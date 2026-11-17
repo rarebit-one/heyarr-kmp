@@ -59,13 +59,17 @@ class PdfReaderSmokeTest {
     /** Wait (on the test thread) until [check], read on the main thread, holds. */
     private fun FragmentScenario<PdfReaderFragment>.awaitFragment(what: String, check: (PdfReaderFragment) -> Boolean) {
         val deadline = SystemClock.uptimeMillis() + TIMEOUT_MS
+        var seen = ""
         while (SystemClock.uptimeMillis() < deadline) {
             var ok = false
-            onFragment { ok = check(it) }
+            onFragment {
+                ok = check(it)
+                seen = "pages=${it.loadedPageCount} firstVisible=${it.firstVisiblePage()} stored=${storedPage()}"
+            }
             if (ok) return
             SystemClock.sleep(POLL_MS)
         }
-        fail("timed out waiting for $what")
+        fail("timed out waiting for $what ($seen)")
     }
 
     private fun storedPage(): Int? = PrefsReadingPositionStore(ctx).locator(ASSET)?.let { ReaderPosition.pageOf(it) }

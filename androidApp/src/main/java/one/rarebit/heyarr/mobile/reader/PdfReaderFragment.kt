@@ -69,9 +69,17 @@ class PdfReaderFragment : PdfViewerFragment() {
     }
 
     private fun record(firstVisiblePage: Int) {
-        val page = tracker?.onViewport(firstVisiblePage) ?: return
-        val id = assetId ?: return
-        PrefsReadingPositionStore(requireContext()).put(id, PdfPosition.locatorFor(page, pageCount))
+        when (val step = tracker?.onViewport(firstVisiblePage)) {
+            is PdfPageTracker.Step.Record -> {
+                val id = assetId ?: return
+                PrefsReadingPositionStore(requireContext()).put(id, PdfPosition.locatorFor(step.page, pageCount))
+            }
+
+            // Posted: this runs inside the viewer's own viewport dispatch.
+            is PdfPageTracker.Step.Restore -> view?.let { v -> v.post { v.scrollToPage(step.page) } }
+
+            PdfPageTracker.Step.Nothing, null -> Unit
+        }
     }
 
     override fun onDestroyView() {

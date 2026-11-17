@@ -1,7 +1,6 @@
 package one.rarebit.heyarr.mobile.reader
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 /** The PDF reader's remembered page: the Locator it writes, and what it resumes from (#162). */
@@ -56,25 +55,38 @@ class PdfPositionTest {
         }
     }
 
-    @Test fun trackerIgnoresTheFirstLayoutUntilTheRestoreLands() {
+    private fun record(page: Int) = PdfPageTracker.Step.Record(page)
+    private fun restore(page: Int) = PdfPageTracker.Step.Restore(page)
+    private val nothing = PdfPageTracker.Step.Nothing
+
+    @Test fun trackerRetriesTheRestoreUntilItLands() {
         val t = PdfPageTracker(restoreTo = 6)
-        assertNull("the layout at page 0 must not overwrite page 7", t.onViewport(0))
-        assertNull(t.onViewport(0))
-        assertEquals("the restore landed", 6, t.onViewport(6))
-        assertNull("same page again", t.onViewport(6))
-        assertEquals(7, t.onViewport(7))
-        assertEquals("back to the start is a real move now", 0, t.onViewport(0))
+        assertEquals("the layout at page 0 asks for the restore", restore(6), t.onViewport(0))
+        assertEquals("and again: it did not land", restore(6), t.onViewport(0))
+        assertEquals("the restore landed", record(6), t.onViewport(6))
+        assertEquals("same page again", nothing, t.onViewport(6))
+        assertEquals(record(7), t.onViewport(7))
+        assertEquals("back to the start is a real move now", record(0), t.onViewport(0))
     }
 
     @Test fun trackerStopsWaitingWhenTheReaderScrollsFirst() {
         val t = PdfPageTracker(restoreTo = 6)
-        assertEquals(2, t.onViewport(2))
+        assertEquals(record(2), t.onViewport(2))
+        assertEquals("no restore once the reader has moved", record(0), t.onViewport(0))
+    }
+
+    @Test fun trackerGivesUpWithoutOverwritingTheStoredPage() {
+        val t = PdfPageTracker(restoreTo = 6)
+        repeat(PdfPageTracker.MAX_RESTORE_ATTEMPTS) { assertEquals("attempt $it", restore(6), t.onViewport(0)) }
+        assertEquals("gave up: page 0 is still not recorded", nothing, t.onViewport(0))
+        assertEquals(record(1), t.onViewport(1))
+        assertEquals("a move back to the start is", record(0), t.onViewport(0))
     }
 
     @Test fun trackerWithNothingToRestoreRecordsFromTheStart() {
         val t = PdfPageTracker(restoreTo = 0)
-        assertEquals(0, t.onViewport(0))
-        assertNull(t.onViewport(0))
-        assertNull("no page", t.onViewport(-1))
+        assertEquals(record(0), t.onViewport(0))
+        assertEquals(nothing, t.onViewport(0))
+        assertEquals("no page", nothing, t.onViewport(-1))
     }
 }
