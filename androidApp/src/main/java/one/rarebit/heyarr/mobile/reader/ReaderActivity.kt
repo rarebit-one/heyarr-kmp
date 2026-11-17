@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.Gravity
+import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -21,7 +22,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -52,6 +52,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
@@ -88,6 +92,9 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 private const val READER_STATUS_PADDING_PX = 48
+
+/** What the PDF reader keeps clear of: the status and navigation bars, and the display cutout. */
+private val READER_INSET_TYPES = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
 
 /**
  * The reader: opens the file over the authenticated blob route and hosts the navigator
@@ -129,6 +136,11 @@ class ReaderActivity :
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT),
         )
         setContentView(root)
+        if (ReaderFormat.fromExtra(intent.getStringExtra(EXTRA_FORMAT)) ==
+            ReaderFormat.PDF
+        ) {
+            fitPdfInsideSystemBars(root)
+        }
         val status = TextView(this).apply {
             text = "Opening…"
             setTextColor(android.graphics.Color.parseColor("#E6EBD7")) // Tokens.textPrimary
@@ -168,6 +180,27 @@ class ReaderActivity :
     }
 
     /**
+     * Keep the PDF reader clear of the status bar, the navigation bar and the display cutout.
+     * Since Android 15 a targetSdk 35 app is drawn edge to edge. Readium's EPUB navigator pads
+     * itself for that, but Jetpack's PDF viewer does not, so the first page and the search
+     * button sat under the clock. The whole reader, PDF and companion audio panel, is
+     * padded instead, by the larger of the bars and the cutout on each side (a side
+     * navigation bar and a side cutout in landscape too). Children get those insets
+     * consumed, so nothing pads twice; the IME inset still reaches the viewer's search field.
+     *
+     * Edge to edge is opted into here on every version, so Android 13 and 14 lay the PDF
+     * reader out exactly as 15+ does. The EPUB path is left as it was.
+     */
+    private fun fitPdfInsideSystemBars(root: View) {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
+            val bars = insets.getInsets(READER_INSET_TYPES)
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            WindowInsetsCompat.Builder(insets).setInsets(READER_INSET_TYPES, Insets.NONE).build()
+        }
+    }
+
+    /**
      * Download the PDF (through the app's OkHttp, so the live credential is stamped) and
      * show it. The shared client's 30 s call timeout suits API reads, not a whole book, so
      * the download drops it and keeps only a per-read timeout.
@@ -199,7 +232,7 @@ class ReaderActivity :
                                 Icons.Rounded.Search,
                                 "Search in this PDF",
                                 { fragment.isTextSearchActive = true },
-                                modifier = Modifier.statusBarsPadding().padding(12.dp),
+                                modifier = Modifier.padding(12.dp),
                                 size = 44.dp,
                             )
                         }
