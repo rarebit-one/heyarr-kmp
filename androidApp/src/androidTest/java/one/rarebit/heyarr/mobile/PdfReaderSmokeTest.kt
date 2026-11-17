@@ -64,7 +64,7 @@ class PdfReaderSmokeTest {
             var ok = false
             onFragment {
                 ok = check(it)
-                seen = "pages=${it.loadedPageCount} firstVisible=${it.firstVisiblePage()} stored=${storedPage()}"
+                seen = "pages=${it.loadedPageCount} current=${it.currentPage()} stored=${storedPage()}"
             }
             if (ok) return
             SystemClock.sleep(POLL_MS)
@@ -78,11 +78,11 @@ class PdfReaderSmokeTest {
         PrefsReadingPositionStore(ctx).put(ASSET, PdfPosition.locatorFor(pageIndex = 3, pageCount = PAGES))
         val scenario = open()
         scenario.awaitFragment("the document to load") { it.loadedPageCount == PAGES }
-        scenario.awaitFragment("the restore to page 4") { it.firstVisiblePage() == 3 }
-        assertEquals("the first layout did not overwrite the stored page", 4, storedPage())
+        scenario.awaitFragment("the restore to page 4") { it.currentPage() == 3 }
+        assertEquals("the restore round-trips: page 4 is still the stored page", 4, storedPage())
 
         scenario.onFragment { it.scrollTo(1) }
-        scenario.awaitFragment("the scroll to page 2") { it.firstVisiblePage() == 1 }
+        scenario.awaitFragment("the scroll to page 2") { it.currentPage() == 1 }
         val deadline = SystemClock.uptimeMillis() + TIMEOUT_MS
         while (storedPage() != 2 && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(POLL_MS)
         assertEquals("the new page is remembered", 2, storedPage())
@@ -92,7 +92,10 @@ class PdfReaderSmokeTest {
         PrefsReadingPositionStore(ctx).put(ASSET, "{}")
         val scenario = open()
         scenario.awaitFragment("the document to load") { it.loadedPageCount == PAGES }
-        scenario.onFragment { assertEquals(0, it.firstVisiblePage()) }
+        scenario.awaitFragment("the first page") { it.currentPage() == 0 }
+        val deadline = SystemClock.uptimeMillis() + TIMEOUT_MS
+        while (storedPage() != 1 && SystemClock.uptimeMillis() < deadline) SystemClock.sleep(POLL_MS)
+        assertEquals("the first page is recorded", 1, storedPage())
     }
 
     private companion object {

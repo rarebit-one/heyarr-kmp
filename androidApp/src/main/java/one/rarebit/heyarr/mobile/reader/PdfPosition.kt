@@ -34,14 +34,18 @@ object PdfPosition {
  * Decides, for each viewport change, whether to record the page or retry the restore. Pure,
  * unit-tested.
  *
- * The viewer lays the document out at page 0 first, and a scroll asked for as the document
- * loads does not always land, because the layout it scrolls through does not exist yet. So
- * while a restore to a later page is pending, a viewport still at page 0 asks for the
- * restore again (at most [MAX_RESTORE_ATTEMPTS] times) and is never recorded, because
+ * The page is the one under the viewport's centre ([PdfViewport.centrePage]), because that
+ * is where the viewer's scrollToPage puts a page. Recording the first visible page instead
+ * would drift one page back on every reopen.
+ *
+ * A restore can only scroll once the viewer has the document laid out: the fragment's
+ * load callback runs before the document even reaches the view. So the restore is asked
+ * for from the viewport changes themselves. While the view still sits at the top, each
+ * change asks again (at most [MAX_RESTORE_ATTEMPTS] times) and is never recorded, because
  * recording it would overwrite the very position being restored. The wait ends when the
- * target page shows, when the reader scrolls somewhere else first, or when the attempts
- * run out. In the last case the reader stays at the start and page 0 is recorded only
- * after a move away and back.
+ * view leaves the top (the restore landed, or the reader scrolled first) or when the
+ * attempts run out. In the last case the reader stays at the start, and the start is
+ * recorded only after a move away and back.
  */
 class PdfPageTracker(private val restoreTo: Int) {
     /** What the reader does with one viewport change. */
@@ -49,7 +53,7 @@ class PdfPageTracker(private val restoreTo: Int) {
         /** Save this 0-based page. */
         data class Record(val page: Int) : Step
 
-        /** Scroll to this 0-based page again: the restore has not landed yet. */
+        /** Scroll to this 0-based page (again): the restore has not landed yet. */
         data class Restore(val page: Int) : Step
 
         data object Nothing : Step
@@ -59,22 +63,41 @@ class PdfPageTracker(private val restoreTo: Int) {
     private var attempts = 0
     private var last = -1
 
-    /** The step for a viewport whose first visible page is [first] (-1 for none). */
-    fun onViewport(first: Int): Step {
+    /** The step for a viewport centred on [page] (-1 for none), [atTop] while not yet scrolled. */
+    fun onViewport(page: Int, atTop: Boolean): Step {
         if (awaitingRestore) {
-            if (first == 0 && attempts < MAX_RESTORE_ATTEMPTS) {
+            if (atTop && attempts < MAX_RESTORE_ATTEMPTS) {
                 attempts++
                 return Step.Restore(restoreTo)
             }
             awaitingRestore = false
-            if (first == 0) last = 0 // gave up: staying at the start is not a move
+            if (atTop) last = page // gave up: staying at the start is not a move
         }
-        val record = first >= 0 && first != last
-        if (record) last = first
-        return if (record) Step.Record(first) else Step.Nothing
+        val record = page >= 0 && page != last
+        if (record) last = page
+        return if (record) Step.Record(page) else Step.Nothing
     }
 
     companion object {
         const val MAX_RESTORE_ATTEMPTS = 5
+    }
+}
+
+/** Where the viewport is, from the page rectangles the viewer reports. Pure, unit-tested. */
+object PdfViewport {
+    /** One laid-out page's vertical extent, in view coordinates. */
+    data class Band(val page: Int, val top: Float, val bottom: Float)
+
+    /**
+     * The page under [centreY], or the nearest page when [centreY] falls between two
+     * (the gap between pages); -1 when nothing is laid out.
+     */
+    fun centrePage(bands: List<Band>, centreY: Float): Int {
+        val hit = bands.firstOrNull { centreY >= it.top && centreY <= it.bottom }
+        return (
+            hit
+                ?: bands.minByOrNull { minOf(kotlin.math.abs(it.top - centreY), kotlin.math.abs(it.bottom - centreY)) }
+            )
+            ?.page ?: -1
     }
 }

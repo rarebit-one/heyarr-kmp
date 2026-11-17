@@ -61,32 +61,52 @@ class PdfPositionTest {
 
     @Test fun trackerRetriesTheRestoreUntilItLands() {
         val t = PdfPageTracker(restoreTo = 6)
-        assertEquals("the layout at page 0 asks for the restore", restore(6), t.onViewport(0))
-        assertEquals("and again: it did not land", restore(6), t.onViewport(0))
-        assertEquals("the restore landed", record(6), t.onViewport(6))
-        assertEquals("same page again", nothing, t.onViewport(6))
-        assertEquals(record(7), t.onViewport(7))
-        assertEquals("back to the start is a real move now", record(0), t.onViewport(0))
+        assertEquals("the first layout, at the top, asks for the restore", restore(6), t.onViewport(0, atTop = true))
+        assertEquals("and again: it did not land", restore(6), t.onViewport(0, atTop = true))
+        assertEquals("the restore landed", record(6), t.onViewport(6, atTop = false))
+        assertEquals("same page again", nothing, t.onViewport(6, atTop = false))
+        assertEquals(record(7), t.onViewport(7, atTop = false))
+        assertEquals("back to the start is a real move now", record(0), t.onViewport(0, atTop = true))
+    }
+
+    @Test fun trackerNeverRecordsTheTopWhileRestoring() {
+        // A short page can put page 1 under the centre of the very first layout.
+        val t = PdfPageTracker(restoreTo = 6)
+        assertEquals(restore(6), t.onViewport(1, atTop = true))
+        assertEquals(record(6), t.onViewport(6, atTop = false))
     }
 
     @Test fun trackerStopsWaitingWhenTheReaderScrollsFirst() {
         val t = PdfPageTracker(restoreTo = 6)
-        assertEquals(record(2), t.onViewport(2))
-        assertEquals("no restore once the reader has moved", record(0), t.onViewport(0))
+        assertEquals(record(2), t.onViewport(2, atTop = false))
+        assertEquals("no restore once the reader has moved", record(0), t.onViewport(0, atTop = true))
     }
 
     @Test fun trackerGivesUpWithoutOverwritingTheStoredPage() {
         val t = PdfPageTracker(restoreTo = 6)
-        repeat(PdfPageTracker.MAX_RESTORE_ATTEMPTS) { assertEquals("attempt $it", restore(6), t.onViewport(0)) }
-        assertEquals("gave up: page 0 is still not recorded", nothing, t.onViewport(0))
-        assertEquals(record(1), t.onViewport(1))
-        assertEquals("a move back to the start is", record(0), t.onViewport(0))
+        repeat(PdfPageTracker.MAX_RESTORE_ATTEMPTS) {
+            assertEquals("attempt $it", restore(6), t.onViewport(0, atTop = true))
+        }
+        assertEquals("gave up: the start is still not recorded", nothing, t.onViewport(0, atTop = true))
+        assertEquals(record(1), t.onViewport(1, atTop = false))
+        assertEquals("a move back to the start is", record(0), t.onViewport(0, atTop = true))
     }
 
     @Test fun trackerWithNothingToRestoreRecordsFromTheStart() {
         val t = PdfPageTracker(restoreTo = 0)
-        assertEquals(record(0), t.onViewport(0))
-        assertEquals(nothing, t.onViewport(0))
-        assertEquals("no page", nothing, t.onViewport(-1))
+        assertEquals(record(0), t.onViewport(0, atTop = true))
+        assertEquals(nothing, t.onViewport(0, atTop = true))
+        assertEquals("no page", nothing, t.onViewport(-1, atTop = true))
+    }
+
+    @Test fun theCurrentPageIsTheOneUnderTheViewportCentre() {
+        val bands = listOf(
+            PdfViewport.Band(2, -900f, 400f),
+            PdfViewport.Band(3, 420f, 1720f),
+            PdfViewport.Band(4, 1740f, 3040f),
+        )
+        assertEquals("centre 1200 is inside page 3", 3, PdfViewport.centrePage(bands, 1200f))
+        assertEquals("centre 410 is in the gap, nearest page 2's bottom", 2, PdfViewport.centrePage(bands, 405f))
+        assertEquals("nothing laid out", -1, PdfViewport.centrePage(emptyList(), 1200f))
     }
 }
