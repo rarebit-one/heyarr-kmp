@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.mobile
 
-import android.content.pm.ActivityInfo
+import android.app.UiAutomation
 import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.Paint
@@ -8,8 +8,10 @@ import android.graphics.Rect
 import android.graphics.pdf.PdfDocument
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
+import android.view.DisplayCutout
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.view.children
 import androidx.pdf.view.PdfView
@@ -34,10 +36,11 @@ import java.io.File
  * The PDF reader's search button never covers the viewer's scroll thumb or its page chip
  * (#223). On a phone the button sat top right, on the thumb and on "11/439". The viewer draws
  * both against the right edge and moves them down it with the scroll, so this checks them at
- * the first page and at the last, in portrait and landscape, with no display cutout and with
- * a tall one (which lands on the left edge, beside the button, in landscape). The button also
- * has to stay inside the reader's system-bar and cutout padding (#222).
+ * the first page and at the last, in portrait and landscape, under three cutouts: none, the
+ * emulator's own hole punch and an emulated tall notch. The button also has to stay inside the
+ * reader's system-bar and cutout padding (#222) and off the cutout itself.
  *
+ * Each orientation is frozen before the reader opens, so no rotation recreates it mid-check.
  * The PDF is seeded into the reader's download cache, so ReaderActivity opens it without a
  * node; the URL's port has nothing listening, so a cache miss fails rather than hangs.
  */
@@ -49,6 +52,9 @@ class PdfReaderSearchButtonTest {
 
     // The emulator's own cutout overlay(s), put back afterwards.
     private var cutoutsBefore: List<String> = emptyList()
+
+    /** The cutout a check runs under. */
+    private enum class Cutout { NONE, DEVICE, TALL }
 
     @Before fun seedTheCache() {
         // ReaderActivity's PDF_CACHE_DIR; PdfDownload names the file after the blob hash.
@@ -66,27 +72,31 @@ class PdfReaderSearchButtonTest {
         }
         file.outputStream().use { doc.writeTo(it) }
         doc.close()
-        // No remembered page: the reader would restore it over the scrolls below.
-        PrefsReadingPositionStore(ctx).put(ASSET, "{}")
         cutoutsBefore = cutoutOverlays().filter { it.second }.map { it.first }
     }
 
-    @After fun restoreTheCutout() {
+    @After fun restoreTheDevice() {
         cutoutOverlays().filter { it.second }.forEach { shell("cmd overlay disable ${it.first}") }
         cutoutsBefore.forEach { shell("cmd overlay enable $it") }
+        instrumentation.uiAutomation.setRotation(UiAutomation.ROTATION_UNFREEZE)
     }
 
-    @Test fun theSearchButtonClearsTheThumbAndPageChipWithNoCutout() {
-        useCutout(null)
-        checkBothOrientations(expectCutout = false)
+    @Test fun theSearchButtonClearsTheThumbAndPageChipWithNoCutout() = checkBothOrientations(Cutout.NONE)
+
+    @Test fun theSearchButtonClearsTheThumbPageChipAndTheHolePunch() = checkBothOrientations(Cutout.DEVICE)
+
+    @Test fun theSearchButtonClearsTheThumbPageChipAndATallCutout() = checkBothOrientations(Cutout.TALL)
+
+    private fun checkBothOrientations(cutout: Cutout) {
+        useCutout(if (cutout == Cutout.TALL) TALL_CUTOUT else null)
+        checkIn(cutout, "portrait", UiAutomation.ROTATION_FREEZE_0, Configuration.ORIENTATION_PORTRAIT)
+        checkIn(cutout, "landscape", UiAutomation.ROTATION_FREEZE_90, Configuration.ORIENTATION_LANDSCAPE)
     }
 
-    @Test fun theSearchButtonClearsTheThumbPageChipAndATallCutout() {
-        useCutout(TALL_CUTOUT)
-        checkBothOrientations(expectCutout = true)
-    }
-
-    private fun checkBothOrientations(expectCutout: Boolean) {
+    private fun checkIn(cutout: Cutout, orientation: String, rotation: Int, expected: Int) {
+        assertTrue("could not freeze the rotation for $orientation", instrumentation.uiAutomation.setRotation(rotation))
+        // No remembered page: the reader would restore it over the scrolls below.
+        PrefsReadingPositionStore(ctx).put(ASSET, "{}")
         val intent = ReaderActivity.intent(
             ctx,
             assetId = ASSET,
@@ -95,32 +105,54 @@ class PdfReaderSearchButtonTest {
             format = ReaderFormat.PDF,
         )
         ActivityScenario.launch<ReaderActivity>(intent).use { scenario ->
-            // The cutout overlay applies asynchronously; the scenario follows the recreation.
-            val cutout = if (expectCutout) "present" else "absent"
+            val where = "$orientation, ${cutout.name.lowercase()} cutout"
             scenario.await(
-                "the portrait cutout to be $cutout",
-                seen = { "cutout=${it.window.decorView.rootWindowInsets?.displayCutout} overlays=${cutoutOverlays()}" },
+                "the $where PDF to load",
+                seen = { "orientation=${it.resources.configuration.orientation} cutout=${it.displayCutout()}" },
             ) { activity ->
-                (activity.window.decorView.rootWindowInsets?.displayCutout != null) == expectCutout
+                // Applied here, not once: a late cutout-overlay change recreates the activity.
+                activity.useCutoutMode(cutout)
+                activity.resources.configuration.orientation == expected && activity.hasCutout(cutout) &&
+                    activity.pdfView() != null && activity.reader()?.loadedPageCount == PAGES &&
+                    activity.searchButton()?.isLaidOut == true
             }
-            scenario.checkBothEnds("portrait", Configuration.ORIENTATION_PORTRAIT)
-            scenario.onActivity { it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
-            scenario.checkBothEnds("landscape", Configuration.ORIENTATION_LANDSCAPE)
+            // The thumb and chip fade out between scrolls; keep them drawn so their bounds are current.
+            scenario.onActivity { it.pdfView()?.fastScrollVisibility = PdfView.FastScrollVisibility.ALWAYS_SHOW }
+            scenario.checkAt("$where, first page", page = 0) { pdf, thumb -> thumb.centerY() < pdf.height / 2 }
+            scenario.checkAt("$where, last page", page = PAGES - 1) { pdf, thumb ->
+                !pdf.canScrollVertically(1) && thumb.centerY() > pdf.height / 2
+            }
         }
     }
 
-    private fun ActivityScenario<ReaderActivity>.checkBothEnds(orientation: String, expected: Int) {
-        await("the $orientation PDF to load") { activity ->
-            activity.resources.configuration.orientation == expected && activity.pdfView() != null &&
-                activity.reader()?.loadedPageCount == PAGES && activity.searchButton()?.isLaidOut == true
+    /**
+     * Lay the window out as the phone would. Android 15+ draws a targetSdk 35 app into the cutout
+     * on every edge (ALWAYS), while this API 34 emulator would otherwise letterbox a landscape
+     * window away from it. The emulator's hole punch is part of its device profile, not an
+     * emulation overlay, so it cannot be switched off; a window that NEVER enters the cutout gets
+     * no cutout inset, the layout of a phone without one.
+     */
+    private fun ReaderActivity.useCutoutMode(cutout: Cutout) {
+        val mode = if (cutout == Cutout.NONE) {
+            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER
+        } else {
+            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
         }
-        // The thumb and chip fade out between scrolls; keep them drawn so their bounds are current.
-        onActivity { it.pdfView()?.fastScrollVisibility = PdfView.FastScrollVisibility.ALWAYS_SHOW }
-        checkAt("$orientation, first page", page = 0) { pdf, thumb ->
-            pdf.scrollY == 0 && thumb.centerY() < pdf.height / 2
+        if (window.attributes.layoutInDisplayCutoutMode != mode) {
+            window.attributes = window.attributes.apply { layoutInDisplayCutoutMode = mode }
         }
-        checkAt("$orientation, last page", page = PAGES - 1) { pdf, thumb ->
-            !pdf.canScrollVertically(1) && thumb.centerY() > pdf.height / 2
+    }
+
+    private fun ReaderActivity.displayCutout(): DisplayCutout? = window.decorView.rootWindowInsets?.displayCutout
+
+    /** Whether the window reports the [cutout] asked for; the tall overlay applies asynchronously. */
+    private fun ReaderActivity.hasCutout(cutout: Cutout): Boolean {
+        val rects = displayCutout()?.boundingRects.orEmpty().filterNot { it.isEmpty }
+        val longest = rects.maxOfOrNull { maxOf(it.width(), it.height()) } ?: 0
+        return when (cutout) {
+            Cutout.NONE -> rects.isEmpty()
+            Cutout.DEVICE -> rects.isNotEmpty()
+            Cutout.TALL -> longest > TALL_MIN_DP * resources.displayMetrics.density
         }
     }
 
@@ -266,6 +298,7 @@ class PdfReaderSearchButtonTest {
         const val CHIP_BOUNDS = "getIndicatorScreenBounds\$pdf_viewer"
         const val CUTOUT_OVERLAY_PREFIX = "com.android.internal.display.cutout.emulation."
         const val TALL_CUTOUT = CUTOUT_OVERLAY_PREFIX + "tall"
+        const val TALL_MIN_DP = 64 // the tall notch is 96 dp wide; the hole punch about 45
         const val TIMEOUT_MS = 20_000L
         const val POLL_MS = 100L
     }

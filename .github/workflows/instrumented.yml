@@ -98,6 +98,7 @@ jobs:
               (pkg + "PdfReaderInsetsTest", "thePdfReaderIsPaddedClearOfTheSystemBars"),
               # Its search button clears the scroll thumb, the page chip and the cutout (#223).
               (pkg + "PdfReaderSearchButtonTest", "theSearchButtonClearsTheThumbAndPageChipWithNoCutout"),
+              (pkg + "PdfReaderSearchButtonTest", "theSearchButtonClearsTheThumbPageChipAndTheHolePunch"),
               (pkg + "PdfReaderSearchButtonTest", "theSearchButtonClearsTheThumbPageChipAndATallCutout"),
           }
           executed = set()
