@@ -96,6 +96,10 @@ jobs:
               (pkg + "PdfReaderSmokeTest", "aPdfWithNoRememberedPageOpensAtTheStart"),
               # The PDF reader clears the status/navigation bars and the cutout, both orientations.
               (pkg + "PdfReaderInsetsTest", "thePdfReaderIsPaddedClearOfTheSystemBars"),
+              # Its search button clears the scroll thumb, the page chip and the cutout (#223).
+              (pkg + "PdfReaderSearchButtonTest", "theSearchButtonClearsTheThumbAndPageChipWithNoCutout"),
+              (pkg + "PdfReaderSearchButtonTest", "theSearchButtonClearsTheThumbPageChipAndTheHolePunch"),
+              (pkg + "PdfReaderSearchButtonTest", "theSearchButtonClearsTheThumbPageChipAndATallCutout"),
           }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")
