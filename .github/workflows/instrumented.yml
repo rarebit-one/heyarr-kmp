@@ -94,6 +94,8 @@ jobs:
               # The PDF viewer on a device (#162): a real PDF loads, resumes, records its page.
               (pkg + "PdfReaderSmokeTest", "aPdfOpensAtTheRememberedPageAndRecordsTheNext"),
               (pkg + "PdfReaderSmokeTest", "aPdfWithNoRememberedPageOpensAtTheStart"),
+              # The PDF reader clears the status/navigation bars and the cutout, both orientations.
+              (pkg + "PdfReaderInsetsTest", "thePdfReaderIsPaddedClearOfTheSystemBars"),
           }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")
