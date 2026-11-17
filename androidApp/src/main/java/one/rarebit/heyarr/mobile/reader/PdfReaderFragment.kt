@@ -76,7 +76,9 @@ class PdfReaderFragment : PdfViewerFragment() {
 
     private fun onViewport(page: Int, atTop: Boolean) {
         currentPage = page
-        when (val step = tracker?.onViewport(page, atTop)) {
+        val step = tracker?.onViewport(page, atTop)
+        android.util.Log.d("HeyarrPdfDbg", "viewport page=$page atTop=$atTop scrollY=${view?.scrollY} h=${view?.height} tracker=${tracker != null} step=$step")
+        when (step) {
             is PdfPageTracker.Step.Record -> {
                 val id = assetId ?: return
                 PrefsReadingPositionStore(requireContext()).put(id, PdfPosition.locatorFor(step.page, pageCount))
@@ -84,7 +86,12 @@ class PdfReaderFragment : PdfViewerFragment() {
 
             // Posted: this runs inside the viewer's own viewport dispatch. runCatching: a
             // refused scroll (the document swapped out underneath) must not take the reader down.
-            is PdfPageTracker.Step.Restore -> view?.let { v -> v.post { runCatching { v.scrollToPage(step.page) } } }
+            is PdfPageTracker.Step.Restore -> view?.let { v ->
+                v.post {
+                    val r = runCatching { v.scrollToPage(step.page) }
+                    android.util.Log.d("HeyarrPdfDbg", "restore ${step.page} -> $r scrollY=${v.scrollY}")
+                }
+            }
 
             PdfPageTracker.Step.Nothing, null -> Unit
         }
@@ -106,6 +113,7 @@ class PdfReaderFragment : PdfViewerFragment() {
         // which then has nothing laid out to scroll through. The tracker asks for the restore
         // from the first viewport changes instead.
         tracker = PdfPageTracker(PdfPosition.pageIndexOf(stored, pageCount))
+        android.util.Log.d("HeyarrPdfDbg", "loaded pages=$pageCount stored=$stored asset=$assetId")
     }
 
     /** The loaded document's page count, 0 before it loads; for the on-device smoke test. */
