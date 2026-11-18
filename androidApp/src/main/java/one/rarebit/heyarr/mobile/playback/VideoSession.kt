@@ -31,6 +31,7 @@ import okhttp3.OkHttpClient
 import one.rarebit.heyarr.core.playback.Copy
 import one.rarebit.heyarr.core.playback.SeekCoalescer
 import one.rarebit.heyarr.mobile.library.WorkAsset
+import kotlin.time.Duration.Companion.milliseconds
 
 /** One episode the player can move on to after the current one (the work's other playable files). */
 data class QueueEntry(
@@ -108,6 +109,12 @@ class VideoSession(
         /** [error] is the second decoder failure in a row: the film's other copy is worth offering (#231). */
         val offerOtherCopy: Boolean = false,
         val issue: String? = null,
+        /**
+         * The connection to the node dropped and the stream is retrying, or it lapsed and is
+         * being planned again (heyarr-kmp#232): said while it lasts, with the place it will
+         * carry on from. Cleared once the stream is loading again.
+         */
+        val reconnecting: String? = null,
         val noFrame: Boolean = false,
         val renderedFrame: Boolean = false,
     ) {
@@ -190,6 +197,15 @@ class VideoSession(
     /** The Version menu picked another copy of the film (heyarr-kmp#225) — the shell re-plans it here. */
     var onSwitchCopy: (Copy<WorkAsset>) -> Unit = {}
 
+    /**
+     * The stream's URL or lease lapsed (401 / 403 / 410, heyarr-kmp#232): the shell plans the
+     * item again and carries on at [atSeconds], playing if [play].
+     */
+    var onRefresh: (atSeconds: Double, play: Boolean) -> Unit = { _, _ -> }
+
+    /** How far the stream had loaded when it last said it was reconnecting; past it, it is back. */
+    private var reconnectBufferedMs = 0L
+
     val active: Boolean get() = current != null
 
     /**
@@ -200,14 +216,23 @@ class VideoSession(
     fun load(np: NowPlaying) {
         val same = isPlaying(np)
         if (!same) leaveCurrent()
+        val sameAsset = current?.assetId != null && current?.assetId == np.assetId
         current = np
         if (same && suspended != null) return // the app is in the background; onForeground resumes it
-        if (same && player != null) {
+        // A failed player is rebuilt, not resumed: Media3 leaves it where play() does nothing.
+        if (same && player != null && player?.playerError == null) {
             reload(np)
             return
         }
-        // A new item or a new copy: nothing that failed before counts against it.
-        recovery.reset()
+        // A new item or a new copy: nothing that failed before counts against it. The same one
+        // planned again after a lapse keeps its count, so a refusal that persists is shown
+        // rather than refreshed for ever.
+        if (!sameAsset) recovery.reset()
+        startFresh(np)
+    }
+
+    /** A fresh player for [np], from its start position. */
+    private fun startFresh(np: NowPlaying) {
         suspended = null
         val t = np.target
         pinnedDurationMs = t.sourceDurationSeconds?.takeIf { it > 0 }?.let { (it * 1000).toLong() } ?: 0L
@@ -266,9 +291,16 @@ class VideoSession(
         val selector = DefaultTrackSelector(context)
         selections?.let { selector.setParameters(it) }
         trackSelector = selector
+        // Ride out a lost connection (heyarr-kmp#232); its callback runs on a loader thread.
+        val errors = StreamErrorPolicy(onRetry = { _, delayMs ->
+            main.post { if (trackSelector === selector) reconnecting(delayMs) }
+        })
         val p = ExoPlayer.Builder(context)
             .setTrackSelector(selector)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(HeyarrDataSource.factory(okHttp, t, liveAuthorization)))
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(HeyarrDataSource.factory(okHttp, t, liveAuthorization))
+                    .setLoadErrorHandlingPolicy(errors),
+            )
             .setHandleAudioBecomingNoisy(true)
             // Declare this as MOVIE audio (not the default UNKNOWN). Left
             // undeclared, Nothing OS can't tell video playback from a music
@@ -417,7 +449,14 @@ class VideoSession(
             val p = player ?: return
             val t = target ?: return
             val at = sourcePositionMs(p)
-            when (val decision = recovery.onError(error.errorCodeName, at)) {
+            when (val decision = recovery.onError(error.errorCodeName, at, StreamErrorPolicy.httpStatus(error))) {
+                // The URL or lease lapsed: planned again by the shell, at the same place.
+                PlayerRecovery.Decision.Refresh -> {
+                    val play = p.playWhenReady
+                    state = state.copy(reconnecting = REFRESHING, buffering = true)
+                    main.post { if (player === p) onRefresh(secondsOf(at), play) }
+                }
+
                 // Not from inside the failing player's own callback: it is released by the
                 // rebuild, so let this dispatch return first.
                 PlayerRecovery.Decision.Retry -> {
@@ -493,6 +532,12 @@ class VideoSession(
                         state.copy(durationMs = durationMs(p).takeIf { it > 0 } ?: state.durationMs)
                     }
                     recovery.onPosition(state.positionMs, p.isPlaying)
+                    // Loading again past where it was when the connection dropped: it is back.
+                    if (state.reconnecting != null && state.reconnecting != REFRESHING &&
+                        state.bufferedMs > reconnectBufferedMs + RECONNECTED_MARGIN_MS
+                    ) {
+                        state = state.copy(reconnecting = null)
+                    }
                     val now = System.currentTimeMillis()
                     if (p.isPlaying && now - lastReport >= PROGRESS_TICK_MS) {
                         lastReport = now
@@ -530,9 +575,21 @@ class VideoSession(
      * dead after a decoder failure (#231). True when it did; false for an ordinary play.
      */
     private fun retryOnPlay(): Boolean {
-        if (recovery.onPlay() == null) return false
-        restartAt(player?.let(::sourcePositionMs) ?: state.positionMs, play = true)
+        val decision = recovery.onPlay() ?: return false
+        val at = player?.let(::sourcePositionMs) ?: state.positionMs
+        // A lapsed URL is planned again rather than re-requested as it was.
+        if (decision == PlayerRecovery.Decision.Refresh) onRefresh(secondsOf(at), true) else restartAt(at, play = true)
         return true
+    }
+
+    /** Say the connection dropped, when the next try is and where the film will carry on from. */
+    private fun reconnecting(delayMs: Long) {
+        reconnectBufferedMs = state.bufferedMs
+        val seconds = delayMs.milliseconds.inWholeSeconds.coerceAtLeast(1)
+        state = state.copy(
+            reconnecting = "No connection to the node. Trying again in $seconds s; " +
+                "it carries on from ${clockOf(state.positionMs)} when it is back.",
+        )
     }
 
     /**
@@ -779,5 +836,19 @@ class VideoSession(
 
         /** How far a reload of the item playing must ask to start from where it is before it seeks. */
         private const val RELOAD_SEEK_SLACK_MS = 15_000L
+
+        /** Loaded this far past the drop and the connection is back. */
+        private const val RECONNECTED_MARGIN_MS = 1_000L
+
+        private const val REFRESHING = "The stream lapsed; getting a fresh one from the node…"
+
+        private const val MS_PER_SECOND = 1000.0
+
+        private fun secondsOf(ms: Long): Double = ms / MS_PER_SECOND
+
+        /** `1:23:45` / `12:34`, as the player's clock reads. */
+        private fun clockOf(ms: Long): String = ms.coerceAtLeast(0).milliseconds.toComponents { h, m, s, _ ->
+            if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%d:%02d".format(m, s)
+        }
     }
 }

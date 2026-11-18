@@ -61,6 +61,15 @@ class AppGraph(app: Application, scope: CoroutineScope) {
         .addInterceptor(AuthInterceptor(baseUrl = ::baseUrl, header = authHeader))
         .build()
 
+    /**
+     * The players' client (heyarr-kmp#232): the same pool, interceptor and credential, with no
+     * overall call timeout. A film or a long track is ONE ranged read that streams for as long
+     * as the player keeps loading, and the 30 s call timeout above cut every one of them off
+     * half a minute in: a needless reconnect at best, and during an outage one more failure
+     * on the count. Connect and read timeouts still catch a node that has gone quiet.
+     */
+    val streamHttp: OkHttpClient = okHttp.newBuilder().callTimeout(0, TimeUnit.SECONDS).build()
+
     /** A bare client for the public metadata sources: no interceptor, so the node's credential never leaves for another host. */
     private val bareHttp: OkHttpClient = OkHttpClient.Builder().callTimeout(
         20,
@@ -110,7 +119,7 @@ class AppGraph(app: Application, scope: CoroutineScope) {
      * screen, and in the background, where no screen is.
      */
     val video: VideoSession by lazy {
-        VideoSession(app, okHttp, scope, liveAuthorization = authHeader::current).also { v ->
+        VideoSession(app, streamHttp, scope, liveAuthorization = authHeader::current).also { v ->
             v.onProgress = { p -> recordResume(v, p) }
             v.onStopped = resumeRecorder::stopped
         }

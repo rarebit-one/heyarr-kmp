@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.mobile.playback
 
+import one.rarebit.heyarr.core.playback.Reconnect
+
 /**
  * When a failed player is re-prepared, and when it is left for the person to see (#231).
  * Pure, so the whole state machine is unit-tested; [VideoSession] feeds it the player's
@@ -18,13 +20,19 @@ package one.rarebit.heyarr.mobile.playback
  *    Media3's own recovery, and doing nothing is what made Play look broken;
  *  - only playing on [recoveredAfterMs] past the point that failed counts as recovered.
  *    A first frame is not enough: a file that breaks the decoder at one sample would
- *    otherwise render, fail and auto-retry for ever, flickering, with nothing shown.
+ *    otherwise render, fail and auto-retry for ever, flickering, with nothing shown;
+ *  - a refusal that means the stream's URL or lease lapsed (401 / 403 / 410, [Reconnect.expired];
+ *    heyarr-kmp#232) is planned again ONCE, at the position: a stream token running out
+ *    in a long film is the stream's age, not a fault. Failing again straight away is shown.
  */
 class PlayerRecovery(private val autoRetries: Int = 1, private val recoveredAfterMs: Long = RECOVERED_AFTER_MS) {
     /** What to do about one error. */
     sealed interface Decision {
         /** Re-prepare at the current position, keeping the copy, audio track and captions. */
         data object Retry : Decision
+
+        /** Plan the item again and carry on at the position: its URL or lease lapsed. */
+        data object Refresh : Decision
 
         /** Leave the error up. [offerOtherCopy]: failing twice in a row, so the copy may be the problem. */
         data class Show(val offerOtherCopy: Boolean) : Decision
@@ -39,24 +47,35 @@ class PlayerRecovery(private val autoRetries: Int = 1, private val recoveredAfte
         private set
 
     private var failedAtMs = 0L
+    private var refreshed = false
+    private var lastExpired = false
 
-    /** The player failed at [positionMs] (source time) with Media3's [errorCodeName]. */
-    fun onError(errorCodeName: String, positionMs: Long): Decision {
+    /**
+     * The player failed at [positionMs] (source time) with Media3's [errorCodeName], and the
+     * HTTP status behind it when the node refused a read ([httpStatus]).
+     */
+    fun onError(errorCodeName: String, positionMs: Long, httpStatus: Int? = null): Decision {
         consecutiveFailures++
         failedAtMs = positionMs
-        if (recoverable(errorCodeName) && consecutiveFailures <= autoRetries) {
-            showing = false
-            return Decision.Retry
+        lastExpired = Reconnect.expired(httpStatus)
+        val decision = when {
+            lastExpired && !refreshed -> Decision.Refresh.also { refreshed = true }
+
+            recoverable(errorCodeName) && consecutiveFailures <= autoRetries -> Decision.Retry
+
+            // The other copy is the answer to a decoder that cannot take this one, not to a refusal.
+            else -> Decision.Show(offerOtherCopy = recoverable(errorCodeName) && consecutiveFailures > autoRetries)
         }
-        showing = true
-        return Decision.Show(offerOtherCopy = consecutiveFailures > autoRetries)
+        showing = decision is Decision.Show
+        return decision
     }
 
     /** The person pressed Play: [Decision.Retry] while an error is up, null for an ordinary play. */
     fun onPlay(): Decision? {
         if (!showing) return null
         showing = false
-        return Decision.Retry
+        // A lapsed URL would only be refused again: Play plans it afresh, once per press.
+        return if (lastExpired) Decision.Refresh else Decision.Retry
     }
 
     /** The playhead, from the session's ticker: playing on well past the failure clears the count. */
@@ -70,6 +89,8 @@ class PlayerRecovery(private val autoRetries: Int = 1, private val recoveredAfte
         consecutiveFailures = 0
         showing = false
         failedAtMs = 0L
+        refreshed = false
+        lastExpired = false
     }
 
     companion object {

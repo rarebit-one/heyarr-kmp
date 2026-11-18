@@ -307,6 +307,8 @@ internal fun InlineControls(video: VideoSession, item: NowPlaying, onNext: (Queu
                 true
         }, fullscreen = false)
         PlayerClockRow(video)
+        // The connection dropped or the stream lapsed (#232): said, with where it carries on.
+        ps.reconnecting?.let { Notice(it, tone = Tokens.warning) }
         val banner =
             ps.issue
                 ?: (

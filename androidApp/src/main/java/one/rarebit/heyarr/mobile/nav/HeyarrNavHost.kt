@@ -178,6 +178,8 @@ fun HeyarrNavHost(
         video.onIssue = vm.playback::onIssue
         video.onSwitchCopy =
             { copy -> vm.playback.switchCopy(copy, video.state.positionMs.milliseconds.toDouble(DurationUnit.SECONDS)) }
+        // A stream URL or lease that lapsed mid-film is planned again, at the same place (#232).
+        video.onRefresh = vm.playback::refresh
     }
     // What the coordinator resolved is what the session plays; a new asset puts the player in front.
     var lastStartedAsset by remember { mutableStateOf<String?>(null) }

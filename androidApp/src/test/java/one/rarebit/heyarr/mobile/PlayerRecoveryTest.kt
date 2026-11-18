@@ -100,4 +100,39 @@ class PlayerRecoveryTest {
         r.onPosition(PlayerRecovery.RECOVERED_AFTER_MS * 2, playing = false)
         assertEquals("a seek while paused proves nothing about the decoder", 1, r.consecutiveFailures)
     }
+
+    // ── A lapsed stream URL or lease (heyarr-kmp#232) ───────────────────────────────
+
+    private val badStatus = "ERROR_CODE_IO_BAD_HTTP_STATUS"
+
+    @Test fun anExpiredStreamIsPlannedAgainOnceAndPlayingOnForgivesIt() {
+        val r = PlayerRecovery()
+        assertEquals("410 in a long film: plan it again", Decision.Refresh, r.onError(badStatus, 5_400_000, 410))
+        assertFalse("nothing shown while it does", r.showing)
+        assertEquals(
+            "refused again straight away: shown, and no other copy for a refusal",
+            Decision.Show(offerOtherCopy = false),
+            r.onError(badStatus, 5_400_000, 410),
+        )
+        assertEquals("Play plans it afresh rather than asking for the lapsed URL", Decision.Refresh, r.onPlay())
+        assertEquals(
+            "refused once more: shown again",
+            Decision.Show(offerOtherCopy = false),
+            r.onError(badStatus, 5_400_000, 410),
+        )
+        assertEquals(Decision.Refresh, r.onPlay())
+        // That fresh plan plays on.
+        r.onPosition(5_400_000 + PlayerRecovery.RECOVERED_AFTER_MS, playing = true)
+        assertEquals(
+            "a later expiry, an hour on, is refreshed too",
+            Decision.Refresh,
+            r.onError(badStatus, 9_000_000, 403),
+        )
+    }
+
+    @Test fun onlyALapsedUrlIsRefreshed() {
+        assertEquals(Decision.Refresh, PlayerRecovery().onError(badStatus, 0, 401))
+        assertEquals(Decision.Show(offerOtherCopy = false), PlayerRecovery().onError(badStatus, 0, 404))
+        assertEquals(Decision.Show(offerOtherCopy = false), PlayerRecovery().onError(badStatus, 0, 500))
+    }
 }

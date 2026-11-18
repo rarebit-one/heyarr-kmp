@@ -357,6 +357,25 @@ class PlaybackCoordinatorTest {
         assertFalse("an ordinary play plays", c.nowPlaying.value!!.startPaused)
     }
 
+    @Test fun aLapsedStreamIsPlannedAgainAtThePlaceOnTheSameCopy() {
+        val stream = """{"mode":"stream","url":"/api/v1/playback/stream/tok1","mime":"video/mp4"}"""
+        val (c, t) = coordinator(mapOf("POST /playback/plan" to HttpResponse(200, stream)))
+        c.capabilities = caps
+        c.playFile("Film", "a1", hash, "video/x-matroska", "movie", workId = "w1")
+        val before = c.nowPlaying.value!!
+        val plans = t.calls.size
+        c.refresh(atSeconds = 5400.0, play = true)
+        val after = c.nowPlaying.value!!
+        assertEquals("asked the node again", plans + 1, t.calls.size)
+        assertTrue("for the same file", t.calls.last().third!!.contains("\"asset_id\":\"a1\""))
+        assertEquals("a1", after.assetId)
+        assertEquals("where it lapsed", 5400.0, after.startSeconds, 0.0)
+        assertFalse("playing, as it was", after.startPaused)
+        assertTrue("a new play the player will load", after.request != before.request)
+        c.refresh(atSeconds = 5410.0, play = false)
+        assertTrue("paused, as it was", c.nowPlaying.value!!.startPaused)
+    }
+
     @Test fun everyPlayIsANewRequestSoStartOverTwiceIsTwoPlays() {
         val (c, _) = coordinator(emptyMap())
         c.playFile("Film", "a1", hash, "video/mp4", "movie", startSeconds = 0.0)

@@ -78,14 +78,16 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          # Then two checks driven from outside the app's process (#232): the player after
-          # process death (two instrumentations with the process dying between), and the
-          # headphones going away (a protected broadcast, sent from a root shell). Last, as the
-          # second restarts adbd as root.
+          # Then the checks driven from outside the app's process (#232): the player after
+          # process death (two instrumentations with the process dying between), a real network
+          # outage (Wi-Fi and mobile data off, against a server on this host), and the
+          # headphones going away (a protected broadcast, sent from a root shell). That one is
+          # last, as it restarts adbd as root.
           script: |
             ./gradlew :androidApp:connectedDebugAndroidTest --no-daemon --stacktrace
             ./gradlew :androidApp:installDebug :androidApp:installDebugAndroidTest --no-daemon
             androidApp/scripts/process-death-check.sh
+            androidApp/scripts/network-outage-check.sh
             androidApp/scripts/audio-noisy-check.sh
 
       - name: Verify the smoke tests actually ran
@@ -129,6 +131,11 @@ jobs:
               (pkg + "AudioInterruptionTest", "anotherMediaAppPausesTheFilmForGood"),
               (pkg + "AudioInterruptionTest", "aCallPausesTheMusicAndItCarriesOnWhenTheCallEnds"),
               (pkg + "AudioInterruptionTest", "anotherMediaAppPausesTheMusicForGood"),
+              # The network (#232): an outage longer than the buffer is ridden out from where it
+              # stalled; a lapsed stream is planned again at the place. The Wi-Fi-off outage runs
+              # from network-outage-check.sh, not here.
+              (pkg + "NetworkResilienceTest", "anOutageLongerThanTheBufferIsRiddenOutAndCarriesOnWhereItStalled"),
+              (pkg + "NetworkResilienceTest", "aStreamThatLapsesIsPlannedAgainAndCarriesOnAtThePlace"),
           }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")

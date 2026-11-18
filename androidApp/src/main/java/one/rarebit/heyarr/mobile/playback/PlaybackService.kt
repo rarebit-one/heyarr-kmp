@@ -30,7 +30,8 @@ class PlaybackService : MediaSessionService() {
     override fun onCreate() {
         super.onCreate()
         val graph = (application as HeyarrApp).graph
-        val okHttp = graph.okHttp
+        // No overall call timeout: a track is one read that streams for minutes (#232).
+        val okHttp = graph.streamHttp
         val dataSources = OkHttpDataSource.Factory(okHttp)
         // Each track's blob URL is swapped, as it loads, for the render capability minted
         // when the queue started — a read that needs no proof, so it works on a locked
