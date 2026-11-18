@@ -172,6 +172,39 @@ object ResumePoints {
 }
 
 /**
+ * What the player held when the app last left it (heyarr-kmp#232): one item, where it stood,
+ * at any position (a resume point needs half a minute; this does not). Cleared by Stop, the
+ * end of the item or another item taking its place, so what is left after the process dies is
+ * what the person was in the middle of, and the next start restores it, paused.
+ */
+interface PlayerSnapshotStore {
+    fun read(): ResumePoint?
+    fun write(point: ResumePoint)
+    fun clear()
+}
+
+/** Non-persistent store for tests and previews. */
+class InMemoryPlayerSnapshotStore : PlayerSnapshotStore {
+    private var point: ResumePoint? = null
+    override fun read() = point
+    override fun write(point: ResumePoint) {
+        this.point = point
+    }
+    override fun clear() {
+        point = null
+    }
+}
+
+/** Whether a snapshot left by a process that died is put back in the player. Pure. */
+object PlayerRestore {
+    /** Older than this, the paused bar would be a surprise; Continue watching still has it. */
+    const val MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000
+
+    fun restorable(snapshot: ResumePoint, nowMs: Long): Boolean =
+        !snapshot.item.blobHash.isNullOrBlank() && nowMs - snapshot.updatedAtMs in 0..MAX_AGE_MS
+}
+
+/**
  * Writes resume points as the player reports where it is. The player calls [progress] on
  * its ticks (written every [ResumePolicy.SAVE_EVERY_MS]), [checkpoint] whenever it stops
  * moving or leaves (pause, Stop, the app going to the background: written at once), and
@@ -179,7 +212,12 @@ object ResumePoints {
  * point instead: Start over and stopping in the first half-minute starts over next time, and
  * a film watched into its credits is done. So the store holds only points worth resuming.
  */
-class ResumeRecorder(private val store: ResumeStore, private val clock: () -> Long) {
+class ResumeRecorder(
+    private val store: ResumeStore,
+    /** Where the player stands, for a restore after process death; written with every point. */
+    private val snapshots: PlayerSnapshotStore? = null,
+    private val clock: () -> Long,
+) {
     private var lastSavedAtMs = Long.MIN_VALUE
     private var lastAssetId: String? = null
 
@@ -194,13 +232,20 @@ class ResumeRecorder(private val store: ResumeStore, private val clock: () -> Lo
 
     fun ended(item: ResumeItem) {
         store.remove(item.assetId)
+        snapshots?.clear()
         lastAssetId = item.assetId
         lastSavedAtMs = clock()
+    }
+
+    /** Stop: nothing is playing, and nothing is to be restored. */
+    fun stopped() {
+        snapshots?.clear()
     }
 
     private fun write(item: ResumeItem, positionSeconds: Double, durationSeconds: Double?, now: Long) {
         lastAssetId = item.assetId
         lastSavedAtMs = now
+        snapshots?.write(ResumePoint(item, positionSeconds, durationSeconds?.takeIf { it > 0 }, now))
         if (!ResumePolicy.resumable(positionSeconds, durationSeconds)) {
             store.remove(item.assetId)
             return

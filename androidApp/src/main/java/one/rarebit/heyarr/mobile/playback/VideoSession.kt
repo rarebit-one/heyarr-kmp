@@ -181,6 +181,9 @@ class VideoSession(
     /** Where playback reached, for the consumption reporter — set by the shell. */
     var onProgress: (PlaybackProgress) -> Unit = {}
 
+    /** Stop was pressed: nothing is playing, and nothing is to be restored after process death. */
+    var onStopped: () -> Unit = {}
+
     /** A renderer type Media3 cannot decode — the shell may re-plan for a stream. */
     var onIssue: (PlaybackDiagnostics.Issue) -> Unit = {}
 
@@ -212,7 +215,8 @@ class VideoSession(
         startSeconds = np.startSeconds
         resumed = np.startSeconds <= 0 || t.restartSeekable
         val effective = if (t.restartSeekable && t.streamBaseUrl != null) t.atStreamStart(streamStart) else t
-        start(effective, np.title)
+        // A restore after process death comes back paused, where it was (#232).
+        start(effective, np.title, play = !np.startPaused)
     }
 
     /** [np] is the asset already loaded, on the same URL. */
@@ -744,6 +748,7 @@ class VideoSession(
         if (player != null || suspended != null) {
             onProgress(PlaybackProgress(sourceSeconds(), false, PlaybackProgress.Event.LEFT))
         }
+        if (current != null) onStopped()
         suspended = null
         recovery.reset()
         release()

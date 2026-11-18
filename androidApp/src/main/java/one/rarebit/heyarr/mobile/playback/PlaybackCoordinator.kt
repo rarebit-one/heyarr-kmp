@@ -15,6 +15,7 @@ import one.rarebit.heyarr.core.playback.Copy
 import one.rarebit.heyarr.core.playback.DisplayFit
 import one.rarebit.heyarr.core.playback.QualityPreference
 import one.rarebit.heyarr.core.playback.ResumeItem
+import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.core.playback.ResumePoints
 import one.rarebit.heyarr.core.playback.ResumeStore
 import one.rarebit.heyarr.mobile.consumption.ProgressReporter
@@ -54,6 +55,11 @@ data class NowPlaying(
      * film are two requests, and an identical value would be swallowed by the state flow.
      */
     val request: Int = 0,
+    /**
+     * Load it paused: what a process that died in the background was playing, put back where
+     * it was (heyarr-kmp#232). It waits in the now-playing bar rather than taking the screen.
+     */
+    val startPaused: Boolean = false,
 ) {
     /** What a resume point of this item is about (heyarr-kmp#232); null without an asset to key it by. */
     fun resumeItem(): ResumeItem? = assetId?.let {
@@ -320,6 +326,7 @@ class PlaybackCoordinator(
         artworkUrl: String? = null,
         subtitles: List<WorkAsset> = emptyList(),
         workId: String? = null,
+        startPaused: Boolean = false,
     ) {
         val cred = effectiveCred()
         val isVideo = PlaybackTarget.looksLikeVideo(mime, kind)
@@ -337,6 +344,7 @@ class PlaybackCoordinator(
                     kind = kind,
                     artworkUrl = artworkUrl,
                     workId = workId,
+                    startPaused = startPaused,
                 ),
                 startSeconds,
             )
@@ -355,6 +363,21 @@ class PlaybackCoordinator(
             artworkUrl = artworkUrl,
             subtitles = subs,
             workId = workId,
+            startPaused = startPaused,
+        )
+    }
+
+    /**
+     * Put back what the player held when a process died (heyarr-kmp#232): the same file, at
+     * the same position, paused. Planned afresh, as any play is: a stream URL or lease from
+     * before the process died may well have expired.
+     */
+    fun restore(point: ResumePoint) {
+        val hash = point.item.blobHash ?: return
+        playFile(
+            point.item.title, point.assetId, hash, point.item.mime, point.item.kind,
+            startSeconds = point.positionSeconds, artworkUrl = point.item.artworkUrl, workId = point.workId,
+            startPaused = true,
         )
     }
 
@@ -400,6 +423,7 @@ class PlaybackCoordinator(
         artworkUrl: String? = null,
         subtitles: List<PlaybackTarget.Sidecar> = emptyList(),
         workId: String? = null,
+        startPaused: Boolean = false,
     ) {
         // Every other play (an episode, a continue card) declares the screen as the
         // preference caps it; only a film's copies lift it to the copy (`playCopyAt`).
@@ -414,6 +438,7 @@ class PlaybackCoordinator(
             artworkUrl = artworkUrl,
             maxHeight = maxHeight,
             workId = workId,
+            startPaused = startPaused,
         )
         resolveInto(client, np, caps.forMaxHeight(maxHeight), knownStart)
     }
