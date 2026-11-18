@@ -40,6 +40,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -158,6 +160,11 @@ class MainActivity : FragmentActivity() {
         // background, behind another app, the screen off) and picks up where it was when it
         // starts again (#231). A rotation is not a stop for it.
         lifecycle.addObserver(app.graph.video.lifecycleObserver { isChangingConfigurations })
+        // The music keeps playing in the background; where it stands is written down as the app
+        // goes there, in case the process does not come back (#232).
+        lifecycle.addObserver(
+            LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) app.graph.audio.checkpoint() },
+        )
         setContent {
             HeyarrTheme {
                 val vm: AppViewModel = viewModel(

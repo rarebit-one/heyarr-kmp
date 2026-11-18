@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
@@ -14,13 +16,17 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.playback.ResumePoint
+import one.rarebit.heyarr.mobile.playback.AudioItem
+import one.rarebit.heyarr.mobile.playback.AudioQueueSnapshot
 import one.rarebit.heyarr.mobile.playback.NowPlaying
 import one.rarebit.heyarr.mobile.playback.PlaybackTarget
+import one.rarebit.heyarr.mobile.playback.PrefsAudioQueueStore
 import one.rarebit.heyarr.mobile.playback.PrefsPlayerSnapshotStore
 import one.rarebit.heyarr.mobile.playback.VideoSession
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -45,6 +51,7 @@ class ProcessDeathTest {
     private val phase: String? = InstrumentationRegistry.getArguments().getString("phase")
     private val clip = File(ctx.cacheDir, "smoke/death-clip.mp4")
     private val snapshotFile = File(ctx.dataDir, "shared_prefs/${PrefsPlayerSnapshotStore.PREFS_NAME}.xml")
+    private val musicClip = File(ctx.cacheDir, "smoke/music-clip.mp4")
 
     @Test fun leaveAFilmPlaying() {
         assumeTrue("run by process-death-check.sh", phase == "leave")
@@ -109,6 +116,89 @@ class ProcessDeathTest {
         server.close()
     }
 
+    // ── The music queue (item 5) ────────────────────────────────────────────────────
+
+    @Test fun leaveMusicPlaying() {
+        assumeTrue("run by process-death-check.sh", phase == "leave-music")
+        TestClip.write(musicClip)
+        val server = ClipServer(musicClip.readBytes())
+        val audio = main { graph.audio }
+        // An activity that writes the queue down as it stops, as MainActivity does.
+        val scenario = ActivityScenario.launch(ComponentActivity::class.java)
+        scenario.onActivity { activity ->
+            activity.lifecycle.addObserver(
+                LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) graph.audio.checkpoint() },
+            )
+        }
+        main { audio.playQueue(listOf(track("t1", server.url), track("t2", server.url))) }
+        awaitAudio("the queue is playing") { audio.state.value.playing }
+        main { audio.seekTo(MUSIC_AT_MS) }
+        awaitAudio("playing past where it was sought") {
+            audio.state.value.playing && audio.state.value.positionMs >= MUSIC_AT_MS + 1_000
+        }
+        instrumentation.uiAutomation.executeShellCommand("input keyevent KEYCODE_HOME").close()
+        // ActivityScenario's state is read off the main thread.
+        val deadline = SystemClock.uptimeMillis() + TIMEOUT_MS
+        while (scenario.state != Lifecycle.State.CREATED) {
+            if (SystemClock.uptimeMillis() > deadline) throw AssertionError("never went to the background")
+            SystemClock.sleep(POLL_MS)
+        }
+        val onDisk = queueOnDisk()
+        assertNotNull("the queue reached the disk as the app went to the background", onDisk)
+        assertEquals(listOf("t1", "t2"), onDisk!!.items.map { it.assetId })
+        assertEquals(0, onDisk.index)
+        assertEquals((MUSIC_AT_MS + 1_500).toDouble(), onDisk.positionMs.toDouble(), 2_000.0)
+        // Still playing in the background; the process ends with this instrumentation.
+        assertTrue(audio.state.value.playing)
+    }
+
+    @Test fun restoreTheQueuePaused() {
+        assumeTrue("run by process-death-check.sh", phase == "restore-music")
+        assertEquals("no film was left", null, main { graph.takeRestore() })
+        val queue = main { graph.takeAudioRestore() }
+        assertNotNull("the queue survived the process", queue)
+        assertEquals(listOf("t1", "t2"), queue!!.items.map { it.assetId })
+        assertEquals((MUSIC_AT_MS + 1_500).toDouble(), queue.positionMs.toDouble(), 2_000.0)
+
+        // Put back as the shell puts it back: paused, on its track, at its place. The content URL
+        // it kept points at the last process's server, so the same queue is served again.
+        val server = ClipServer(musicClip.readBytes())
+        val audio = main { graph.audio }
+        val items = queue.items.map { it.copy(contentUrl = server.url) }
+        main { audio.restoreQueue(items, queue.index, queue.positionMs) }
+        awaitAudio("back in the bar") { audio.state.value.item?.assetId == "t1" }
+        SystemClock.sleep(STAYS_PAUSED_MS)
+        assertFalse("paused: a restore does not start playing by itself", audio.state.value.playing)
+        main { audio.play() }
+        awaitAudio("Play carries on from where it was") {
+            audio.state.value.playing && audio.state.value.positionMs >= queue.positionMs + 1_000
+        }
+        main { audio.stop() }
+        // Through the store, as for the film: apply() writes the file a moment later.
+        assertEquals("Stop: nothing left to restore", null, main { PrefsAudioQueueStore(ctx).read() })
+        server.close()
+    }
+
+    private fun track(id: String, url: String) =
+        AudioItem(id, "album", "Track $id", contentUrl = url, mime = "video/mp4")
+
+    private fun queueOnDisk(): AudioQueueSnapshot? {
+        val xml = if (snapshotFile.exists()) snapshotFile.readText() else ""
+        val start = xml.indexOf("name=\"audio\">")
+        if (start < 0) return null
+        val body = xml.substring(xml.indexOf('>', start) + 1, xml.indexOf("</string>", start))
+        return AudioQueueSnapshot.fromJson(body.replace("&quot;", "\"").replace("&amp;", "&"))
+    }
+
+    private fun awaitAudio(what: String, condition: () -> Boolean) {
+        val deadline = SystemClock.uptimeMillis() + TIMEOUT_MS
+        while (!main(condition)) {
+            val late = SystemClock.uptimeMillis() > deadline
+            if (late) throw AssertionError("timed out waiting: $what (${main { graph.audio.state.value }})")
+            SystemClock.sleep(POLL_MS)
+        }
+    }
+
     private fun nowPlaying(url: String) = NowPlaying(
         target = PlaybackTarget(url, Credential.Guest, isVideo = true, mimeType = "video/mp4"),
         title = "Clip",
@@ -165,6 +255,7 @@ class ProcessDeathTest {
         const val HASH = "blake3:death"
         const val CLIP_SECONDS = 120
         const val LEFT_AT_MS = 45_000L
+        const val MUSIC_AT_MS = 20_000L
         const val SLACK_MS = 1_000L
         const val STAYS_PAUSED_MS = 2_000L
         const val TIMEOUT_MS = 30_000L

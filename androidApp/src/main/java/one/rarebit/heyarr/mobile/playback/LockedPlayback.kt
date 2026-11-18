@@ -3,7 +3,6 @@ package one.rarebit.heyarr.mobile.playback
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.LoadControl
-import androidx.media3.exoplayer.upstream.DefaultLoadErrorHandlingPolicy
 import androidx.media3.exoplayer.upstream.LoadErrorHandlingPolicy
 import one.rarebit.heyarr.mobile.net.CredentialUnavailableException
 
@@ -83,8 +82,9 @@ object LockedPlayback {
     }
 
     /**
-     * Media3's default policy, except for [CredentialUnavailableException]: see the object
-     * doc. The Loader compares its error count against [getMinimumLoadableRetryCount]
+     * The film's [StreamErrorPolicy] (a lost connection is ridden out with a growing wait,
+     * heyarr-kmp#232; a 401 / 403 / 410 is left to Media3, as before), except for
+     * [CredentialUnavailableException]: see the object doc. The Loader compares its error count against [getMinimumLoadableRetryCount]
      * whenever a starved renderer asks, and that count must not run out while the phone
      * sits locked, nor between the unlock and the retry that succeeds.
      *
@@ -95,7 +95,8 @@ object LockedPlayback {
      * unrelated failure does can shorten it. Once the phone has been unlocked for
      * [UNLOCK_GRACE_MS], a dead node surfaces as a playback error as before.
      */
-    class ErrorPolicy(private val clock: () -> Long = System::currentTimeMillis) : DefaultLoadErrorHandlingPolicy() {
+    class ErrorPolicy(private val clock: () -> Long = System::currentTimeMillis) :
+        StreamErrorPolicy(clock, refreshExpired = false) {
         @Volatile
         private var lastCredentialFailureAt: Long? = null
 

@@ -18,6 +18,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import okhttp3.OkHttpClient
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.mobile.playback.AudioItem
 import one.rarebit.heyarr.mobile.playback.NowPlaying
 import one.rarebit.heyarr.mobile.playback.PlaybackTarget
 import one.rarebit.heyarr.mobile.playback.VideoSession
@@ -117,6 +118,39 @@ class NetworkResilienceTest {
         assertNull("no error on the way", main { video.state.error })
     }
 
+    /**
+     * The music queue through the same outage (#232 item 5): `PlaybackService`'s reads ride it out
+     * on the same schedule (`LockedPlayback.ErrorPolicy` builds on [StreamErrorPolicy]), so the
+     * track stalls, holds its place with no error, and plays on from there.
+     */
+    @Test fun theMusicQueueRidesOutAnOutageLongerThanItsBuffer() {
+        val s = throttled()
+        val audio = main { (ctx.applicationContext as HeyarrApp).graph.audio }
+        try {
+            main {
+                audio.playQueue(
+                    listOf(AudioItem("net-track", "net-album", "Track", contentUrl = s.url, mime = "video/mp4")),
+                )
+            }
+            await("the queue is playing") { audio.state.value.playing && audio.state.value.positionMs >= MUSIC_LEAD_MS }
+            s.down = true
+            await("stalled once its buffer ran dry", OUTAGE_TIMEOUT_MS) { !audio.state.value.playing }
+            val stalledAt = audio.state.value.positionMs
+            val until = SystemClock.uptimeMillis() + STALL_MS
+            while (SystemClock.uptimeMillis() < until) {
+                assertNull("no error while it waits", audio.state.value.error)
+                SystemClock.sleep(POLL_MS * 10)
+            }
+            s.down = false
+            await("playing on from where it stalled", RECOVER_TIMEOUT_MS) {
+                audio.state.value.playing && audio.state.value.positionMs >= stalledAt + 3_000
+            }
+            assertNull("no error", audio.state.value.error)
+        } finally {
+            main { audio.stop() }
+        }
+    }
+
     /** Phase `clip`: only [setUp]'s clip, which the script copies to the host to serve. */
     @Test fun writeTheClip() {
         assumeTrue("run by network-outage-check.sh", args.getString("phase") == "clip")
@@ -209,6 +243,7 @@ class NetworkResilienceTest {
         const val WIFI_TAG = "HeyarrNetwork"
         const val WIFI_READY = "ready for the network to go"
         const val CLIP_SECONDS = 120
+        const val MUSIC_LEAD_MS = 5_000L
         const val REALTIME_MULTIPLE = 3
         const val BUFFERED_AHEAD_MS = 30_000L
         const val STALL_MS = 15_000L

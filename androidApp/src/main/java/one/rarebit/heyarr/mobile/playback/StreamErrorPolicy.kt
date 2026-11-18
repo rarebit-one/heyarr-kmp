@@ -29,9 +29,15 @@ import java.net.UnknownHostException
  * the outage: when the current run of failures began, and when the last one was.
  */
 @UnstableApi
-class StreamErrorPolicy(
+open class StreamErrorPolicy(
     private val clock: () -> Long = System::currentTimeMillis,
     private val onRetry: (attempt: Int, delayMs: Long) -> Unit = { _, _ -> },
+    /**
+     * Whether 401 / 403 / 410 are made fatal for the player to plan the item again. The film's
+     * session does that; the music queue, whose reads ride render capabilities renewed by
+     * themselves (RenderCapabilityCache), keeps Media3's own handling of them.
+     */
+    private val refreshExpired: Boolean = true,
 ) : DefaultLoadErrorHandlingPolicy() {
     @Volatile private var outageSince: Long? = null
 
@@ -40,7 +46,7 @@ class StreamErrorPolicy(
     override fun getRetryDelayMsFor(loadErrorInfo: LoadErrorHandlingPolicy.LoadErrorInfo): Long {
         val error = loadErrorInfo.exception
         return when {
-            Reconnect.expired(httpStatus(error)) -> C.TIME_UNSET
+            refreshExpired && Reconnect.expired(httpStatus(error)) -> C.TIME_UNSET
             isConnectionFailure(error) -> outageRetry(loadErrorInfo.errorCount)
             else -> super.getRetryDelayMsFor(loadErrorInfo)
         }

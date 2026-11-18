@@ -162,10 +162,14 @@ object TestClip {
  * is reset, as a lost network resets them) and refuse a lapsed stream token with 410 ([expire]):
  * `url(token)` names a URL by its token, as a planned stream's does.
  */
-class ClipServer(private val bytes: ByteArray) : Closeable {
+class ClipServer(
+    private val bytes: ByteArray,
+    private val contentType: String = "video/mp4",
+    name: String = "clip.mp4",
+) : Closeable {
     // IPv4 by name: Android's getLoopbackAddress() is ::1, which a 127.0.0.1 URL never reaches.
     private val socket = ServerSocket(0, BACKLOG, InetAddress.getByName(LOOPBACK))
-    val url = "http://$LOOPBACK:${socket.localPort}/clip.mp4"
+    val url = "http://$LOOPBACK:${socket.localPort}/$name"
     private val live = java.util.Collections.synchronizedSet(HashSet<Socket>())
     private val expired = java.util.Collections.synchronizedSet(HashSet<String>())
 
@@ -239,7 +243,7 @@ class ClipServer(private val bytes: ByteArray) : Closeable {
         val status = if (range != null) "206 Partial Content" else "200 OK"
         val head = buildString {
             append("HTTP/1.1 $status\r\n")
-            append("Content-Type: video/mp4\r\nAccept-Ranges: bytes\r\nConnection: close\r\n")
+            append("Content-Type: $contentType\r\nAccept-Ranges: bytes\r\nConnection: close\r\n")
             append("Content-Length: ${to - from + 1}\r\n")
             if (range != null) append("Content-Range: bytes $from-$to/${bytes.size}\r\n")
             append("\r\n")

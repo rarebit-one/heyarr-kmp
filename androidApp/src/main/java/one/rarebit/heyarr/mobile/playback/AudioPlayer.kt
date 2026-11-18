@@ -44,6 +44,7 @@ data class AudioState(
  * [PlaybackService] (notification controls, background survival); the screens only
  * ever see this interface.
  */
+@Suppress("TooManyFunctions") // the transport, plus putting a queue back after process death
 interface AudioPlayer {
     val state: StateFlow<AudioState>
     fun playQueue(items: List<AudioItem>, startIndex: Int = 0)
@@ -56,4 +57,13 @@ interface AudioPlayer {
     fun skipTo(index: Int)
     fun setVolume(volume: Float)
     fun stop()
+
+    /**
+     * Put back the queue a process that died left (heyarr-kmp#232): [items], on [startIndex] at
+     * [positionMs], paused, waiting in the now-playing bar.
+     */
+    fun restoreQueue(items: List<AudioItem>, startIndex: Int, positionMs: Long) = Unit
+
+    /** Write down where the queue stands now: the app is going to the background (#232). */
+    fun checkpoint() = Unit
 }

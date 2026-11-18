@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import one.rarebit.heyarr.core.playback.ResumePolicy
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -34,6 +35,9 @@ class SessionAudioPlayer(
     private val context: Context,
     private val scope: CoroutineScope,
     private val capabilities: RenderCapabilityCache? = null,
+    /** Where the queue stands, for the restore after process death (heyarr-kmp#232); null in tests. */
+    private val snapshots: AudioQueueStore? = null,
+    private val clock: () -> Long = System::currentTimeMillis,
 ) : AudioPlayer {
 
     private val _state = MutableStateFlow(AudioState())
@@ -53,6 +57,8 @@ class SessionAudioPlayer(
                 startTicker()
             } else {
                 stopTicker()
+                // Paused, interrupted or finished: where it stands now is what is put back.
+                checkpoint()
             }
         }
 
@@ -67,6 +73,7 @@ class SessionAudioPlayer(
                     error = null,
                 )
             }
+            checkpoint()
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
@@ -109,16 +116,49 @@ class SessionAudioPlayer(
         if (items.isEmpty()) return
         val start = startIndex.coerceIn(0, items.size - 1)
         val volume = _state.value.volume
-        _state.value = AudioState(queue = items, index = start, volume = volume)
+        load(items, start, 0L, play = true)
+    }
+
+    override fun restoreQueue(items: List<AudioItem>, startIndex: Int, positionMs: Long) {
+        if (items.isEmpty()) return
+        load(items, startIndex.coerceIn(0, items.size - 1), positionMs.coerceAtLeast(0), play = false)
+    }
+
+    /** Hand [items] to the service, on [start] at [positionMs], playing if [play]. */
+    private fun load(items: List<AudioItem>, start: Int, positionMs: Long, play: Boolean) {
+        val volume = _state.value.volume
+        _state.value = AudioState(queue = items, index = start, positionMs = positionMs, volume = volume)
+        snapshots?.write(AudioQueueSnapshot(items, start, positionMs, clock()))
         // Now, while the phone is necessarily unlocked, mint the whole queue's render
         // capabilities, so its tracks still load once the screen locks (RenderCapabilityCache).
         // In parallel with the first load, which does not wait for it.
         capabilities?.let { caps -> scope.launch(Dispatchers.IO) { caps.prefetch(items) } }
         withController { c ->
             c.volume = volume
-            c.setMediaItems(items.map { it.toMediaItem() }, start, 0L)
+            c.setMediaItems(items.map { it.toMediaItem() }, start, positionMs)
             c.prepare()
-            c.play()
+            if (play) c.play()
+        }
+    }
+
+    override fun checkpoint() {
+        val store = snapshots ?: return
+        val s = _state.value
+        val c = controller
+        when {
+            s.queue.isEmpty() -> Unit
+
+            // The queue played to its end: nothing left to come back to.
+            c?.playbackState == Player.STATE_ENDED -> store.clear()
+
+            else -> store.write(
+                AudioQueueSnapshot(
+                    s.queue,
+                    c?.currentMediaItemIndex?.takeIf { it in s.queue.indices } ?: s.index,
+                    c?.currentPosition?.coerceAtLeast(0) ?: s.positionMs,
+                    clock(),
+                ),
+            )
         }
     }
 
@@ -172,6 +212,7 @@ class SessionAudioPlayer(
 
     override fun stop() {
         stopTicker()
+        snapshots?.clear()
         _state.value = AudioState(volume = _state.value.volume)
         controller?.let {
             it.stop()
@@ -183,7 +224,14 @@ class SessionAudioPlayer(
         stopTicker()
         ticker = scope.launch {
             var sinceRenewalCheck = 0L
+            var sinceCheckpoint = 0L
             while (isActive) {
+                // Where it has got to, every so often: the most a crash can lose (#232).
+                sinceCheckpoint += TICK_MS
+                if (sinceCheckpoint >= ResumePolicy.SAVE_EVERY_MS) {
+                    sinceCheckpoint = 0
+                    checkpoint()
+                }
                 // A track can outlast the renewal window by itself (a single-file audiobook),
                 // so renewal is also checked on a clock, not only on track changes.
                 sinceRenewalCheck += TICK_MS

@@ -17,14 +17,24 @@ adb shell pm clear "$APP" >/dev/null
 instrument ProcessDeathTest#leaveAFilmPlaying leave
 
 # The instrumentation ends the process with it; make sure, as `am kill` does in the background.
-adb shell am kill "$APP" || true
-for _ in $(seq 1 20); do
-  adb shell pidof "$APP" >/dev/null 2>&1 || break
-  sleep 0.5
-done
-if adb shell pidof "$APP" >/dev/null 2>&1; then
-  echo "::error::$APP is still running; the restore would not be in a fresh process"
-  exit 1
-fi
+gone() {
+  adb shell am kill "$APP" || true
+  for _ in $(seq 1 20); do
+    adb shell pidof "$APP" >/dev/null 2>&1 || break
+    sleep 0.5
+  done
+  if adb shell pidof "$APP" >/dev/null 2>&1; then
+    echo "::error::$APP is still running; the restore would not be in a fresh process"
+    exit 1
+  fi
+}
+gone
 
 instrument ProcessDeathTest#restoreItPaused restore
+
+# The music queue the same way (#232 item 5): left playing in the background, the process dies,
+# and the next one puts the queue back paused, on its track, at its place.
+adb shell pm clear "$APP" >/dev/null
+instrument ProcessDeathTest#leaveMusicPlaying leave-music
+gone
+instrument ProcessDeathTest#restoreTheQueuePaused restore-music
