@@ -10,8 +10,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.mcp.McpTransportException
+import one.rarebit.heyarr.core.mcp.SsdpResponse
+import one.rarebit.heyarr.core.mcp.SsdpScanner
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.open.BlobDownloader
 import one.rarebit.heyarr.desktop.open.DownloadResult
 import one.rarebit.heyarr.desktop.open.ExternalOpener
@@ -19,6 +22,7 @@ import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.open.OpenResult
 import one.rarebit.heyarr.desktop.playback.PlayResult
 import one.rarebit.heyarr.desktop.playback.Player
+import one.rarebit.heyarr.desktop.preview.FakeHeyarrTransport
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.InMemorySettingsStore
 import one.rarebit.heyarr.desktop.state.AppSession
@@ -28,6 +32,7 @@ import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * The connection state after the machine changes network. A transport whose pooled
@@ -43,6 +48,46 @@ class ProbeRecoveryTest {
 
         assertEquals(emptyList(), s.cast.discover())
         assertEquals(emptyList(), s.cast.devices)
+    }
+
+    @Test
+    fun defaultSessionRendererFetchUsesFixtureRestWithoutDiscoveryOrMcpFallback() {
+        val transport = FakeHeyarrTransport()
+        val s = session(transport)
+
+        val result = requireNotNull(s.api).renderers()
+
+        assertEquals(listOf("Study speaker", "Living room TV"), result.renderers.map { it.name })
+        assertEquals(1, transport.requests.size)
+        assertTrue(transport.requests.single().first.endsWith("/api/v1/renderers"))
+    }
+
+    @Test
+    fun apiUsesInjectedRendererScannerOnceAndPreservesExplicitOverride() {
+        val transport = FakeHeyarrTransport()
+        var injectedCalls = 0
+        var overrideCalls = 0
+        val injected = object : SsdpScanner {
+            override fun scan(): List<SsdpResponse> {
+                injectedCalls++
+                return emptyList()
+            }
+        }
+        val override = object : SsdpScanner {
+            override fun scan(): List<SsdpResponse> {
+                overrideCalls++
+                return emptyList()
+            }
+        }
+        val api = HeyarrApi(transport, "https://example.test", Credential.Guest, injected)
+
+        assertEquals(2, api.renderers().renderers.size)
+        assertEquals(1, injectedCalls)
+        assertEquals(0, overrideCalls)
+
+        assertEquals(2, api.renderers(scanner = override).renderers.size)
+        assertEquals(1, injectedCalls)
+        assertEquals(1, overrideCalls)
     }
 
     /** Fails until [reset], then answers — the shape of a pool of dead connections. */

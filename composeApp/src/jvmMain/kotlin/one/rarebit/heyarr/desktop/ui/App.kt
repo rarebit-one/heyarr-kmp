@@ -156,8 +156,8 @@ fun App(
      * tests leave it false so they stay guest and touch no device key store.
      */
     enableDeviceEnrol: Boolean = false,
-    /** Real Cast LAN browsing is opt-in; fixture compositions leave it disabled. */
-    enableCastDiscovery: Boolean = false,
+    /** Real Cast and SSDP LAN browsing is opt-in; fixture compositions leave it disabled. */
+    enableRendererDiscovery: Boolean = false,
     /** The probe's clock ([AppSession]); previews pass a constant one. */
     nanoClock: () -> Long = System::nanoTime,
     /** Appearance at launch; previews ask for reduced motion so animated glyphs render one fixed frame. */
@@ -179,7 +179,7 @@ fun App(
                     downloader,
                     opener,
                 ),
-                scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol, enableCastDiscovery, nanoClock,
+                scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol, enableRendererDiscovery, nanoClock,
             ).also {
                 onSession(it)
                 it.appearance = initialAppearance

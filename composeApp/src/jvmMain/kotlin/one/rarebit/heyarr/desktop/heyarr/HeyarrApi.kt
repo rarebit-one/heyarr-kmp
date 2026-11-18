@@ -114,7 +114,12 @@ private const val HTTP_CONFLICT = 409
  * [McpOutcome.Refused] where the screen must show it, or is thrown where a refusal can
  * only mean failure. Blocking — call on `Dispatchers.IO`.
  */
-class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private val credential: Credential) {
+class HeyarrApi(
+    private val http: HttpTransport,
+    val baseUrl: String,
+    private val credential: Credential,
+    private val rendererScanner: SsdpScanner = JvmSsdpScanner(),
+) {
     private val mcp = McpClient(http, baseUrl, credential)
     private val library = LibraryClient(http, baseUrl, credential)
     private val detail = WorkDetailClient(http, baseUrl, credential)
@@ -238,7 +243,7 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
      *
      * Falls back to MCP `list_renderers` only when the REST endpoint is unreachable.
      */
-    fun renderers(refresh: Boolean = false, scanner: SsdpScanner = JvmSsdpScanner()): RendererListResult {
+    fun renderers(refresh: Boolean = false, scanner: SsdpScanner = rendererScanner): RendererListResult {
         // 1. SSDP scan — never throws; empty list on network error.
         val discovered = scanner.scan()
 

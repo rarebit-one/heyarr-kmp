@@ -64,7 +64,7 @@ fun main() {
                 // The real desktop entry point turns on device enrolment ("Sign in to save"):
                 // a filesystem-backed device key store + the voidbind pairing coordinator.
                 enableDeviceEnrol = true,
-                enableCastDiscovery = true,
+                enableRendererDiscovery = true,
                 // Follow the desktop's palette (Omarchy, Plasma, pywal/wallust, the XDG portal).
                 desktopPalette = DesktopPalette.forThisDesktop(),
                 onFullscreen = { on ->

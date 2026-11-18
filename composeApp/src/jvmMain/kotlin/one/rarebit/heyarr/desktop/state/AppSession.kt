@@ -122,8 +122,8 @@ class AppSession(
      * ([one.rarebit.heyarr.desktop.MainKt]) turns it on.
      */
     enableDeviceEnrol: Boolean = false,
-    /** Real Cast LAN browsing is opt-in; previews and tests must not open multicast sockets. */
-    enableCastDiscovery: Boolean = false,
+    /** Real Cast and SSDP LAN browsing is opt-in; previews and tests stay off the network. */
+    private val enableRendererDiscovery: Boolean = false,
     /** Times the liveness probe; previews pin it so the rail's latency reads the same on every render. */
     private val nanoClock: () -> Long = System::nanoTime,
 ) {
@@ -186,7 +186,18 @@ class AppSession(
     val api: HeyarrApi? get() = apiFor(credential)
 
     private fun apiFor(credential: Credential): HeyarrApi? = config.baseUrl.trim().takeIf { it.isNotEmpty() }?.let {
-        HeyarrApi(transport, config.baseUrl, credential)
+        HeyarrApi(
+            transport,
+            config.baseUrl,
+            credential,
+            rendererScanner = if (enableRendererDiscovery) {
+                one.rarebit.heyarr.desktop.ssdp.JvmSsdpScanner()
+            } else {
+                object : one.rarebit.heyarr.core.mcp.SsdpScanner {
+                    override fun scan(): List<one.rarebit.heyarr.core.mcp.SsdpResponse> = emptyList()
+                }
+            },
+        )
     }
 
     /** Shared provider-discovery request state for Search and the standalone Discover surface. */
@@ -205,7 +216,7 @@ class AppSession(
     /** One Cast connection survives picker and screen composition. */
     internal val cast = CastManager(
         ::mediaUrl,
-        discoverDevices = if (enableCastDiscovery) {
+        discoverDevices = if (enableRendererDiscovery) {
             { one.rarebit.heyarr.desktop.cast.CastDiscovery().discover() }
         } else {
             { emptyList() }
