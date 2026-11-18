@@ -78,12 +78,15 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          # Then the player after process death (#232), which has to be checked from outside the
-          # app's process: the script runs two instrumentations with the process dying between.
+          # Then two checks driven from outside the app's process (#232): the player after
+          # process death (two instrumentations with the process dying between), and the
+          # headphones going away (a protected broadcast, sent from a root shell). Last, as the
+          # second restarts adbd as root.
           script: |
             ./gradlew :androidApp:connectedDebugAndroidTest --no-daemon --stacktrace
             ./gradlew :androidApp:installDebug :androidApp:installDebugAndroidTest --no-daemon
             androidApp/scripts/process-death-check.sh
+            androidApp/scripts/audio-noisy-check.sh
 
       - name: Verify the smoke tests actually ran
         run: |
@@ -118,6 +121,14 @@ jobs:
               # Music keeps playing in the background, under a media-session notification (#232).
               # The player after process death runs from process-death-check.sh, not here.
               (pkg + "MusicBackgroundTest", "theQueuePlaysOnInTheBackgroundUnderAMediaNotification"),
+              # Audio focus (#232): a call pauses and playback carries on after; a prompt ducks
+              # the film; another media app pauses for good. The headphones going away runs from
+              # audio-noisy-check.sh, not here.
+              (pkg + "AudioInterruptionTest", "aCallPausesTheFilmAndItCarriesOnWhenTheCallEnds"),
+              (pkg + "AudioInterruptionTest", "aNavigationPromptLowersTheFilmWithoutPausingIt"),
+              (pkg + "AudioInterruptionTest", "anotherMediaAppPausesTheFilmForGood"),
+              (pkg + "AudioInterruptionTest", "aCallPausesTheMusicAndItCarriesOnWhenTheCallEnds"),
+              (pkg + "AudioInterruptionTest", "anotherMediaAppPausesTheMusicForGood"),
           }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")
