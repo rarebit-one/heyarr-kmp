@@ -19,6 +19,20 @@ class CastManagerTest {
     private val address = InetAddress.getByName("127.0.0.1") as java.net.Inet4Address
     private val first = CastDevice("first", "First", address, 8009)
     private val second = CastDevice("second", "Second", address, 8009)
+
+    @Test
+    fun suppliedDiscoveryRunsAndPublishesItsDevices() {
+        var calls = 0
+        CastManager({ "http://127.0.0.1:1/loopback" }, discoverDevices = {
+            calls++
+            listOf(first)
+        }).use { manager ->
+            assertEquals(emptyList(), manager.devices)
+            assertEquals(listOf(first), manager.discover())
+            assertEquals(listOf(first), manager.devices)
+            assertEquals(1, calls)
+        }
+    }
     private val api = HeyarrApi(
         object : HttpTransport {
             override fun get(url: String, headers: Map<String, String>) = HttpResponse(404, "")

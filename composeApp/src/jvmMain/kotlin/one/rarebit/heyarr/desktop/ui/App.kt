@@ -128,7 +128,9 @@ data class WantRequest(
  * desktop's own when Appearance → "Follow desktop colours" is on and [desktopPalette] finds one;
  * adaptive media accents follow whichever is in force and can be disabled in Appearance.
  */
+// Detekt's existing App findings are keyed to the full signature, which changes for this opt-in.
 @Composable
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "FunctionNaming")
 fun App(
     settings: SettingsStore,
     transport: HttpTransport,
@@ -154,6 +156,8 @@ fun App(
      * tests leave it false so they stay guest and touch no device key store.
      */
     enableDeviceEnrol: Boolean = false,
+    /** Real Cast LAN browsing is opt-in; fixture compositions leave it disabled. */
+    enableCastDiscovery: Boolean = false,
     /** The probe's clock ([AppSession]); previews pass a constant one. */
     nanoClock: () -> Long = System::nanoTime,
     /** Appearance at launch; previews ask for reduced motion so animated glyphs render one fixed frame. */
@@ -175,7 +179,7 @@ fun App(
                     downloader,
                     opener,
                 ),
-                scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol, nanoClock,
+                scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol, enableCastDiscovery, nanoClock,
             ).also {
                 onSession(it)
                 it.appearance = initialAppearance

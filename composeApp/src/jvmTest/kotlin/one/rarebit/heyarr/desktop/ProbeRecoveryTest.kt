@@ -37,6 +37,14 @@ import kotlin.test.assertNull
  */
 class ProbeRecoveryTest {
 
+    @Test
+    fun defaultSessionDoesNotBrowseForCastDevices() {
+        val s = session(StatusTransport(200))
+
+        assertEquals(emptyList(), s.cast.discover())
+        assertEquals(emptyList(), s.cast.devices)
+    }
+
     /** Fails until [reset], then answers — the shape of a pool of dead connections. */
     private class StaleTransport : HttpTransport {
         var resets = 0

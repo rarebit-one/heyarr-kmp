@@ -14,6 +14,7 @@ internal class CastManager(
     private val localMediaUrl: (String) -> String,
     private val connect: (CastDevice) -> CastChannel = ::CastConnection,
     private val dispatchReset: (() -> Unit) -> Unit = ::resetInBackground,
+    private val discoverDevices: () -> List<CastDevice> = { CastDiscovery().discover() },
 ) : AutoCloseable {
     var devices by mutableStateOf<List<CastDevice>>(emptyList())
         private set
@@ -34,7 +35,7 @@ internal class CastManager(
     private val completedInvalidation = AtomicInteger()
     private val invalidating: Boolean get() = invalidation.get() != completedInvalidation.get()
 
-    fun discover(): List<CastDevice> = CastDiscovery().discover().also { devices = it }
+    fun discover(): List<CastDevice> = discoverDevices().also { devices = it }
 
     /** Attach to an existing media app without launching or loading anything. */
     @Synchronized

@@ -104,6 +104,7 @@ private const val PROBE_TIMEOUT_MS = 6_000L
  * Plain Compose state (the org's stance for this app; a ViewModel layer comes with the
  * shared module). Network work is launched on [Dispatchers.IO] through [io].
  */
+@Suppress("LongParameterList") // The existing session seam gains one explicit LAN discovery opt-in.
 class AppSession(
     private val settings: SettingsStore,
     private val transport: HttpTransport,
@@ -121,6 +122,8 @@ class AppSession(
      * ([one.rarebit.heyarr.desktop.MainKt]) turns it on.
      */
     enableDeviceEnrol: Boolean = false,
+    /** Real Cast LAN browsing is opt-in; previews and tests must not open multicast sockets. */
+    enableCastDiscovery: Boolean = false,
     /** Times the liveness probe; previews pin it so the rail's latency reads the same on every render. */
     private val nanoClock: () -> Long = System::nanoTime,
 ) {
@@ -200,7 +203,14 @@ class AppSession(
     private val mediaProxy = lazy { AuthenticatedMediaProxy({ config.baseUrl }, { credential }) }
 
     /** One Cast connection survives picker and screen composition. */
-    internal val cast = CastManager(::mediaUrl)
+    internal val cast = CastManager(
+        ::mediaUrl,
+        discoverDevices = if (enableCastDiscovery) {
+            { one.rarebit.heyarr.desktop.cast.CastDiscovery().discover() }
+        } else {
+            { emptyList() }
+        },
+    )
 
     fun mediaUrl(url: String): String = mediaProxy.value.urlFor(url)
 
