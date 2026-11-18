@@ -1,9 +1,11 @@
 package one.rarebit.heyarr.mobile.personalstate
 
+import one.rarebit.heyarr.core.playback.PlaybackPreference
+
 /**
  * The app-facing façade over [SpaceSession] + [SpaceRegistry] — the one seam the
  * consumption UI talks to. It resolves the device-side role map (which space holds
- * the starred set / play history / reading positions) and treats every other
+ * the starred set / play history / reading positions / synced preferences) and treats every other
  * openable space as a playlist, exactly as heyarr-core's device gateway does, so the
  * phone and the Mac gateway agree on what a space is. Role spaces are created lazily
  * on first write (ensure*), so a fresh device needs no setup step.
@@ -17,11 +19,17 @@ internal class PersonalStateCoordinator(private val session: SpaceSession, priva
 
     // --- playlists ----------------------------------------------------------------
 
-    /** Every openable non-role space, folded as a playlist (a space this device cannot decrypt is skipped). */
+    /**
+     * Every openable non-role space, folded as a playlist (a space this device cannot decrypt is
+     * skipped). A preferences space is a role even when this device never recorded it: another
+     * device's, or one that lost the lowest-id race ([preferencesSpace]).
+     */
     fun playlists(): List<PlaylistView> {
         val roles = registry.roleSpaceIds()
-        return session.listSpaces()
-            .filter { it.id !in roles }
+        val listed = session.listSpaces()
+        val preferences = preferenceSpaces(listed, roles).toSet()
+        return listed
+            .filter { it.id !in roles && it.id !in preferences }
             .mapNotNull { info ->
                 session.playlist(info.id)?.let { PlaylistView(info.id, registry.displayName(info.id), it.ids()) }
             }
@@ -78,6 +86,72 @@ internal class PersonalStateCoordinator(private val session: SpaceSession, priva
         session.setReadingPosition(ensure(registry::readingSpace, registry::setReadingSpace), pubId, position)
     }
 
+    // --- the person's synced preferences (heyarr-core#887) -------------------------
+
+    /**
+     * The person's playback preference as their devices last left it, or null when none has
+     * been set (or this device can see no preferences space). The value is a last-writer-wins
+     * register: the reading-position lattice under [PLAYBACK_KEY] (heyarr-core ADR-0123's
+     * addendum), so a change on the television wins over an older one on the phone.
+     */
+    fun playbackPreference(): PlaybackPreference? {
+        val space = preferencesSpace() ?: return null
+        // A space this device has a copy of but cannot open right now (its keys answered 500, say)
+        // is a failed read, never "no preference": the caller keeps what it had.
+        val positions = session.readingPositions(space)
+            ?: if (session.openState(space) ==
+                SpaceSession.OpenState.NO_COPY
+            ) {
+                null
+            } else {
+                throw SpaceUnreadableException(space)
+            }
+        return positions?.position(PLAYBACK_KEY)?.let { PlaybackPreference.parse(it) }
+    }
+
+    /** Set the person's playback preference for all their devices, creating the space on first use. */
+    fun setPlaybackPreference(preference: PlaybackPreference) {
+        preferencesSpace() // adopt another device's space before minting one of our own
+        val space = ensure(registry::preferencesSpace, registry::setPreferencesSpace)
+        session.setReadingPosition(space, PLAYBACK_KEY, preference.planJson())
+    }
+
+    /**
+     * The preferences space, found by what it holds and re-checked on every read. Role spaces
+     * are recorded per device, so a phone signing in beside a television finds the
+     * television's space as a space it can open whose register holds [PLAYBACK_KEY]. The
+     * lowest such id wins and is recorded, even over one this device recorded earlier, so two
+     * devices that each minted one before seeing the other settle on the same space, and on
+     * its value: the losing space's last write is set aside, not merged, because two spaces'
+     * Lamport clocks do not compare. The record only ever moves to a lower id, so a winning
+     * space that fails to open for a moment is never traded for a loser, unless this device
+     * holds no copy of it at all. A listing that fails keeps the recorded space.
+     */
+    private fun preferencesSpace(): String? {
+        val recorded = registry.preferencesSpace()
+        val others = registry.roleSpaceIds() - setOfNotNull(recorded)
+        val found = runCatching { session.listSpaces() }.getOrNull()?.let { preferenceSpaces(it, others).firstOrNull() }
+        return found?.takeIf { supersedes(it, recorded) }?.also(registry::setPreferencesSpace) ?: recorded
+    }
+
+    /** Whether [found] should replace the [recorded] preferences space: see [preferencesSpace]. */
+    private fun supersedes(found: String, recorded: String?): Boolean = when {
+        recorded == null || found < recorded -> true
+        found == recorded -> false
+        else -> session.openState(recorded) == SpaceSession.OpenState.NO_COPY
+    }
+
+    /** The [listed] spaces outside [exclude] whose register holds a playback preference, lowest id first. */
+    private fun preferenceSpaces(listed: List<SpaceInfo>, exclude: Set<String>): List<String> = listed
+        .filter { it.kind == "personal" } // role spaces; a playlist is "shared"
+        .map { it.id }
+        .filter { it !in exclude }
+        .sorted()
+        .filter { id ->
+            runCatching { session.readingPositions(id)?.position(PLAYBACK_KEY) }.getOrNull()
+                ?.let { PlaybackPreference.parse(it) } != null
+        }
+
     // --- role space ids (for pointing the Mac gateway) ----------------------------
 
     fun starredSpaceId(): String? = registry.starredSpace()
@@ -103,6 +177,9 @@ internal class PersonalStateCoordinator(private val session: SpaceSession, priva
         return id
     }
 }
+
+/** The register key the playback preference is stored under in the preferences space. */
+internal const val PLAYBACK_KEY = "playback.quality"
 
 /** An existing space this device holds a copy of but cannot open now; it is never replaced. */
 internal class SpaceUnreadableException(spaceId: String) :

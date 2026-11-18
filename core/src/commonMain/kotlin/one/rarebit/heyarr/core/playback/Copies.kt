@@ -19,9 +19,9 @@ interface CopyFile : EpisodeFile {
 }
 
 /**
- * The device-local "Prefer:" setting (heyarr-kmp#225). Device-local on purpose: what fits
- * is a fact about this screen and this connection, not about the person; a synced per-user
- * preference is a later issue.
+ * The "Prefer:" quality (heyarr-kmp#225). It is the person's synced default and, when a
+ * device overrides it, that device's local setting; [PlaybackPreference] carries it with the
+ * person's cap (heyarr-core#887). The keys are the node's `preference.quality` values.
  */
 enum class QualityPreference(val key: String, val label: String) {
     /** The tallest copy held, whatever the screen. */
@@ -38,7 +38,10 @@ enum class QualityPreference(val key: String, val label: String) {
         val DEFAULT = FIT
 
         /** The stored [key] back to a preference; anything unknown (or nothing stored) is [DEFAULT]. */
-        fun of(key: String?): QualityPreference = entries.firstOrNull { it.key == key } ?: DEFAULT
+        fun of(key: String?): QualityPreference = ofOrNull(key) ?: DEFAULT
+
+        /** The stored [key] back to a preference, or null when nothing (or nothing known) is stored. */
+        fun ofOrNull(key: String?): QualityPreference? = entries.firstOrNull { it.key == key }
     }
 }
 
@@ -98,6 +101,9 @@ data class CopyChoice<A : CopyFile>(val copies: List<Copy<A>>, val picked: Copy<
  *
  * Pure; both apps' players call it, and `CopiesTest` pins it as a table.
  */
+// The QualityPreference overloads keep the desktop's calls, which have no synced preference
+// to pass; they go when it has one (heyarr-core#887).
+@Suppress("TooManyFunctions")
 object Copies {
     /** The data saver's ceiling, in lines. */
     const val DATA_SAVER_HEIGHT = ReleaseName.HD
@@ -148,6 +154,15 @@ object Copies {
         preference: QualityPreference = QualityPreference.DEFAULT,
         chosenId: String? = null,
         defaultId: String? = null,
+    ): CopyChoice<A>? = choose(assets, display, PlaybackPreference(preference), chosenId, defaultId)
+
+    /** [choose] under the person's whole preference, their cap included (heyarr-core#887). */
+    fun <A : CopyFile> choose(
+        assets: List<A>,
+        display: DisplayFit,
+        preference: PlaybackPreference,
+        chosenId: String? = null,
+        defaultId: String? = null,
     ): CopyChoice<A>? {
         val held = of(assets)
         val picked = pick(held, display, preference, chosenId, defaultId) ?: return null
@@ -162,6 +177,13 @@ object Copies {
     }
 
     /**
+     * [cap] under the person's own height cap too, which holds under any quality: the rule
+     * heyarr-core's `playback.Preference.Height` applies, so the phone and the node agree.
+     */
+    fun cap(display: DisplayFit, preference: PlaybackPreference): Int =
+        minOf(cap(display, preference.quality), preference.maxHeight ?: Int.MAX_VALUE)
+
+    /**
      * The copy to play, or null when the work has no video copies (the caller plays its
      * primary asset as before). [chosenId] is the copy the person picked for this work on
      * this device, [defaultId] the node's `primary_asset` — see the class doc for the order.
@@ -170,6 +192,15 @@ object Copies {
         copies: List<Copy<A>>,
         display: DisplayFit,
         preference: QualityPreference = QualityPreference.DEFAULT,
+        chosenId: String? = null,
+        defaultId: String? = null,
+    ): Copy<A>? = pick(copies, display, PlaybackPreference(preference), chosenId, defaultId)
+
+    /** [pick] under the person's whole preference, their cap included (heyarr-core#887). */
+    fun <A : CopyFile> pick(
+        copies: List<Copy<A>>,
+        display: DisplayFit,
+        preference: PlaybackPreference,
         chosenId: String? = null,
         defaultId: String? = null,
     ): Copy<A>? = when {
@@ -181,7 +212,7 @@ object Copies {
     private fun <A : CopyFile> byRule(
         copies: List<Copy<A>>,
         display: DisplayFit,
-        preference: QualityPreference,
+        preference: PlaybackPreference,
         defaultId: String?,
     ): Copy<A> {
         val cap = cap(display, preference)
@@ -189,7 +220,7 @@ object Copies {
         val hdrMismatch: (Copy<A>) -> Int = { c -> if (c.hdr == display.supportsHdr) 0 else 1 }
         val fits = copies.filter { it.height != null && it.height <= cap }
         val unknown = copies.filter { it.height == null }
-        val bySize: Comparator<Copy<A>> = if (preference == QualityPreference.DATA_SAVER) {
+        val bySize: Comparator<Copy<A>> = if (preference.quality == QualityPreference.DATA_SAVER) {
             compareBy { it.sizeBytes ?: Long.MAX_VALUE }
         } else {
             compareByDescending { it.sizeBytes ?: -1L }
@@ -223,11 +254,27 @@ object Copies {
         preference: QualityPreference = QualityPreference.DEFAULT,
         chosen: Boolean = false,
         ceiling: Int = Int.MAX_VALUE,
+    ): Int = declaredMaxHeight(copy, display, PlaybackPreference(preference), chosen, ceiling)
+
+    /**
+     * [declaredMaxHeight] under the person's whole preference. Their cap bounds best quality
+     * too; a copy [chosen] by hand is the one exception, because the person asked for that
+     * picture by name.
+     */
+    fun declaredMaxHeight(
+        copy: Copy<*>?,
+        display: DisplayFit,
+        preference: PlaybackPreference,
+        chosen: Boolean = false,
+        ceiling: Int = Int.MAX_VALUE,
     ): Int {
-        val height = if (preference == QualityPreference.BEST || chosen) {
-            maxOf(display.height, copy?.height ?: display.height)
-        } else {
-            cap(display, preference)
+        val height = when {
+            chosen -> maxOf(display.height, copy?.height ?: display.height)
+
+            preference.quality == QualityPreference.BEST ->
+                minOf(maxOf(display.height, copy?.height ?: display.height), preference.maxHeight ?: Int.MAX_VALUE)
+
+            else -> cap(display, preference)
         }
         return minOf(height, ceiling)
     }

@@ -24,8 +24,10 @@ interface SettingsStore : CopyChoiceStore {
     var externalMetadata: Boolean
 
     /**
-     * Playback: which copy of a film to prefer on this phone — a `QualityPreference` key
-     * (`best` / `fit` / `data_saver`); null is the default, "fit this screen" (heyarr-kmp#225).
+     * Playback: this phone's override of the person's synced quality — a `QualityPreference`
+     * key (`best` / `fit` / `data_saver`), or null to follow the person's default
+     * (heyarr-core#887), which is "fit this screen" until they set one. A value stored before
+     * the default synced was this phone's own choice, so it stays one: an override.
      */
     var playbackPreference: String?
 }

@@ -107,6 +107,8 @@ class OpenApiContractTest {
             listOf(
                 "PlayChange",
                 "PlayLog",
+                // The person's synced playback preference (heyarr-core#887), a register value.
+                "PlaybackPreference",
                 "Playlist",
                 "PlaylistChange",
                 "PositionChange",

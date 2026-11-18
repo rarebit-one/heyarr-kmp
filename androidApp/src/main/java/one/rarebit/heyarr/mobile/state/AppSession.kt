@@ -134,14 +134,20 @@ class AppSession(
         externalMetadata = on
     }
 
-    /** Which copy of a film this phone prefers (Settings → Playback, heyarr-kmp#225). Device-local. */
-    var playbackPreference: QualityPreference by mutableStateOf(QualityPreference.of(settings.playbackPreference))
+    /**
+     * This phone's override of the person's synced quality (Settings → Playback, heyarr-core#887),
+     * kept on this phone; null follows the person's default.
+     */
+    var playbackOverride: QualityPreference? by mutableStateOf(QualityPreference.ofOrNull(settings.playbackPreference))
         private set
 
-    fun updatePlaybackPreference(next: QualityPreference) {
-        settings.playbackPreference = next.key
-        playbackPreference = next
+    fun updatePlaybackOverride(next: QualityPreference?) {
+        settings.playbackPreference = next?.key
+        playbackOverride = next
     }
+
+    /** The person's synced playback default, as personal state last gave it (heyarr-core#887). */
+    var accountPlayback: AccountPlayback by mutableStateOf(AccountPlayback())
 
     var connection: Connection by mutableStateOf(Connection.UNKNOWN)
         private set

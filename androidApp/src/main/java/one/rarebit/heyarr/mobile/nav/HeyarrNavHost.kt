@@ -33,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -71,6 +73,7 @@ import one.rarebit.heyarr.mobile.playlist.PlaylistsScreen
 import one.rarebit.heyarr.mobile.playlist.PlaylistsViewModel
 import one.rarebit.heyarr.mobile.reader.ReaderActivity
 import one.rarebit.heyarr.mobile.reader.ReaderFormat
+import one.rarebit.heyarr.mobile.state.AccountPlayback
 import one.rarebit.heyarr.mobile.state.Connection
 import one.rarebit.heyarr.mobile.theme.HeyarrTheme
 import one.rarebit.heyarr.mobile.theme.Tokens
@@ -302,6 +305,16 @@ fun HeyarrNavHost(
     val starredWorks by personalActions.starredWorks.collectAsStateWithLifecycle()
     val addTarget by personalActions.addTarget.collectAsStateWithLifecycle()
     val playlistsForAdd by personalActions.playlists.collectAsStateWithLifecycle()
+    // The person's synced playback default (heyarr-core#887): every play reads it through the
+    // ViewModel, under this phone's override.
+    val accountPlayback by personalActions.accountPlayback.collectAsStateWithLifecycle()
+    // Another device may have changed it while this one was away (heyarr-core#887).
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { personalActions.refreshPlayback() }
+    LaunchedEffect(accountPlayback, personalActions) {
+        vm.onAccountPlaybackPreference(accountPlayback)
+        session.accountPlayback =
+            AccountPlayback(accountPlayback, personalActions.enabled, personalActions::setAccountPlayback)
+    }
     val personalRows = PersonalRows(
         starred = starredWorks,
         starredIds = starredIds,

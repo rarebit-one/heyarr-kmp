@@ -1,6 +1,6 @@
 package one.rarebit.heyarr.mobile.playback
 
-import one.rarebit.heyarr.core.playback.QualityPreference
+import one.rarebit.heyarr.core.playback.PlaybackPreference
 
 /**
  * The copy of each film the person picked on THIS phone — from the player's Version menu or
@@ -24,11 +24,11 @@ class InMemoryCopyChoiceStore : CopyChoiceStore {
 }
 
 /**
- * What the coordinator asks before it plays a film's copy: the Settings → Playback
- * preference (read per play, so a change applies to the next one) and the copy picked for
- * each work on this phone.
+ * What the coordinator asks before it plays a film's copy: the effective playback preference
+ * (the person's synced default under this phone's override, read per play so a change applies
+ * to the next one) and the copy picked for each work on this phone.
  */
 class CopyPreferences(
-    val preference: () -> QualityPreference = { QualityPreference.DEFAULT },
+    val preference: () -> PlaybackPreference = { PlaybackPreference() },
     val choices: CopyChoiceStore = InMemoryCopyChoiceStore(),
 )
