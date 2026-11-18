@@ -3,19 +3,24 @@ package one.rarebit.heyarr.mobile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.runBlocking
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.device.DeviceEnrolment
+import one.rarebit.heyarr.mobile.device.DeviceKeyInfo
 import one.rarebit.heyarr.mobile.device.EnrolClient
 import one.rarebit.heyarr.mobile.device.EnrolUiState
 import one.rarebit.heyarr.mobile.device.InMemoryPendingPairingStore
+import one.rarebit.heyarr.mobile.device.KeyTier
 import one.rarebit.heyarr.mobile.device.PairInvite
 import one.rarebit.heyarr.mobile.device.PairingCoordinator
 import one.rarebit.heyarr.mobile.device.PairingSteps
 import one.rarebit.heyarr.mobile.login.LoginUiState
 import one.rarebit.heyarr.mobile.personalstate.DevicePersonalState
 import one.rarebit.heyarr.mobile.personalstate.InMemorySpaceRegistry
+import one.rarebit.voidwhichbinds.AuthenticationRequiredException
+import one.rarebit.voidwhichbinds.DeviceIdentity
 import one.rarebit.voidwhichbinds.Ed25519Signer
 import one.rarebit.voidwhichbinds.Invite
 import one.rarebit.voidwhichbinds.auth.DeviceCredential
@@ -192,5 +197,87 @@ class DeviceEnrolmentTest {
     @Test fun personalStateNeedsTheDeviceKeys() {
         val ps = DevicePersonalState(noHttp, InMemorySpaceRegistry(), keyring = { null })
         assertNull(ps.coordinator("https://heyarr.example.test:7777", Credential.Guest))
+    }
+
+    // ── an enrolled phone whose key is locked (heyarr-kmp#243) ─────────────────────
+
+    private val enrolledInfo = DeviceKeyInfo("ed25519:aa", "x25519:bb", KeyTier.TEE, certToken = "eyJ2IjoyfQ.c2ln")
+
+    /**
+     * A device identity whose signer answers from [outcomes] in turn: null signs (a real
+     * Ed25519 signature), an exception is thrown as the key store would — an
+     * [AuthenticationRequiredException] is the fingerprint prompt being dismissed. Every
+     * signature asked for is counted in [signs], so a test can see nothing re-prompted.
+     */
+    private inner class ScriptedKey(vararg outcomes: Throwable?) {
+        private val script = ArrayDeque(outcomes.toList())
+        var signs = 0
+        val seenDuringSign = mutableListOf<EnrolUiState>()
+        fun identity() = DeviceIdentity(ByteArray(32), ByteArray(32), ByteArray(32)) { message ->
+            signs++
+            seenDuringSign += enrolment.enrolState.value
+            script.removeFirstOrNull()?.let { throw it }
+            JdkEd25519.sign(ByteArray(32) { 0x02 }, message)
+        }
+    }
+
+    private fun dismissed() = AuthenticationRequiredException("user authentication required")
+
+    @Test fun aDismissedPromptLeavesThePhoneLockedAndAsksNothingMore() {
+        val key = ScriptedKey(dismissed())
+
+        val signedIn = runBlocking { enrolment.adoptStored(enrolledInfo, key::identity) }
+
+        assertFalse(signedIn)
+        assertEquals(EnrolUiState.Locked(enrolledInfo), enrolment.enrolState.value)
+        assertEquals("one prompt, never a loop of them", 1, key.signs)
+        assertNull("no credential: browsing as a guest", host.credential)
+        assertNull(host.deviceCredential)
+        assertTrue("nothing signed in, so nothing loaded as signed in", host.calls.isEmpty())
+    }
+
+    @Test fun unlockingAgainAfterASecondCancelStaysRecoverableThenSignsIn() {
+        val key = ScriptedKey(dismissed(), dismissed(), null)
+
+        runBlocking { enrolment.adoptStored(enrolledInfo, key::identity) } // at launch
+        assertEquals(EnrolUiState.Locked(enrolledInfo), enrolment.enrolState.value)
+
+        // "Unlock", and cancel that prompt too: still Locked, still offering Unlock.
+        assertFalse(runBlocking { enrolment.adoptStored(enrolledInfo, key::identity) })
+        assertEquals(EnrolUiState.Locked(enrolledInfo), enrolment.enrolState.value)
+
+        // "Unlock" once more, and confirm it this time.
+        assertTrue(runBlocking { enrolment.adoptStored(enrolledInfo, key::identity) })
+        assertEquals(
+            "the prompt is up while unlocking",
+            EnrolUiState.Locked(enrolledInfo, unlocking = true),
+            key.seenDuringSign.last(),
+        )
+        assertTrue(enrolment.enrolState.value is EnrolUiState.Enrolled)
+        assertTrue(host.credential is Credential.Device)
+        assertEquals("eyJ2IjoyfQ.c2ln", host.deviceCredential?.certToken)
+        assertEquals(LoginUiState.Approved(user = null), host.lastLoginState)
+        assertEquals(listOf("deviceCredential", "credential", "login", "authority"), host.calls)
+        assertEquals(3, key.signs)
+    }
+
+    @Test fun aKeyStoreFaultIsAnErrorThatStillShowsTheEnrolment() {
+        val key = ScriptedKey(IllegalStateException("keystore exploded"))
+
+        runBlocking { enrolment.adoptStored(enrolledInfo, key::identity) }
+
+        assertEquals(
+            EnrolUiState.Error(enrolledInfo, "could not sign with the device key: keystore exploded"),
+            enrolment.enrolState.value,
+        )
+        assertNull(host.credential)
+    }
+
+    @Test fun unlockWithNoKeyringOrNoAdmissionDoesNothing() {
+        enrolment.unlockDevice()
+        assertEquals(EnrolUiState.Loading, enrolment.enrolState.value)
+        assertTrue(host.calls.isEmpty())
+        val unenrolled = enrolledInfo.copy(certToken = null)
+        assertFalse(runBlocking { enrolment.adoptStored(unenrolled) { error("no admission: nothing to sign") } })
     }
 }

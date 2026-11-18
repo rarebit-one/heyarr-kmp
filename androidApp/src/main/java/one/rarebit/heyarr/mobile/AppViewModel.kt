@@ -473,6 +473,9 @@ class AppViewModel internal constructor(
     /** After enrolment: start using the Device credential now. */
     fun useDeviceCredential() = enrolment.useDeviceCredential()
 
+    /** Enrolled but the key is locked ([EnrolUiState.Locked]): prompt again and sign in (heyarr-kmp#243). */
+    fun unlockDevice() = enrolment.unlockDevice()
+
     /** Drop the stored admission (keys stay) and fall back to guest browsing. */
     fun forgetDevice() = enrolment.forgetDevice()
 

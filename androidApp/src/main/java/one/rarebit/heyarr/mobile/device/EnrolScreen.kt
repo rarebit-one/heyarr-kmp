@@ -109,9 +109,26 @@ sealed interface EnrolUiState {
      */
     data class Removed(val info: DeviceKeyInfo, val message: String) : EnrolUiState
 
+    /**
+     * This phone holds an admission, but its device key would not sign: the key's 1-hour
+     * user-auth window (`DeviceKeyring.USER_AUTH_VALIDITY_SECONDS`) had lapsed and the
+     * fingerprint prompt was dismissed or failed. Nothing is wrong with the enrolment, so this
+     * is not [Error] and never the not-enrolled text (heyarr-kmp#243): the phone browses as a
+     * guest until the user asks to unlock ([DeviceEnrolment.unlockDevice]), which prompts
+     * again. Nothing re-prompts by itself. [unlocking] while that prompt is up.
+     */
+    data class Locked(val info: DeviceKeyInfo, val unlocking: Boolean = false) : EnrolUiState
+
     /** [kind] classifies a pairing failure (relay unreachable vs. timed out vs. …); null for anything else. */
     data class Error(val info: DeviceKeyInfo?, val message: String, val kind: PairingFailure? = null) : EnrolUiState
 }
+
+/**
+ * The enrolled-but-locked copy (heyarr-kmp#243), shared by the Enrol screen, the shell's
+ * banner (whose Retry unlocks) and Settings → This device, so all three say the same thing.
+ */
+internal const val LOCKED_TITLE = "Unlock with your fingerprint to sign in"
+internal const val UNLOCK_ACTION = "Unlock"
 
 /** `m:ss` left until [deadlineMillis], floored at zero — the relay session countdown. */
 internal fun countdownText(deadlineMillis: Long, nowMillis: Long): String {
@@ -219,6 +236,7 @@ fun EnrolScreen(
             is EnrolUiState.Registering -> state.info
             is EnrolUiState.Enrolled -> state.info
             is EnrolUiState.Removed -> state.info
+            is EnrolUiState.Locked -> state.info
             is EnrolUiState.Error -> state.info
             EnrolUiState.Loading, EnrolUiState.Unprovisioned -> null
         }
@@ -407,6 +425,27 @@ fun EnrolScreen(
                     style = MaterialTheme.typography.bodySmall,
                 )
                 OutlinedButton(onClick = onForget) { Text("Forget enrolment") }
+            }
+
+            is EnrolUiState.Locked -> {
+                Text(LOCKED_TITLE, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    "This phone is still enrolled. Its device key only signs for an hour after you " +
+                        "confirm it's you, and that confirmation was cancelled, so the app is browsing " +
+                        "as a guest for now.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                if (state.unlocking) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    Text("Confirm the prompt to sign in.", style = MaterialTheme.typography.bodySmall)
+                } else {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // onRetry is retryEnrol, which signs in with the stored admission again
+                        // for an enrolled phone that is not signed in (EnrolAdvance.retryAdopts).
+                        Button(onClick = onRetry) { Text(UNLOCK_ACTION) }
+                        if (manage) OutlinedButton(onClick = onForget) { Text("Forget enrolment") }
+                    }
+                }
             }
 
             is EnrolUiState.Error -> {

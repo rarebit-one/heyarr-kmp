@@ -55,8 +55,10 @@ import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.AppGraph
 import one.rarebit.heyarr.mobile.AppViewModel
+import one.rarebit.heyarr.mobile.device.EnrolAdvance
 import one.rarebit.heyarr.mobile.device.EnrolScreen
 import one.rarebit.heyarr.mobile.device.EnrolUiState
+import one.rarebit.heyarr.mobile.device.LOCKED_TITLE
 import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.playback.PlaybackClient
@@ -438,12 +440,10 @@ fun HeyarrNavHost(
     fun back() {
         navController.popBackStack()
     }
-    val deviceSummary = when (enrolState) {
-        is EnrolUiState.Enrolled -> "This phone is enrolled as a device and signs in with its own key."
-        is EnrolUiState.Ready -> "A device key exists; this phone is not enrolled yet."
-        is EnrolUiState.Unprovisioned -> "No device key yet — a QR session signs this phone in."
-        else -> null
-    }
+    val deviceSummary = EnrolAdvance.deviceSummary(enrolState)
+    // Enrolled, but the device key would not sign (its 1-hour window lapsed and the prompt was
+    // dismissed): the phone browses as a guest, and every way back in prompts again (heyarr-kmp#243).
+    val keyLocked = enrolState is EnrolUiState.Locked && session.isGuest
 
     CompositionLocalProvider(LocalAppearance provides session.appearance) {
         HeyarrTheme(shellTheme) {
@@ -462,38 +462,49 @@ fun HeyarrNavHost(
                     Column(Modifier.fillMaxSize()) {
                         if (!fullScreen) {
                             Box(Modifier.windowInsetsPadding(WindowInsets.statusBars)) {
-                                when (session.connection) {
-                                    Connection.OFFLINE -> OfflineBanner(
-                                        "Can't reach heyarr",
-                                        session.baseUrl,
-                                        onRetry = { scope.launch { session.probe() } },
+                                if (keyLocked) {
+                                    // Ahead of the connection banners: "not a guest network" is true
+                                    // but beside the point, and its Retry only re-probed as a guest.
+                                    OfflineBanner(
+                                        LOCKED_TITLE,
+                                        "This phone is still enrolled; its key needs you to confirm it's you.",
+                                        onRetry = vm::unlockDevice,
                                         onSettings = { open(Route.Settings) },
                                     )
+                                } else {
+                                    when (session.connection) {
+                                        Connection.OFFLINE -> OfflineBanner(
+                                            "Can't reach heyarr",
+                                            session.baseUrl,
+                                            onRetry = { scope.launch { session.probe() } },
+                                            onSettings = { open(Route.Settings) },
+                                        )
 
-                                    Connection.UNAUTHORIZED -> OfflineBanner(
-                                        "heyarr refused the credential",
-                                        "Sign in again, or re-check this device's authorisation in Settings.",
-                                        onRetry = { scope.launch { session.probe() } },
-                                        onSettings = { open(Route.Settings) },
-                                    )
+                                        Connection.UNAUTHORIZED -> OfflineBanner(
+                                            "heyarr refused the credential",
+                                            "Sign in again, or re-check this device's authorisation in Settings.",
+                                            onRetry = { scope.launch { session.probe() } },
+                                            onSettings = { open(Route.Settings) },
+                                        )
 
-                                    // No credential was sent, so none is blamed (heyarr-kmp#185): the
-                                    // node just doesn't admit this network as a guest network.
-                                    Connection.GUEST_REFUSED -> OfflineBanner(
-                                        "This network isn't a guest network for this node",
-                                        "Sign in to browse.",
-                                        onRetry = { scope.launch { session.probe() } },
-                                        onSettings = { open(Route.Settings) },
-                                    )
+                                        // No credential was sent, so none is blamed (heyarr-kmp#185): the
+                                        // node just doesn't admit this network as a guest network.
+                                        Connection.GUEST_REFUSED -> OfflineBanner(
+                                            "This network isn't a guest network for this node",
+                                            "Sign in to browse.",
+                                            onRetry = { scope.launch { session.probe() } },
+                                            onSettings = { open(Route.Settings) },
+                                        )
 
-                                    Connection.SIGNING_FAILED -> OfflineBanner(
-                                        "Device authentication required",
-                                        "Unlock with your fingerprint or PIN, then retry.",
-                                        onRetry = { scope.launch { session.probe() } },
-                                        onSettings = { open(Route.Settings) },
-                                    )
+                                        Connection.SIGNING_FAILED -> OfflineBanner(
+                                            "Device authentication required",
+                                            "Unlock with your fingerprint or PIN, then retry.",
+                                            onRetry = { scope.launch { session.probe() } },
+                                            onSettings = { open(Route.Settings) },
+                                        )
 
-                                    else -> {}
+                                        else -> {}
+                                    }
                                 }
                             }
                         }
@@ -597,6 +608,7 @@ fun HeyarrNavHost(
                                         },
                                         modifier = content,
                                         deviceSummary = deviceSummary,
+                                        onUnlockDevice = if (keyLocked) vm::unlockDevice else null,
                                         isGuest = session.isGuest, onSignInToSave = onSignInToSave,
                                         onDiscover = {
                                             vm.discoverAndSave { found ->

@@ -40,6 +40,13 @@ Moved verbatim from the former `androidApp/CLAUDE.md`; the router is `androidApp
   `GET /membership/{usr}` (`device/MembershipClient`, 404 tolerated), merges it into
   the replica and evaluates; a device no longer a member drops its credential and
   shows `EnrolUiState.Removed` — no retry, no loop.
+  When the window has lapsed, the first proof at launch (`DeviceEnrolment.adoptStored`)
+  shows the fingerprint prompt. Dismissing it leaves `EnrolUiState.Locked`, not `Error`
+  (heyarr-kmp#243): the phone browses as a guest, and the shell's banner (Retry), Settings →
+  This device (Unlock) and the Device page each run `unlockDevice`, which prompts again.
+  Nothing re-prompts by itself. A window that lapses mid-session never reaches the node as a
+  401. Signing refuses on the phone, the probe reports `Connection.SIGNING_FAILED`, and that
+  banner's Retry re-mints, which prompts.
 - **Bootstrap — `Authorization: Bearer <token>`** (`auth/Credential.Session`): a
   short-lived session token from a **QR** web-login, how a fresh install reaches the
   library before it enrols as a device.
