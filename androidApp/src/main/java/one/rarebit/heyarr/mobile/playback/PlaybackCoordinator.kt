@@ -13,6 +13,7 @@ import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.playback.Copies
 import one.rarebit.heyarr.core.playback.Copy
 import one.rarebit.heyarr.core.playback.DisplayFit
+import one.rarebit.heyarr.core.playback.PlaybackPreference
 import one.rarebit.heyarr.core.playback.QualityPreference
 import one.rarebit.heyarr.core.playback.ResumeItem
 import one.rarebit.heyarr.core.playback.ResumePoint
@@ -51,6 +52,8 @@ data class NowPlaying(
     val copy: Copy<WorkAsset>? = null,
     /** The `max_height` the plan declared, so a re-plan asks for the same picture. */
     val maxHeight: Int? = null,
+    /** The `preference` the plan sent (heyarr-core#887), so a re-plan sends it again; null sent none. */
+    val preference: PlaybackPreference? = null,
     /**
      * Which play this is, counted by the coordinator: two presses of Start over on the same
      * film are two requests, and an identical value would be swallowed by the state flow.
@@ -108,7 +111,7 @@ class PlaybackCoordinator(
 
     private var requests = 0
 
-    private fun preference(): QualityPreference = copies.preference()
+    private fun preference(): PlaybackPreference = copies.preference()
 
     /**
      * What this phone can decode, for `POST /playback/plan`. Null (tests, or before the
@@ -194,14 +197,16 @@ class PlaybackCoordinator(
             copies = copies,
             copy = copy,
             maxHeight = maxHeight,
+            // A copy picked by hand is the picture the person asked for: no preference
+            // narrows it, and its own height is the cap (heyarr-core#887).
+            preference = if (chosen) null else preference(),
         )
-        val caps = capabilities?.forMaxHeight(maxHeight)
+        val caps = capabilities?.forMaxHeight(maxHeight)?.withPreference(np.preference)
         when {
             caps == null -> present(np, atSeconds)
 
-            // A copy the person picked, or best quality, is planned by asset: an explicit
-            // asset always wins at the node, and best quality is a cap the node does not know.
-            chosen || preference() == QualityPreference.BEST -> resolveInto(client, np, caps, atSeconds)
+            // A copy the person picked is planned by asset: an explicit asset always wins.
+            chosen -> resolveInto(client, np, caps, atSeconds)
 
             else -> resolveByWork(client, np, caps, atSeconds)
         }
@@ -210,15 +215,20 @@ class PlaybackCoordinator(
     /**
      * Plan [np]'s film by `work_id` (heyarr-core#885): the node chooses the copy from what
      * this phone declares — the capped height, HDR, the codecs it decodes, which the phone's
-     * own rule cannot see — and plans it; [np] then plays the copy the node chose. A node that
-     * does not plan by film (400), or answers with a copy the phone does not hold, falls back
-     * to planning the copy the phone chose itself, which is how every play worked before.
+     * own rule cannot see — and plans it, under the person's preference; [np] then plays the
+     * copy the node chose. A node that does not plan by film (400), or answers with a copy the
+     * phone does not hold, falls back to planning the copy the phone chose itself, which is how
+     * every play worked before. So does best quality on a node that did not apply the
+     * preference (before heyarr-core#887): to it, the screen is still the limit.
      */
     private fun resolveByWork(client: PlaybackClient, np: NowPlaying, caps: ClientCapabilities, knownStart: Double?) {
         val workId = np.workId ?: return resolveInto(client, np, caps, knownStart)
         scope.launch {
+            val bestUnheard = { p: PlaybackClient.WorkPlan ->
+                caps.preference?.quality == QualityPreference.BEST && !p.preferenceApplied
+            }
             val plan = withContext(io) { runCatching { client.planWork(workId, caps) }.getOrNull() }
-                ?.takeIf { it.result !is PlaybackClient.PlanResult.Unavailable }
+                ?.takeIf { it.result !is PlaybackClient.PlanResult.Unavailable && !bestUnheard(it) }
             val copy = plan?.assetId?.let { id -> np.copies.firstOrNull { it.asset.id == id } }
             val hash = copy?.asset?.blobHash
             if (plan == null || copy == null || hash == null) {
@@ -446,7 +456,8 @@ class PlaybackCoordinator(
     ) {
         // Every other play (an episode, a continue card) declares the screen as the
         // preference caps it; only a film's copies lift it to the copy (`playCopyAt`).
-        val maxHeight = Copies.declaredMaxHeight(null, display, preference())
+        val preference = preference()
+        val maxHeight = Copies.declaredMaxHeight(null, display, preference)
         val np = NowPlaying(
             target = client.blobTarget(hash, isVideo, mime).copy(subtitles = subtitles),
             title = title,
@@ -456,10 +467,11 @@ class PlaybackCoordinator(
             kind = kind,
             artworkUrl = artworkUrl,
             maxHeight = maxHeight,
+            preference = preference,
             workId = workId,
             startPaused = startPaused,
         )
-        resolveInto(client, np, caps.forMaxHeight(maxHeight), knownStart)
+        resolveInto(client, np, caps.forMaxHeight(maxHeight).withPreference(preference), knownStart)
     }
 
     /**
@@ -496,7 +508,7 @@ class PlaybackCoordinator(
         val hash = playing.blobHash ?: return
         val codec = issue.codec ?: return
         val client = PlaybackClient(transport, baseUrl(), cred)
-        val declared = playing.maxHeight?.let { caps.forMaxHeight(it) } ?: caps
+        val declared = asDeclared(caps, playing)
         scope.launch {
             val replanned = withContext(io) {
                 runCatching {
@@ -538,8 +550,12 @@ class PlaybackCoordinator(
         val np = playing.copy(target = direct, startPaused = !play)
         val caps = capabilities
         if (caps == null || playing.assetId == null || hash == null) return present(np, atSeconds)
-        resolveInto(client, np, playing.maxHeight?.let { caps.forMaxHeight(it) } ?: caps, atSeconds)
+        resolveInto(client, np, asDeclared(caps, playing), atSeconds)
     }
+
+    /** [caps] as [playing]'s plan declared them: the same height and the same preference. */
+    private fun asDeclared(caps: ClientCapabilities, playing: NowPlaying): ClientCapabilities =
+        (playing.maxHeight?.let { caps.forMaxHeight(it) } ?: caps).withPreference(playing.preference)
 
     /** Close the player and release its target. The player reports the final position itself. */
     fun stop() {

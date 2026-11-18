@@ -7,6 +7,7 @@ import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.playback.InMemoryResumeStore
+import one.rarebit.heyarr.core.playback.PlaybackPreference
 import one.rarebit.heyarr.core.playback.QualityPreference
 import one.rarebit.heyarr.core.playback.ResumeItem
 import one.rarebit.heyarr.core.playback.ResumePoint
@@ -164,7 +165,7 @@ class PlaybackCoordinatorTest {
     @Test fun theDataSaverPreferenceCapsEveryPlan() {
         val t = RoutedTransport(mapOf("POST /playback/plan" to HttpResponse(200, """{"mode":"direct"}""")))
         val c = PlaybackCoordinator(t, { base }, { Credential.Session("tok") }, scope, dispatcher)
-        c.copies = CopyPreferences(preference = { QualityPreference.DATA_SAVER })
+        c.copies = CopyPreferences(preference = { PlaybackPreference(QualityPreference.DATA_SAVER) })
         c.capabilities = caps.copy(maxHeight = 1080)
         c.playFile("Ep 1", "a1", hash, "video/mp4", "series")
         assertTrue("data saver declares 720 lines", t.calls.single().third!!.contains("\"max_height\":720"))

@@ -24,12 +24,17 @@ internal interface SpaceRegistry {
     fun readingSpace(): String?
     fun setReadingSpace(id: String)
 
+    /** The space holding the person's synced settings, the playback preference first (heyarr-core#887). */
+    fun preferencesSpace(): String?
+    fun setPreferencesSpace(id: String)
+
     fun playlistName(id: String): String?
     fun setPlaylistName(id: String, name: String)
     fun clearPlaylistName(id: String)
 
     /** The ids reserved for non-playlist roles, so a playlist listing can exclude them. */
-    fun roleSpaceIds(): Set<String> = listOfNotNull(starredSpace(), historySpace(), readingSpace()).toSet()
+    fun roleSpaceIds(): Set<String> =
+        listOfNotNull(starredSpace(), historySpace(), readingSpace(), preferencesSpace()).toSet()
 
     /** The display name for a playlist space — a local rename, else the gateway-parity `"Playlist <id>"`. */
     fun displayName(id: String): String = playlistName(id) ?: "Playlist $id"
@@ -40,10 +45,12 @@ internal interface SpaceRegistry {
 }
 
 /** In-memory registry for tests and previews. */
+@Suppress("TooManyFunctions") // a getter and a setter per role, as the interface has
 internal class InMemorySpaceRegistry : SpaceRegistry {
     private var starred: String? = null
     private var history: String? = null
     private var reading: String? = null
+    private var preferences: String? = null
     private val names = HashMap<String, String>()
 
     override fun starredSpace(): String? = starred
@@ -58,6 +65,10 @@ internal class InMemorySpaceRegistry : SpaceRegistry {
     override fun setReadingSpace(id: String) {
         reading = id
     }
+    override fun preferencesSpace(): String? = preferences
+    override fun setPreferencesSpace(id: String) {
+        preferences = id
+    }
     override fun playlistName(id: String): String? = names[id]
     override fun setPlaylistName(id: String, name: String) {
         names[id] = name
@@ -68,6 +79,7 @@ internal class InMemorySpaceRegistry : SpaceRegistry {
 }
 
 /** SharedPreferences-backed registry (the real device store). */
+@Suppress("TooManyFunctions") // a getter and a setter per role, as the interface has
 internal class PrefsSpaceRegistry(context: Context) : SpaceRegistry {
     private val prefs = context.getSharedPreferences(SpaceRegistry.PREFS, Context.MODE_PRIVATE)
 
@@ -77,6 +89,8 @@ internal class PrefsSpaceRegistry(context: Context) : SpaceRegistry {
     override fun setHistorySpace(id: String) = prefs.edit().putString(KEY_HISTORY, id).apply()
     override fun readingSpace(): String? = prefs.getString(KEY_READING, null)
     override fun setReadingSpace(id: String) = prefs.edit().putString(KEY_READING, id).apply()
+    override fun preferencesSpace(): String? = prefs.getString(KEY_PREFERENCES, null)
+    override fun setPreferencesSpace(id: String) = prefs.edit().putString(KEY_PREFERENCES, id).apply()
 
     override fun playlistName(id: String): String? = prefs.getString(nameKey(id), null)
     override fun setPlaylistName(id: String, name: String) = prefs.edit().putString(nameKey(id), name).apply()
@@ -86,6 +100,7 @@ internal class PrefsSpaceRegistry(context: Context) : SpaceRegistry {
         const val KEY_STARRED = "role.starred"
         const val KEY_HISTORY = "role.history"
         const val KEY_READING = "role.reading"
+        const val KEY_PREFERENCES = "role.preferences"
         fun nameKey(id: String) = "name.$id"
     }
 }

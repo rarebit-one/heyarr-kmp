@@ -1,6 +1,7 @@
 package one.rarebit.heyarr.mobile.playback
 
 import one.rarebit.heyarr.core.playback.DisplayFit
+import one.rarebit.heyarr.core.playback.PlaybackPreference
 
 /**
  * What THIS phone can play, as `POST /api/v1/playback/plan` wants to hear it
@@ -17,6 +18,10 @@ import one.rarebit.heyarr.core.playback.DisplayFit
  * `stream` (a phone-friendly fMP4 the node repackages), so an honest list here is
  * what stops a 5.1 AC-3 track playing as silence.
  *
+ * [preference] is the person's quality, resolved on this phone (heyarr-core#887), sent as
+ * the plan's `preference` so the node can choose and plan by it. A node before #887 refuses
+ * the field with a 400, and [PlaybackClient] asks it again without.
+ *
  * Pure: the Android `MediaCodecList` probe lives in [MediaCodecCapabilities]; this
  * type, the codec-name mapping and the request body are JVM-tested.
  */
@@ -26,6 +31,7 @@ data class ClientCapabilities(
     val audio: List<String>,
     val maxHeight: Int,
     val supportsHdr: Boolean = false,
+    val preference: PlaybackPreference? = null,
 ) {
     /** The screen these capabilities were probed on, for choosing a copy. */
     val display: DisplayFit get() = DisplayFit(maxHeight, supportsHdr)
@@ -33,13 +39,16 @@ data class ClientCapabilities(
     /** The same capabilities declaring [height] lines — the cap `Copies.declaredMaxHeight` chose. */
     fun forMaxHeight(height: Int): ClientCapabilities = copy(maxHeight = height)
 
+    /** The same capabilities sending [preference]; null sends none (a copy picked by hand). */
+    fun withPreference(preference: PlaybackPreference?): ClientCapabilities = copy(preference = preference)
+
     /** The same capabilities with one codec struck off — a decoder that exists but fails. */
     fun without(codec: String): ClientCapabilities =
         copy(video = video.filterNot { it == codec }, audio = audio.filterNot { it == codec })
 
     /** The plan request body: `{"asset_id", "client": {containers, video, audio, max_height}}`. */
     fun planRequestBody(assetId: String): String =
-        "{\"asset_id\":${quote(assetId)},\"client\":{" + clientFields() + "}}"
+        "{\"asset_id\":${quote(assetId)},\"client\":{" + clientFields() + "}" + preferenceField() + "}"
 
     /**
      * The plan-by-film body (heyarr-core#885): `{"work_id", "client": {…, supports_hdr}}`, the
@@ -48,7 +57,17 @@ data class ClientCapabilities(
      * to [planRequestBody] for the copy it chose itself.
      */
     fun planByWorkBody(workId: String): String = "{\"work_id\":${quote(workId)},\"client\":{" +
-        clientFields() + ",\"supports_hdr\":$supportsHdr}}"
+        clientFields() + ",\"supports_hdr\":$supportsHdr}" + preferenceField() + "}"
+
+    /**
+     * Whether the bodies carry [preference]. The default (fit, no cap) is what an absent field
+     * means, so it is left off: an older node, which refuses the field, then sees the request
+     * it always did.
+     */
+    val sendsPreference: Boolean get() = preference != null && preference != PlaybackPreference()
+
+    private fun preferenceField(): String =
+        preference?.takeIf { sendsPreference }?.let { ",\"preference\":" + it.planJson() } ?: ""
 
     private fun clientFields(): String = "\"containers\":${array(containers)}," +
         "\"video\":${array(video)}," +

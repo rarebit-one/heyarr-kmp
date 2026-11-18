@@ -49,6 +49,11 @@ object PlaybackJson {
          * node chose, which may not be the one the phone would have.
          */
         val assetId: String? = null,
+        /**
+         * The quality the node applied (heyarr-core#887): its echo of the request's
+         * `preference`. Null when the request sent none, or the node predates the field.
+         */
+        val preferenceQuality: String? = null,
         /** Pre-#432 fields, read for the transition only. */
         val decision: String? = null,
         val token: String? = null,
@@ -81,6 +86,7 @@ object PlaybackJson {
             reason = JsonScan.stringField(root, "reason"),
             source = source,
             assetId = JsonScan.stringField(root, "asset_id"),
+            preferenceQuality = JsonScan.objectAt(root, "preference")?.let { JsonScan.stringField(it, "quality") },
             decision = JsonScan.stringField(root, "decision"),
             token = JsonScan.stringField(root, "token"),
         )

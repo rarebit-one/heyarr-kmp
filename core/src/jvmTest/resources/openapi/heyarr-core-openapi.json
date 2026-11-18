@@ -11602,7 +11602,7 @@
    },
    "PrimaryAssetRef": {
     "type": "object",
-    "description": "The one file a card tap plays (ADR-0075): the first `primary`-role\nasset of the work that holds bytes and is not missing — an arbitrary\nbut stable choice among a work's editions. Enough to hand to\n`POST /playback/plan` or the blob route without a second read; a\nclient that wants to choose lists `GET /works/{id}/assets`.\n",
+    "description": "The one file a card tap plays (ADR-0075): a `primary`-role asset of\nthe work that holds bytes and is not missing. **For a film** it is the\ncopy `POST /playback/plan` with `work_id` would choose for a client\nthat declares nothing (ADR-0123): a probed copy with a picture before\none without, SDR before HDR, then the tallest, then the highest\nbitrate, then the asset id. **For any other content type** it is the\nfirst such asset in creation order, because a series' files are\ndifferent episodes. Stable across requests either way. Enough to hand\nto `POST /playback/plan` or the blob route without a second read. A\nclient that can show more should plan by `work_id` and declare what it\nshows. A client that wants to offer a choice should list\n`GET /works/{id}/assets`.\n",
     "required": [
      "asset_id",
      "edition_id",
@@ -13509,6 +13509,40 @@
        }
       ],
       "description": "What the caller can decode (ADR-0069). Present, the answer carries\nthe leg — `mode`, `url`, `mime`, `reason`, `source` — and\n`device_id` may be omitted.\n"
+     },
+     "preference": {
+      "allOf": [
+       {
+        "$ref": "#/components/schemas/PlaybackPreference"
+       }
+      ],
+      "description": "The person's preferred quality (#887): their synced default with\nthis device's override laid over it, resolved by the client because\nthe node cannot read personal state. Absent is `fit`, the plan as\nit was before.\n"
+     }
+    }
+   },
+   "PlaybackPreference": {
+    "type": "object",
+    "description": "A person's playback quality (#887, ADR-0123's addendum). It bounds the\nchoice of copy and the plan of the copy chosen, by asset or by work:\n`fit` limits the picture to the screen's `max_height`; `best` lifts\nthat limit, so the tallest copy is chosen and handed over without\nscaling; `data_saver` limits it to 720 lines or the screen, whichever\nis shorter, and takes the lower bitrate of two copies of equal height.\n`max_height` and `max_bitrate_bps` are the person's own cap, a further\nceiling under any quality. The codecs and HDR stay the device's facts:\n`best` on a screen without HDR still prefers an SDR copy. Like the\nclient's, the bitrate cap steers the choice only.\n",
+    "properties": {
+     "quality": {
+      "type": "string",
+      "enum": [
+       "fit",
+       "best",
+       "data_saver"
+      ],
+      "description": "Empty or absent is `fit`."
+     },
+     "max_height": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "The person's height cap, in lines. Zero is no cap."
+     },
+     "max_bitrate_bps": {
+      "type": "integer",
+      "format": "int64",
+      "minimum": 0,
+      "description": "The person's bitrate cap. Zero is no cap."
      }
     }
    },
@@ -13730,6 +13764,14 @@
        }
       ],
       "description": "Present exactly when the request named a `work_id` and no\n`asset_id` (#885): the copy chosen — the plan's `asset_id` — why,\nand every other copy with why not.\n"
+     },
+     "preference": {
+      "allOf": [
+       {
+        "$ref": "#/components/schemas/PlaybackPreference"
+       }
+      ],
+      "description": "The preference the plan applied (#887), `quality` filled in,\npresent exactly when the request carried one. A client that sent\none and finds this absent is talking to a node that ignored it.\n"
      }
     }
    },

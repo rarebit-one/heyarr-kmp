@@ -76,10 +76,14 @@ class PlaybackClient(
      * an exception, so the caller falls back to the blob. Any other non-200 is an
      * error worth surfacing (the asset is gone, the session is refused).
      */
-    fun plan(assetId: String, caps: ClientCapabilities): PlanResult = post(caps.planRequestBody(assetId)).result
+    fun plan(assetId: String, caps: ClientCapabilities): PlanResult = post(caps) { it.planRequestBody(assetId) }.result
 
-    /** A plan by film: what to play, and which copy the node chose ([assetId], null when it did not say). */
-    data class WorkPlan(val result: PlanResult, val assetId: String?)
+    /**
+     * A plan by film: what to play, which copy the node chose ([assetId], null when it did not
+     * say), and whether the node applied the preference sent ([preferenceApplied]: false from a
+     * node before heyarr-core#887, which had to be asked without one).
+     */
+    data class WorkPlan(val result: PlanResult, val assetId: String?, val preferenceApplied: Boolean = false)
 
     /**
      * `POST /api/v1/playback/plan` naming the film, not the file (heyarr-core#885): the node
@@ -87,13 +91,29 @@ class PlaybackClient(
      * does not plan by film answers 400, read as [PlanResult.Unavailable] exactly as an asset
      * plan's is; the caller then plans the copy it chose itself.
      */
-    fun planWork(workId: String, caps: ClientCapabilities): WorkPlan = post(caps.planByWorkBody(workId))
+    fun planWork(workId: String, caps: ClientCapabilities): WorkPlan = post(caps) { it.planByWorkBody(workId) }
 
-    private fun post(body: String): WorkPlan {
+    /**
+     * POST [body] of [caps]. A node before heyarr-core#887 refuses an unknown field, so a 400
+     * to a request that sent a `preference` is asked once more without it: the plan an older
+     * node gives is better than none, and the phone's own pick already honours the preference.
+     */
+    private fun post(caps: ClientCapabilities, body: (ClientCapabilities) -> String): WorkPlan {
+        val first = post(body(caps))
+        if (!caps.sendsPreference || !first.refused) return first.plan
+        return post(body(caps.withPreference(null))).plan
+    }
+
+    private class Posted(val plan: WorkPlan, val refused: Boolean)
+
+    private fun post(body: String): Posted {
         val resp = try {
             http.post(planUrl(baseUrl), body = body, contentType = "application/json", headers = credential.asHeader())
         } catch (e: Exception) {
-            return WorkPlan(PlanResult.Unavailable("plan request failed: ${e.message ?: e.javaClass.simpleName}"), null)
+            return Posted(
+                WorkPlan(PlanResult.Unavailable("plan request failed: ${e.message ?: e.javaClass.simpleName}"), null),
+                refused = false,
+            )
         }
         require(resp.status == 200 || resp.status == 400) {
             "playback: POST /playback/plan failed: HTTP ${resp.status}"
@@ -105,7 +125,11 @@ class PlaybackClient(
             p.isDirect -> PlanResult.Direct(p.url?.let { absolute(it) }, p.reason)
             else -> PlanResult.Unavailable("plan answered mode=${p.mode ?: p.decision ?: "?"} with no stream url")
         }
-        return WorkPlan(result, p.assetId.takeIf { resp.status == 200 })
+        val ok = resp.status == 200
+        return Posted(
+            WorkPlan(result, p.assetId.takeIf { ok }, preferenceApplied = ok && p.preferenceQuality != null),
+            refused = resp.status == 400,
+        )
     }
 
     /**

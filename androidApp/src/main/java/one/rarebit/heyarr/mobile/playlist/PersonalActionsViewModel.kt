@@ -9,14 +9,15 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import one.rarebit.heyarr.core.playback.PlaybackPreference
 import one.rarebit.heyarr.mobile.library.ItemResolver
 import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.personalstate.PersonalStateCoordinator
 
 /**
- * The cross-screen personal-state actions — star/unstar and add to a playlist — plus
- * the derived row Home shows (starred), all decrypted
+ * The cross-screen personal-state actions — star/unstar, add to a playlist and the person's
+ * synced playback preference (heyarr-core#887) — plus the derived row Home shows (starred), all decrypted
  * on this device. It is the one place a ★ or an "Add to playlist" tap on any card,
  * track or work goes, so those affordances share one optimistic path and one refresh.
  *
@@ -45,6 +46,10 @@ internal class PersonalActionsViewModel(
     private val _addTarget = MutableStateFlow<String?>(null)
     val addTarget: StateFlow<String?> = _addTarget.asStateFlow()
 
+    /** The person's playback default as their devices last left it; null when none is set (or readable). */
+    private val _accountPlayback = MutableStateFlow<PlaybackPreference?>(null)
+    val accountPlayback: StateFlow<PlaybackPreference?> = _accountPlayback.asStateFlow()
+
     val enabled: Boolean get() = personalState != null
 
     init {
@@ -62,7 +67,19 @@ internal class PersonalActionsViewModel(
                 _starredWorks.value = ids.mapNotNull { runCatching { resolver.resolve(it)?.work }.getOrNull() }
                     .distinctBy { it.id }
                 _playlists.value = runCatching { ps.playlists() }.getOrDefault(emptyList())
+                // A failed read keeps what was shown: it is not "the person has no preference".
+                runCatching { ps.playbackPreference() }.onSuccess { _accountPlayback.value = it }
             }
+        }
+    }
+
+    /** Set the person's playback default for all their devices. Optimistic; a failed write re-reads. */
+    fun setAccountPlayback(preference: PlaybackPreference) {
+        val ps = personalState ?: return
+        _accountPlayback.value = preference
+        viewModelScope.launch {
+            val written = withContext(io) { runCatching { ps.setPlaybackPreference(preference) }.isSuccess }
+            if (!written) refresh()
         }
     }
 

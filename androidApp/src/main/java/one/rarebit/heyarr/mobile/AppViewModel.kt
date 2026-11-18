@@ -18,6 +18,7 @@ import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.discovery.NoMdnsResolver
 import one.rarebit.heyarr.core.discovery.NodeDiscovery
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.playback.PlaybackPreference
 import one.rarebit.heyarr.core.playback.QualityPreference
 import one.rarebit.heyarr.mobile.device.DeviceEnrolment
 import one.rarebit.heyarr.mobile.device.DeviceKeyring
@@ -156,6 +157,19 @@ class AppViewModel internal constructor(
     }
 
     /**
+     * The person's synced playback preference as this device last decrypted it
+     * (heyarr-core#887); null until personal state is read, or when none is set. Settings
+     * hands it over through [onAccountPlaybackPreference]; every play reads it.
+     */
+    @Volatile
+    private var accountPlayback: PlaybackPreference? = null
+
+    /** The person's synced default changed (read from, or written to, personal state). */
+    fun onAccountPlaybackPreference(preference: PlaybackPreference?) {
+        accountPlayback = preference
+    }
+
+    /**
      * What is playing and how it came to be: planning, fallback and the one re-plan
      * (playback/PlaybackCoordinator). Reads the credential and node per call, so it
      * follows a sign-in, an enrolment and a Settings change without being rebuilt.
@@ -167,8 +181,14 @@ class AppViewModel internal constructor(
             credential = { credential },
             scope = viewModelScope,
         ).also {
-            // Settings → Playback and the per-film copy choices, both kept on this phone (heyarr-kmp#225).
-            it.copies = CopyPreferences({ QualityPreference.of(settings.playbackPreference) }, settings)
+            // The person's synced default under this phone's override (heyarr-core#887), read per
+            // play, and the per-film copy choices kept on this phone (heyarr-kmp#225).
+            it.copies = CopyPreferences(
+                {
+                    PlaybackPreference.resolve(accountPlayback, QualityPreference.ofOrNull(settings.playbackPreference))
+                },
+                settings,
+            )
         }
     }
 
