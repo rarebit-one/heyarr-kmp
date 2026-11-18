@@ -37,6 +37,7 @@ import one.rarebit.heyarr.core.mcp.PeerStatus
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.HeyarrConfig
+import one.rarebit.heyarr.mobile.device.EnrolAdvance
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.search.FollowedSource
 import one.rarebit.heyarr.mobile.search.SessionAuthority
@@ -83,6 +84,11 @@ fun SettingsScreen(
     onSourcesChanged: () -> Unit,
     modifier: Modifier = Modifier,
     deviceSummary: String? = null,
+    /**
+     * Set while this phone is enrolled but its device key is locked (heyarr-kmp#243): This device
+     * offers "Unlock", which prompts for the fingerprint again, instead of "Sign in to save".
+     */
+    onUnlockDevice: (() -> Unit)? = null,
     /** True while browsing anonymously — hides enrolled-only panels, shows "Sign in to save". */
     isGuest: Boolean = false,
     onSignInToSave: () -> Unit = {},
@@ -133,8 +139,8 @@ fun SettingsScreen(
                     color = Tokens.textMuted,
                 )
                 SecondaryButton(
-                    if (isGuest) "Sign in to save" else "Device enrolment",
-                    if (isGuest) onSignInToSave else onDevice,
+                    EnrolAdvance.deviceAction(locked = onUnlockDevice != null, isGuest = isGuest),
+                    onUnlockDevice ?: if (isGuest) onSignInToSave else onDevice,
                     compact = true,
                 )
             }

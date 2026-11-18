@@ -148,6 +148,10 @@ jobs:
               # Back, and Retry opens it (#240). The reader after a real process death runs from
               # reader-process-death-check.sh, not here.
               (pkg + "ReaderErrorTest", "aRefusedBookSaysSoClearOfTheBarsAndRetryOpensIt"),
+              # An enrolled phone whose key is locked says it is still enrolled and offers Unlock,
+              # on the Device page and in Settings, and Unlock asks for the sign-in again (#243).
+              (pkg + "LockedDeviceKeyTest", "theDevicePageOffersUnlockAndItAsksForTheSignInAgain"),
+              (pkg + "LockedDeviceKeyTest", "settingsSaysTheLockedPhoneIsEnrolledAndOffersUnlock"),
           }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")

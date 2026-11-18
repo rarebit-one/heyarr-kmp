@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.mobile.login.LoginUiState
+import one.rarebit.voidwhichbinds.DeviceIdentity
 import one.rarebit.voidwhichbinds.Membership
 import one.rarebit.voidwhichbinds.MembershipOp
 import one.rarebit.voidwhichbinds.auth.DeviceCredential
@@ -179,7 +180,9 @@ internal class DeviceEnrolment(
                         host.startGuestBrowsing()
                     }
 
-                    info.certToken != null -> adoptDevice(ring, info.certToken)
+                    // A dismissed fingerprint prompt leaves it Locked and browsing as a guest,
+                    // with "Unlock" one tap away, never a loop of prompts (heyarr-kmp#243).
+                    info.certToken != null -> if (!adoptStored(info) { ring.identity() }) host.startGuestBrowsing()
 
                     else -> {
                         _enrolState.value = EnrolUiState.Ready(info)
@@ -276,8 +279,9 @@ internal class DeviceEnrolment(
 
             EnrolAdvance.OnInvite.REFUSE -> {
                 _parkedInvite.value = null
+                // Enrolled, or enrolled with its key Locked: either way it holds an admission.
                 _enrolState.value = EnrolUiState.Error(
-                    (state as EnrolUiState.Enrolled).info,
+                    (state as? EnrolUiState.Enrolled)?.info ?: (state as EnrolUiState.Locked).info,
                     "This phone is already enrolled as a device. Forget the enrolment first if you want " +
                         "to join a new invite.",
                 )
@@ -320,38 +324,74 @@ internal class DeviceEnrolment(
         }
     }
 
-    /** Switch the app to the Device credential for [certToken] (the admitting op): mint a proof, load the library. */
-    private suspend fun adoptDevice(ring: DeviceKeyring, certToken: String) {
-        val adopted = withContext(Dispatchers.IO) {
-            runCatching {
-                val identity = ring.identity()
-                // Short proofs at the library default (PossessionProof.DEFAULT_TTL_SECONDS,
-                // 2 min; reused for ttl − skew): the device key's 1-hour user-auth window
-                // (DeviceKeyring.USER_AUTH_VALIDITY_SECONDS) lets each re-mint sign silently,
-                // so a short proof no longer costs a biometric — heyarr-core#444.
-                val live = DeviceCredential(
-                    certToken = certToken,
-                    signer = identity.asSigner(),
-                    clock = { System.currentTimeMillis() / MILLIS_PER_SECOND },
-                )
-                val first = live.current() // mints the first proof — may prompt
-                host.deviceCredential = live
-                Credential.Device(first.cert, first.proof)
+    /** True while a sign-in with the stored admission is in flight, so a second tap never stacks a second prompt. */
+    private var adopting = false
+
+    /**
+     * Switch the app to the Device credential of the stored admission in [info] (its admitting
+     * op): mint the first proof — which shows the fingerprint prompt when the key's 1-hour
+     * window has lapsed — and load the library. [identity] is the keyring's; a parameter so the
+     * locked-key path is unit-tested without a Keystore. True when the phone signed in.
+     *
+     * A prompt that is dismissed or fails leaves [EnrolUiState.Locked] ([EnrolAdvance.afterAdoptFailed])
+     * and returns false. Nothing calls this again by itself: the next prompt is the user's
+     * "Unlock" ([unlockDevice]), so a cancelled prompt is never answered with another one.
+     */
+    internal suspend fun adoptStored(info: DeviceKeyInfo, identity: () -> DeviceIdentity): Boolean {
+        val certToken = info.certToken
+        if (certToken == null || adopting) return false
+        adopting = true
+        return try {
+            deviceInfo.value = info
+            if (_enrolState.value is EnrolUiState.Locked) {
+                _enrolState.value = EnrolUiState.Locked(info, unlocking = true)
             }
+            val adopted = withContext(Dispatchers.IO) {
+                runCatching {
+                    // Short proofs at the library default (PossessionProof.DEFAULT_TTL_SECONDS,
+                    // 2 min; reused for ttl − skew): the device key's 1-hour user-auth window
+                    // (DeviceKeyring.USER_AUTH_VALIDITY_SECONDS) lets each re-mint sign silently,
+                    // so a short proof no longer costs a biometric — heyarr-core#444.
+                    val live = DeviceCredential(
+                        certToken = certToken,
+                        signer = identity().asSigner(),
+                        clock = { System.currentTimeMillis() / MILLIS_PER_SECOND },
+                    )
+                    val first = live.current() // mints the first proof — may prompt
+                    live to Credential.Device(first.cert, first.proof)
+                }
+            }
+            adopted.onSuccess { (live, cred) ->
+                host.deviceCredential = live
+                host.credential = cred
+                host.setLoginState(LoginUiState.Approved(user = null))
+                _enrolState.value = EnrolUiState.Enrolled(
+                    info = info,
+                    registration = "Signed in with this device's admission.",
+                    needsAdmin = false,
+                )
+                host.loadSessionAuthority()
+            }.onFailure {
+                _enrolState.value = EnrolAdvance.afterAdoptFailed(info, it)
+            }
+            adopted.isSuccess
+        } finally {
+            adopting = false
         }
-        adopted.onSuccess { cred ->
-            host.credential = cred
-            host.setLoginState(LoginUiState.Approved(user = null))
-            _enrolState.value = EnrolUiState.Enrolled(
-                info = deviceInfo.value ?: withContext(Dispatchers.IO) { ring.info() },
-                registration = "Signed in with this device's admission.",
-                needsAdmin = false,
-            )
-            host.loadSessionAuthority()
-        }.onFailure {
-            _enrolState.value =
-                EnrolUiState.Error(deviceInfo.value, "could not sign with the device key: ${it.message}")
-        }
+    }
+
+    /**
+     * "Unlock" on a phone whose key is [EnrolUiState.Locked] (the Enrol screen, the shell's
+     * banner, Settings → This device): prompt for the fingerprint again and sign in with the
+     * stored admission. A no-op while already signed in with it or with no admission; cancelling
+     * this prompt too just leaves it Locked, ready for the next tap.
+     */
+    fun unlockDevice() {
+        val ring = keyring ?: return
+        val info = deviceInfo.value?.takeIf { it.isEnrolled && host.deviceCredential == null } ?: return
+        pairing.dismiss()
+        showingPairing = false
+        scope.launch { adoptStored(info) { ring.identity() } }
     }
 
     /**
@@ -410,6 +450,12 @@ internal class DeviceEnrolment(
     fun registerDevice() = pairing.retryRegister()
 
     fun retryEnrol() {
+        // An enrolled phone whose sign-in failed tries the sign-in again, rather than landing
+        // on "Enrolled" while it still browses as a guest.
+        if (EnrolAdvance.retryAdopts(deviceInfo.value, showingPairing, signedIn = host.deviceCredential != null)) {
+            unlockDevice()
+            return
+        }
         pairing.dismiss()
         showingPairing = false
         _enrolState.value = restingState()
@@ -462,10 +508,10 @@ internal class DeviceEnrolment(
     /** After enrolment: start using the Device credential now. */
     fun useDeviceCredential() {
         val ring = keyring ?: return
-        val cert = deviceInfo.value?.certToken ?: return
+        val info = deviceInfo.value?.takeIf { it.isEnrolled } ?: return
         pairing.dismiss()
         showingPairing = false
-        scope.launch { adoptDevice(ring, cert) }
+        scope.launch { adoptStored(info) { ring.identity() } }
     }
 
     /** Drop the stored admission (keys stay) and fall back to QR login. */

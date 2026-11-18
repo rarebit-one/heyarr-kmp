@@ -50,6 +50,7 @@ import androidx.media3.common.util.UnstableApi
 import one.rarebit.heyarr.mobile.device.AndroidBiometricGate
 import one.rarebit.heyarr.mobile.device.DeviceKeyring
 import one.rarebit.heyarr.mobile.device.EnrolScreen
+import one.rarebit.heyarr.mobile.device.EnrolUiState
 import one.rarebit.heyarr.mobile.device.HandoffLauncher
 import one.rarebit.heyarr.mobile.device.PairDeepLink
 import one.rarebit.heyarr.mobile.login.LoginScreen
@@ -316,9 +317,10 @@ class MainActivity : FragmentActivity() {
 
                         // Guest-as-default: the browsing shell is what the app opens on, whether
                         // signed in or browsing anonymously. "Sign in to save" raises showLogin.
+                        // An enrolled phone whose key is locked signs in by unlocking it, not with
+                        // a QR session it does not need (heyarr-kmp#243).
                         else -> HeyarrNavHost(vm = vm, graph = app.graph, focusDevice = focusDevice, onSignInToSave = {
-                            showLogin =
-                                true
+                            if (enrolState is EnrolUiState.Locked) vm.unlockDevice() else showLogin = true
                         })
                     }
                 }
