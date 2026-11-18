@@ -28,6 +28,13 @@ data class WorkAsset(
     val createdAt: String? = null,
     /** The edition's label (`GET /editions/{id}` → `label`), e.g. "1080p BluRay". */
     override val editionLabel: String? = null,
+    /**
+     * The picture the node probed (heyarr-core#885): its height and whether it is HDR (PQ or
+     * HLG), null on a node that does not send them or a blob nothing has probed. `:core`'s
+     * `Copies` reads these before it parses [editionLabel].
+     */
+    override val probedHeight: Int? = null,
+    override val probedHdr: Boolean? = null,
 ) : CopyFile {
     override val isPlayable: Boolean get() = !blobHash.isNullOrBlank() && missingSince == null
     val isMissing: Boolean get() = missingSince != null
@@ -113,6 +120,8 @@ object WorkDetailJson {
             sizeBytes = JsonScan.longField(obj, "blob_size"),
             createdAt = JsonScan.stringField(obj, "created_at"),
             editionLabel = JsonScan.stringField(obj, "edition_label"),
+            probedHeight = JsonScan.intField(obj, "height"),
+            probedHdr = JsonScan.boolField(obj, "hdr"),
         )
     }
 

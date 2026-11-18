@@ -26,6 +26,9 @@ data class Track(
     override val sourcePath: String? = null,
     override val language: String? = null,
     override val hearingImpaired: Boolean = false,
+    /** The probed picture (heyarr-core#885), null on an older node or an unprobed blob; `Copies` reads it first. */
+    override val probedHeight: Int? = null,
+    override val probedHdr: Boolean? = null,
 ) : CopyFile {
     /** A blob we can stream, and the file is present. */
     override val isPlayable: Boolean get() = !blobHash.isNullOrBlank() && missingSince.isNullOrBlank()
@@ -99,6 +102,8 @@ object TracksJson {
             sourcePath = JsonScan.stringField(obj, "source_path"),
             language = JsonScan.stringField(obj, "language"),
             hearingImpaired = JsonScan.boolField(obj, "hearing_impaired") ?: false,
+            probedHeight = JsonScan.intField(obj, "height"),
+            probedHdr = JsonScan.boolField(obj, "hdr"),
         )
     }
 }

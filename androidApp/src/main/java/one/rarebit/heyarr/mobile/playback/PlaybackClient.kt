@@ -76,25 +76,36 @@ class PlaybackClient(
      * an exception, so the caller falls back to the blob. Any other non-200 is an
      * error worth surfacing (the asset is gone, the session is refused).
      */
-    fun plan(assetId: String, caps: ClientCapabilities): PlanResult {
+    fun plan(assetId: String, caps: ClientCapabilities): PlanResult = post(caps.planRequestBody(assetId)).result
+
+    /** A plan by film: what to play, and which copy the node chose ([assetId], null when it did not say). */
+    data class WorkPlan(val result: PlanResult, val assetId: String?)
+
+    /**
+     * `POST /api/v1/playback/plan` naming the film, not the file (heyarr-core#885): the node
+     * chooses the copy from [caps] — its height, HDR and codecs — and plans it. A node that
+     * does not plan by film answers 400, read as [PlanResult.Unavailable] exactly as an asset
+     * plan's is; the caller then plans the copy it chose itself.
+     */
+    fun planWork(workId: String, caps: ClientCapabilities): WorkPlan = post(caps.planByWorkBody(workId))
+
+    private fun post(body: String): WorkPlan {
         val resp = try {
-            http.post(
-                planUrl(baseUrl),
-                body = caps.planRequestBody(assetId),
-                contentType = "application/json",
-                headers = credential.asHeader(),
-            )
+            http.post(planUrl(baseUrl), body = body, contentType = "application/json", headers = credential.asHeader())
         } catch (e: Exception) {
-            return PlanResult.Unavailable("plan request failed: ${e.message ?: e.javaClass.simpleName}")
+            return WorkPlan(PlanResult.Unavailable("plan request failed: ${e.message ?: e.javaClass.simpleName}"), null)
         }
-        if (resp.status == 400) return PlanResult.Unavailable("node predates the plan contract (HTTP 400)")
-        require(resp.status == 200) { "playback: POST /playback/plan failed: HTTP ${resp.status}" }
+        require(resp.status == 200 || resp.status == 400) {
+            "playback: POST /playback/plan failed: HTTP ${resp.status}"
+        }
         val p = PlaybackJson.parse(resp.body)
-        return when {
+        val result = when {
+            resp.status == 400 -> PlanResult.Unavailable("node predates the plan contract (HTTP 400)")
             p.isStream -> PlanResult.Stream(absolute(p.url!!), p.mime, p.reason, p.source)
             p.isDirect -> PlanResult.Direct(p.url?.let { absolute(it) }, p.reason)
             else -> PlanResult.Unavailable("plan answered mode=${p.mode ?: p.decision ?: "?"} with no stream url")
         }
+        return WorkPlan(result, p.assetId.takeIf { resp.status == 200 })
     }
 
     /**
@@ -109,9 +120,12 @@ class PlaybackClient(
         isVideo: Boolean,
         mimeType: String?,
         caps: ClientCapabilities,
-    ): PlaybackTarget {
+    ): PlaybackTarget = targetFor(plan(assetId, caps), hash, isVideo, mimeType)
+
+    /** What [r] plays: a stream when the node offers one, else the direct blob for [hash]. */
+    fun targetFor(r: PlanResult, hash: String, isVideo: Boolean, mimeType: String?): PlaybackTarget {
         val direct = blobTarget(hash, isVideo, mimeType)
-        return when (val r = plan(assetId, caps)) {
+        return when (r) {
             is PlanResult.Stream -> PlaybackTarget(
                 contentUrl = r.url,
                 credential = credential,

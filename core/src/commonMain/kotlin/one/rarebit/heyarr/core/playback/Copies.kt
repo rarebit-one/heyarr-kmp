@@ -114,22 +114,27 @@ object Copies {
 
     /** One file read as a copy: the probe when the node sent one, else its release name. */
     fun <A : CopyFile> read(asset: A): Copy<A> {
+        val names = listOfNotNull(asset.editionLabel, asset.filename)
+        val namedHdr = names.firstNotNullOfOrNull { ReleaseName.hdr(it) }
         val probedHeight = asset.probedHeight?.takeIf { it > 0 }
-        if (probedHeight != null || asset.probedHdr != null) {
-            return Copy(
+        return if (probedHeight != null || asset.probedHdr != null) {
+            // The probed height wins outright. HDR is the probe's OR the name's: a probe taken
+            // before heyarr-core#885 read the transfer characteristic answers `hdr: false`
+            // until the blob is probed again, and a release named HDR is HDR.
+            Copy(
                 asset = asset,
                 height = probedHeight?.let { nominalHeight(asset.probedWidth, it) },
-                hdr = asset.probedHdr ?: false,
+                hdr = asset.probedHdr == true || namedHdr == true,
                 probed = true,
             )
+        } else {
+            Copy(
+                asset = asset,
+                height = names.firstNotNullOfOrNull { ReleaseName.height(it) },
+                hdr = namedHdr ?: false,
+                probed = false,
+            )
         }
-        val names = listOfNotNull(asset.editionLabel, asset.filename)
-        return Copy(
-            asset = asset,
-            height = names.firstNotNullOfOrNull { ReleaseName.height(it) },
-            hdr = names.firstNotNullOfOrNull { ReleaseName.hdr(it) } ?: false,
-            probed = false,
-        )
     }
 
     /**
@@ -231,12 +236,20 @@ object Copies {
      * A probed frame as the line class people call it: `1920×800` scope is "1080p", not
      * "800p", and DCI `4096×2160` is "2160p". The frame's 16:9 equivalent height, snapped to
      * the nearest standard class within 8%.
+     *
+     * The node sends the height without the width (heyarr-core#885), so a letterboxed frame
+     * is read by its height alone: one within 4% of a class is that class (1040, a 1.85:1
+     * 1080p, included), and one that matches none is the tallest class it is at least 70% of —
+     * a 2.39:1 frame is 74% of its 16:9 height — so 800 reads as 1080, 536 as 720 (not PAL's
+     * 576) and 1608 as 2160, while 1080 itself still matches 1080.
      */
     fun nominalHeight(width: Int?, height: Int): Int {
         val fromWidth = width?.takeIf { it > 0 }?.let { it * WIDE_H / WIDE_W } ?: 0
         val lines = maxOf(height, fromWidth)
-        return ReleaseName.CLASSES.firstOrNull { c -> kotlin.math.abs(lines - c) * PERCENT <= c * SNAP_PERCENT }
-            ?: lines
+        val window = if (width == null) SNAP_PERCENT_HEIGHT_ONLY else SNAP_PERCENT
+        val near = ReleaseName.CLASSES.firstOrNull { c -> kotlin.math.abs(lines - c) * PERCENT <= c * window }
+        val letterboxed = ReleaseName.CLASSES.lastOrNull { c -> lines < c && lines * PERCENT >= c * LETTERBOX_PERCENT }
+        return near ?: letterboxed?.takeIf { width == null } ?: lines
     }
 
     private fun isPrimary(role: String?): Boolean = role.isNullOrBlank() || role.equals("primary", ignoreCase = true)
@@ -257,6 +270,8 @@ object Copies {
     private const val WIDE_H = 9
     private const val PERCENT = 100
     private const val SNAP_PERCENT = 8
+    private const val SNAP_PERCENT_HEIGHT_ONLY = 4
+    private const val LETTERBOX_PERCENT = 70
     private val VIDEO_EXTENSIONS =
         setOf("mkv", "mp4", "m4v", "mov", "avi", "webm", "ts", "m2ts", "mpg", "mpeg", "wmv", "flv", "ogv")
 }

@@ -5,6 +5,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
+import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.playback.QualityPreference
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
@@ -75,17 +76,65 @@ class PlaybackCoordinatorTest {
         return WorkDetailJson.parseAssets("""{"items":[$uhd,$fhd]}""")
     }
 
-    @Test fun playCopyDeclaresTheScreenAndCarriesEveryCopy() {
-        val (c, t) = coordinator(mapOf("POST /playback/plan" to HttpResponse(200, """{"mode":"direct"}""")))
+    /** A node that answers a plan by what the body names: a film (`work_id`) or a file (`asset_id`). */
+    private class PlanNode(val byWork: HttpResponse, val byAsset: HttpResponse) : HttpTransport {
+        val bodies = ArrayList<String>()
+        override fun get(url: String, headers: Map<String, String>) = HttpResponse(404, "{}")
+        override fun post(
+            url: String,
+            body: String?,
+            contentType: String?,
+            headers: Map<String, String>,
+        ): HttpResponse {
+            bodies.add(body.orEmpty())
+            return if (body.orEmpty().contains("\"work_id\"")) byWork else byAsset
+        }
+    }
+
+    private val film = Work(id = "w1", title = "Film", kind = "movie", blobHash = hash, primaryAssetId = "uhd")
+
+    private fun playFilm(node: PlanNode): PlaybackCoordinator {
+        val c = PlaybackCoordinator(node, { base }, { Credential.Session("tok") }, scope, dispatcher)
         c.capabilities = caps.copy(maxHeight = 1080, supportsHdr = true)
-        val film = Work(id = "w1", title = "Film", kind = "movie", blobHash = hash, primaryAssetId = "uhd")
         c.playCopy(film, c.copiesFor("w1", filmAssets(), "uhd")!!)
-        val np = c.nowPlaying.value!!
+        return c
+    }
+
+    @Test fun aNodeThatDoesNotPlanByFilmGetsTheCopyThePhoneChose() {
+        // heyarr-core before #885 refuses `work_id` (and the unknown `supports_hdr`) with a 400.
+        val node = PlanNode(HttpResponse(400, "{}"), HttpResponse(200, """{"mode":"direct"}"""))
+        val np = playFilm(node).nowPlaying.value!!
+        assertEquals("the node was asked to choose first, then about the phone's copy", 2, node.bodies.size)
+        assertTrue("the film, with the screen's HDR", node.bodies[0].contains("\"supports_hdr\":true"))
+        assertTrue("…and the screen's height", node.bodies[0].contains("\"max_height\":1080"))
+        assertTrue("then the 1080p copy by asset", node.bodies[1].contains("\"asset_id\":\"fhd\""))
+        assertFalse("an asset plan never sends supports_hdr", node.bodies[1].contains("supports_hdr"))
         assertEquals("the 1080p copy plays", "fhd", np.assetId)
         assertEquals("the player can offer both copies", 2, np.copies.size)
         assertEquals("fit this screen declares the screen", 1080, np.maxHeight)
-        assertTrue("the plan asked for the 1080p copy", t.calls.single().third!!.contains("\"asset_id\":\"fhd\""))
-        assertTrue("…at 1080 lines", t.calls.single().third!!.contains("\"max_height\":1080"))
+    }
+
+    @Test fun aNodeThatPlansByFilmChoosesTheCopy() {
+        // The node knows what the phone cannot (each copy's codec) and chose the other copy.
+        // Concatenated, so the JSON is still one line (JsonScan is a field scanner, not a parser).
+        val chose = """{"asset_id":"uhd","mode":"stream","url":"/api/v1/playback/stream/tok1","mime":"video/mp4",""" +
+            """"selection":{"chosen":{"asset_id":"uhd"},"alternatives":[]}}"""
+        val node = PlanNode(HttpResponse(200, chose), HttpResponse(500, "{}"))
+        val np = playFilm(node).nowPlaying.value!!
+        assertEquals("one plan, by film", 1, node.bodies.size)
+        assertEquals("the copy the node chose plays", "uhd", np.assetId)
+        assertEquals("…and the Version menu says so", "uhd", np.copy?.asset?.id)
+        assertEquals("on the node's stream", "$base/api/v1/playback/stream/tok1", np.target.contentUrl)
+    }
+
+    @Test fun aCopyThePhoneDoesNotHoldFallsBackToTheCopyItChose() {
+        val node = PlanNode(
+            HttpResponse(200, """{"asset_id":"elsewhere","mode":"direct"}"""),
+            HttpResponse(200, """{"mode":"direct"}"""),
+        )
+        val np = playFilm(node).nowPlaying.value!!
+        assertEquals("fhd", np.assetId)
+        assertTrue(node.bodies.last().contains("\"asset_id\":\"fhd\""))
     }
 
     @Test fun theVersionMenuSwitchesAtThePositionAndIsRemembered() {
