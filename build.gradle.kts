@@ -96,10 +96,15 @@ allprojects {
 // VaultFrame, VaultBlobStore + UrlConnectionVaultBlobStore, VaultRef and VaultObjects /
 // VaultRecipient. StrictJson becomes public so the codec can keep reading strictly. A consumer
 // of the codec stays on 0.3.x until it takes :vault-codec.
-// 0.4.1 (additive): VaultSpaceClient.confirmBlobs (POST /vault/blobs/confirm) behind the
-// BlobConfirmer seam, and UploadConfirmations, which confirms a write's blobs once the change
-// naming them is accepted and retries a failed confirm on the next write (heyarr-core ADR-0096
-// amendment, #714; heyarr-kmp#219).
+// 0.4.1 (additive for vault-client): VaultSpaceClient.confirmBlobs (POST /vault/blobs/confirm)
+// behind the BlobConfirmer seam, and UploadConfirmations, which confirms a write's blobs once the
+// change naming them is accepted and retries a failed confirm on the next write (heyarr-core
+// ADR-0096 amendment, #714; heyarr-kmp#219). core gains ProbeVerdict, Bytes, playback/Copies
+// (#226/#229) and MediaType.GAME (#184), and drops Discovery.DNS_HOST with dnsBaseUrl()'s default
+// host (#183: no deployment's name in public code); no published consumer read either, so this
+// stays a patch. Built with Kotlin 2.4.21 and AGP 9.5's Android-KMP library plugin (#214): the
+// artifacts require kotlin-stdlib 2.4.21, and the android variants are named android* (was
+// release*), with the same attributes plus libraryelements=aar.
 val publishedLibraryVersion = "0.4.1"
 
 listOf(":core", ":vault-client").forEach { path ->

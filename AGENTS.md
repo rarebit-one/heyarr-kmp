@@ -79,8 +79,8 @@ CI: `desktop.yml` (desktop + shared modules), `android.yml` (unit tests + debug 
 
 Plugin and library versions live in `gradle/libs.versions.toml`. Build scripts reference
 `libs.*` and never hard-code a version. `void-which-binds-client` has a single version for every
-module; bump it there, once. Toolchain: Kotlin 2.3.20, Gradle 9.9, AGP 9.5.1, Compose MP
-1.9.3, compileSdk 37 / targetSdk 35 / minSdk 33, JDK 21. Android bytecode remains at Java 17.
+module; bump it there, once. Toolchain: Kotlin 2.4.21, Gradle 9.9, AGP 9.5.1, Compose MP
+1.12.2, compileSdk 37 / targetSdk 35 / minSdk 33, JDK 21. Android bytecode remains at Java 17.
 AGP 9 has built-in Kotlin (no `kotlin.android` plugin), and the KMP library modules use the
 Android-KMP library plugin: one variant, Android unit tests are host tests
 (`:vault-client:testAndroidHostTest`), configured inside `kotlin { }`, not a top-level `android { }`.

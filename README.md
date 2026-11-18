@@ -71,11 +71,11 @@ Android `minSdk` of at least 33.
 
 | Piece | Version |
 |-------|---------|
-| Kotlin | 2.3.20 (matches the org) |
+| Kotlin | 2.4.21 (matches the org; the published libraries require kotlin-stdlib 2.4.21) |
 | Gradle | 9.9 |
 | JDK | 21 (Temurin) |
 | AGP | 9.5.1 (built-in Kotlin; Android-KMP library plugin for `:core` / `:ui` / `:vault-client`; compileSdk 37, targetSdk 35, minSdk 33) |
-| Compose Multiplatform | 1.9.3 (desktop, `:ui`) |
+| Compose Multiplatform | 1.12.2 (desktop, `:ui`) |
 | Compose compiler | bundled with Kotlin (`org.jetbrains.kotlin.plugin.compose`) |
 | void-which-binds-client | 0.12.0 (GitHub Packages, private; gen2-only, ADR-0022; canonical key renderings, void-which-binds-go #116) |
 
