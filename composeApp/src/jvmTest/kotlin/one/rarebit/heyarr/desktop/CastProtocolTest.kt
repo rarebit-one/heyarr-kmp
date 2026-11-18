@@ -36,6 +36,21 @@ class CastProtocolTest {
         assertEquals(frame, CastWire.read(ByteArrayInputStream(extended)))
         assertFails { CastWire.read(ByteArrayInputStream(golden.dropLast(1).toByteArray())) }
         assertFails { CastWire.read(ByteArrayInputStream(byteArrayOf(0, 1, 0, 1))) }
+        // Field 7's length overflows a signed Long in the tenth varint byte.
+        // The decoder must reject it before advancing the cursor backwards.
+        val overflow = byteArrayOf(0x3a) + byteArrayOf(
+            0xf5.toByte(), 0xff.toByte(), 0xff.toByte(), 0xff.toByte(), 0xff.toByte(),
+            0xff.toByte(), 0xff.toByte(), 0xff.toByte(), 0xff.toByte(), 0x01,
+        )
+        assertFails { CastWire.decode(overflow) }
+        assertFails {
+            CastWire.decode(
+                byteArrayOf(
+                    0x3a, 0x80.toByte(), 0x80.toByte(), 0x80.toByte(), 0x80.toByte(),
+                    0x80.toByte(), 0x80.toByte(), 0x80.toByte(), 0x80.toByte(), 0x02,
+                ),
+            )
+        }
     }
 
     @Test

@@ -41,6 +41,10 @@ internal class CastManager(
     fun attach(device: CastDevice): CastStatus? {
         try {
             check(!invalidating) { "Cast connection is resetting" }
+            if (selected?.id != device.id && ownedMediaSessionId != null) {
+                refresh()
+                check(ownedMediaSessionId == null) { "Stop casting on the current receiver before switching controls" }
+            }
             ensureConnection(device)
             return refresh()
         } catch (failure: Exception) {

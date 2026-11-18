@@ -33,6 +33,7 @@ internal interface CastChannel : AutoCloseable {
 }
 
 /** One persistent Cast v2 channel. Request IDs correlate replies; broadcasts update status. */
+@Suppress("TooManyFunctions") // Keep inbound identity validation beside this channel's stateful frame handling.
 internal class CastConnection(private val device: CastDevice) : CastChannel {
     private val socket = Socket().apply { connect(InetSocketAddress(device.address, device.port), CONNECT_TIMEOUT_MS) }
 
@@ -173,6 +174,7 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
     }
 
     private fun handleFrame(frame: CastFrame) {
+        if (!acceptsInbound(frame)) return
         val type = JsonScan.stringField(frame.payload, "type")
         if (frame.namespace == HEARTBEAT) {
             if (type == "PING") send(HEARTBEAT, RECEIVER, mapOf("type" to "PONG"))
@@ -185,6 +187,15 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
             completeReply(frame)
         }
     }
+
+    private fun acceptsInbound(frame: CastFrame): Boolean =
+        (frame.destination == sourceId || frame.destination == "*") &&
+            when (frame.namespace) {
+                HEARTBEAT, RECEIVER_NS -> frame.source == RECEIVER
+                MEDIA -> frame.source == transportId
+                CONNECTION -> frame.source == RECEIVER || frame.source == transportId
+                else -> false
+            }
 
     private fun completeReply(frame: CastFrame) {
         val id = JsonScan.longField(frame.payload, "requestId")?.toInt() ?: return

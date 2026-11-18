@@ -59,6 +59,29 @@ class CastManagerTest {
     }
 
     @Test
+    fun attachingAnotherReceiverPreservesOwnedPlaybackUntilExplicitTransfer() {
+        val original = FakeChannel()
+        val replacement = FakeChannel()
+        CastManager({ "http://127.0.0.1:1/loopback" }, { device ->
+            if (device.id == first.id) original else replacement
+        }).use { manager ->
+            manager.play(first, api, "asset", "Example")
+            val refusal = assertFails { manager.attach(second) }
+            assertTrue(refusal.message.orEmpty().contains("Stop casting"))
+            assertEquals(first.id, manager.selected?.id)
+            assertEquals(false, original.closed)
+            assertEquals(false, replacement.closed)
+            manager.control("seek", 10.0)
+            assertEquals(2, original.loadCount, "The original relay and seek plan remain owned")
+
+            manager.play(second, api, "asset", "Transfer")
+            assertEquals(second.id, manager.selected?.id)
+            assertEquals(true, original.closed)
+            assertEquals(1, replacement.loadCount)
+        }
+    }
+
+    @Test
     fun failedSwitchDropsClosedConnectionAndRetryCreatesANewOne() {
         val made = mutableListOf<FakeChannel>()
         var failSecond = true

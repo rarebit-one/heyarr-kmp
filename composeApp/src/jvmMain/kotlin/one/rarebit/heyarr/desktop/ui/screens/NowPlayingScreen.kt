@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.mcp.PlaybackStatus
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.RendererListResult
+import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.desktop.cast.CastDevice
 import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.state.AppSession
@@ -158,7 +159,16 @@ private fun ObserveSelectedStatus(session: AppSession, state: NowPlayingState) {
     }
     LaunchedEffect(state.selectedCast?.id, session.generation) {
         val device = state.selectedCast ?: return@LaunchedEffect
-        session.io { session.cast.attach(device) }
+        val attached = session.io { session.cast.attach(device) }
+        if (attached.isFailure) {
+            session.toast(
+                Toast.Kind.REFUSED,
+                "Couldn't switch Cast controls",
+                attached.exceptionOrNull()?.message ?: "Attach failed",
+            )
+            state.selectedCast = session.cast.selected
+            return@LaunchedEffect
+        }
         while (isActive) {
             session.io { session.cast.refresh() }
             delay(2000)
@@ -209,8 +219,11 @@ private fun CastPanel(session: AppSession, state: NowPlayingState, device: CastD
             fun act(action: String, seconds: Double? = null) {
                 scope.launch {
                     state.busy = true
-                    session.io { cast.control(action, seconds) }
-                    state.busy = false
+                    try {
+                        session.io { cast.control(action, seconds) }
+                    } finally {
+                        state.busy = false
+                    }
                 }
             }
             Transport(display, state.busy) { act(it) }
@@ -272,11 +285,14 @@ private fun controlRenderer(session: AppSession, state: NowPlayingState, action:
     val a = session.api ?: return
     scope.launch {
         state.busy = true
-        session.io {
-            a.control(r.name, action)
-        }.onSuccess { res -> if (res is McpResult.Refused) session.refused(res) }
-        session.io { a.playbackStatus(r.name) }.onSuccess { state.status = it }
-        state.busy = false
+        try {
+            session.io {
+                a.control(r.name, action)
+            }.onSuccess { res -> if (res is McpResult.Refused) session.refused(res) }
+            session.io { a.playbackStatus(r.name) }.onSuccess { state.status = it }
+        } finally {
+            state.busy = false
+        }
     }
 }
 

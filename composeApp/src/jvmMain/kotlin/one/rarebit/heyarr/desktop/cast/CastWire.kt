@@ -42,7 +42,9 @@ internal object CastWire {
         var pos = 0
         val fields = mutableMapOf<Int, String>()
         while (pos < bytes.size) {
-            val tag = varint(bytes, pos).also { pos = it.second }.first.toInt()
+            val rawTag = varint(bytes, pos).also { pos = it.second }.first
+            require(rawTag in 1..Int.MAX_VALUE.toLong()) { "Invalid Cast field tag" }
+            val tag = rawTag.toInt()
             val number = tag ushr 3
             when (tag and 7) {
                 0 -> pos = varint(bytes, pos).second
@@ -50,7 +52,9 @@ internal object CastWire {
                 2 -> {
                     val (length, next) = varint(bytes, pos)
                     pos = next
-                    require(length <= bytes.size - pos && length <= MAX_FRAME) { "Invalid Cast field length" }
+                    require(length >= 0 && length <= bytes.size - pos && length <= MAX_FRAME) {
+                        "Invalid Cast field length"
+                    }
                     if (number in 2..4 || number == 6) {
                         fields[number] = String(bytes, pos, length.toInt(), StandardCharsets.UTF_8)
                     }
@@ -95,6 +99,7 @@ internal object CastWire {
         for (shift in 0..63 step 7) {
             require(pos < bytes.size) { "Truncated Cast varint" }
             val byte = bytes[pos++].toInt() and 255
+            require(shift != 63 || byte and 127 <= 1) { "Invalid Cast varint" }
             value = value or ((byte and 127).toLong() shl shift)
             if (byte and 128 == 0) return value to pos
         }
