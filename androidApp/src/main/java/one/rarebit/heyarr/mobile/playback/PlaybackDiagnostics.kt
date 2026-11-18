@@ -74,6 +74,10 @@ object PlaybackDiagnostics {
                 errorCodeName.startsWith("ERROR_CODE_DECODING_FORMAT_UNSUPPORTED") ->
                 "This phone has no working decoder for this file — ${remedy(target)}"
 
+            // The system gave the decoder to another app (heyarr in the background, #231).
+            errorCodeName == "ERROR_CODE_DECODING_RESOURCES_RECLAIMED" ->
+                "The phone took the decoder back for another app."
+
             errorCodeName.startsWith("ERROR_CODE_DECODING") -> "The decoder failed part-way through this file."
 
             errorCodeName.startsWith(

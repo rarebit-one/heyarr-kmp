@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,8 +34,10 @@ import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.Forward10
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.FullscreenExit
+import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Replay10
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.Stop
@@ -118,6 +121,16 @@ internal fun ImmersivePlayer(
         SeekGestureLayer(video, isSeekable(ps, item.target), onTap = {
             state.controlsVisible = !state.controlsVisible
         }, Modifier.fillMaxSize())
+        if (ps.error != null) {
+            // Clear of the top and bottom bars, which stay up while the error does (it pauses).
+            Box(
+                Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.6f))
+                    .windowInsetsPadding(WindowInsets.safeDrawing).padding(horizontal = 24.dp, vertical = 72.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                PlayerError(video, Modifier.widthIn(max = 560.dp).verticalScroll(rememberScrollState()))
+            }
+        }
         if (state.controlsVisible || ps.paused) {
             Row(
                 Modifier.align(
@@ -226,14 +239,53 @@ internal fun PlayerPicture(video: VideoSession, item: NowPlaying, type: MediaTyp
         } else {
             Artwork(item.artworkUrl, type, Modifier.fillMaxSize(), glyphSize = 64.dp)
         }
-        if (ps.error !=
-            null
-        ) {
+        ps.error?.let { error ->
+            // Only the headline over the picture: the 16:9 frame clipped the whole text, cutting
+            // off the error code it ends with (#231). [PlayerError] beneath it has all of it.
             Box(
-                Modifier.fillMaxSize().background(Tokens.bgBase.copy(alpha = 0.85f)),
+                Modifier.fillMaxSize().background(Tokens.bgBase.copy(alpha = 0.85f)).padding(24.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Notice(ps.error, tone = Tokens.danger, modifier = Modifier.padding(24.dp))
+                Text(
+                    error.substringBefore('\n'),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Tokens.textPrimary,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The player's error in full, with what can be done about it (#231): Try again, which is
+ * Play — it re-prepares where playback stopped, on the same copy, audio track and captions —
+ * and, after a second failure in a row, the film's other copies through the Version menu's
+ * own switch, since the copy itself may be what this phone cannot decode.
+ */
+@Suppress("FunctionNaming") // a composable is PascalCase by Compose convention
+@UnstableApi
+@Composable
+internal fun PlayerError(video: VideoSession, modifier: Modifier = Modifier) {
+    val ps = video.state
+    val error = ps.error ?: return
+    val item = video.current ?: return
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Notice(error, tone = Tokens.danger)
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            SecondaryButton("Try again", { video.play() }, icon = Icons.Rounded.Refresh, compact = true)
+            if (ps.offerOtherCopy) {
+                for (copy in item.copies) {
+                    if (copy.asset.id == item.assetId) continue
+                    SecondaryButton(
+                        "Play ${copy.label}",
+                        { video.onSwitchCopy(copy) },
+                        icon = Icons.Rounded.HighQuality,
+                        compact = true,
+                        contentDescription = "Play the ${copy.label} copy instead",
+                    )
+                }
             }
         }
     }

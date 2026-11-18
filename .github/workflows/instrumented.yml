@@ -100,6 +100,11 @@ jobs:
               (pkg + "PdfReaderSearchButtonTest", "theSearchButtonClearsTheThumbAndPageChipWithNoCutout"),
               (pkg + "PdfReaderSearchButtonTest", "theSearchButtonClearsTheThumbPageChipAndTheHolePunch"),
               (pkg + "PdfReaderSearchButtonTest", "theSearchButtonClearsTheThumbPageChipAndATallCutout"),
+              # The film in the background and its decoder failures (#231): HOME and back resumes
+              # where it was; a failure is retried once by itself, and Play recovers the next.
+              (pkg + "VideoBackgroundTest", "aFilmPausesInTheBackgroundAndCarriesOnFromTheSamePlaceOnReturn"),
+              (pkg + "VideoBackgroundTest", "aDecoderFailureIsRetriedOnceByItself"),
+              (pkg + "VideoBackgroundTest", "aSecondFailureIsShownInFullAndPlayRecoversIt"),
           }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")
