@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.mobile
 
+import android.Manifest
+import android.app.ActivityManager
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
 import android.media.MediaFormat
@@ -99,6 +101,8 @@ class VideoBackgroundTest {
 
     @Test fun aFilmPausesInTheBackgroundAndCarriesOnFromTheSamePlaceOnReturn() {
         awaitPlayingPast(PLAYED_BEFORE_MS)
+        var task = 0
+        scenario.onActivity { task = it.taskId }
 
         instrumentation.uiAutomation.executeShellCommand("input keyevent KEYCODE_HOME").close()
         await("the player let go of its decoder in the background") {
@@ -110,7 +114,7 @@ class VideoBackgroundTest {
         assertEquals("paused where it was left", left, main { video.state.positionMs })
         assertNull("no player, so no codec, while in the background", main { video.player })
 
-        scenario.moveToState(Lifecycle.State.RESUMED)
+        backFromRecents(task)
         await("playing again on return") { video.player?.isPlaying == true }
         // Its own clock, not the held scrubber: it sought back to where it was, not to 0.
         val resumedAt = main { video.player!!.currentPosition }
@@ -142,6 +146,29 @@ class VideoBackgroundTest {
         main { video.togglePause() }
         await("Play re-prepared it") { video.player?.isPlaying == true && video.state.error == null }
         assertTrue("where it stopped", main { video.player!!.currentPosition } >= stoppedAt - SEEK_SLACK_MS)
+    }
+
+    /**
+     * Bring the task back to the front, as Recents does. ActivityScenario's own way back is
+     * an activity start, which Android refuses from an app sent to the background, so this
+     * borrows the shell's right to reorder tasks for the one call.
+     */
+    private fun backFromRecents(task: Int) {
+        val ui = instrumentation.uiAutomation
+        ui.adoptShellPermissionIdentity(Manifest.permission.REORDER_TASKS, START_FROM_BACKGROUND)
+        try {
+            instrumentation.runOnMainSync {
+                ctx.getSystemService(ActivityManager::class.java).moveTaskToFront(task, 0)
+            }
+        } finally {
+            ui.dropShellPermissionIdentity()
+        }
+        // ActivityScenario's state is read off the main thread.
+        val deadline = SystemClock.uptimeMillis() + TIMEOUT_MS
+        while (scenario.state != Lifecycle.State.RESUMED) {
+            if (SystemClock.uptimeMillis() > deadline) throw AssertionError("never came back to the front")
+            SystemClock.sleep(POLL_MS)
+        }
     }
 
     private fun decoderFailure() = PlaybackException("forced", null, PlaybackException.ERROR_CODE_DECODING_FAILED)
@@ -293,6 +320,7 @@ class VideoBackgroundTest {
         const val CHROMA: Byte = 128.toByte()
         const val BACKLOG = 16
         const val LOOPBACK = "127.0.0.1"
+        const val START_FROM_BACKGROUND = "android.permission.START_ACTIVITIES_FROM_BACKGROUND"
         const val PLAYED_BEFORE_MS = 3_000L
         const val PLAYED_AFTER_MS = 2_000L
         const val BACKGROUND_MS = 5_000L
