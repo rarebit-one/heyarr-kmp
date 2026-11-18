@@ -23,13 +23,26 @@ import kotlin.concurrent.thread
  * and the way back to the front from the background.
  */
 object TestClip {
-    /** A moving bar, [seconds] long, encoded to H.264 and muxed to MP4 by the device's own encoder. */
-    fun write(file: File, seconds: Int = 40, width: Int = 320, height: Int = 240, fps: Int = 15) {
+    /**
+     * A moving bar, [seconds] long, encoded to H.264 and muxed to MP4 by the device's own encoder.
+     * [noisy] fills the picture with a pattern that changes every frame, so the encoder spends
+     * its whole bitrate: a plain bar compresses to almost nothing, and the network tests need a
+     * file the size a real stream's would be for its length.
+     */
+    @Suppress("LongParameterList") // the clip's shape, each with the default most tests want
+    fun write(
+        file: File,
+        seconds: Int = 40,
+        width: Int = 320,
+        height: Int = 240,
+        fps: Int = 15,
+        noisy: Boolean = false,
+    ) {
         file.parentFile?.mkdirs()
-        Encoder(width, height, fps, frames = fps * seconds).write(file)
+        Encoder(width, height, fps, frames = fps * seconds, noisy).write(file)
     }
 
-    private class Encoder(val width: Int, val height: Int, val fps: Int, val frames: Int) {
+    private class Encoder(val width: Int, val height: Int, val fps: Int, val frames: Int, val noisy: Boolean) {
         fun write(file: File) {
             val format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, width, height).apply {
                 setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible)
@@ -87,7 +100,12 @@ object TestClip {
             for (row in 0 until height) {
                 for (col in 0 until width) {
                     val lit = (col + frame * BAR_STEP) % width < width / 4
-                    y.buffer.put(row * y.rowStride + col * y.pixelStride, if (lit) LUMA_HI else LUMA_LO)
+                    val luma = when {
+                        noisy -> ((col * NOISE_A + row * NOISE_B + frame * NOISE_C) xor (col * row)).toByte()
+                        lit -> LUMA_HI
+                        else -> LUMA_LO
+                    }
+                    y.buffer.put(row * y.rowStride + col * y.pixelStride, luma)
                 }
             }
             for (p in 1..2) {
@@ -127,6 +145,9 @@ object TestClip {
     private const val BIT_RATE = 400_000
     private const val DEQUEUE_US = 10_000L
     private const val BAR_STEP = 4
+    private const val NOISE_A = 31
+    private const val NOISE_B = 17
+    private const val NOISE_C = 13
     private const val LUMA_HI: Byte = 235.toByte()
     private const val LUMA_LO: Byte = 16
     private const val CHROMA: Byte = 128.toByte()
@@ -135,29 +156,82 @@ object TestClip {
     private const val POLL_MS = 100L
 }
 
-/** Serves one file over loopback HTTP, with `Range` — what the blob endpoint does for the player. */
+/**
+ * Serves one file over loopback HTTP, with `Range` — what the blob endpoint does for the player.
+ * For the network checks (heyarr-kmp#232) it can also go [down] (every connection, open or new,
+ * is reset, as a lost network resets them) and refuse a lapsed stream token with 410 ([expire]):
+ * `url(token)` names a URL by its token, as a planned stream's does.
+ */
 class ClipServer(private val bytes: ByteArray) : Closeable {
     // IPv4 by name: Android's getLoopbackAddress() is ::1, which a 127.0.0.1 URL never reaches.
     private val socket = ServerSocket(0, BACKLOG, InetAddress.getByName(LOOPBACK))
     val url = "http://$LOOPBACK:${socket.localPort}/clip.mp4"
+    private val live = java.util.Collections.synchronizedSet(HashSet<Socket>())
+    private val expired = java.util.Collections.synchronizedSet(HashSet<String>())
+
+    /** How many requests asked for each token, for the refresh check. */
+    val requests = java.util.concurrent.ConcurrentHashMap<String, Int>()
+
+    /**
+     * Bytes per second to send at, 0 for as fast as it can. A small test clip arrives whole in
+     * one read otherwise, and a player that holds the whole film cannot be starved by an outage.
+     */
+    @Volatile var bytesPerSecond: Long = 0
+
+    /** Down: every connection is reset, the ones open now included. */
+    @Volatile var down: Boolean = false
+        set(value) {
+            field = value
+            if (value) synchronized(live) { live.toList() }.forEach(::reset)
+        }
+
+    fun url(token: String) = "$url?t=$token"
+
+    /** Refuse [token] with 410 from now on, and drop the reads open on it so the next one asks. */
+    fun expire(token: String) {
+        expired.add(token)
+        synchronized(live) { live.toList() }.forEach(::reset)
+    }
 
     init {
         thread(isDaemon = true) {
             while (!socket.isClosed) {
                 val client = runCatching { socket.accept() }.getOrNull() ?: break
-                thread(isDaemon = true) { runCatching { serve(client) } }
+                if (down) {
+                    reset(client)
+                } else {
+                    live.add(client)
+                    thread(isDaemon = true) {
+                        runCatching { serve(client) }
+                        live.remove(client)
+                    }
+                }
             }
+        }
+    }
+
+    private fun reset(client: Socket) {
+        runCatching {
+            client.setSoLinger(true, 0)
+            client.close()
         }
     }
 
     private fun serve(client: Socket): Unit = client.use {
         val reader = client.getInputStream().bufferedReader(Charsets.ISO_8859_1)
-        reader.readLine() ?: return@use
+        val requestLine = reader.readLine() ?: return@use
+        val token = requestLine.substringAfter("?t=", "").substringBefore(' ')
+        requests.merge(token, 1, Int::plus)
         var range: String? = null
         while (true) {
             val line = reader.readLine() ?: return@use
             if (line.isEmpty()) break
             if (line.startsWith("Range:", ignoreCase = true)) range = line.substringAfter(':').trim()
+        }
+        if (token in expired) {
+            val gone = "HTTP/1.1 410 Gone\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+            client.getOutputStream().write(gone.toByteArray(Charsets.ISO_8859_1))
+            return@use
         }
         val spec = range?.removePrefix("bytes=")?.split('-')
         val from = spec?.getOrNull(0)?.toIntOrNull() ?: 0
@@ -172,14 +246,32 @@ class ClipServer(private val bytes: ByteArray) : Closeable {
         }
         val out = client.getOutputStream()
         out.write(head.toByteArray(Charsets.ISO_8859_1))
-        out.write(bytes, from, to - from + 1)
+        send(out, from, to)
         out.flush()
+    }
+
+    /** Bytes [from]..[to], at [bytesPerSecond] when one is set. */
+    private fun send(out: java.io.OutputStream, from: Int, to: Int) {
+        var at = from
+        val started = System.nanoTime()
+        while (at <= to) {
+            val n = minOf(CHUNK, to - at + 1)
+            out.write(bytes, at, n)
+            at += n
+            // Hold to the rate: sleep until the bytes sent so far are due.
+            val rate = bytesPerSecond.takeIf { it > 0 } ?: continue
+            val aheadMs = ((at - from) * NANOS_PER_SECOND / rate - (System.nanoTime() - started)) / NANOS_PER_MILLI
+            if (aheadMs > 0) Thread.sleep(aheadMs)
+        }
     }
 
     override fun close() = socket.close()
 
     private companion object {
         const val BACKLOG = 16
+        const val CHUNK = 16 * 1024
+        const val NANOS_PER_SECOND = 1_000_000_000L
+        const val NANOS_PER_MILLI = 1_000_000L
         const val LOOPBACK = "127.0.0.1"
     }
 }

@@ -500,6 +500,28 @@ class PlaybackCoordinator(
         }
     }
 
+    /**
+     * The playing item's stream URL or lease lapsed mid-film (401 / 403 / 410, heyarr-kmp#232):
+     * plan the same file again, with what this phone declared the first time, and carry on at
+     * [atSeconds], playing if [play]. A target that was never planned is the blob again, whose
+     * reads re-stamp a live credential each time.
+     */
+    fun refresh(atSeconds: Double, play: Boolean) {
+        val playing = _nowPlaying.value ?: return
+        val hash = playing.blobHash
+        val client = PlaybackClient(transport, baseUrl(), effectiveCred())
+        val direct = if (hash != null) {
+            client.blobTarget(hash, playing.target.isVideo, playing.target.mimeType)
+                .copy(subtitles = playing.target.subtitles)
+        } else {
+            playing.target
+        }
+        val np = playing.copy(target = direct, startPaused = !play)
+        val caps = capabilities
+        if (caps == null || playing.assetId == null || hash == null) return present(np, atSeconds)
+        resolveInto(client, np, playing.maxHeight?.let { caps.forMaxHeight(it) } ?: caps, atSeconds)
+    }
+
     /** Close the player and release its target. The player reports the final position itself. */
     fun stop() {
         _nowPlaying.value = null

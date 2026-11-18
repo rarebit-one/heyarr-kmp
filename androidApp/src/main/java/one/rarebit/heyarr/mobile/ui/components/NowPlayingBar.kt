@@ -182,7 +182,13 @@ private fun VideoBar(
                 } else {
                     null
                 },
-                if (ps.buffering) "buffering…" else null,
+                if (ps.reconnecting != null) {
+                    "reconnecting…"
+                } else if (ps.buffering) {
+                    "buffering…"
+                } else {
+                    null
+                },
             ).joinToString("  ·  "),
             artwork = item.artworkUrl, type = MediaType.from(item.kind ?: "movie"), fraction = ps.fraction,
             seekable =

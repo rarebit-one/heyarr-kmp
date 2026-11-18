@@ -86,6 +86,10 @@ object PlaybackDiagnostics {
 
             errorCodeName.startsWith("ERROR_CODE_IO_BAD_HTTP_STATUS") -> "The node refused the stream (HTTP error)."
 
+            // Only after Reconnect's five minutes of retrying (heyarr-kmp#232): say so, and that Play resumes.
+            errorCodeName.startsWith("ERROR_CODE_IO_NETWORK") ->
+                "Lost the connection to the node, and it has not come back. Your place is kept: Play tries again."
+
             errorCodeName.startsWith("ERROR_CODE_IO") -> "The stream from the node broke off."
 
             else -> "Playback failed."
