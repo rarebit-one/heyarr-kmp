@@ -11,6 +11,7 @@ import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.state.ToastAction
+import one.rarebit.heyarr.desktop.cast.CastDevice
 import one.rarebit.heyarr.desktop.heyarr.CastResult
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.state.AppSession
@@ -26,7 +27,12 @@ import one.rarebit.heyarr.ui.theme.Tokens
  */
 @Suppress("FunctionNaming") // Compose components follow the shared component naming convention.
 @Composable
-internal fun RendererGroups(list: RendererListResult, onPick: (Renderer) -> Unit) {
+internal fun RendererGroups(
+    list: RendererListResult,
+    castDevices: List<CastDevice>,
+    onPick: (Renderer) -> Unit,
+    onCast: (CastDevice) -> Unit,
+) {
     val clientSite = list.clientSite
     val bySite = list.renderers.groupBy { it.site.orEmpty() }
     val siteOrder = buildList {
@@ -34,6 +40,7 @@ internal fun RendererGroups(list: RendererListResult, onPick: (Renderer) -> Unit
         bySite.keys.filter { it != clientSite }.sorted().forEach { add(it) }
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        CastDeviceGroup(castDevices, onCast)
         for (site in siteOrder) {
             val group = bySite[site] ?: continue
             val label = if (site == clientSite) "Here" else site.ifBlank { "Other" }
@@ -60,6 +67,39 @@ internal fun RendererGroups(list: RendererListResult, onPick: (Renderer) -> Unit
                 )
             }
         }
+    }
+}
+
+@Suppress("FunctionNaming") // Compose components use title case.
+@Composable
+private fun CastDeviceGroup(devices: List<CastDevice>, onCast: (CastDevice) -> Unit) {
+    if (devices.isEmpty()) return
+    Text("Google Cast", style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (device in devices) {
+            FilterChip(device.name, false, { onCast(device) }, icon = HeyarrIcons.Cast)
+        }
+    }
+}
+
+internal fun castLocally(
+    session: AppSession,
+    device: CastDevice,
+    assetId: String,
+    title: String = "Media",
+    afterSuccess: () -> Unit = {},
+) {
+    session.launch {
+        val api = session.api ?: return@launch
+        session.io { session.cast.play(device, api, assetId, title) }.fold(
+            onSuccess = {
+                afterSuccess()
+                session.toast(Toast.Kind.SUCCESS, "Playing on ${device.name}", "Keep this app open while it plays.")
+            },
+            onFailure = {
+                session.toast(Toast.Kind.REFUSED, "Couldn't cast to ${device.name}", it.message ?: "Cast failed")
+            },
+        )
     }
 }
 

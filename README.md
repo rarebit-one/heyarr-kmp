@@ -96,12 +96,29 @@ labels for assistive tech — and it is honest about what heyarr can and cannot 
 | **Detail** — one adaptive template re-skinned per media type: hero art + scrim, the type's own CTA, *Why this release* with rule codes verbatim, releases, health | `GET /works/{id}`, `GET /works/{id}/assets`, `get_content_satisfaction`, `GET /desired/{id}/candidates`, `explain_release`, `search_releases`, `acquire_release`, `get_replica_status`, `verify_blob`, `get_external_ids`, `play_here`, `monitor_content` |
 | **Library** — everything catalogued, filter by type + status, grid/list | `GET /works` + the want index |
 | **Missing / Wanted** — bulk search-now / monitor on-off; Want by title | `get_missing_content`, `get_upgrade_candidates`, `search_releases`, `monitor_content`, `want_content` |
-| **Now playing** — pick a renderer, live status, transport | `list_renderers`, `playback_status` (polled), `control_playback` |
+| **Now playing** — pick a renderer, live status, transport | Google Cast session controls; UPnP via `list_renderers`, `playback_status` (polled), `control_playback` |
 | **Settings** — connection, followed sources, peers, appearance | `list_followed`, `follow_source`, `unfollow`, `get_peer_status`, `sync_peer`, `GET /quality-profiles` |
 
 **Library status** (In library · Wanted · Missing · Not tracked) is derived only from
 real want state (`GET /desired` → acquisition state per work). **Want** is optimistic:
 the card flips at once and rolls back with the tool's refusal on failure.
+
+### Google Cast on desktop
+
+Connect the desktop and receiver to the same local network, open a film or episode,
+and choose its **Cast** action. Google Cast receivers appear in their own group beside
+the existing UPnP renderers. Use **Now playing** (Ctrl/Cmd+5) to pause, resume, seek or stop.
+
+Keep the desktop app open and the computer awake during playback. The app maintains
+the Cast connection and relays the selected media to the receiver; it keeps the node's
+authentication on the desktop. The desktop must be able to reach the Heyarr node, but
+the node does not need to discover the receiver across a VPN or travel router.
+
+Cast requests a conservative MP4/H.264/stereo-AAC stream from the node. This initial
+profile requires the node's transcoder, including stereo conversion for source audio.
+A failed or incompatible plan is reported instead of sending an unsupported file to
+the receiver. Seeking restarts the stream at the requested position and preserves
+whether playback was paused.
 
 ### What it deliberately does not do
 

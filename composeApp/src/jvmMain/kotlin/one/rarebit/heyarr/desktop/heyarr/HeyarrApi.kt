@@ -72,6 +72,7 @@ data class PlaybackTarget(
     val streamBaseUrl: String? = null,
     val audioTracks: List<SourceAudioTrack> = emptyList(),
     val selectedAudioTrack: Int? = null,
+    val mime: String? = null,
 ) {
     /** True for a node-repackaged stream: a seek is a restart, not an offset. */
     val restartSeekable: Boolean get() = streamBaseUrl != null
@@ -99,7 +100,7 @@ private fun parsePlaybackPlan(baseUrl: String, body: String, requestedAudioTrack
         "The selected audio track is unavailable"
     }
     val streamBase = absolute.takeIf { JsonScan.stringField(root, "mode") == "stream" }
-    return PlaybackTarget(absolute, duration, streamBase, tracks, selected)
+    return PlaybackTarget(absolute, duration, streamBase, tracks, selected, JsonScan.stringField(root, "mime"))
 }
 
 private const val HTTP_OK_MIN = 200
@@ -350,6 +351,7 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
         blobHash: String,
         maxHeight: Int = DEFAULT_MAX_HEIGHT,
         audioTrack: Int? = null,
+        strict: Boolean = false,
     ): PlaybackTarget {
         val fallback = PlaybackTarget(blobUrl(baseUrl, blobHash))
         if (assetId.isBlank()) {
@@ -362,7 +364,9 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
                 "client" to mapOf(
                     "containers" to listOf("mp4"),
                     "video" to listOf("h264"),
-                    "audio" to listOf("aac"),
+                    // Cast's conservative profile asks the node to encode stereo even
+                    // when the source is AAC: an AAC track may have eight channels.
+                    "audio" to if (strict) emptyList<String>() else listOf("aac"),
                     "audio_languages" to listOf("en"),
                     "max_height" to maxHeight,
                 ) + (audioTrack?.let { mapOf("audio_track" to it) } ?: emptyMap()),
@@ -373,7 +377,7 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
             require(resp.status == 200) { "Playback plan returned ${resp.status}" }
             parsePlaybackPlan(baseUrl, resp.body, audioTrack)
         }
-        return if (audioTrack == null) planned.getOrDefault(fallback) else planned.getOrThrow()
+        return if (audioTrack == null && !strict) planned.getOrDefault(fallback) else planned.getOrThrow()
     }
 
     // ── following & peers ────────────────────────────────────────────────────────

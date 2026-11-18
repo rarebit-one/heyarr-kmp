@@ -483,7 +483,8 @@ fun PlayerScreen(
                     if (state.rendererList == null) {
                         scope.launch {
                             session.api?.let { a ->
-                                session.io { a.renderers() }.onSuccess { state.rendererList = it }
+                                session.io { a.renderers().also { runCatching { session.cast.discover() } } }
+                                    .onSuccess { state.rendererList = it }
                             }
                         }
                     }
@@ -714,22 +715,26 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
         when {
             rl == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
 
-            rl.renderers.isEmpty() -> Text(
+            rl.renderers.isEmpty() && session.cast.devices.isEmpty() -> Text(
                 "No renderers found — a device that is off is not listed.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Tokens.textMuted,
             )
 
-            else -> RendererGroups(rl) { x ->
+            else -> RendererGroups(rl, session.cast.devices, onPick = { x ->
                 val a = session.api ?: return@RendererGroups
                 state.castOpen = false
                 Caster(session, a, x, before = { session.playback.player.pause() }).cast(item.assetId)
-            }
+            }, onCast = { device ->
+                state.castOpen = false
+                castLocally(session, device, item.assetId, item.title) { session.playback.player.pause() }
+            })
         }
         GhostButton("Search the network again", {
             scope.launch {
                 session.api?.let { a ->
-                    session.io { a.renderers(refresh = true) }.onSuccess { state.rendererList = it }
+                    session.io { a.renderers(refresh = true).also { runCatching { session.cast.discover() } } }
+                        .onSuccess { state.rendererList = it }
                 }
             }
         })

@@ -411,6 +411,11 @@ internal fun toggleCast(
 ) {
     state.castAssetId = if (state.castAssetId == assetId) null else assetId
     if (state.rendererList == null) {
-        scope.launch { session.api?.let { a -> session.io { a.renderers() }.onSuccess { state.rendererList = it } } }
+        scope.launch {
+            session.api?.let { api ->
+                session.io { api.renderers().also { runCatching { session.cast.discover() } } }
+                    .onSuccess { state.rendererList = it }
+            }
+        }
     }
 }

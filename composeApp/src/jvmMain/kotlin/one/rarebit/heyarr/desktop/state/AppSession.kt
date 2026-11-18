@@ -41,6 +41,7 @@ import one.rarebit.heyarr.core.state.LibraryIndex
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.state.ToastAction
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.desktop.cast.CastManager
 import one.rarebit.heyarr.desktop.device.DesktopDeviceEnroller
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DevicePairingSteps
@@ -198,6 +199,9 @@ class AppSession(
 
     private val mediaProxy = lazy { AuthenticatedMediaProxy({ config.baseUrl }, { credential }) }
 
+    /** One Cast connection survives picker and screen composition. */
+    internal val cast = CastManager(::mediaUrl)
+
     fun mediaUrl(url: String): String = mediaProxy.value.urlFor(url)
 
     fun mediaTarget(target: PlaybackTarget): PlaybackTarget = target.copy(
@@ -206,6 +210,7 @@ class AppSession(
     )
 
     fun closeMediaProxy() {
+        cast.close()
         if (mediaProxy.isInitialized()) mediaProxy.value.close()
     }
 
@@ -270,6 +275,7 @@ class AppSession(
         artwork.reset()
         connection = if (updated.baseUrl.isBlank()) Connection.UNCONFIGURED else Connection.UNKNOWN
         if (otherNode) {
+            cast.invalidate()
             profiles = emptyList()
             index = LibraryIndex.EMPTY
             indexLoaded = false
@@ -317,6 +323,7 @@ class AppSession(
      * live by [credential]; this only refreshes what depends on being enrolled.
      */
     fun reauthenticated() {
+        cast.invalidate()
         profiles = emptyList()
         index = LibraryIndex.EMPTY
         indexLoaded = false

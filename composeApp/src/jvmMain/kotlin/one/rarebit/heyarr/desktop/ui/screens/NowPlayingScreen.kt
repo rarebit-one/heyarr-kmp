@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -41,6 +42,7 @@ import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.mcp.PlaybackStatus
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.RendererListResult
+import one.rarebit.heyarr.desktop.cast.CastDevice
 import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.ui.components.EmptyState
@@ -64,6 +66,7 @@ class NowPlayingState {
     var rendererList by mutableStateOf<RendererListResult?>(null)
     var error by mutableStateOf<String?>(null)
     var selected by mutableStateOf<Renderer?>(null)
+    internal var selectedCast by mutableStateOf<CastDevice?>(null)
     var status by mutableStateOf<McpResult<PlaybackStatus?>?>(null)
     var busy by mutableStateOf(false)
 }
@@ -81,10 +84,14 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
         val a = session.api ?: return
         state.error = null
         scope.launch {
-            session.io { a.renderers(refresh) }.fold(
+            session.io { a.renderers(refresh).also { runCatching { session.cast.discover() } } }.fold(
                 onSuccess = { list ->
                     state.rendererList = list
-                    if (state.selected == null) state.selected = list.renderers.firstOrNull()
+                    if (state.selected == null && state.selectedCast == null) {
+                        state.selectedCast = session.cast.selected
+                        if (state.selectedCast == null) state.selected = list.renderers.firstOrNull()
+                        if (state.selected == null) state.selectedCast = session.cast.devices.firstOrNull()
+                    }
                 },
                 onFailure = { state.error = it.message },
             )
@@ -97,14 +104,7 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
             load()
         }
     }
-    LaunchedEffect(state.selected?.udn, session.config) {
-        val r = state.selected ?: return@LaunchedEffect
-        val a = session.api ?: return@LaunchedEffect
-        while (isActive) {
-            session.io { a.playbackStatus(r.name) }.onSuccess { state.status = it }
-            delay(2000)
-        }
-    }
+    ObserveSelectedStatus(session, state)
     fun control(action: String) = controlRenderer(session, state, action, scope)
 
     Column(
@@ -121,28 +121,118 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
 
             state.rendererList == null -> Skeleton(Modifier.fillMaxWidth().height(40.dp))
 
-            state.rendererList!!.renderers.isEmpty() -> EmptyState(
+            state.rendererList!!.renderers.isEmpty() && session.cast.devices.isEmpty() -> EmptyState(
                 "No renderers found",
                 detail = "A device that is switched off is not listed — that is not the same as it not existing. " +
                     "Switch it on and search again.",
                 icon = HeyarrIcons.Cast,
             )
 
-            else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (r in state.rendererList!!.renderers) {
-                    DeviceTab(r.name, state.selected?.udn == r.udn) {
-                        state.selected = r
-                        state.status = null
-                    }
-                }
-            }
+            else -> DeviceTabs(session, state)
         }
         state.selected?.let { r -> RendererPanel(r, state, ::control) }
+        state.selectedCast?.let { device -> CastPanel(session, state, device, scope) }
         Notice(
             "Playback position and history are the device's own report, live. heyarr keeps no play history this client can read.",
             icon = HeyarrIcons.Cast,
             tone = Tokens.slate,
         )
+    }
+}
+
+@Suppress("FunctionNaming") // Compose components use title case.
+@Composable
+private fun ObserveSelectedStatus(session: AppSession, state: NowPlayingState) {
+    LaunchedEffect(session.cast.selected?.id) {
+        state.selectedCast = session.cast.selected
+        if (state.selectedCast != null) state.selected = null
+    }
+    LaunchedEffect(state.selected?.udn, session.config) {
+        if (state.selectedCast != null) return@LaunchedEffect
+        val renderer = state.selected ?: return@LaunchedEffect
+        val api = session.api ?: return@LaunchedEffect
+        while (isActive) {
+            session.io { api.playbackStatus(renderer.name) }.onSuccess { state.status = it }
+            delay(2000)
+        }
+    }
+    LaunchedEffect(state.selectedCast?.id, session.generation) {
+        val device = state.selectedCast ?: return@LaunchedEffect
+        session.io { session.cast.attach(device) }
+        while (isActive) {
+            session.io { session.cast.refresh() }
+            delay(2000)
+        }
+    }
+}
+
+@Suppress("FunctionNaming") // Compose components use title case.
+@Composable
+private fun DeviceTabs(session: AppSession, state: NowPlayingState) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (device in session.cast.devices) {
+            DeviceTab(device.name, state.selectedCast?.id == device.id) {
+                state.selectedCast = device
+                state.selected = null
+            }
+        }
+        for (renderer in state.rendererList?.renderers.orEmpty()) {
+            DeviceTab(renderer.name, state.selectedCast == null && state.selected?.udn == renderer.udn) {
+                state.selected = renderer
+                state.selectedCast = null
+                state.status = null
+            }
+        }
+    }
+}
+
+@Suppress("FunctionNaming") // Compose components use title case.
+@Composable
+private fun CastPanel(session: AppSession, state: NowPlayingState, device: CastDevice, scope: CoroutineScope) {
+    val cast = session.cast
+    Panel(device.name) {
+        cast.error?.let { Notice(it, tone = Tokens.danger) }
+        val report = cast.status
+        if (cast.selected?.id != device.id || report == null) {
+            Text("No active media session reported.", color = Tokens.textMuted)
+        } else if (report.error != null) {
+            Text("Receiver playback failed: ${report.error}", color = Tokens.danger)
+        } else {
+            val display = PlaybackStatus(
+                renderer = device.id,
+                state = report.state,
+                playing = report.state == "PLAYING",
+                elapsedSeconds = report.position.toLong(),
+                durationSeconds = report.duration?.toLong(),
+                title = report.title,
+            )
+            fun act(action: String, seconds: Double? = null) {
+                scope.launch {
+                    state.busy = true
+                    session.io { cast.control(action, seconds) }
+                    state.busy = false
+                }
+            }
+            Transport(display, state.busy) { act(it) }
+            val duration = report.duration
+            if (duration != null && duration > 0) {
+                var dragging by remember(device.id, report.mediaSessionId) { mutableStateOf(false) }
+                var position by remember(device.id, report.mediaSessionId) { mutableStateOf(0f) }
+                Slider(
+                    value = (if (dragging) position else report.position.toFloat()).coerceIn(0f, duration.toFloat()),
+                    onValueChange = {
+                        dragging = true
+                        position = it
+                    },
+                    onValueChangeFinished = {
+                        act("seek", position.toDouble())
+                        dragging = false
+                    },
+                    valueRange = 0f..duration.toFloat(),
+                    enabled = !state.busy,
+                )
+            }
+        }
     }
 }
 
