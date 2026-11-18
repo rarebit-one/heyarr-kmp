@@ -115,6 +115,8 @@ jobs:
               (pkg + "VideoBackgroundTest", "aFilmPausesInTheBackgroundAndCarriesOnFromTheSamePlaceOnReturn"),
               (pkg + "VideoBackgroundTest", "aDecoderFailureIsRetriedOnceByItself"),
               (pkg + "VideoBackgroundTest", "aSecondFailureIsShownInFullAndPlayRecoversIt"),
+              # The screen off mid-film and back (#232 scenario 4): paused, then on from the same place.
+              (pkg + "VideoBackgroundTest", "aFilmPausesWhileTheScreenIsOffAndCarriesOnWhenItComesBack"),
               # The resume position (#232): written to disk as the film goes to the background,
               # Play resumes there, a rotation keeps the player, Start over and the end clear it.
               (pkg + "ResumePositionTest", "aPausedFilmLeftForTheBackgroundIsOnDiskAndPlayResumesThere"),
