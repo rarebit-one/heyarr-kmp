@@ -130,12 +130,12 @@ await_opened() {
 
 resumed() { adb shell dumpsys activity activities | tr -d '\r' | grep -m1 -E "topResumedActivity|mResumedActivity" || true; }
 
+# The screen as uiautomator sees it, or nothing: a dump can fail while the UI is not yet idle,
+# and the callers poll, so a failed one is only a retry (never a stale file, never an exit).
 ui() {
-  for _ in 1 2 3; do
-    adb shell uiautomator dump /sdcard/reader-ui.xml >/dev/null 2>&1 && break
-    sleep 1
-  done
-  adb shell cat /sdcard/reader-ui.xml | tr -d '\r'
+  adb shell rm -f /sdcard/reader-ui.xml >/dev/null 2>&1 || true
+  adb shell uiautomator dump /sdcard/reader-ui.xml >/dev/null 2>&1 || true
+  adb shell cat /sdcard/reader-ui.xml 2>/dev/null | tr -d '\r' || true
 }
 
 # The shell as the launcher starts it, then the book on top of it, as Read opens it.
