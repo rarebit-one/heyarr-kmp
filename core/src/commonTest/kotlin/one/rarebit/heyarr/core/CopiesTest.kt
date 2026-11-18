@@ -121,14 +121,21 @@ class CopiesTest {
         assertNull(Copies.choose(emptyList<F>(), phone))
     }
 
-    @Test fun aProbeBeatsTheReleaseName() {
-        // The label says 2160p HDR; the node measured a 1080-line SDR frame.
-        val mislabelled =
-            F("x", "Film.2160p.HDR.mkv", "Remux-2160p", probedWidth = 1920, probedHeight = 1080, probedHdr = false)
+    @Test fun aProbedHeightBeatsTheReleaseName() {
+        // The label says 2160p; the node measured a 1080-line frame.
+        val mislabelled = F("x", "Film.2160p.mkv", "Remux-2160p", probedHeight = 1080, probedHdr = false)
         val c = Copies.read(mislabelled)
         assertEquals(1080, c.height)
         assertEquals(false, c.hdr)
         assertTrue(c.probed)
+        assertTrue(Copies.read(F("y", "Film.2160p.mkv", probedHeight = 2160, probedHdr = true)).hdr)
+    }
+
+    @Test fun aReleaseNamedHdrIsHdrWhateverAnOldProbeSays() {
+        // A probe taken before heyarr-core#885 read the transfer characteristic says `hdr: false`.
+        val c = Copies.read(F("x", "Film.2160p.HDR.mkv", "Remux-2160p", probedHeight = 2160, probedHdr = false))
+        assertEquals(2160, c.height)
+        assertTrue(c.hdr)
     }
 
     @Test fun theLabelIsReadBeforeTheFilename() {
@@ -146,6 +153,14 @@ class CopiesTest {
         assertEquals(720, Copies.nominalHeight(1280, 536))
         assertEquals(576, Copies.nominalHeight(720, 576))
         assertEquals(1080, Copies.nominalHeight(null, 1080))
+        // The node sends no width (heyarr-core#885): a letterboxed height reads as its class.
+        assertEquals(1080, Copies.nominalHeight(null, 800))
+        assertEquals(2160, Copies.nominalHeight(null, 1608))
+        assertEquals(720, Copies.nominalHeight(null, 536))
+        assertEquals(1440, Copies.nominalHeight(null, 1440))
+        assertEquals(300, Copies.nominalHeight(null, 300))
+        assertEquals(576, Copies.nominalHeight(null, 576)) // PAL is still PAL
+        assertEquals(1080, Copies.nominalHeight(null, 1040)) // 1.85:1
     }
 
     @Test fun releaseNames() {

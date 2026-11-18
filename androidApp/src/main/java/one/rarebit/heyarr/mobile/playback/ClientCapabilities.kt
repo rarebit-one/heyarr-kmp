@@ -11,8 +11,9 @@ import one.rarebit.heyarr.core.playback.DisplayFit
  * [maxHeight] is the screen's short edge — the most lines a landscape picture can show —
  * and the request sends it after `:core`'s `Copies` has capped it for the copy and the
  * preference ([forMaxHeight]). [supportsHdr] is what the screen reports; it chooses
- * between copies on the phone and is NOT sent: a node before heyarr-core#885 may refuse
- * a field it does not know, and a 400 here means "plan nothing". The planner answers `direct` (play the blob as-is) or
+ * between copies, and is sent only when the node is asked to choose ([planByWorkBody]):
+ * a node before heyarr-core#885 may refuse a field it does not know, and a 400 on an
+ * asset plan means "plan nothing". The planner answers `direct` (play the blob as-is) or
  * `stream` (a phone-friendly fMP4 the node repackages), so an honest list here is
  * what stops a 5.1 AC-3 track playing as silence.
  *
@@ -37,11 +38,22 @@ data class ClientCapabilities(
         copy(video = video.filterNot { it == codec }, audio = audio.filterNot { it == codec })
 
     /** The plan request body: `{"asset_id", "client": {containers, video, audio, max_height}}`. */
-    fun planRequestBody(assetId: String): String = "{\"asset_id\":${quote(assetId)},\"client\":{" +
-        "\"containers\":${array(containers)}," +
+    fun planRequestBody(assetId: String): String =
+        "{\"asset_id\":${quote(assetId)},\"client\":{" + clientFields() + "}}"
+
+    /**
+     * The plan-by-film body (heyarr-core#885): `{"work_id", "client": {…, supports_hdr}}`, the
+     * node choosing which copy to plan. The one request that sends [supportsHdr] — a node
+     * that does not plan by film refuses the whole request (400), and the caller falls back
+     * to [planRequestBody] for the copy it chose itself.
+     */
+    fun planByWorkBody(workId: String): String = "{\"work_id\":${quote(workId)},\"client\":{" +
+        clientFields() + ",\"supports_hdr\":$supportsHdr}}"
+
+    private fun clientFields(): String = "\"containers\":${array(containers)}," +
         "\"video\":${array(video)}," +
         "\"audio\":${array(audio)}," +
-        "\"max_height\":$maxHeight}}"
+        "\"max_height\":$maxHeight"
 
     companion object {
         /** The containers Media3's bundled extractors demux without a remux. */

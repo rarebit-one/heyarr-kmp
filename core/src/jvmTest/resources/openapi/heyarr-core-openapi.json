@@ -5690,7 +5690,7 @@
     ],
     "operationId": "planPlayback",
     "summary": "What should this device do with this asset? (§68)",
-    "description": "DIRECT, REMUX, TRANSCODE — or `unplayable` when nothing holds the bytes.\n\n**It writes nothing and opens no session.** A client shows a \"play\"\nbutton by planning and opens a session when someone presses it; if\nplanning created state, every hover would too.\n\nThe `reasons` are the point. \"Why is my television transcoding this\" is\nthe single most common question this class of software is asked, and a\nplanner that answers only with a verb cannot answer it. Codes are\nstable strings because clients branch on them; `detail` is prose for a\nhuman and may change.\n\n**Media nothing has probed plans DIRECT**, with a `no_probe` reason\nsaying the plan is a guess. The conservative-looking answer is\nTRANSCODE and it is wrong: a node with no probes is precisely a node\nwith no ffprobe (ADR-0023), which cannot transcode either — so\nplanning TRANSCODE there would make the entire library unplayable,\nwhile DIRECT makes most of it work and fails visibly when it does not.\n\n**A client that says what it can decode gets the leg (ADR-0069).**\nSend `client` — the containers, video and audio codecs it decodes and\na height ceiling — instead of, or as well as, `device_id`, and the\nanswer additionally carries `mode`, `url`, `mime`, `reason` and\n`source`:\n\n- `mode: direct` — fetch `url`, which is the ordinary blob endpoint.\n- `mode: stream` — fetch `url`, which is\n  `GET /api/v1/playback/stream/{token}`: an on-the-fly fragmented MP4\n  with the video copied where the client decodes it and the audio\n  re-encoded to stereo AAC where it does not (the AC-3 and MP2\n  cases), the whole thing re-wrapped when the container is the\n  problem (AVI), and the video re-encoded and capped to `max_height`\n  only when the client cannot decode the picture. `reason` says which.\n- `mode: unplayable` — no peer holds the bytes; `reason` is routing's.\n\nWith `client`, media nothing has probed is **probed now** when this\nnode has ffprobe and holds the bytes, and the result is cached in\n`blob_probes` exactly as a worker's probe would be. A stream is\nproduced only by the node holding the replica; a controller routing\nto another peer answers `direct` on that peer and says why. A node\nwith no ffmpeg answers `direct` with the reason and the note that it\ncannot repackage — the bytes and the truth, not a black player.\n",
+    "description": "DIRECT, REMUX, TRANSCODE — or `unplayable` when nothing holds the bytes.\n\n**It writes nothing and opens no session.** A client shows a \"play\"\nbutton by planning and opens a session when someone presses it; if\nplanning created state, every hover would too.\n\nThe `reasons` are the point. \"Why is my television transcoding this\" is\nthe single most common question this class of software is asked, and a\nplanner that answers only with a verb cannot answer it. Codes are\nstable strings because clients branch on them; `detail` is prose for a\nhuman and may change.\n\n**Media nothing has probed plans DIRECT**, with a `no_probe` reason\nsaying the plan is a guess. The conservative-looking answer is\nTRANSCODE and it is wrong: a node with no probes is precisely a node\nwith no ffprobe (ADR-0023), which cannot transcode either — so\nplanning TRANSCODE there would make the entire library unplayable,\nwhile DIRECT makes most of it work and fails visibly when it does not.\n\n**A client that says what it can decode gets the leg (ADR-0069).**\nSend `client` — the containers, video and audio codecs it decodes and\na height ceiling — instead of, or as well as, `device_id`, and the\nanswer additionally carries `mode`, `url`, `mime`, `reason` and\n`source`:\n\n- `mode: direct` — fetch `url`, which is the ordinary blob endpoint.\n- `mode: stream` — fetch `url`, which is\n  `GET /api/v1/playback/stream/{token}`: an on-the-fly fragmented MP4\n  with the video copied where the client decodes it and the audio\n  re-encoded to stereo AAC where it does not (the AC-3 and MP2\n  cases), the whole thing re-wrapped when the container is the\n  problem (AVI), and the video re-encoded when the client cannot\n  decode the picture **or** the picture is taller than `max_height`\n  (scaled down to it). `reason` says which.\n- `mode: unplayable` — no peer holds the bytes; `reason` is routing's.\n\nWith `client`, media nothing has probed is **probed now** when this\nnode has ffprobe and holds the bytes, and the result is cached in\n`blob_probes` exactly as a worker's probe would be. A stream is\nproduced only by the node holding the replica; a controller routing\nto another peer answers `direct` on that peer and says why. A node\nwith no ffmpeg answers `direct` with the reason and the note that it\ncannot repackage — the bytes and the truth, not a black player.\n\n**A film can be named instead of a file (#885).** Send `work_id`\n(optionally `edition_id`) in place of `asset_id` and the node chooses\nwhich copy to plan from what the client can show — `max_height`,\n`supports_hdr`, `max_bitrate_bps` and its video codecs, each filled\nfrom the named device when unstated. The plan is then for the chosen\ncopy, exactly as if its `asset_id` had been sent, plus a `selection`\nnaming the copy, the reason, and the alternatives. An explicit\n`asset_id` always wins, and a request carrying one is answered as it\nalways was.\n",
     "requestBody": {
      "required": true,
      "content": {
@@ -11610,7 +11610,10 @@
      "mime",
      "size",
      "duration_seconds",
-     "content_url"
+     "content_url",
+     "height",
+     "hdr",
+     "bitrate_bps"
     ],
     "properties": {
      "asset_id": {
@@ -11644,6 +11647,28 @@
      },
      "content_url": {
       "type": "string"
+     },
+     "height": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "description": "The first video stream's height in pixels, from the blob's probe\n(#885). Null when nothing has probed the blob or it has no picture.\n"
+     },
+     "hdr": {
+      "type": [
+       "boolean",
+       "null"
+      ],
+      "description": "Whether that picture is HDR: its transfer characteristic is PQ\n(`smpte2084`, which HDR10 and Dolby Vision carry) or HLG\n(`arib-std-b67`). Null when nothing has probed the blob or it has\nno picture. A probe taken before the transfer was recorded reads\n`false` until the blob is probed again.\n"
+     },
+     "bitrate_bps": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "format": "int64",
+      "description": "The container's overall bitrate in bit/s, from the probe. Null when\nnothing has probed the blob or the container declares none.\n"
      }
     }
    },
@@ -11819,7 +11844,10 @@
        "edition_label",
        "edition_type",
        "blob_size",
-       "blob_mime"
+       "blob_mime",
+       "height",
+       "hdr",
+       "bitrate_bps"
       ],
       "properties": {
        "edition_label": {
@@ -11848,6 +11876,28 @@
        "hearing_impaired": {
         "type": "boolean",
         "description": "Caption marked SDH by its source."
+       },
+       "height": {
+        "type": [
+         "integer",
+         "null"
+        ],
+        "description": "The first video stream's height in pixels, from the blob's probe\n(#885). Null when nothing has probed the blob or it has no picture.\n"
+       },
+       "hdr": {
+        "type": [
+         "boolean",
+         "null"
+        ],
+        "description": "Whether that picture is HDR: its transfer characteristic is PQ\n(`smpte2084`, which HDR10 and Dolby Vision carry) or HLG\n(`arib-std-b67`). Null when nothing has probed the blob or it has\nno picture. A probe taken before the transfer was recorded reads\n`false` until the blob is probed again.\n"
+       },
+       "bitrate_bps": {
+        "type": [
+         "integer",
+         "null"
+        ],
+        "format": "int64",
+        "description": "The container's overall bitrate in bit/s, from the probe. Null when\nnothing has probed the blob or the container declares none.\n"
        }
       }
      }
@@ -13434,12 +13484,19 @@
    },
    "PlanRequest": {
     "type": "object",
-    "required": [
-     "asset_id"
-    ],
+    "description": "Name the file with `asset_id`, or a film with `work_id` and let the\nnode choose the copy (#885). One of the two is required; when both are\ngiven `asset_id` wins and `work_id` is ignored.\n",
     "properties": {
      "asset_id": {
-      "type": "string"
+      "type": "string",
+      "description": "The file to plan. Always wins over `work_id`."
+     },
+     "work_id": {
+      "type": "string",
+      "description": "A film (`content_type: movie`) whose copies the node chooses among\nby what the client can show; the answer's `asset_id` is the copy\nchosen and `selection` says why. Any other content type is a 400:\na series' edition can hold every episode, so plan those by\n`asset_id`.\n"
+     },
+     "edition_id": {
+      "type": "string",
+      "description": "Narrows a `work_id` choice to that edition's copies."
      },
      "device_id": {
       "type": "string",
@@ -13489,10 +13546,20 @@
       "minimum": 0,
       "description": "Zero-based source audio ordinal. Overrides audio_languages. An\nordinal absent from the probe returns HTTP 400.\n"
      },
+     "supports_hdr": {
+      "type": "boolean",
+      "description": "The client shows HDR. Used only to choose among a work's copies\n(`work_id`): when absent or false, an SDR copy is preferred among\nthose that fit. Absent is unstated rather than false, and a named\ndevice's stored value fills it. It does not change how a copy is\nplanned — nothing tone-maps yet — so a plan by `asset_id` ignores it.\n"
+     },
+     "max_bitrate_bps": {
+      "type": "integer",
+      "format": "int64",
+      "minimum": 0,
+      "description": "The highest overall bitrate the client takes, in bit/s. Used only to\nchoose among a work's copies, as `supports_hdr` is; zero or absent\nmeans no limit, and a named device's stored value fills it.\n"
+     },
      "max_height": {
       "type": "integer",
       "minimum": 0,
-      "description": "The tallest picture the client will take. Zero or absent means no limit."
+      "description": "The tallest picture the client will take. Zero or absent means no\nlimit. A taller picture is still served: as a `stream` with the\nvideo re-encoded and scaled down to this height, even when the\nclient decodes the source codec. When choosing among a work's\ncopies, a copy taller than this does not fit.\n"
      }
     },
     "example": {
@@ -13655,6 +13722,112 @@
        }
       ],
       "description": "What the probe found, when anything has probed the bytes."
+     },
+     "selection": {
+      "allOf": [
+       {
+        "$ref": "#/components/schemas/PlaybackSelection"
+       }
+      ],
+      "description": "Present exactly when the request named a `work_id` and no\n`asset_id` (#885): the copy chosen — the plan's `asset_id` — why,\nand every other copy with why not.\n"
+     }
+    }
+   },
+   "PlaybackSelection": {
+    "type": "object",
+    "description": "Which of a film's copies was planned (#885). The rule: a copy fits\nwhen it is at or under the client's `max_height` and\n`max_bitrate_bps`. Among the fits, one whose video the client decodes\nbeats one it does not. When the client does not declare HDR, SDR beats\nHDR. Then the tallest wins, and at equal height HDR when it is\ndeclared, then the higher bitrate, then the asset id. When nothing\nfits, the smallest copy over the limit is chosen and scaled down.\nUnprobed copies rank last. Capabilities the client leaves unstated come\nfrom the `device_id` it names.\n",
+    "required": [
+     "chosen",
+     "alternatives"
+    ],
+    "properties": {
+     "chosen": {
+      "$ref": "#/components/schemas/PlaybackCopy"
+     },
+     "alternatives": {
+      "type": "array",
+      "description": "Every other copy, best first, each with the reason it lost.",
+      "items": {
+       "$ref": "#/components/schemas/PlaybackCopy"
+      }
+     }
+    }
+   },
+   "PlaybackCopy": {
+    "type": "object",
+    "description": "One copy of the film as selection saw it — enough to offer it as a manual choice.",
+    "required": [
+     "asset_id",
+     "edition_id",
+     "edition_label",
+     "height",
+     "hdr",
+     "bitrate_bps",
+     "reason"
+    ],
+    "properties": {
+     "asset_id": {
+      "type": "string"
+     },
+     "edition_id": {
+      "type": "string"
+     },
+     "edition_label": {
+      "type": "string"
+     },
+     "height": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "description": "Probed picture height; null when unprobed."
+     },
+     "hdr": {
+      "type": [
+       "boolean",
+       "null"
+      ],
+      "description": "PQ or HLG transfer; null when unprobed."
+     },
+     "bitrate_bps": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "format": "int64"
+     },
+     "video_codec": {
+      "type": "string",
+      "description": "ffprobe's codec name, when probed."
+     },
+     "reason": {
+      "type": "object",
+      "required": [
+       "code",
+       "detail"
+      ],
+      "properties": {
+       "code": {
+        "type": "string",
+        "enum": [
+         "best_fit",
+         "smallest_over_limit",
+         "not_probed",
+         "resolution_too_high",
+         "bitrate_too_high",
+         "needs_video_reencode",
+         "hdr_not_declared",
+         "smaller",
+         "equal_lost_tie",
+         "larger"
+        ],
+        "description": "Stable. On `chosen`: `best_fit`, `smallest_over_limit` or\n`not_probed` (nothing was probed, so the lowest id was taken).\nOn an alternative: why it lost.\n"
+       },
+       "detail": {
+        "type": "string",
+        "description": "Prose for a human; may change."
+       }
+      }
      }
     }
    },

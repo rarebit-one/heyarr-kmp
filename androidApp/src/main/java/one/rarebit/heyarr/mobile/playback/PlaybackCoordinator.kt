@@ -159,11 +159,40 @@ class PlaybackCoordinator(
             copy = copy,
             maxHeight = maxHeight,
         )
-        val caps = capabilities
-        if (caps == null) {
-            present(np, atSeconds)
-        } else {
-            resolveInto(client, np, caps.forMaxHeight(maxHeight), atSeconds)
+        val caps = capabilities?.forMaxHeight(maxHeight)
+        when {
+            caps == null -> present(np, atSeconds)
+
+            // A copy the person picked, or best quality, is planned by asset: an explicit
+            // asset always wins at the node, and best quality is a cap the node does not know.
+            chosen || preference() == QualityPreference.BEST -> resolveInto(client, np, caps, atSeconds)
+
+            else -> resolveByWork(client, np, caps, atSeconds)
+        }
+    }
+
+    /**
+     * Plan [np]'s film by `work_id` (heyarr-core#885): the node chooses the copy from what
+     * this phone declares — the capped height, HDR, the codecs it decodes, which the phone's
+     * own rule cannot see — and plans it; [np] then plays the copy the node chose. A node that
+     * does not plan by film (400), or answers with a copy the phone does not hold, falls back
+     * to planning the copy the phone chose itself, which is how every play worked before.
+     */
+    private fun resolveByWork(client: PlaybackClient, np: NowPlaying, caps: ClientCapabilities, knownStart: Double?) {
+        val workId = np.workId ?: return resolveInto(client, np, caps, knownStart)
+        scope.launch {
+            val plan = withContext(io) { runCatching { client.planWork(workId, caps) }.getOrNull() }
+                ?.takeIf { it.result !is PlaybackClient.PlanResult.Unavailable }
+            val copy = plan?.assetId?.let { id -> np.copies.firstOrNull { it.asset.id == id } }
+            val hash = copy?.asset?.blobHash
+            if (plan == null || copy == null || hash == null) {
+                resolveInto(client, np, caps, knownStart)
+                return@launch
+            }
+            val mime = copy.asset.mime ?: np.target.mimeType
+            val target = client.targetFor(plan.result, hash, np.target.isVideo, mime)
+                .copy(subtitles = np.target.subtitles)
+            present(np.copy(target = target, assetId = copy.asset.id, blobHash = hash, copy = copy), knownStart)
         }
     }
 

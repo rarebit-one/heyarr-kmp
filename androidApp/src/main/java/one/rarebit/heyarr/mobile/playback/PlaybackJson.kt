@@ -44,6 +44,11 @@ object PlaybackJson {
         val mime: String?,
         val reason: String?,
         val source: Source?,
+        /**
+         * The asset planned. Asked about a film (`work_id`, heyarr-core#885) it is the copy the
+         * node chose, which may not be the one the phone would have.
+         */
+        val assetId: String? = null,
         /** Pre-#432 fields, read for the transition only. */
         val decision: String? = null,
         val token: String? = null,
@@ -75,6 +80,7 @@ object PlaybackJson {
             mime = JsonScan.stringField(root, "mime"),
             reason = JsonScan.stringField(root, "reason"),
             source = source,
+            assetId = JsonScan.stringField(root, "asset_id"),
             decision = JsonScan.stringField(root, "decision"),
             token = JsonScan.stringField(root, "token"),
         )

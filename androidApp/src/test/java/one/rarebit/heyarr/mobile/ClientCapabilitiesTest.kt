@@ -53,6 +53,16 @@ class ClientCapabilitiesTest {
         )
     }
 
+    @Test fun planByWorkBodyShape() {
+        val caps =
+            ClientCapabilities(video = listOf("hevc"), audio = listOf("aac"), maxHeight = 1080, supportsHdr = true)
+        assertEquals(
+            """{"work_id":"w1","client":{"containers":["mp4","mkv","webm"],"video":["hevc"],"audio":["aac"],""" +
+                """"max_height":1080,"supports_hdr":true}}""",
+            caps.planByWorkBody("w1"),
+        )
+    }
+
     @Test fun withoutStrikesOneCodecOff() {
         val caps = ClientCapabilities(video = listOf("h264"), audio = listOf("aac", "ac3"), maxHeight = 1080)
         assertEquals(listOf("aac"), caps.without("ac3").audio)
