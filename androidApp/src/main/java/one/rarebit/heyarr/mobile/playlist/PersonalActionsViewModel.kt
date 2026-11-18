@@ -16,6 +16,7 @@ import one.rarebit.heyarr.mobile.library.ItemResolver
 import one.rarebit.heyarr.mobile.library.LibraryClient
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.personalstate.PersonalStateCoordinator
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * The cross-screen personal-state actions — star/unstar, add to a playlist and the person's
@@ -59,6 +60,14 @@ internal class PersonalActionsViewModel(
      */
     private val playbackWrites = Mutex()
 
+    /**
+     * Writes not yet sent, and every write ever started. A read of the register shows its answer
+     * only when no write is pending and none started while it was in flight. Otherwise an older
+     * value read during a write would overwrite the newer tap shown optimistically.
+     */
+    private val pendingPlaybackWrites = AtomicInteger()
+    private val playbackGeneration = AtomicInteger()
+
     val enabled: Boolean get() = personalState != null
 
     init {
@@ -76,9 +85,17 @@ internal class PersonalActionsViewModel(
                 _starredWorks.value = ids.mapNotNull { runCatching { resolver.resolve(it)?.work }.getOrNull() }
                     .distinctBy { it.id }
                 _playlists.value = runCatching { ps.playlists() }.getOrDefault(emptyList())
-                // A failed read keeps what was shown: it is not "the person has no preference".
-                runCatching { ps.playbackPreference() }.onSuccess { _accountPlayback.value = it }
+                readPlayback(ps)
             }
+        }
+    }
+
+    /** Read the register and show it, unless a write overtook the read ([pendingPlaybackWrites]). */
+    private fun readPlayback(ps: PersonalStateCoordinator) {
+        val generation = playbackGeneration.get()
+        // A failed read keeps what was shown: it is not "the person has no preference".
+        runCatching { ps.playbackPreference() }.onSuccess {
+            if (pendingPlaybackWrites.get() == 0 && playbackGeneration.get() == generation) _accountPlayback.value = it
         }
     }
 
@@ -89,15 +106,15 @@ internal class PersonalActionsViewModel(
      */
     fun setAccountPlayback(preference: PlaybackPreference) {
         val ps = personalState ?: return
+        playbackGeneration.incrementAndGet()
+        pendingPlaybackWrites.incrementAndGet()
         _accountPlayback.value = preference
         viewModelScope.launch {
             playbackWrites.withLock {
                 withContext(io) {
                     runCatching { ps.setPlaybackPreference(preference) }
-                    // A later tap is still queued behind this write: it settles what is shown.
-                    if (_accountPlayback.value == preference) {
-                        runCatching { ps.playbackPreference() }.onSuccess { _accountPlayback.value = it }
-                    }
+                    // A later tap still queued behind this write settles what is shown instead.
+                    if (pendingPlaybackWrites.decrementAndGet() == 0) readPlayback(ps)
                 }
             }
         }
@@ -111,9 +128,7 @@ internal class PersonalActionsViewModel(
     fun refreshPlayback() {
         val ps = personalState ?: return
         viewModelScope.launch {
-            playbackWrites.withLock {
-                withContext(io) { runCatching { ps.playbackPreference() }.onSuccess { _accountPlayback.value = it } }
-            }
+            withContext(io) { readPlayback(ps) }
         }
     }
 
