@@ -67,7 +67,7 @@ class ResumePositionTest {
         server = ClipServer(clip.readBytes())
         instrumentation.runOnMainSync {
             store = PrefsResumeStore(ctx)
-            val recorder = ResumeRecorder(store, System::currentTimeMillis)
+            val recorder = ResumeRecorder(store, clock = System::currentTimeMillis)
             video = VideoSession(ctx, OkHttpClient(), scope).also { v ->
                 // As AppGraph.recordResume wires it.
                 v.onProgress = { p ->

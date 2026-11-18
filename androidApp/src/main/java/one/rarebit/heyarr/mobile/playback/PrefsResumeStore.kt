@@ -3,6 +3,7 @@ package one.rarebit.heyarr.mobile.playback
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.mutableIntStateOf
+import one.rarebit.heyarr.core.playback.PlayerSnapshotStore
 import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.core.playback.ResumeStore
 
@@ -57,5 +58,30 @@ class PrefsResumeStore(context: Context) : ResumeStore {
     companion object {
         const val PREFS_NAME = "heyarr-resume"
         private const val PREFIX = "asset."
+    }
+}
+
+/**
+ * The one item the in-app player held when the app last left it (heyarr-kmp#232), for the
+ * restore after process death. Its own file, one key; SharedPreferences for the same reason as
+ * [PrefsResumeStore]: what the background writes is on disk before the stop completes.
+ */
+class PrefsPlayerSnapshotStore(context: Context) : PlayerSnapshotStore {
+    private val prefs: SharedPreferences =
+        context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    override fun read(): ResumePoint? = prefs.getString(KEY, null)?.let(ResumePoint::fromJson)
+
+    override fun write(point: ResumePoint) {
+        prefs.edit().putString(KEY, point.toJson()).apply()
+    }
+
+    override fun clear() {
+        prefs.edit().remove(KEY).apply()
+    }
+
+    companion object {
+        const val PREFS_NAME = "heyarr-player"
+        private const val KEY = "video"
     }
 }

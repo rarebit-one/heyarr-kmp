@@ -26,7 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,7 +46,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.core.playback.ResumePoints
 import one.rarebit.heyarr.core.state.Toast
@@ -188,8 +192,21 @@ fun HeyarrNavHost(
         video.load(np)
         if (np.assetId != lastStartedAsset) {
             lastStartedAsset = np.assetId
-            navController.navigate(Route.Player) { launchSingleTop = true }
+            // A restore waits, paused, in the now-playing bar: the person did not just press Play.
+            if (!np.startPaused) navController.navigate(Route.Player) { launchSingleTop = true }
         }
+    }
+    // After process death (heyarr-kmp#232): put back what the player held, paused where it was.
+    // Once per process (AppGraph.takeRestore), once the node has answered or a few seconds have
+    // passed, so the plan is made with the credential the app restores at start-up. Nothing is
+    // put back over something the person has started meanwhile.
+    val currentSession by rememberUpdatedState(session)
+    LaunchedEffect(Unit) {
+        val point = graph.takeRestore() ?: return@LaunchedEffect
+        withTimeoutOrNull(RESTORE_WAIT_MS) {
+            snapshotFlow { currentSession.connection }.first { it != Connection.UNKNOWN }
+        }
+        if (vm.playback.nowPlaying.value == null && audio.state.value.item == null) vm.playback.restore(point)
     }
     LaunchedEffect(audioState.item?.assetId) {
         if (openPlayerOnAudio && audioState.item != null) {
@@ -820,3 +837,6 @@ private fun NavHostController.navigateTab(route: Route) {
         restoreState = true
     }
 }
+
+/** How long a restore after process death waits for the node to answer before planning anyway. */
+private const val RESTORE_WAIT_MS = 5_000L

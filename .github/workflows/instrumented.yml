@@ -78,7 +78,12 @@ jobs:
           profile: pixel_6
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: ./gradlew :androidApp:connectedDebugAndroidTest --no-daemon --stacktrace
+          # Then the player after process death (#232), which has to be checked from outside the
+          # app's process: the script runs two instrumentations with the process dying between.
+          script: |
+            ./gradlew :androidApp:connectedDebugAndroidTest --no-daemon --stacktrace
+            ./gradlew :androidApp:installDebug :androidApp:installDebugAndroidTest --no-daemon
+            androidApp/scripts/process-death-check.sh
 
       - name: Verify the smoke tests actually ran
         run: |
@@ -110,6 +115,9 @@ jobs:
               (pkg + "ResumePositionTest", "aPausedFilmLeftForTheBackgroundIsOnDiskAndPlayResumesThere"),
               (pkg + "ResumePositionTest", "aRotationKeepsTheSamePlayerPlayingAndThePointMoving"),
               (pkg + "ResumePositionTest", "startingOverAndPlayingToTheEndLeaveNoPoint"),
+              # Music keeps playing in the background, under a media-session notification (#232).
+              # The player after process death runs from process-death-check.sh, not here.
+              (pkg + "MusicBackgroundTest", "theQueuePlaysOnInTheBackgroundUnderAMediaNotification"),
           }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")

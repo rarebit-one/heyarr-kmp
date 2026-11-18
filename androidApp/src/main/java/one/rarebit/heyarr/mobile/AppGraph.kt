@@ -6,6 +6,8 @@ import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
 import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.playback.PlayerRestore
+import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.core.playback.ResumeRecorder
 import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.mobile.net.AuthHeaderSource
@@ -14,6 +16,7 @@ import one.rarebit.heyarr.mobile.net.NsdMdnsResolver
 import one.rarebit.heyarr.mobile.net.OkHttpTransport
 import one.rarebit.heyarr.mobile.playback.AudioPlayer
 import one.rarebit.heyarr.mobile.playback.PlaybackProgress
+import one.rarebit.heyarr.mobile.playback.PrefsPlayerSnapshotStore
 import one.rarebit.heyarr.mobile.playback.PrefsResumeStore
 import one.rarebit.heyarr.mobile.playback.RenderCapabilityCache
 import one.rarebit.heyarr.mobile.playback.SessionAudioPlayer
@@ -86,7 +89,20 @@ class AppGraph(app: Application, scope: CoroutineScope) {
     /** Where each item was left on this phone (heyarr-kmp#232): Play resumes there, Home lists them. */
     val resumePoints: PrefsResumeStore = PrefsResumeStore(app)
 
-    private val resumeRecorder = ResumeRecorder(resumePoints, System::currentTimeMillis)
+    /** What the in-app player held when the app last left it: put back, paused, after process death. */
+    private val playerSnapshots = PrefsPlayerSnapshotStore(app)
+
+    private val resumeRecorder = ResumeRecorder(resumePoints, playerSnapshots, System::currentTimeMillis)
+
+    /**
+     * What a process that died was in the middle of (heyarr-kmp#232), read once as this one
+     * starts. [takeRestore] hands it over once: a rotation or a second activity must not put it
+     * back again over whatever has been played since.
+     */
+    private var restore: ResumePoint? =
+        playerSnapshots.read()?.takeIf { PlayerRestore.restorable(it, System.currentTimeMillis()) }
+
+    fun takeRestore(): ResumePoint? = restore.also { restore = null }
 
     /**
      * The in-app video player, app-scoped so the now-playing bar can carry it between screens.
@@ -96,6 +112,7 @@ class AppGraph(app: Application, scope: CoroutineScope) {
     val video: VideoSession by lazy {
         VideoSession(app, okHttp, scope, liveAuthorization = authHeader::current).also { v ->
             v.onProgress = { p -> recordResume(v, p) }
+            v.onStopped = resumeRecorder::stopped
         }
     }
 

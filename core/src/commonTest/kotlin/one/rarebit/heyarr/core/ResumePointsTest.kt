@@ -1,6 +1,8 @@
 package one.rarebit.heyarr.core
 
+import one.rarebit.heyarr.core.playback.InMemoryPlayerSnapshotStore
 import one.rarebit.heyarr.core.playback.InMemoryResumeStore
+import one.rarebit.heyarr.core.playback.PlayerRestore
 import one.rarebit.heyarr.core.playback.ResumeItem
 import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.core.playback.ResumePoints
@@ -96,5 +98,32 @@ class ResumePointsTest {
         assertEquals(ResumePolicy.KEEP, store.all().size)
         assertNull(store.get("as-0"), "the oldest went first")
         assertEquals(60.0, store.get("as-${ResumePolicy.KEEP + 4}")?.positionSeconds)
+    }
+
+    @Test fun theSnapshotFollowsEveryWriteAtAnyPositionAndStopClearsIt() {
+        val snapshots = InMemoryPlayerSnapshotStore()
+        val r = ResumeRecorder(store, snapshots) { now }
+        r.checkpoint(film, 12.0, 6000.0)
+        assertNull(store.get("as-uhd"), "too early for a resume point")
+        assertEquals(12.0, snapshots.read()?.positionSeconds, "but the player is restored where it was")
+        now += 20_000
+        r.progress(e1, 300.0, 2700.0)
+        assertEquals("as-e1", snapshots.read()?.assetId, "the item in the player now")
+        r.stopped()
+        assertNull(snapshots.read(), "Stop: nothing to restore")
+        r.checkpoint(film, 1200.0, 6000.0)
+        r.ended(film)
+        assertNull(snapshots.read(), "the end: nothing to restore")
+    }
+
+    @Test fun aSnapshotIsRestoredForAWeekWhenItCanBePlayed() {
+        val p = ResumePoint(film, 100.0, 6000.0, now)
+        assertTrue(PlayerRestore.restorable(p, now + 60_000))
+        assertTrue(PlayerRestore.restorable(p, now + PlayerRestore.MAX_AGE_MS))
+        assertTrue(
+            !PlayerRestore.restorable(p, now + PlayerRestore.MAX_AGE_MS + 1),
+            "a week on: Continue watching only",
+        )
+        assertTrue(!PlayerRestore.restorable(p.copy(item = film.copy(blobHash = null)), now), "nothing to play")
     }
 }

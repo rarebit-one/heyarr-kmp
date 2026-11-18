@@ -338,6 +338,25 @@ class PlaybackCoordinatorTest {
         assertEquals("Start over", 0.0, c.nowPlaying.value!!.startSeconds, 0.0)
     }
 
+    @Test fun aRestoreAfterProcessDeathPutsTheSameFileBackPausedWhereItWas() {
+        val (c, _) = coordinator(emptyMap())
+        val item = ResumeItem("ep2", "show", "Show — S01E02", "series", hash, "video/mp4", "https://h.example/art")
+        c.restore(ResumePoint(item, 754.0, 2700.0, 1))
+        val np = c.nowPlaying.value!!
+        assertEquals("ep2", np.assetId)
+        assertEquals("where it was", 754.0, np.startSeconds, 0.0)
+        assertTrue("paused, in the bar", np.startPaused)
+        assertEquals("show", np.workId)
+        assertEquals("Show — S01E02", np.title)
+        assertEquals("https://h.example/art", np.artworkUrl)
+        assertTrue(
+            "planned afresh: the blob of the same file",
+            np.target.contentUrl.contains(hash.removePrefix("blake3:")),
+        )
+        c.playFile("Show — S01E02", "ep2", hash, "video/mp4", "series", workId = "show")
+        assertFalse("an ordinary play plays", c.nowPlaying.value!!.startPaused)
+    }
+
     @Test fun everyPlayIsANewRequestSoStartOverTwiceIsTwoPlays() {
         val (c, _) = coordinator(emptyMap())
         c.playFile("Film", "a1", hash, "video/mp4", "movie", startSeconds = 0.0)
