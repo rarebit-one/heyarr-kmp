@@ -218,6 +218,16 @@ fun HeyarrNavHost(
             queue != null -> audio.restoreQueue(queue.items, queue.index, queue.positionMs)
         }
     }
+    // The reader handed its book back after process death (heyarr-kmp#240, reader/ReaderStart):
+    // Android brought back only the reader, with no shell to sign this process in, so the shell
+    // opens the book again, the way a first open does. The device credential is adopted as the
+    // shell starts (DeviceEnrolment.attachDevice), past a biometric prompt if one is needed, so
+    // the reader waits for that to settle rather than fetch the book signed out.
+    LaunchedEffect(Unit) {
+        val book = graph.takeReaderReopen() ?: return@LaunchedEffect
+        withTimeoutOrNull(READER_REOPEN_WAIT_MS) { vm.enrolState.first { it !is EnrolUiState.Loading } }
+        context.startActivity(ReaderActivity.intent(context, book.assetId, book.url, book.title, book.format))
+    }
     LaunchedEffect(audioState.item?.assetId) {
         if (openPlayerOnAudio && audioState.item != null) {
             openPlayerOnAudio = false
@@ -850,3 +860,6 @@ private fun NavHostController.navigateTab(route: Route) {
 
 /** How long a restore after process death waits for the node to answer before planning anyway. */
 private const val RESTORE_WAIT_MS = 5_000L
+
+/** How long a book handed back by the reader waits for the device credential (a biometric prompt included). */
+private const val READER_REOPEN_WAIT_MS = 30_000L

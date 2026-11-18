@@ -80,15 +80,17 @@ jobs:
           disable-animations: true
           # Then the checks driven from outside the app's process (#232): the player after
           # process death (two instrumentations with the process dying between), a real network
-          # outage (Wi-Fi and mobile data off, against a server on this host), and the
-          # headphones going away (a protected broadcast, sent from a root shell). That one is
-          # last, as it restarts adbd as root.
+          # outage (Wi-Fi and mobile data off, against a server on this host), the headphones
+          # going away (a protected broadcast, sent from a root shell), and the EPUB reader after
+          # a real `am kill` in the background (#240; no instrumentation, which would force-stop
+          # the very activities it restores). The last two restart adbd as root, so they go last.
           script: |
             ./gradlew :androidApp:connectedDebugAndroidTest --no-daemon --stacktrace
             ./gradlew :androidApp:installDebug :androidApp:installDebugAndroidTest --no-daemon
             androidApp/scripts/process-death-check.sh
             androidApp/scripts/network-outage-check.sh
             androidApp/scripts/audio-noisy-check.sh
+            androidApp/scripts/reader-process-death-check.sh
 
       - name: Verify the smoke tests actually ran
         run: |
@@ -142,6 +144,10 @@ jobs:
               # The reader recreated from its saved state, as after process death, opens at its
               # page instead of failing to restore Readium's navigator (#232).
               (pkg + "ReaderRestoreTest", "theBookComesBackAtItsPageWhenTheActivityIsRecreated"),
+              # A book that will not open says why in words, clear of the bars, with Retry and
+              # Back, and Retry opens it (#240). The reader after a real process death runs from
+              # reader-process-death-check.sh, not here.
+              (pkg + "ReaderErrorTest", "aRefusedBookSaysSoClearOfTheBarsAndRetryOpensIt"),
           }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")

@@ -23,6 +23,7 @@ import one.rarebit.heyarr.mobile.playback.PrefsResumeStore
 import one.rarebit.heyarr.mobile.playback.RenderCapabilityCache
 import one.rarebit.heyarr.mobile.playback.SessionAudioPlayer
 import one.rarebit.heyarr.mobile.playback.VideoSession
+import one.rarebit.heyarr.mobile.reader.ReaderRequest
 import one.rarebit.heyarr.mobile.settings.PrefsSettingsStore
 import one.rarebit.heyarr.mobile.settings.SettingsStore
 import one.rarebit.heyarr.mobile.state.PhoneExternalMetadata
@@ -98,6 +99,20 @@ class AppGraph(app: Application, scope: CoroutineScope) {
         audioQueue.read()?.takeIf { PlayerRestore.fresh(it.updatedAtMs, System.currentTimeMillis()) }
 
     fun takeAudioRestore(): AudioQueueSnapshot? = audioRestore.also { audioRestore = null }
+
+    /**
+     * A book the reader handed back after process death (heyarr-kmp#240), for the shell to open
+     * again once it has signed this process in (ReaderStart). Memory only: the hand-off lasts
+     * from the reader finishing to the shell coming up, within one process.
+     */
+    @Volatile
+    private var readerReopen: ReaderRequest? = null
+
+    fun handBackReader(request: ReaderRequest) {
+        readerReopen = request
+    }
+
+    fun takeReaderReopen(): ReaderRequest? = readerReopen.also { readerReopen = null }
 
     /**
      * Render capabilities for the audio queue (heyarr-core ADR-0112), minted when a queue

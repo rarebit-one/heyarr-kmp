@@ -6,11 +6,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,10 +18,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -61,10 +65,12 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.mobile.HeyarrApp
+import one.rarebit.heyarr.mobile.MainActivity
 import one.rarebit.heyarr.mobile.R
 import one.rarebit.heyarr.mobile.playback.AudioItem
 import one.rarebit.heyarr.mobile.playback.AudioPlayer
@@ -74,6 +80,8 @@ import one.rarebit.heyarr.mobile.ui.components.Artwork
 import one.rarebit.heyarr.mobile.ui.components.clockShort
 import one.rarebit.heyarr.ui.components.DashedDivider
 import one.rarebit.heyarr.ui.components.IconButtonRound
+import one.rarebit.heyarr.ui.components.PrimaryButton
+import one.rarebit.heyarr.ui.components.SecondaryButton
 import one.rarebit.heyarr.ui.theme.MediaThemes
 import one.rarebit.heyarr.ui.theme.Tokens
 import org.readium.r2.navigator.Navigator
@@ -90,8 +98,6 @@ import org.readium.r2.streamer.PublicationOpener
 import org.readium.r2.streamer.parser.DefaultPublicationParser
 import java.io.File
 import java.util.concurrent.TimeUnit
-
-private const val READER_STATUS_PADDING_PX = 48
 
 /** What the PDF reader keeps clear of: the status and navigation bars, and the display cutout. */
 private val READER_INSET_TYPES = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
@@ -111,7 +117,13 @@ class ReaderActivity :
     PdfReaderFragment.Host {
 
     private var publication: Publication? = null
-    private var status: TextView? = null
+    private var request: ReaderRequest? = null
+    private var container: FrameLayout? = null
+    private var statusView: View? = null
+    private var opening: Job? = null
+
+    /** What shows while no book is on screen: opening, or why it could not be opened. */
+    private var status by mutableStateOf<ReaderStatus>(ReaderStatus.Opening(OPENING))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // Nothing is restored from the saved state, on purpose (heyarr-kmp#232). After a rotation
@@ -122,7 +134,19 @@ class ReaderActivity :
         // (ReadingPositionStore, written as the page moves), which is where it was.
         super.onCreate(null)
         val app = application as HeyarrApp
+        val request = requestOf(intent) ?: return finish()
+        this.request = request
+        // After process death, though, a fresh open here would be a signed-out one (#240): the
+        // shell that signs this process in was not brought back with the reader. It opens the
+        // book again instead (ReaderStart).
+        val start = ReaderStart.of(
+            restored = savedInstanceState != null,
+            firstScreenInProcess = app.activitiesCreated == 0,
+        )
+        if (start == ReaderStart.HAND_TO_SHELL) return handToShell(app, request)
+
         val container = FrameLayout(this).apply { id = R.id.reader_container }
+        this.container = container
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(android.graphics.Color.parseColor("#0A1410")) // Tokens.bgBase
@@ -142,29 +166,15 @@ class ReaderActivity :
             LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT),
         )
         setContentView(root)
-        if (ReaderFormat.fromExtra(intent.getStringExtra(EXTRA_FORMAT)) ==
-            ReaderFormat.PDF
-        ) {
-            fitPdfInsideSystemBars(root)
+        if (request.format == ReaderFormat.PDF) fitPdfInsideSystemBars(root)
+        statusView = ComposeView(this).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+            setContent {
+                HeyarrTheme(MediaThemes.of(one.rarebit.heyarr.core.theme.MediaType.BOOK)) {
+                    ReaderStatusPanel(status, onRetry = ::open, onBack = ::finish)
+                }
+            }
         }
-        val status = TextView(this).apply {
-            text = "Opening…"
-            setTextColor(android.graphics.Color.parseColor("#E6EBD7")) // Tokens.textPrimary
-            setBackgroundColor(android.graphics.Color.parseColor("#0A1410")) // Tokens.bgBase
-            setPadding(
-                READER_STATUS_PADDING_PX,
-                READER_STATUS_PADDING_PX,
-                READER_STATUS_PADDING_PX,
-                READER_STATUS_PADDING_PX,
-            )
-        }
-        container.addView(status)
-        this.status = status
-
-        val assetId = intent.getStringExtra(EXTRA_ASSET_ID) ?: return finish()
-        val url = intent.getStringExtra(EXTRA_URL) ?: return finish()
-        val title = intent.getStringExtra(EXTRA_TITLE) ?: ""
-        val format = ReaderFormat.fromExtra(intent.getStringExtra(EXTRA_FORMAT))
 
         onBackPressedDispatcher.addCallback(
             this,
@@ -176,13 +186,55 @@ class ReaderActivity :
                 }
             },
         )
-        setTitle(title)
+        setTitle(request.title)
+        open()
+    }
 
-        if (format == ReaderFormat.PDF) {
-            openPdf(app, assetId, url, container, status)
-        } else {
-            openReadium(app, assetId, url, container, status)
+    /**
+     * Leave the book to the shell (ReaderStart.HAND_TO_SHELL) and finish. The shell is
+     * normally the record under this one in the task, and Android creates it from its own
+     * saved state as this one goes; it takes the book from AppGraph once it has signed in and
+     * opens it again. A reader that was its task's root has no shell under it, so one is
+     * started.
+     */
+    private fun handToShell(app: HeyarrApp, request: ReaderRequest) {
+        Log.i(LOG_TAG, "restored after process death: handing ${request.assetId} to the shell to reopen")
+        app.graph.handBackReader(request)
+        if (isTaskRoot) startActivity(Intent(this, MainActivity::class.java))
+        finish()
+    }
+
+    /**
+     * Open the book from the start of the pipeline: a first open, and Retry. Whatever an
+     * earlier attempt left (its navigator or viewer, the PDF search button, a parsed
+     * publication) goes first, so a retry is the same as opening it afresh.
+     */
+    private fun open() {
+        val request = request ?: return
+        val container = container ?: return
+        opening?.cancel()
+        supportFragmentManager.findFragmentByTag(TAG_READER)?.let {
+            supportFragmentManager.beginTransaction().remove(it).commitNow()
         }
+        publication?.close()
+        publication = null
+        container.removeAllViews()
+        status = ReaderStatus.Opening(OPENING)
+        container.addView(statusView)
+        val app = application as HeyarrApp
+        opening = if (request.format == ReaderFormat.PDF) {
+            openPdf(app, request.assetId, request.url, container)
+        } else {
+            openReadium(app, request.assetId, request.url, container)
+        }
+    }
+
+    /** Say why the book is not on screen, with Retry and Back, over whatever is there. */
+    private fun fail(problem: ReaderProblem) {
+        status = ReaderStatus.Failed(problem)
+        val view = statusView ?: return
+        if (view.parent == null) container?.addView(view)
+        view.bringToFront()
     }
 
     /**
@@ -211,7 +263,7 @@ class ReaderActivity :
      * show it. The shared client's 30 s call timeout suits API reads, not a whole book, so
      * the download drops it and keeps only a per-read timeout.
      */
-    private fun openPdf(app: HeyarrApp, assetId: String, url: String, container: FrameLayout, status: TextView) {
+    private fun openPdf(app: HeyarrApp, assetId: String, url: String, container: FrameLayout): Job =
         lifecycleScope.launch {
             val client = app.graph.okHttp.newBuilder()
                 .callTimeout(0, TimeUnit.SECONDS)
@@ -219,13 +271,14 @@ class ReaderActivity :
                 .build()
             val file = try {
                 PdfDownload(client, File(cacheDir, PDF_CACHE_DIR)).fetch(url) { percent ->
-                    status.post { status.text = "Downloading… $percent%" }
+                    container.post { status = ReaderStatus.Opening("Downloading… $percent%") }
                 }
             } catch (e: PdfDownload.Failed) {
-                status.text = "Could not fetch the file: ${e.message}"
+                Log.w(LOG_TAG, "could not fetch $assetId: ${e.message}", e)
+                fail(ReaderProblem.of(e))
                 return@launch
             }
-            container.removeView(status)
+            container.removeView(statusView)
             val fragment = PdfReaderFragment.newInstance(assetId)
             supportFragmentManager.beginTransaction().replace(R.id.reader_container, fragment, TAG_READER).commitNow()
             fragment.documentUri = Uri.fromFile(file)
@@ -257,22 +310,19 @@ class ReaderActivity :
                 ),
             )
         }
+
+    override fun onPdfFailed(error: Throwable) {
+        Log.w(LOG_TAG, "the PDF viewer could not open ${request?.assetId}", error)
+        fail(ReaderProblem.UNREADABLE)
     }
 
-    override fun onPdfFailed(reason: String) {
-        val container = findViewById<FrameLayout>(R.id.reader_container)
-        val status = status ?: return
-        status.text = "Could not open the file: $reason"
-        if (status.parent == null) container.addView(status)
-    }
-
-    private fun openReadium(app: HeyarrApp, assetId: String, url: String, container: FrameLayout, status: TextView) {
+    private fun openReadium(app: HeyarrApp, assetId: String, url: String, container: FrameLayout): Job {
         val positions = PrefsReadingPositionStore(this)
-        lifecycleScope.launch {
+        return lifecycleScope.launch {
             val http = ReaderHttp.client(baseUrl = { app.graph.baseUrl() }, header = { app.graph.authHeader.current() })
-            val pub = openPublication(http, url, status) ?: return@launch
+            val pub = openPublication(http, assetId, url) ?: return@launch
             publication = pub
-            container.removeView(status)
+            container.removeView(statusView)
 
             // Keep the locator on this phone so reopening a book on this device returns
             // to the same page. This location is neither reported nor synced to the node.
@@ -286,8 +336,11 @@ class ReaderActivity :
         }
     }
 
-    /** Fetch and parse the file at [url]; on failure say why in [status] and return null. */
-    private suspend fun openPublication(http: DefaultHttpClient, url: String, status: TextView): Publication? {
+    /**
+     * Fetch and parse the file at [url]. On failure, log Readium's error chain and show
+     * the [ReaderProblem] it maps to; return null.
+     */
+    private suspend fun openPublication(http: DefaultHttpClient, assetId: String, url: String): Publication? {
         val retriever = AssetRetriever(contentResolver, http)
         val opener = PublicationOpener(
             publicationParser = DefaultPublicationParser(
@@ -299,16 +352,19 @@ class ReaderActivity :
             ),
         )
         val absolute = AbsoluteUrl(url) ?: run {
-            status.text = "Not a URL: $url"
+            Log.w(LOG_TAG, "not a URL for $assetId: $url")
+            fail(ReaderProblem.UNREADABLE)
             return null
         }
         val asset = retriever.retrieve(absolute).getOrElse {
-            status.text = "Could not fetch the file: $it"
+            Log.w(LOG_TAG, "could not fetch $assetId: ${describe(it)}")
+            fail(ReaderProblem.of(it))
             null
         }
         return asset?.let { fetched ->
             opener.open(fetched, allowUserInteraction = false).getOrElse {
-                status.text = "Could not open the file: $it"
+                Log.w(LOG_TAG, "could not open $assetId: ${describe(it)}")
+                fail(ReaderProblem.of(it))
                 null
             }
         }
@@ -327,8 +383,29 @@ class ReaderActivity :
         /** The [ReaderFormat] name the detail screen decided from the asset; PDF picks the PDF viewer. */
         const val EXTRA_FORMAT = "format"
         private const val TAG_READER = "reader"
+        private const val LOG_TAG = "HeyarrReader"
+        private const val OPENING = "Opening…"
         private const val PDF_CACHE_DIR = "reader-pdf"
         private const val PDF_READ_TIMEOUT_SECONDS = 60L
+
+        /** The book [intent] names, or null when it names none. */
+        private fun requestOf(intent: Intent): ReaderRequest? {
+            val assetId = intent.getStringExtra(EXTRA_ASSET_ID)
+            val url = intent.getStringExtra(EXTRA_URL)
+            if (assetId == null || url == null) return null
+            return ReaderRequest(
+                assetId,
+                url,
+                intent.getStringExtra(EXTRA_TITLE).orEmpty(),
+                ReaderFormat.fromExtra(intent.getStringExtra(EXTRA_FORMAT)),
+            )
+        }
+
+        /** Readium's error and its causes, for the log: their messages, never their class names. */
+        private fun describe(error: org.readium.r2.shared.util.Error): String =
+            generateSequence(error) { it.cause }.take(MAX_CAUSES_LOGGED).joinToString(" <- ") { it.message }
+
+        private const val MAX_CAUSES_LOGGED = 8
 
         fun intent(
             context: Context,
@@ -339,6 +416,46 @@ class ReaderActivity :
         ): Intent = Intent(context, ReaderActivity::class.java)
             .putExtra(EXTRA_ASSET_ID, assetId).putExtra(EXTRA_URL, url).putExtra(EXTRA_TITLE, title)
             .putExtra(EXTRA_FORMAT, format?.name)
+    }
+}
+
+/** What the reader shows while it has no book on screen. */
+sealed interface ReaderStatus {
+    data class Opening(val label: String) : ReaderStatus
+
+    data class Failed(val problem: ReaderProblem) : ReaderStatus
+}
+
+/**
+ * Opening, or why the book could not be opened, with Retry and Back. Padded clear of the status
+ * and navigation bars and the cutout (#240): on Android 15 a targetSdk 35 app is drawn edge to
+ * edge, and the old status text sat under the clock. Where the PDF path has padded the whole
+ * reader already, those insets arrive consumed and this adds nothing.
+ */
+@Composable
+private fun ReaderStatusPanel(status: ReaderStatus, onRetry: () -> Unit, onBack: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().background(Tokens.bgBase)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        when (status) {
+            is ReaderStatus.Opening -> Text(
+                status.label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Tokens.textPrimary,
+            )
+
+            is ReaderStatus.Failed -> {
+                Text(status.problem.title, style = MaterialTheme.typography.titleMedium, color = Tokens.textPrimary)
+                Text(status.problem.detail, style = MaterialTheme.typography.bodyMedium, color = Tokens.textMuted)
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    PrimaryButton("Retry", onRetry)
+                    SecondaryButton("Back", onBack)
+                }
+            }
+        }
     }
 }
 

@@ -26,9 +26,12 @@ import one.rarebit.heyarr.mobile.R
  */
 class PdfReaderFragment : PdfViewerFragment() {
 
-    /** Told when the file cannot be opened (corrupt, or password-protected and dismissed). */
+    /**
+     * Told when the file cannot be opened (corrupt, or password-protected and dismissed). The
+     * host logs [error] and shows the person a [ReaderProblem], not the error itself (#240).
+     */
     fun interface Host {
-        fun onPdfFailed(reason: String)
+        fun onPdfFailed(error: Throwable)
     }
 
     private val assetId: String? get() = arguments?.getString(ARG_ASSET_ID)
@@ -121,7 +124,7 @@ class PdfReaderFragment : PdfViewerFragment() {
 
     override fun onLoadDocumentError(error: Throwable) {
         super.onLoadDocumentError(error)
-        (activity as? Host)?.onPdfFailed(error.message ?: error.javaClass.simpleName)
+        (activity as? Host)?.onPdfFailed(error)
     }
 
     companion object {
