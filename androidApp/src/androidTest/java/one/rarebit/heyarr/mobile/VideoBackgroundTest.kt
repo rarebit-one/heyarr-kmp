@@ -110,6 +110,27 @@ class VideoBackgroundTest {
         assertNull("no error on return", main { video.state.error })
     }
 
+    /**
+     * The screen going off mid-film, then on again (#232 scenario 4): the same stop as HOME, so
+     * the film pauses and lets go of its decoder while the screen is off, and carries on from
+     * the same place once the phone is woken and unlocked.
+     */
+    @Test fun aFilmPausesWhileTheScreenIsOffAndCarriesOnWhenItComesBack() {
+        awaitPlayingPast(PLAYED_BEFORE_MS)
+        val ui = instrumentation.uiAutomation
+        ui.executeShellCommand("input keyevent KEYCODE_SLEEP").close()
+        await("let go of its decoder with the screen off") { video.player == null && video.state.paused }
+        val left = main { video.state.positionMs }
+        SystemClock.sleep(SCREEN_OFF_MS)
+        assertEquals("paused where it was left", left, main { video.state.positionMs })
+        ui.executeShellCommand("input keyevent KEYCODE_WAKEUP").close()
+        ui.executeShellCommand("wm dismiss-keyguard").close()
+        await("playing again once the phone is woken") { video.player?.isPlaying == true }
+        val resumedAt = main { video.player!!.currentPosition }
+        assertTrue("resumed at $resumedAt, left at $left", resumedAt >= left - SEEK_SLACK_MS)
+        assertNull("no error on return", main { video.state.error })
+    }
+
     @Test fun aDecoderFailureIsRetriedOnceByItself() {
         awaitPlayingPast(PLAYED_BEFORE_MS)
         val failedAt = main { video.state.positionMs }
@@ -164,6 +185,7 @@ class VideoBackgroundTest {
         const val PLAYED_BEFORE_MS = 3_000L
         const val PLAYED_AFTER_MS = 2_000L
         const val BACKGROUND_MS = 5_000L
+        const val SCREEN_OFF_MS = 3_000L
         const val SEEK_SLACK_MS = 1_000L
         const val TIMEOUT_MS = 20_000L
         const val POLL_MS = 100L

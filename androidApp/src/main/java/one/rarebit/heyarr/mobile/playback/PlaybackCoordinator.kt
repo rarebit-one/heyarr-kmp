@@ -21,6 +21,7 @@ import one.rarebit.heyarr.core.playback.ResumeStore
 import one.rarebit.heyarr.mobile.consumption.ProgressReporter
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
+import one.rarebit.heyarr.mobile.library.WorkDetailClient
 
 /**
  * A resolved item the player is showing: its stream target, a display title, the asset
@@ -388,10 +389,28 @@ class PlaybackCoordinator(
      */
     private fun present(np: NowPlaying, knownStart: Double? = null) {
         scope.launch {
-            val start = knownStart ?: resumeStart(np) ?: 0.0
-            np.assetId?.let { reporter.begin(it, np.verb) }
-            _nowPlaying.value = np.copy(startSeconds = start.coerceAtLeast(0.0), request = ++requests)
+            val full = withCopies(np)
+            val start = knownStart ?: resumeStart(full) ?: 0.0
+            full.assetId?.let { reporter.begin(it, full.verb) }
+            _nowPlaying.value = full.copy(startSeconds = start.coerceAtLeast(0.0), request = ++requests)
         }
+    }
+
+    /**
+     * A film that comes back by its file alone (put back after process death, a Continue
+     * watching card) carries no list of its copies, so the player had no Version menu for it
+     * (heyarr-kmp#232 item 6). List them again, as the detail screen does, and keep the copy it
+     * was left on, which is the copy chosen for it. Films only: a series' files are episodes,
+     * not copies. Without an answer from the node it plays as it came.
+     */
+    private suspend fun withCopies(np: NowPlaying): NowPlaying {
+        val workId = np.workId?.takeIf { np.kind == FILM && np.copies.isEmpty() } ?: return np
+        val assets = withContext(io) {
+            runCatching { WorkDetailClient(transport, baseUrl(), effectiveCred()).assetsForWork(workId) }.getOrNull()
+        }
+        val copies = Copies.of(assets.orEmpty())
+        val copy = copies.firstOrNull { it.asset.id == np.assetId }
+        return if (copy == null) np else np.copy(copies = copies, copy = copy)
     }
 
     private fun resumeStart(np: NowPlaying): Double? {
@@ -534,5 +553,6 @@ class PlaybackCoordinator(
 
     private companion object {
         const val DEFAULT_DISPLAY_HEIGHT = 1080
+        const val FILM = "movie"
     }
 }

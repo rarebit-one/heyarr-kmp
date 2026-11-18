@@ -59,6 +59,9 @@ class ProcessDeathTest {
         val server = ClipServer(clip.readBytes())
         val video = main { graph.video }
         val scenario = show(video)
+        // This copy picked for the film from the Version menu, as PlaybackCoordinator.switchCopy
+        // records it in the app's settings (#232 item 6).
+        main { graph.settings.choose(WORK, ASSET) }
         main { video.load(nowPlaying(server.url)) }
         await(video, "playing") { video.player?.isPlaying == true }
         main { video.seekTo(LEFT_AT_MS) }
@@ -87,6 +90,7 @@ class ProcessDeathTest {
         assertEquals(ASSET, point!!.assetId)
         assertEquals(WORK, point.workId)
         assertEquals((LEFT_AT_MS + 1_500) / 1000.0, point.positionSeconds, 1.5)
+        assertEquals("the Version picked for the film is still the one", ASSET, main { graph.settings.chosen(WORK) })
         assertEquals(
             "and the resume point, for Detail and Continue watching",
             point.positionSeconds,

@@ -15,6 +15,7 @@ import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.library.WorkDetailJson
 import one.rarebit.heyarr.mobile.playback.ClientCapabilities
 import one.rarebit.heyarr.mobile.playback.CopyPreferences
+import one.rarebit.heyarr.mobile.playback.InMemoryCopyChoiceStore
 import one.rarebit.heyarr.mobile.playback.PlaybackCoordinator
 import one.rarebit.heyarr.mobile.playback.PlaybackDiagnostics
 import one.rarebit.heyarr.mobile.playback.PlaybackTarget
@@ -363,17 +364,79 @@ class PlaybackCoordinatorTest {
         c.capabilities = caps
         c.playFile("Film", "a1", hash, "video/x-matroska", "movie", workId = "w1")
         val before = c.nowPlaying.value!!
-        val plans = t.calls.size
+        fun plans() = t.calls.filter { it.second.endsWith("/playback/plan") }
+        val before2 = plans().size
         c.refresh(atSeconds = 5400.0, play = true)
         val after = c.nowPlaying.value!!
-        assertEquals("asked the node again", plans + 1, t.calls.size)
-        assertTrue("for the same file", t.calls.last().third!!.contains("\"asset_id\":\"a1\""))
+        assertEquals("asked the node again", before2 + 1, plans().size)
+        assertTrue("for the same file", plans().last().third!!.contains("\"asset_id\":\"a1\""))
         assertEquals("a1", after.assetId)
         assertEquals("where it lapsed", 5400.0, after.startSeconds, 0.0)
         assertFalse("playing, as it was", after.startPaused)
         assertTrue("a new play the player will load", after.request != before.request)
         c.refresh(atSeconds = 5410.0, play = false)
         assertTrue("paused, as it was", c.nowPlaying.value!!.startPaused)
+    }
+
+    // ── The Version chosen, through everything else (heyarr-kmp#232 item 6) ─────────────
+
+    private val filmAssetsJson = """{"items":[""" +
+        """{"id":"uhd","edition_id":"e1","role":"primary","blob_hash":"$hash",""" +
+        """"filename":"Film.2160p.HDR.mkv","blob_mime":"video/x-matroska","blob_size":50000000000},""" +
+        """{"id":"fhd","edition_id":"e2","role":"primary","blob_hash":"$hash",""" +
+        """"filename":"Film.1080p.mkv","blob_mime":"video/x-matroska","blob_size":6000000000}]}"""
+
+    @Test fun theVersionChosenOutlivesTheProcessAndItsPointFollowsIt() {
+        val choices = InMemoryCopyChoiceStore()
+        val points = InMemoryResumeStore()
+        val (c, _) = coordinator(mapOf("POST /playback/plan" to HttpResponse(200, """{"mode":"direct"}""")))
+        c.copies = CopyPreferences(choices = choices)
+        c.resume = points
+        c.capabilities = caps
+        c.playCopy(film, c.copiesFor("w1", filmAssets(), "uhd")!!)
+        c.switchCopy(c.nowPlaying.value!!.copies.first { it.asset.id == "uhd" }, atSeconds = 754.0)
+        // What the player writes as it goes, then the process dies.
+        points.put(ResumePoint(ResumeItem("uhd", "w1", "Film", "movie", hash), 1800.0, 6000.0, 9))
+        // A new process: a new coordinator over the same stores, as the phone's are.
+        val (fresh, _) = coordinator(mapOf("POST /playback/plan" to HttpResponse(200, """{"mode":"direct"}""")))
+        fresh.copies = CopyPreferences(choices = choices)
+        fresh.resume = points
+        fresh.capabilities = caps
+        val choice = fresh.copiesFor("w1", filmAssets(), "uhd")!!
+        assertEquals("the copy chosen on this phone", "uhd", choice.picked.asset.id)
+        assertTrue("…and known to be chosen", choice.chosen)
+        fresh.playCopy(film, choice)
+        assertEquals("uhd", fresh.nowPlaying.value!!.assetId)
+        assertEquals("resumed on it, where it was", 1800.0, fresh.nowPlaying.value!!.startSeconds, 0.0)
+    }
+
+    @Test fun aFilmPutBackAfterProcessDeathHasItsVersionMenuAgain() {
+        val (c, t) = coordinator(mapOf("GET /works/w1/assets?limit=200" to HttpResponse(200, filmAssetsJson)))
+        c.restore(ResumePoint(ResumeItem("uhd", "w1", "Film", "movie", hash, "video/x-matroska"), 1800.0, 6000.0, 1))
+        val np = c.nowPlaying.value!!
+        assertEquals("the copy it was left on", "uhd", np.assetId)
+        assertEquals("both copies, for the Version menu", 2, np.copies.size)
+        assertEquals("uhd", np.copy?.asset?.id)
+        assertTrue(np.startPaused)
+        assertTrue("its copies were listed", t.calls.any { it.second.contains("/works/w1/assets") })
+        // And a lapse mid-film keeps them.
+        c.refresh(atSeconds = 1900.0, play = true)
+        assertEquals(2, c.nowPlaying.value!!.copies.size)
+        assertEquals("uhd", c.nowPlaying.value!!.copy?.asset?.id)
+    }
+
+    @Test fun aContinueCardForAnEpisodeDoesNotListItsSeriesAsCopies() {
+        val (c, t) = coordinator(emptyMap())
+        c.playFile("Show — S01E02", "ep2", hash, "video/mp4", "series", workId = "show")
+        assertTrue("an episode is not a film's copy", c.nowPlaying.value!!.copies.isEmpty())
+        assertFalse("nothing was asked", t.calls.any { it.second.contains("/assets") })
+    }
+
+    @Test fun aFilmTheNodeCannotListPlaysAsItCame() {
+        val (c, _) = coordinator(emptyMap()) // every read is a 404
+        c.restore(ResumePoint(ResumeItem("uhd", "w1", "Film", "movie", hash), 1800.0, 6000.0, 1))
+        assertEquals("uhd", c.nowPlaying.value!!.assetId)
+        assertTrue(c.nowPlaying.value!!.copies.isEmpty())
     }
 
     @Test fun everyPlayIsANewRequestSoStartOverTwiceIsTwoPlays() {
