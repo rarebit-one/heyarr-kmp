@@ -29,8 +29,11 @@ import java.security.MessageDigest
  * [keep] most recent PDFs stay; the system may also clear the cache dir at any time.
  */
 class PdfDownload(private val client: OkHttpClient, private val dir: File, private val keep: Int = DEFAULT_KEEP) {
-    /** A download that did not produce a file, with the reason the reader shows. */
-    class Failed(message: String, cause: Throwable? = null) : IOException(message, cause)
+    /**
+     * A download that did not produce a file. The message is for the log; the reader shows
+     * the [ReaderProblem] it maps to, which reads [status] when the node answered with one.
+     */
+    class Failed(message: String, cause: Throwable? = null, val status: Int? = null) : IOException(message, cause)
 
     /**
      * The local copy of [url], downloading it unless already cached. [onProgress] gets a
@@ -73,7 +76,7 @@ class PdfDownload(private val client: OkHttpClient, private val dir: File, priva
     }
 
     private fun bodyOf(response: Response): ResponseBody {
-        if (!response.isSuccessful) throw Failed("HTTP ${response.code}")
+        if (!response.isSuccessful) throw Failed("HTTP ${response.code}", status = response.code)
         return response.body ?: throw Failed("empty response")
     }
 

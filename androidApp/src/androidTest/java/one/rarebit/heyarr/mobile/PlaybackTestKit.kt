@@ -191,6 +191,9 @@ class ClipServer(
 
     fun url(token: String) = "$url?t=$token"
 
+    /** Refusing: every request is answered 401, as the node answers one with no credential (#240). */
+    @Volatile var refusing: Boolean = false
+
     /** Refuse [token] with 410 from now on, and drop the reads open on it so the next one asks. */
     fun expire(token: String) {
         expired.add(token)
@@ -231,6 +234,11 @@ class ClipServer(
             val line = reader.readLine() ?: return@use
             if (line.isEmpty()) break
             if (line.startsWith("Range:", ignoreCase = true)) range = line.substringAfter(':').trim()
+        }
+        if (refusing) {
+            val refused = "HTTP/1.1 401 Unauthorized\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"
+            client.getOutputStream().write(refused.toByteArray(Charsets.ISO_8859_1))
+            return@use
         }
         if (token in expired) {
             val gone = "HTTP/1.1 410 Gone\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"

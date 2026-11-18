@@ -1,7 +1,9 @@
 package one.rarebit.heyarr.mobile
 
+import android.app.Activity
 import android.app.Application
 import android.content.Intent
+import android.os.Bundle
 import android.os.Process
 import androidx.media3.common.util.UnstableApi
 import coil.ImageLoader
@@ -61,6 +63,15 @@ class HeyarrApp :
     /** The signed-in credential, if any, offered to the admin-registration lane of `/enrol`. */
     @Volatile
     var credentialProvider: () -> one.rarebit.heyarr.core.auth.Credential? = { null }
+
+    /**
+     * How many activities this process has created (heyarr-kmp#240). None, when an activity
+     * is handed a saved state, means Android started this process to bring that activity back
+     * after process death, with the shell under it not created (reader/ReaderStart).
+     */
+    @Volatile
+    var activitiesCreated: Int = 0
+        private set
 
     /** What to call this phone in the node's device registry. */
     @Volatile
@@ -145,6 +156,23 @@ class HeyarrApp :
         // so reading SharedPreferences (the pairing and login stores below) crashes it, and
         // no PDF ever loads (#162). Nothing app-wide belongs in that process.
         if (Process.isIsolated()) return
+        registerActivityLifecycleCallbacks(
+            object : ActivityLifecycleCallbacks {
+                // Post-created: counted once onCreate has returned, so an activity reading the
+                // count in its own onCreate sees only those created before it.
+                override fun onActivityPostCreated(activity: Activity, savedInstanceState: Bundle?) {
+                    activitiesCreated++
+                }
+
+                override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+                override fun onActivityStarted(activity: Activity) = Unit
+                override fun onActivityResumed(activity: Activity) = Unit
+                override fun onActivityPaused(activity: Activity) = Unit
+                override fun onActivityStopped(activity: Activity) = Unit
+                override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+                override fun onActivityDestroyed(activity: Activity) = Unit
+            },
+        )
         dropStaleImageCache()
         // Keep a foreground service up for exactly as long as a pairing is in flight.
         appScope.launch {
