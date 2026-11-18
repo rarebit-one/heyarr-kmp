@@ -189,14 +189,18 @@ class VideoSession(
 
     val active: Boolean get() = current != null
 
-    /** Begin (or replace) playback of [np]. The same asset on the same URL just resumes. */
+    /**
+     * Begin (or replace) playback of [np]. The same asset on the same URL just resumes, and
+     * is moved only when asked to start somewhere else: Start over on the film already in the
+     * bar, or a resume point well away from where it stands (heyarr-kmp#232).
+     */
     fun load(np: NowPlaying) {
-        val same =
-            current?.assetId != null && current?.assetId == np.assetId && target?.contentUrl == np.target.contentUrl
+        val same = isPlaying(np)
+        if (!same) leaveCurrent()
         current = np
         if (same && suspended != null) return // the app is in the background; onForeground resumes it
         if (same && player != null) {
-            player?.play()
+            reload(np)
             return
         }
         // A new item or a new copy: nothing that failed before counts against it.
@@ -209,6 +213,26 @@ class VideoSession(
         resumed = np.startSeconds <= 0 || t.restartSeekable
         val effective = if (t.restartSeekable && t.streamBaseUrl != null) t.atStreamStart(streamStart) else t
         start(effective, np.title)
+    }
+
+    /** [np] is the asset already loaded, on the same URL. */
+    private fun isPlaying(np: NowPlaying): Boolean =
+        current?.assetId != null && current?.assetId == np.assetId && target?.contentUrl == np.target.contentUrl
+
+    /** The item playing, asked for again: play on, moving only to a start well away from here. */
+    private fun reload(np: NowPlaying) {
+        val askedMs = (np.startSeconds * 1000).toLong()
+        if (kotlin.math.abs(askedMs - state.positionMs) > RELOAD_SEEK_SLACK_MS) seekTo(askedMs)
+        player?.play()
+    }
+
+    /**
+     * What is being replaced is left where it stands, so its resume point is exact rather than
+     * up to one save interval old: the next episode, another copy, another film (#232).
+     */
+    private fun leaveCurrent() {
+        if (current == null || (player == null && suspended == null)) return
+        onProgress(PlaybackProgress(sourceSeconds(), false, PlaybackProgress.Event.LEFT))
     }
 
     /**
@@ -332,12 +356,18 @@ class VideoSession(
 
     private fun bufferedMs(p: ExoPlayer): Long = streamOffsetMs() + p.bufferedPosition.coerceAtLeast(0)
 
-    /** The source position: a stream's own clock starts at its offset. */
+    /**
+     * The source position: a stream's own clock starts at its offset. Before a resumed
+     * player's first seek its clock reads zero, so the position it was started at stands in;
+     * reporting the zero would have written "back to the start" over a resume point.
+     */
     fun sourceSeconds(): Double {
         val p = player ?: return suspended?.let { it.positionMs / 1000.0 } ?: streamStart
-        val base = if (target?.origin == PlaybackTarget.Origin.STREAM) streamStart else 0.0
-        return base + p.currentPosition.coerceAtLeast(0L) / 1000.0
+        return sourcePositionMs(p) / 1000.0
     }
+
+    /** The runtime in seconds, when the player or the plan knows it; for the resume point. */
+    fun durationSeconds(): Double? = state.durationMs.takeIf { it > 0 }?.let { it / 1000.0 }
 
     private val listener = object : Player.Listener {
         override fun onTracksChanged(tracks: Tracks) {
@@ -519,7 +549,10 @@ class VideoSession(
         val at = sourcePositionMs(p)
         // The error showing, or a pause, comes back paused; playing comes back playing.
         val play = p.playWhenReady && state.error == null
-        if (p.isPlaying) onProgress(PlaybackProgress(at / 1000.0, false, PlaybackProgress.Event.PAUSED))
+        // Written down either way: a pause is a transition, and a paused film is a checkpoint
+        // (it may have been sought while paused). The process may not come back (#232).
+        val event = if (p.isPlaying) PlaybackProgress.Event.PAUSED else PlaybackProgress.Event.CHECKPOINT
+        onProgress(PlaybackProgress(at / 1000.0, false, event))
         suspended = Suspended(at, play, trackSelector?.parameters)
         release()
         state = state.copy(paused = true, buffering = false, positionMs = at)
@@ -738,5 +771,8 @@ class VideoSession(
 
     companion object {
         private const val PROGRESS_TICK_MS = 5_000L
+
+        /** How far a reload of the item playing must ask to start from where it is before it seeks. */
+        private const val RELOAD_SEEK_SLACK_MS = 15_000L
     }
 }

@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlaylistAdd
+import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarBorder
 import androidx.compose.material3.Icon
@@ -57,12 +58,14 @@ import one.rarebit.heyarr.core.mcp.ExternalId
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.Replica
 import one.rarebit.heyarr.core.mcp.Satisfaction
+import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.core.state.Availability
 import one.rarebit.heyarr.core.state.ExternalEpisode
 import one.rarebit.heyarr.core.state.ExternalMeta
 import one.rarebit.heyarr.core.state.MetaKey
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.heyarr.HeyarrApi
+import one.rarebit.heyarr.mobile.library.Episode
 import one.rarebit.heyarr.mobile.library.Season
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
@@ -77,7 +80,9 @@ import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.theme.Tokens
 import one.rarebit.heyarr.mobile.ui.components.Hero
 import one.rarebit.heyarr.mobile.ui.components.HeroSkeleton
+import one.rarebit.heyarr.mobile.ui.components.ResumeBar
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
+import one.rarebit.heyarr.mobile.ui.components.resumeLabel
 import one.rarebit.heyarr.ui.components.ErrorState
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.GetItButton
@@ -145,32 +150,63 @@ private class HeroWork(
 
     /** Play the series' first playable episode. */
     fun playFirst(play: DetailPlayback) {
-        val first = first ?: return
+        playEpisode(play, first ?: return, null)
+    }
+
+    /** Play [ep] from [startSeconds]; null resumes where it was left on this phone, 0 is Start over. */
+    fun playEpisode(play: DetailPlayback, ep: Episode, startSeconds: Double?) {
         play.playVideo(
-            work, first.asset.id, first.asset.blobHash!!,
-            first.asset.mime ?: work.mime,
+            work, ep.asset.id, ep.asset.blobHash!!,
+            ep.asset.mime ?: work.mime,
             Series.playTitle(
                 work,
-                first,
+                ep,
             ),
-            null, queueOf(work, seasons, session), art, first.subtitles,
+            startSeconds, queueOf(work, seasons, session), art, ep.subtitles,
         )
     }
 
     /**
-     * Play the work from the start: the copy of it that suits this phone when the work holds
-     * several (heyarr-kmp#225), else its primary file. The node's `primary_asset` is merely
-     * the oldest copy — a 2160p HDR remux, re-encoded on the fly for a 1080p screen.
+     * Play the work: the copy of it that suits this phone when the work holds several
+     * (heyarr-kmp#225), else its primary file. The node's `primary_asset` is merely the oldest
+     * copy — a 2160p HDR remux, re-encoded on the fly for a 1080p screen. [startSeconds] null
+     * resumes where the film was left on this phone, on any copy (heyarr-kmp#232); 0 starts over.
      */
-    fun playPrimary(play: DetailPlayback) {
+    fun playPrimary(play: DetailPlayback, startSeconds: Double? = null) {
         val choice = copies(play)
         if (choice != null && choice.picked.asset.blobHash != null) {
-            play.playCopy(work, choice, art, choice.chosen)
+            play.playCopy(work, choice, art, choice.chosen, startSeconds)
             return
         }
         play.playVideo(
-            work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, null, emptyList(), art, emptyList(),
+            work, work.primaryAssetId ?: hash!!, hash!!, work.mime, work.title, startSeconds, emptyList(), art,
+            emptyList(),
         )
+    }
+
+    /** The held episode a resume point is on, if it is still held and playable. */
+    fun episodeOf(point: ResumePoint): Episode? =
+        seasons.flatMap { it.episodes }.firstOrNull { it.asset.id == point.assetId && it.asset.blobHash != null }
+
+    /**
+     * Where this work was left on this phone (heyarr-kmp#232), when the hero's primary action
+     * would play it: a series' episode it still holds, or a film's (any copy of it). Null for
+     * music, books and feeds, which keep their own positions, and for nothing held.
+     */
+    fun resumePoint(play: DetailPlayback): ResumePoint? {
+        val point = play.resumePoint(work) ?: return null
+        return when {
+            type == MediaType.SERIES -> point.takeIf { episodeOf(it) != null }
+            playsAlbum || listensToBook || isFeed || hash == null -> null
+            type == MediaType.BOOK && readable != null -> null
+            else -> point
+        }
+    }
+
+    /** Start over: the same episode, or the same film, from 0:00. */
+    fun startOver(play: DetailPlayback, point: ResumePoint) {
+        val ep = episodeOf(point)
+        if (ep != null) playEpisode(play, ep, 0.0) else playPrimary(play, 0.0)
     }
 }
 
@@ -240,6 +276,7 @@ internal fun DetailHero(
 ) {
     val scope = rememberCoroutineScope()
     val h = HeroWork(session, work, type, state, seasons, art)
+    val resume = h.resumePoint(play)
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Hero(
@@ -249,7 +286,7 @@ internal fun DetailHero(
             artwork = art,
             availability = h.availability,
             height = 300.dp,
-            primary = { HeroPrimary(h, play) { onGetIt(work.id, work.title, type) } },
+            primary = { HeroPrimary(h, play, resume) { onGetIt(work.id, work.title, type) } },
             secondary = {
                 val castId = h.castId
                 if (castId != null && type != MediaType.BOOK &&
@@ -261,23 +298,53 @@ internal fun DetailHero(
                 }
             },
         )
+        resume?.let { ResumeLine(it) { h.startOver(play, it) } }
         notHeldNote(h.availability)?.let { Notice(it, tone = Tokens.slate) }
         CastPicker(session, state)
     }
 }
 
-/** The hero's one primary action: play, listen or read what is held — else Get it, or its progress in Manage. */
+/**
+ * Where this phone left the work (heyarr-kmp#232): how far in, and Start over. Resume is the
+ * default (the hero's primary button), as on every player people know; starting again is
+ * the deliberate choice beside it.
+ */
 @Composable
-private fun HeroPrimary(h: HeroWork, play: DetailPlayback, onGetIt: () -> Unit) {
+private fun ResumeLine(point: ResumePoint, onStartOver: () -> Unit) {
+    MediaScope(MediaType.from(point.item.kind ?: "movie")) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            point.fraction?.let { ResumeBar(it) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    resumeLabel(point),
+                    Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Tokens.textMuted,
+                )
+                GhostButton("Start over", onStartOver, icon = Icons.Rounded.Replay)
+            }
+        }
+    }
+}
+
+/**
+ * The hero's one primary action: play, listen or read what is held — else Get it, or its
+ * progress in Manage. With [resume] (heyarr-kmp#232) it is Resume: the film where it was
+ * left, or the series' episode left part-way.
+ */
+@Composable
+private fun HeroPrimary(h: HeroWork, play: DetailPlayback, resume: ResumePoint?, onGetIt: () -> Unit) {
     val type = h.type
     val work = h.work
     val theme = MediaThemes.of(type)
     val idle = h.state.busy == null
+    // A series resumes the episode it was left on, else plays its first.
+    val episode = resume?.let(h::episodeOf) ?: h.first
     when {
-        type == MediaType.SERIES && h.first != null ->
+        type == MediaType.SERIES && episode != null ->
             PrimaryButton(
-                "Play ${h.first.code ?: ""}".trim(),
-                { h.playFirst(play) },
+                "${if (resume != null) "Resume" else "Play"} ${episode.code ?: ""}".trim(),
+                { h.playEpisode(play, episode, null) },
                 icon = Icons.Rounded.PlayArrow,
                 enabled = idle,
             )
@@ -303,7 +370,12 @@ private fun HeroPrimary(h: HeroWork, play: DetailPlayback, onGetIt: () -> Unit) 
         h.isFeed ->
             PrimaryButton(theme.ctaLabel, { h.playPrimary(play) }, icon = Icons.Rounded.OpenInNew, enabled = idle)
 
-        else -> PrimaryButton(theme.ctaLabel, { h.playPrimary(play) }, icon = Icons.Rounded.PlayArrow, enabled = idle)
+        else -> PrimaryButton(
+            if (resume != null) "Resume" else theme.ctaLabel,
+            { h.playPrimary(play) },
+            icon = Icons.Rounded.PlayArrow,
+            enabled = idle,
+        )
     }
 }
 

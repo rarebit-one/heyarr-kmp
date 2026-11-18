@@ -14,6 +14,9 @@ import one.rarebit.heyarr.core.playback.Copies
 import one.rarebit.heyarr.core.playback.Copy
 import one.rarebit.heyarr.core.playback.DisplayFit
 import one.rarebit.heyarr.core.playback.QualityPreference
+import one.rarebit.heyarr.core.playback.ResumeItem
+import one.rarebit.heyarr.core.playback.ResumePoints
+import one.rarebit.heyarr.core.playback.ResumeStore
 import one.rarebit.heyarr.mobile.consumption.ProgressReporter
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
@@ -46,7 +49,17 @@ data class NowPlaying(
     val copy: Copy<WorkAsset>? = null,
     /** The `max_height` the plan declared, so a re-plan asks for the same picture. */
     val maxHeight: Int? = null,
-)
+    /**
+     * Which play this is, counted by the coordinator: two presses of Start over on the same
+     * film are two requests, and an identical value would be swallowed by the state flow.
+     */
+    val request: Int = 0,
+) {
+    /** What a resume point of this item is about (heyarr-kmp#232); null without an asset to key it by. */
+    fun resumeItem(): ResumeItem? = assetId?.let {
+        ResumeItem(it, workId, title, kind, blobHash, target.mimeType, artworkUrl)
+    }
+}
 
 /** A film's copies as this phone sees them — `:core`'s, over the phone's asset model. */
 typealias CopyChoice = one.rarebit.heyarr.core.playback.CopyChoice<WorkAsset>
@@ -79,6 +92,15 @@ class PlaybackCoordinator(
 
     private val copyChoices: CopyChoiceStore get() = copies.choices
 
+    /**
+     * Where each item was left on this phone (heyarr-kmp#232): a play the caller gave no
+     * position for resumes there. Null (tests, previews) starts every play at the beginning.
+     */
+    @Volatile
+    var resume: ResumeStore? = null
+
+    private var requests = 0
+
     private fun preference(): QualityPreference = copies.preference()
 
     /**
@@ -101,16 +123,23 @@ class PlaybackCoordinator(
         Copies.choose(assets, display, preference(), copyChoices.chosen(workId), defaultId)
 
     /**
-     * Play [work] from the start on [choice]'s picked copy, carrying every copy so the player
-     * can offer the others. [chosen] marks a copy the person picked just now (the detail
-     * screen's list), which is remembered for the work like a Version-menu switch.
+     * Play [work] on [choice]'s picked copy, carrying every copy so the player can offer the
+     * others. [chosen] marks a copy the person picked just now (the detail screen's list),
+     * which is remembered for the work like a Version-menu switch. [startSeconds] null resumes
+     * where the film was left on this phone, on whichever copy; 0 is Start over.
      */
-    fun playCopy(work: Work, choice: CopyChoice, artworkUrl: String? = null, chosen: Boolean = choice.chosen) {
+    fun playCopy(
+        work: Work,
+        choice: CopyChoice,
+        artworkUrl: String? = null,
+        chosen: Boolean = choice.chosen,
+        startSeconds: Double? = null,
+    ) {
         val copy = choice.picked
         val hash = copy.asset.blobHash ?: return
         if (chosen) copyChoices.choose(work.id, copy.asset.id)
         val mime = copy.asset.mime ?: work.mime
-        playCopyAt(work.id, work.title, work.kind, copy, choice.copies, hash, mime, chosen, 0.0, artworkUrl)
+        playCopyAt(work.id, work.title, work.kind, copy, choice.copies, hash, mime, chosen, startSeconds, artworkUrl)
     }
 
     /**
@@ -140,7 +169,7 @@ class PlaybackCoordinator(
         hash: String,
         mime: String?,
         chosen: Boolean,
-        atSeconds: Double,
+        atSeconds: Double?,
         artworkUrl: String?,
     ) {
         val client = PlaybackClient(transport, baseUrl(), effectiveCred())
@@ -233,11 +262,12 @@ class PlaybackCoordinator(
                     blobHash = hash,
                     verb = verbFor(isVideo),
                     kind = work.kind,
+                    workId = work.id,
                 ),
             )
             return
         }
-        resolveInto(client, assetId, hash, isVideo, work.mime, work.title, caps, kind = work.kind)
+        resolveInto(client, assetId, hash, isVideo, work.mime, work.title, caps, kind = work.kind, workId = work.id)
     }
 
     /** Play one of a work's files: the asset's own blob hash and MIME drive the target. */
@@ -263,18 +293,23 @@ class PlaybackCoordinator(
                     blobHash = hash,
                     verb = verbFor(isVideo),
                     kind = work.kind,
+                    workId = work.id,
                 ),
             )
             return
         }
-        resolveInto(client, asset.id, hash, isVideo, mime, title, caps, kind = work.kind, subtitles = subs)
+        resolveInto(
+            client, asset.id, hash, isVideo, mime, title, caps, kind = work.kind, subtitles = subs, workId = work.id,
+        )
     }
 
     /**
      * Play a file the caller already resolved to an asset and blob — an episode hit or a
      * continue card. Same plan/fallback path as [playAsset]; [kind] steers video-vs-audio
-     * when the MIME does not.
+     * when the MIME does not. [workId] files the resume point under its work, so a series'
+     * episodes share one Continue watching card.
      */
+    @Suppress("LongParameterList") // one resolved file: what it is, from where, and whose
     fun playFile(
         title: String,
         assetId: String,
@@ -284,6 +319,7 @@ class PlaybackCoordinator(
         startSeconds: Double? = null,
         artworkUrl: String? = null,
         subtitles: List<WorkAsset> = emptyList(),
+        workId: String? = null,
     ) {
         val cred = effectiveCred()
         val isVideo = PlaybackTarget.looksLikeVideo(mime, kind)
@@ -300,6 +336,7 @@ class PlaybackCoordinator(
                     verb = verbFor(isVideo),
                     kind = kind,
                     artworkUrl = artworkUrl,
+                    workId = workId,
                 ),
                 startSeconds,
             )
@@ -317,18 +354,28 @@ class PlaybackCoordinator(
             kind = kind,
             artworkUrl = artworkUrl,
             subtitles = subs,
+            workId = workId,
         )
     }
 
     /**
-     * Put an item in front at the caller's explicit offset, or from the beginning.
+     * Put an item in front at the caller's explicit offset; without one, where it was left on
+     * this phone (on any copy of the same film), else from the beginning (heyarr-kmp#232). The
+     * lookup is made here, after the plan, because only now is the copy known.
      */
     private fun present(np: NowPlaying, knownStart: Double? = null) {
         scope.launch {
-            val start = knownStart ?: 0.0
+            val start = knownStart ?: resumeStart(np) ?: 0.0
             np.assetId?.let { reporter.begin(it, np.verb) }
-            _nowPlaying.value = np.copy(startSeconds = start.coerceAtLeast(0.0))
+            _nowPlaying.value = np.copy(startSeconds = start.coerceAtLeast(0.0), request = ++requests)
         }
+    }
+
+    private fun resumeStart(np: NowPlaying): Double? {
+        val store = resume
+        val assetId = np.assetId
+        if (store == null || assetId == null) return null
+        return ResumePoints.startFor(store, assetId, np.copies.map { it.asset.id })
     }
 
     private fun verbFor(isVideo: Boolean) = if (isVideo) "watch" else "listen"
@@ -339,6 +386,7 @@ class PlaybackCoordinator(
     fun reportResume(seconds: Double) = reporter.resume(seconds)
     fun reportEnded(seconds: Double, completed: Boolean) = reporter.end(seconds, completed)
 
+    @Suppress("LongParameterList") // the NowPlaying it builds, field by field
     private fun resolveInto(
         client: PlaybackClient,
         assetId: String,
@@ -351,6 +399,7 @@ class PlaybackCoordinator(
         kind: String? = null,
         artworkUrl: String? = null,
         subtitles: List<PlaybackTarget.Sidecar> = emptyList(),
+        workId: String? = null,
     ) {
         // Every other play (an episode, a continue card) declares the screen as the
         // preference caps it; only a film's copies lift it to the copy (`playCopyAt`).
@@ -364,6 +413,7 @@ class PlaybackCoordinator(
             kind = kind,
             artworkUrl = artworkUrl,
             maxHeight = maxHeight,
+            workId = workId,
         )
         resolveInto(client, np, caps.forMaxHeight(maxHeight), knownStart)
     }

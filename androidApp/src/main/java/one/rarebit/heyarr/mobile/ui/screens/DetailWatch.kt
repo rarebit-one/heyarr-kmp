@@ -366,7 +366,7 @@ internal fun FileBlock(work: Work, state: DetailState, play: DetailPlayback, art
         if (choice != null && choice.copies.size > 1) {
             for (copy in choice.copies) {
                 CopyRow(copy, copy == choice.picked) {
-                    play.playCopy(work, choice.copy(picked = copy), art, true)
+                    play.playCopy(work, choice.copy(picked = copy), art, true, null)
                 }
             }
         } else {

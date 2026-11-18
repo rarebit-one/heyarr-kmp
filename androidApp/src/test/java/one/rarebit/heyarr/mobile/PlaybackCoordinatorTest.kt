@@ -6,7 +6,10 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpResponse
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.playback.InMemoryResumeStore
 import one.rarebit.heyarr.core.playback.QualityPreference
+import one.rarebit.heyarr.core.playback.ResumeItem
+import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
 import one.rarebit.heyarr.mobile.library.WorkDetailJson
@@ -295,6 +298,54 @@ class PlaybackCoordinatorTest {
         assertNotNull(c.nowPlaying.value)
         c.stop()
         assertNull(c.nowPlaying.value)
+    }
+
+    // ── Resume (heyarr-kmp#232) ──────────────────────────────────────────────────────
+
+    private fun leftAt(assetId: String, seconds: Double, at: Long, workId: String? = "w1") =
+        ResumePoint(ResumeItem(assetId, workId, "Film"), seconds, 6000.0, at)
+
+    @Test fun aPlayWithNoPositionResumesWhereThisPhoneLeftIt() {
+        val (c, _) = coordinator(emptyMap())
+        c.resume = InMemoryResumeStore().apply { put(leftAt("a1", 1439.0, 1)) }
+        c.play(Work(id = "w1", title = "Film", blobHash = hash, mime = "video/mp4", primaryAssetId = "a1"))
+        assertEquals("resumed by default", 1439.0, c.nowPlaying.value!!.startSeconds, 0.0)
+        assertEquals("filed under its work", "w1", c.nowPlaying.value!!.workId)
+    }
+
+    @Test fun startOverAndAnExplicitPositionWinOverTheResumePoint() {
+        val (c, _) = coordinator(emptyMap())
+        c.resume = InMemoryResumeStore().apply { put(leftAt("ep2", 900.0, 1)) }
+        c.playFile("Show — S01E02", "ep2", hash, "video/mp4", "series", startSeconds = 0.0, workId = "show")
+        assertEquals("Start over", 0.0, c.nowPlaying.value!!.startSeconds, 0.0)
+        c.playFile("Show — S01E02", "ep2", hash, "video/mp4", "series", startSeconds = 120.0, workId = "show")
+        assertEquals(120.0, c.nowPlaying.value!!.startSeconds, 0.0)
+        c.playFile("Show — S01E03", "ep3", hash, "video/mp4", "series", workId = "show")
+        assertEquals("another episode starts at the beginning", 0.0, c.nowPlaying.value!!.startSeconds, 0.0)
+    }
+
+    @Test fun aFilmResumesOnTheCopyItPlaysWhereverItWasLeft() {
+        val node = PlanNode(HttpResponse(400, "{}"), HttpResponse(200, """{"mode":"direct"}"""))
+        val c = PlaybackCoordinator(node, { base }, { Credential.Session("tok") }, scope, dispatcher)
+        c.capabilities = caps.copy(maxHeight = 1080, supportsHdr = true)
+        // Left on the 2160p copy on another evening; this phone now plays the 1080p one.
+        c.resume = InMemoryResumeStore().apply { put(leftAt("uhd", 2000.0, 5)) }
+        c.playCopy(film, c.copiesFor("w1", filmAssets(), "uhd")!!)
+        val np = c.nowPlaying.value!!
+        assertEquals("fhd", np.assetId)
+        assertEquals("the film's point, from its other copy", 2000.0, np.startSeconds, 0.0)
+        c.playCopy(film, c.copiesFor("w1", filmAssets(), "uhd")!!, startSeconds = 0.0)
+        assertEquals("Start over", 0.0, c.nowPlaying.value!!.startSeconds, 0.0)
+    }
+
+    @Test fun everyPlayIsANewRequestSoStartOverTwiceIsTwoPlays() {
+        val (c, _) = coordinator(emptyMap())
+        c.playFile("Film", "a1", hash, "video/mp4", "movie", startSeconds = 0.0)
+        val first = c.nowPlaying.value!!
+        c.playFile("Film", "a1", hash, "video/mp4", "movie", startSeconds = 0.0)
+        val second = c.nowPlaying.value!!
+        assertTrue("not swallowed by the state flow as an equal value", first != second)
+        assertEquals(first.copy(request = second.request), second)
     }
 }
 
