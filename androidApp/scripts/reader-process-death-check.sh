@@ -226,8 +226,24 @@ if grep -qE "org\.readium|RetrieveUrlError|Exception" <<<"$shown"; then
 fi
 echo "the refusal is shown in words, with Retry and Back"
 rm "$work/refuse"
-bounds=$(grep -o 'text="RETRY"[^>]*bounds="\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]"' <<<"$shown" | grep -o 'bounds="[^"]*"' | head -1)
-read -r x1 y1 x2 y2 < <(grep -oE '[0-9]+' <<<"$bounds" | tr '\n' ' ')
-adb shell input tap $(((x1 + x2) / 2)) $(((y1 + y2) / 2))
+# The centre of the RETRY button, from the dump's own bounds (parsed as XML, not grepped).
+tap=$(printf '%s' "$shown" | python3 -c '
+import re, sys, xml.etree.ElementTree as ET
+xml = sys.stdin.read()
+root = ET.fromstring(xml[xml.find("<"):])
+for node in root.iter("node"):
+    if node.get("text") == "RETRY" or node.get("content-desc") == "Retry":
+        x1, y1, x2, y2 = map(int, re.findall(r"\d+", node.get("bounds", "")))
+        print((x1 + x2) // 2, (y1 + y2) // 2)
+        break
+' || true)
+if [ -z "$tap" ]; then
+  echo "::error::no RETRY button to tap in the dump"
+  grep -o 'text="[^"]*"' <<<"$shown" | grep -v 'text=""' || true
+  exit 1
+fi
+read -r x y <<<"$tap"
+echo "tapping RETRY at $x,$y"
+adb shell input tap "$x" "$y"
 await_opened "after Retry"
 echo "reader-process-death-check passed"
