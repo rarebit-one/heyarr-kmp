@@ -2661,6 +2661,66 @@
      }
     }
    },
+   "patch": {
+    "tags": [
+     "content"
+    ],
+    "operationId": "updateLibrary",
+    "summary": "Rename a library in place. Requires `write`.",
+    "description": "Changes the library's name and nothing else: its id is its identity,\nand its roots and assets reference the id, so they are untouched\n(ADR-0124). The new name is trimmed and must be non-empty and unique,\nas at creation; a name another library holds is a `409`. Renaming to\nthe current name is a `200` that emits no event. `content_type` cannot\nbe changed in place and is refused as an unknown field. A library\ndeclared in the configuration file is reconciled by name at start, so\nit must be renamed there too or the next start recreates the old name.\n",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/id"
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "name": {
+          "type": "string",
+          "minLength": 1
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "The renamed library, with its roots.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Library"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     },
+     "409": {
+      "$ref": "#/components/responses/Conflict"
+     }
+    }
+   },
    "delete": {
     "tags": [
      "content"
@@ -5492,6 +5552,66 @@
     }
    }
   },
+  "/api/v1/probes/backfill": {
+   "post": {
+    "tags": [
+     "content"
+    ],
+    "operationId": "backfillProbes",
+    "summary": "Re-probe video whose probe cannot say whether it is HDR (#886).",
+    "description": "Queues a `probe_blob` job for every distinct blob of a managed video in\nscope whose stored probe records neither a `color_transfer` nor a\n`dolby_vision` record on any picture stream — including blobs never\nprobed at all.\n\nA probe runs at ingest and the bytes never change, so a rescan enqueues\nnothing. Probes taken before colour was recorded read as SDR: copy\nselection then offers an HDR remux to a screen that cannot show it, and\na re-encode of it skips the tone-map. This is the operator's lever to\nre-read them once.\n\nA scope is required — `library_id`, `work_id`, or `all`. A probe that\nalready answers is left alone, and a job already pending for a blob is\nnot duplicated, so a re-run is cheap. SDR video whose container declares\nno colour at all is re-probed on each run.\n",
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "properties": {
+         "library_id": {
+          "type": "string"
+         },
+         "work_id": {
+          "type": "string"
+         },
+         "all": {
+          "type": "boolean"
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "202": {
+      "description": "The probes were queued.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "properties": {
+          "candidates": {
+           "type": "integer"
+          },
+          "enqueued": {
+           "type": "integer"
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     }
+    }
+   }
+  },
   "/api/v1/subtitles/want": {
    "post": {
     "tags": [
@@ -6781,7 +6901,7 @@
     ],
     "operationId": "blockRelease",
     "summary": "Block a release by hand, so the want will not choose it. Requires `write`.",
-    "description": "The operator's lever for a release that is bad in a way nothing\ndetected (#819): a fake, a wrong cut. Recorded with reason `manual`.\nThe provider is resolved from the want's last search when that search\noffered the candidate from exactly one provider; name it otherwise (a\nfan-out release, one a later search may find, or an id two providers\noffered). Lift it again with DELETE …/blocked/{candidate}.\n",
+    "description": "The operator's lever for a release that is bad in a way nothing\ndetected (#819): a fake, a wrong cut. Recorded with reason `manual`.\nThe provider is resolved from the want's last search when that search\noffered the candidate from exactly one provider; name it otherwise (a\nfan-out release, one a later search may find, or an id two providers\noffered). Lift it again with DELETE …/blocked/{candidate}.\n\n### Blocking the release the want is fetching cancels it (#888)\n\nWhen the want's selection is this release and it is in flight on it —\n`SELECTED` with its grab still to run, or `QUEUED`/`DOWNLOADING` on a\ntransfer grabbed for it — the want is cancelled back to idle in the\nsame request, its search backoff is cleared and a search is queued at\nonce, so it chooses another release now. The transfer, when there was\none, is removed from its download client with its partial data by a\n`remove_transfer` job, and the response carries `cancelled: true` and\nthe `displaced` transfer. A want already verifying or importing its\ndownload is not stopped: the block only changes what the next search\nmay choose. Repeating a block (200) finishes a cancel an earlier one\ncould not.\n",
     "parameters": [
      {
       "name": "id",
@@ -6840,6 +6960,13 @@
           },
           "detail": {
            "type": "string"
+          },
+          "cancelled": {
+           "type": "boolean",
+           "description": "the want was fetching this release and was taken off it to search again (#888); absent otherwise"
+          },
+          "displaced": {
+           "$ref": "#/components/schemas/DisplacedTransfer"
           }
          }
         }
@@ -6847,7 +6974,7 @@
       }
      },
      "200": {
-      "description": "It was already blocked; nothing changed.",
+      "description": "It was already blocked; the block is unchanged, and a want still fetching the release is cancelled as on a 201.",
       "content": {
        "application/json": {
         "schema": {
@@ -6867,6 +6994,13 @@
           },
           "detail": {
            "type": "string"
+          },
+          "cancelled": {
+           "type": "boolean",
+           "description": "the want was fetching this release and was taken off it to search again (#888); absent otherwise"
+          },
+          "displaced": {
+           "$ref": "#/components/schemas/DisplacedTransfer"
           }
          }
         }
@@ -6955,7 +7089,7 @@
     ],
     "operationId": "selectCandidate",
     "summary": "Take this release, whatever the ranking says.",
-    "description": "§60's **manual override**, and it is a different feature from manual\nsearch: a search asks what is out there, an override says which one to\ntake.\n\nIt **records that it was an override**, and what the scorer had chosen\ninstead. An override that left no trace would look exactly like an\nordinary selection, and \"why did it take that one\" would then have no\nanswer — which is the property §60's deterministic scoring exists to\ngive.\n\n### It refuses a candidate the profile rejected\n\nA `409`, deliberately. The gates in §62 are the operator's own\nstatement of what is acceptable, and an override that could ignore them\nwould quietly turn `accept` into a suggestion. Wanting something\noutside the profile is perfectly expressible — by **changing the\nprofile**, which is visible and durable, rather than by a one-off that\nleaves the profile saying something nobody means.\n\nNaming the candidate the scorer already chose is a selection rather\nthan an override, and is not recorded as a disagreement: putting a\ndeparture in the audit trail that never happened is its own kind of\nwrong.\n\n### Or hand over a URL as the want's direct release\n\nSend `url` instead of `candidate_id` to fetch that http(s) link as the\nwant's only release (#836): ADR-0060's direct release, with the\noperator as its provenance. It is recorded as a selected candidate\nfrom provider `operator` with protocol `direct`, so the grab offers it\nonly to the `http` download client whatever the client order, and\n`transfer.provider` in the acquisition status names that client. The\ncandidate's id is a digest of the link and its title is the file the\nlink names, so a token in the URL never reaches a response.\n\nA magnet or a `.torrent` link is refused (`400`): it is a torrent\nrelease, which a want still gets from a search, as a candidate. So is\na URL on a node with no `http` download client (`400`), and a URL for a\nwant that is not resting in `MISSING` (`409`) — a direct release does\nnot replace a transfer in flight or bytes already held.\n",
+    "description": "§60's **manual override**, and it is a different feature from manual\nsearch: a search asks what is out there, an override says which one to\ntake.\n\nIt **records that it was an override**, and what the scorer had chosen\ninstead. An override that left no trace would look exactly like an\nordinary selection, and \"why did it take that one\" would then have no\nanswer — which is the property §60's deterministic scoring exists to\ngive.\n\n### It refuses a candidate the profile rejected\n\nA `409`, deliberately. The gates in §62 are the operator's own\nstatement of what is acceptable, and an override that could ignore them\nwould quietly turn `accept` into a suggestion. Wanting something\noutside the profile is perfectly expressible — by **changing the\nprofile**, which is visible and durable, rather than by a one-off that\nleaves the profile saying something nobody means.\n\nNaming the candidate the scorer already chose is a selection rather\nthan an override, and is not recorded as a disagreement: putting a\ndeparture in the audit trail that never happened is its own kind of\nwrong.\n\n### Or hand over a URL as the want's direct release\n\nSend `url` instead of `candidate_id` to fetch that http(s) link as the\nwant's only release (#836): ADR-0060's direct release, with the\noperator as its provenance. It is recorded as a selected candidate\nfrom provider `operator` with protocol `direct`, so the grab offers it\nonly to the `http` download client whatever the client order, and\n`transfer.provider` in the acquisition status names that client. The\ncandidate's id is a digest of the link and its title is the file the\nlink names, so a token in the URL never reaches a response.\n\nA magnet or a `.torrent` link is refused (`400`): it is a torrent\nrelease, which a want still gets from a search, as a candidate. So is\na URL on a node with no `http` download client (`400`), and a URL for a\nwant that is not resting in `MISSING` (`409`) — a direct release does\nnot replace a transfer in flight or bytes already held.\n\n### Against a want that is already doing something (#888)\n\nThe selection and the acquisition pipeline move together:\n\n| the want is | a select |\n|---|---|\n| idle (`MISSING`, `AVAILABLE`, satisfied) or `CANDIDATES_FOUND` | moves it to `SELECTED` and queues the grab |\n| `SELECTED` | the grab still to run fetches the new selection |\n| `QUEUED` or `DOWNLOADING`, transfer has fetched nothing | **replaces** the transfer: the want is cancelled to idle and selected again, the old transfer is removed from its client by a `remove_transfer` job, and the grab is queued; the response's `replaced` names the old transfer |\n| `QUEUED` or `DOWNLOADING`, transfer has fetched bytes | `409` naming the state and how far it got, unless `force` is true, which replaces it and discards the partial download |\n| `SEARCHING` | `409`: the search is about to replace the candidates |\n| `VERIFYING` or `INGESTING` | `409`: the bytes are here; select again once they are held, as an upgrade |\n\nNaming the release already in flight changes nothing. Zero bytes is\nthe line because a transfer that has fetched nothing has cost nothing;\npast it, discarding progress is the operator's call, and `force`\nmakes it.\n",
     "parameters": [
      {
       "name": "id",
@@ -6982,6 +7116,10 @@
           "type": "string",
           "format": "uri",
           "description": "An http(s) link to the file itself, fetched as the want's\ndirect release. Not a magnet or a `.torrent`.\n"
+         },
+         "force": {
+          "type": "boolean",
+          "description": "Replace a transfer in flight even when it has fetched\nbytes, discarding them. Ignored with `url`.\n"
          }
         }
        }
@@ -6990,11 +7128,23 @@
     },
     "responses": {
      "200": {
-      "description": "The chosen candidate.",
+      "description": "The chosen candidate, and the transfer it replaced when there was one.",
       "content": {
        "application/json": {
         "schema": {
-         "$ref": "#/components/schemas/Candidate"
+         "allOf": [
+          {
+           "$ref": "#/components/schemas/Candidate"
+          },
+          {
+           "type": "object",
+           "properties": {
+            "replaced": {
+             "$ref": "#/components/schemas/DisplacedTransfer"
+            }
+           }
+          }
+         ]
         }
        }
       }
@@ -7019,7 +7169,7 @@
       }
      },
      "409": {
-      "description": "That candidate was rejected by the quality profile, or a `url` was\nhanded over for a want that is not resting in `MISSING`.\n",
+      "description": "That candidate was rejected by the quality profile, a `url` was\nhanded over for a want that is not resting in `MISSING`, or the\nwant is in a state a select does not replace (above): a search\nrunning, a download being verified or imported, or a transfer that\nhas fetched bytes without `force`. The detail names the state.\n",
       "content": {
        "application/problem+json": {
         "schema": {
@@ -13303,6 +13453,42 @@
      "frame_rate": {
       "type": "string"
      },
+     "color_transfer": {
+      "type": "string",
+      "description": "ffprobe's transfer characteristic: `smpte2084` (PQ: HDR10, HDR10+\nand most Dolby Vision) or `arib-std-b67` (HLG) say HDR. Absent when\nthe container declared none, or the probe predates it being\nrecorded (`heyarr probe backfill` re-probes those).\n"
+     },
+     "color_primaries": {
+      "type": "string",
+      "description": "The gamut, as ffprobe names it (`bt709`, `bt2020`)."
+     },
+     "color_space": {
+      "type": "string",
+      "description": "The YCbCr matrix, as ffprobe names it (`bt709`, `bt2020nc`)."
+     },
+     "dolby_vision": {
+      "type": "object",
+      "description": "The stream's Dolby Vision configuration record, absent when it has\nnone. `bl_compatibility_id` is what the base layer is to a decoder\nthat ignores Dolby Vision: 1 or 6 HDR10, 2 SDR, 4 HLG, 0 nothing it\ncan show correctly (profile 5).\n",
+      "properties": {
+       "profile": {
+        "type": "integer"
+       },
+       "level": {
+        "type": "integer"
+       },
+       "bl_compatibility_id": {
+        "type": "integer"
+       },
+       "rpu": {
+        "type": "boolean"
+       },
+       "el": {
+        "type": "boolean"
+       },
+       "bl": {
+        "type": "boolean"
+       }
+      }
+     },
      "channels": {
       "type": "integer"
      },
@@ -14119,6 +14305,32 @@
       "items": {
        "$ref": "#/components/schemas/Candidate"
       }
+     }
+    }
+   },
+   "DisplacedTransfer": {
+    "type": "object",
+    "description": "A transfer a by-hand select or block took its want off (#888). Its\nrow is gone and a `remove_transfer` job removes it, with its partial\ndata, from the download client.\n",
+    "properties": {
+     "provider": {
+      "type": "string",
+      "description": "the download client's configured name"
+     },
+     "external_id": {
+      "type": "string",
+      "description": "the client's id for the transfer",
+      "an infohash for a torrent": null
+     },
+     "name": {
+      "type": "string"
+     },
+     "bytes_done": {
+      "type": "integer",
+      "format": "int64"
+     },
+     "bytes_total": {
+      "type": "integer",
+      "format": "int64"
      }
     }
    },
