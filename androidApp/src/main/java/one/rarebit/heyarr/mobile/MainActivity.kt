@@ -154,6 +154,10 @@ class MainActivity : FragmentActivity() {
         app.deviceKeyring = keyring
         app.deviceName = "heyarr-mobile on ${android.os.Build.MODEL}"
         val voidbindInstalled = HandoffLauncher.canOpen(this, "${LoginQr.SCHEME}:login?id=probe&rp=probe")
+        // The in-app video lets go of its decoder while this activity is stopped (in the
+        // background, behind another app, the screen off) and picks up where it was when it
+        // starts again (#231). A rotation is not a stop for it.
+        lifecycle.addObserver(app.graph.video.lifecycleObserver { isChangingConfigurations })
         setContent {
             HeyarrTheme {
                 val vm: AppViewModel = viewModel(

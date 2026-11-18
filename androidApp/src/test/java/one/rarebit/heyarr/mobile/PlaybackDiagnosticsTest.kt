@@ -83,6 +83,20 @@ class PlaybackDiagnosticsTest {
         assertTrue(msg.contains("ERROR_CODE_DECODER_INIT_FAILED: Decoder init failed: OMX.x"))
     }
 
+    @Test fun aReclaimedDecoderSaysSoAndKeepsTheWholeCode() {
+        // #231: the panel shows every word of this now, the code and Media3's detail included.
+        val msg = PlaybackDiagnostics.describeError(
+            "ERROR_CODE_DECODING_RESOURCES_RECLAIMED",
+            "Decoder failed: c2.qti.hevc.decoder",
+            target(PlaybackTarget.Origin.DIRECT_PLANNED),
+        )
+        assertEquals(
+            "The phone took the decoder back for another app.\n" +
+                "ERROR_CODE_DECODING_RESOURCES_RECLAIMED: Decoder failed: c2.qti.hevc.decoder",
+            msg,
+        )
+    }
+
     @Test fun httpFailureIsNamed() {
         val msg = PlaybackDiagnostics.describeError(
             "ERROR_CODE_IO_BAD_HTTP_STATUS",

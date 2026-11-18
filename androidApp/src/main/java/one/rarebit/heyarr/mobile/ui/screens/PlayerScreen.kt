@@ -167,6 +167,7 @@ fun PlayerScreen(
                 }
             }
             PlayerPicture(video, item, type)
+            PlayerError(video, Modifier.padding(start = 12.dp, end = 12.dp, top = 10.dp))
             InlineControls(video, item, onNext, onStop)
             val next = video.next()
             if (next != null) UpNext(next, onNext)
