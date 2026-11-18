@@ -175,6 +175,8 @@ fun MediaCard(
     showBadge: Boolean = true,
     aspectOverride: CardAspect? = null,
     actions: List<CardAction> = emptyList(),
+    /** How far this phone got into it (Continue watching, heyarr-kmp#232): a bar along the art's foot. */
+    progress: Float? = null,
 ) = MediaScope(type) {
     val theme = LocalMediaTheme.current
     val interaction = remember { MutableInteractionSource() }
@@ -225,6 +227,7 @@ fun MediaCard(
                     availability != null -> AvailabilityMark(availability, corner, compact = true)
                     status != null -> StatusPill(status, corner, compact = true)
                 }
+                progress?.let { ResumeBar(it, Modifier.align(Alignment.BottomCenter).padding(8.dp)) }
             }
             CardCaption(title, subtitle, meta)
         }

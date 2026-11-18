@@ -51,6 +51,7 @@ import one.rarebit.heyarr.core.mcp.ExternalId
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.Replica
 import one.rarebit.heyarr.core.mcp.Satisfaction
+import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.core.state.ExternalEpisode
 import one.rarebit.heyarr.core.state.ExternalMeta
 import one.rarebit.heyarr.core.state.LibraryStatus
@@ -147,8 +148,24 @@ data class DetailPlayback(
      * primary file as before.
      */
     val copies: (work: Work, assets: List<WorkAsset>) -> CopyChoice? = { _, _ -> null },
-    /** Play [CopyChoice.picked]; `chosen` remembers it as this work's copy on this phone. */
-    val playCopy: (work: Work, choice: CopyChoice, artworkUrl: String?, chosen: Boolean) -> Unit = { _, _, _, _ -> },
+    /**
+     * Play [CopyChoice.picked]; `chosen` remembers it as this work's copy on this phone.
+     * `startSeconds` null resumes where the film was left here; 0 is Start over.
+     */
+    val playCopy: (
+        work: Work,
+        choice: CopyChoice,
+        artworkUrl: String?,
+        chosen: Boolean,
+        startSeconds: Double?,
+    ) -> Unit =
+        { _, _, _, _, _ -> },
+    /**
+     * Where this work was left on this phone (heyarr-kmp#232): the film's point, or the
+     * episode of a series left part-way; null when there is nothing to resume. Read during
+     * composition, so the screen redraws when the player writes a new one.
+     */
+    val resumePoint: (work: Work) -> ResumePoint? = { null },
 )
 
 /**

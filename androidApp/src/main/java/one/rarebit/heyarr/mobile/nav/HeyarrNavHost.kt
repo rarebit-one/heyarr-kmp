@@ -45,6 +45,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import kotlinx.coroutines.launch
+import one.rarebit.heyarr.core.playback.ResumePoint
+import one.rarebit.heyarr.core.playback.ResumePoints
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.AppGraph
@@ -84,6 +86,7 @@ import one.rarebit.heyarr.mobile.ui.screens.ManageScreen
 import one.rarebit.heyarr.mobile.ui.screens.MissingScreen
 import one.rarebit.heyarr.mobile.ui.screens.PersonalRows
 import one.rarebit.heyarr.mobile.ui.screens.PlayerScreen
+import one.rarebit.heyarr.mobile.ui.screens.ResumeRow
 import one.rarebit.heyarr.mobile.ui.screens.SearchScreen
 import one.rarebit.heyarr.mobile.ui.screens.SettingsScreen
 import one.rarebit.heyarr.mobile.ui.screens.TelemetryScreen
@@ -317,7 +320,7 @@ fun HeyarrNavHost(
         playVideo = { work, assetId, hash, mime, title, start, queue, art, subtitles ->
             audio.stop()
             video.queue = queue
-            vm.playback.playFile(title, assetId, hash, mime, work.kind, start, art, subtitles)
+            vm.playback.playFile(title, assetId, hash, mime, work.kind, start, art, subtitles, workId = work.id)
         },
         playAudio = { work, tracks, start ->
             vm.playback.stop()
@@ -342,12 +345,35 @@ fun HeyarrNavHost(
             }
         },
         copies = { work, assets -> vm.playback.copiesFor(work.id, assets, work.primaryAssetId) },
-        playCopy = { work, choice, art, chosen ->
+        playCopy = { work, choice, art, chosen, start ->
             audio.stop()
             video.queue = emptyList()
-            vm.playback.playCopy(work, choice, art, chosen)
+            vm.playback.playCopy(work, choice, art, chosen, start)
         },
+        resumePoint = { work -> ResumePoints.forWork(graph.resumePoints.all(), work.id) },
     )
+
+    // Continue watching (heyarr-kmp#232): where this phone left each work, resumed straight
+    // from the card, the way every streaming app's row works. The card plays the file it was
+    // left on; a film reached this way keeps its position but not the Version menu's list,
+    // which the detail screen's Play carries.
+    // Read inside Home, not here: each write would otherwise recompose the whole shell.
+    val continueWatching = { ResumePoints.continueWatching(graph.resumePoints.all()) }
+    val onResume: (ResumePoint) -> Unit = { p ->
+        p.item.blobHash?.let { hash ->
+            audio.stop()
+            video.queue = emptyList()
+            vm.playback.playFile(
+                p.item.title,
+                p.assetId,
+                hash,
+                p.item.mime,
+                p.item.kind,
+                artworkUrl = p.item.artworkUrl,
+                workId = p.workId,
+            )
+        }
+    }
 
     /** Play a playlist (its playable works) as an audio queue. */
     val playPlaylist: (List<Work>) -> Unit = { works ->
@@ -445,6 +471,11 @@ fun HeyarrNavHost(
                                         modifier = content,
                                         personal = personalRows,
                                         onSignInToSave = onSignInToSave,
+                                        resume = ResumeRow(
+                                            continueWatching,
+                                            onResume,
+                                            onForget = { graph.resumePoints.remove(it.assetId) },
+                                        ),
                                     )
                                 }
                                 composable<Route.Manage> {

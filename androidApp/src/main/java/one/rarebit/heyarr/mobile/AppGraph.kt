@@ -6,12 +6,15 @@ import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
 import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.net.HttpTransport
+import one.rarebit.heyarr.core.playback.ResumeRecorder
 import one.rarebit.heyarr.core.state.ExternalMetadata
 import one.rarebit.heyarr.mobile.net.AuthHeaderSource
 import one.rarebit.heyarr.mobile.net.AuthInterceptor
 import one.rarebit.heyarr.mobile.net.NsdMdnsResolver
 import one.rarebit.heyarr.mobile.net.OkHttpTransport
 import one.rarebit.heyarr.mobile.playback.AudioPlayer
+import one.rarebit.heyarr.mobile.playback.PlaybackProgress
+import one.rarebit.heyarr.mobile.playback.PrefsResumeStore
 import one.rarebit.heyarr.mobile.playback.RenderCapabilityCache
 import one.rarebit.heyarr.mobile.playback.SessionAudioPlayer
 import one.rarebit.heyarr.mobile.playback.VideoSession
@@ -80,8 +83,38 @@ class AppGraph(app: Application, scope: CoroutineScope) {
      */
     val renderCapabilities = RenderCapabilityCache()
 
-    /** The in-app video player, app-scoped so the now-playing bar can carry it between screens. */
-    val video: VideoSession by lazy { VideoSession(app, okHttp, scope, liveAuthorization = authHeader::current) }
+    /** Where each item was left on this phone (heyarr-kmp#232): Play resumes there, Home lists them. */
+    val resumePoints: PrefsResumeStore = PrefsResumeStore(app)
+
+    private val resumeRecorder = ResumeRecorder(resumePoints, System::currentTimeMillis)
+
+    /**
+     * The in-app video player, app-scoped so the now-playing bar can carry it between screens.
+     * Its position is written here rather than by a screen, so it is recorded whatever is on
+     * screen, and in the background, where no screen is.
+     */
+    val video: VideoSession by lazy {
+        VideoSession(app, okHttp, scope, liveAuthorization = authHeader::current).also { v ->
+            v.onProgress = { p -> recordResume(v, p) }
+        }
+    }
+
+    private fun recordResume(video: VideoSession, progress: PlaybackProgress) {
+        val item = video.current?.resumeItem() ?: return
+        val duration = video.durationSeconds() ?: video.current?.target?.sourceDurationSeconds
+        when (progress.event) {
+            PlaybackProgress.Event.TICK -> resumeRecorder.progress(item, progress.seconds, duration)
+
+            PlaybackProgress.Event.ENDED -> resumeRecorder.ended(item)
+
+            PlaybackProgress.Event.RESUMED -> Unit
+
+            PlaybackProgress.Event.PAUSED,
+            PlaybackProgress.Event.LEFT,
+            PlaybackProgress.Event.CHECKPOINT,
+            -> resumeRecorder.checkpoint(item, progress.seconds, duration)
+        }
+    }
 
     /** Cover art and synopses from keyless public sources, cached under the app's cache dir (Settings → Appearance turns it off). */
     val external: ExternalMetadata by lazy {

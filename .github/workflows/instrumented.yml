@@ -105,6 +105,11 @@ jobs:
               (pkg + "VideoBackgroundTest", "aFilmPausesInTheBackgroundAndCarriesOnFromTheSamePlaceOnReturn"),
               (pkg + "VideoBackgroundTest", "aDecoderFailureIsRetriedOnceByItself"),
               (pkg + "VideoBackgroundTest", "aSecondFailureIsShownInFullAndPlayRecoversIt"),
+              # The resume position (#232): written to disk as the film goes to the background,
+              # Play resumes there, a rotation keeps the player, Start over and the end clear it.
+              (pkg + "ResumePositionTest", "aPausedFilmLeftForTheBackgroundIsOnDiskAndPlayResumesThere"),
+              (pkg + "ResumePositionTest", "aRotationKeepsTheSamePlayerPlayingAndThePointMoving"),
+              (pkg + "ResumePositionTest", "startingOverAndPlayingToTheEndLeaveNoPoint"),
           }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")

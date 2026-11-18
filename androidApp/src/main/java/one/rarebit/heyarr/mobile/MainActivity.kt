@@ -186,6 +186,8 @@ class MainActivity : FragmentActivity() {
                     vm.autoDiscover()
                     // What this phone can decode, for the playback planner (#432).
                     vm.playback.capabilities = MediaCodecCapabilities.probe(appContext)
+                    // Where each item was left on this phone: a play with no position resumes there (#232).
+                    vm.playback.resume = app.graph.resumePoints
                 }
                 val enrolState by vm.enrolState.collectAsStateWithLifecycle()
                 val loginState by vm.loginState.collectAsStateWithLifecycle()

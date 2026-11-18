@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlaylistAdd
@@ -33,6 +34,7 @@ import one.rarebit.heyarr.core.library.CanonicalLookup
 import one.rarebit.heyarr.core.library.Resolution
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.SearchHit
+import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.catalog.Artwork
 import one.rarebit.heyarr.mobile.library.LibraryClient
@@ -49,6 +51,7 @@ import one.rarebit.heyarr.mobile.ui.components.MediaCard
 import one.rarebit.heyarr.mobile.ui.components.Rail
 import one.rarebit.heyarr.mobile.ui.components.artworkForDp
 import one.rarebit.heyarr.mobile.ui.components.rememberCover
+import one.rarebit.heyarr.mobile.ui.components.resumeLabel
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.PrimaryButton
@@ -123,6 +126,54 @@ class HomeState {
 }
 
 /**
+ * Continue watching (heyarr-kmp#232): where this phone left each work, newest first, one card
+ * per work. [onResume] plays the card's file from its point; [onForget] takes it off the row.
+ */
+class ResumeRow(
+    /** Read during composition, so the row follows the player's writes. */
+    val points: () -> List<ResumePoint> = { emptyList() },
+    val onResume: (ResumePoint) -> Unit = {},
+    val onForget: (ResumePoint) -> Unit = {},
+)
+
+/**
+ * The Continue watching rail: a tap resumes, as on every streaming app; the card's menu opens
+ * the work or forgets the point. Kept on this phone, and labelled so.
+ */
+@Composable
+private fun ContinueWatching(points: List<ResumePoint>, row: ResumeRow, onOpen: (Route) -> Unit) {
+    Rail(
+        "Continue watching",
+        RailState.Loaded(points),
+        subtitle = "Where you left off on this phone",
+        key = { it.assetId },
+    ) { p ->
+        val type = MediaType.from(p.item.kind ?: "movie")
+        MediaCard(
+            p.item.title,
+            type,
+            onOpen = { row.onResume(p) },
+            subtitle = resumeLabel(p),
+            artwork = p.item.artworkUrl,
+            // A series' still is wide; the row reads as one strip of frames, as players show it.
+            aspectOverride = CardAspect.WIDE,
+            width = 240.dp,
+            progress = p.fraction,
+            actions = buildList {
+                p.workId?.let { id ->
+                    add(
+                        CardAction("Details", Icons.Rounded.Info) {
+                            onOpen(detailRoute(id, type, p.item.title, from = "Home"))
+                        },
+                    )
+                }
+                add(CardAction("Remove from row", Icons.Rounded.Close) { row.onForget(p) })
+            },
+        )
+    }
+}
+
+/**
  * The personal row this phone can decrypt (starred) and the actions
  * behind a card's long-press — present only on an enrolled device with a key. Nothing
  * here comes from the node in the clear; it is folded on this device (`personalstate/`).
@@ -153,6 +204,7 @@ fun HomeScreen(
     personal: PersonalRows = PersonalRows(),
     /** Raise the "Sign in to save" upgrade — shown on the guest banner. */
     onSignInToSave: () -> Unit = {},
+    resume: ResumeRow = ResumeRow(),
 ) {
     val scope = rememberCoroutineScope()
 
@@ -279,6 +331,10 @@ fun HomeScreen(
                 one.rarebit.heyarr.mobile.state.Connection.UNKNOWN -> "Checking node" to Tokens.textMuted
             }
             StatusMark(label, tone, Modifier.padding(horizontal = Tokens.screenPadding))
+        }
+        val continuing = resume.points()
+        if (continuing.isNotEmpty()) {
+            item { ContinueWatching(continuing, resume, onOpen) }
         }
         item {
             Box(Modifier.padding(horizontal = Tokens.screenPadding)) { SpotlightBlock(session, state, onOpen) }
