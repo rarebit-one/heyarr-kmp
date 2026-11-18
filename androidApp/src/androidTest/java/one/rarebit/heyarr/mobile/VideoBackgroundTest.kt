@@ -238,8 +238,9 @@ class VideoBackgroundTest {
 
     /** Serves one file over loopback HTTP, with `Range` — what the blob endpoint does for the player. */
     private class ClipServer(private val bytes: ByteArray) : Closeable {
-        private val socket = ServerSocket(0, BACKLOG, InetAddress.getLoopbackAddress())
-        val url = "http://127.0.0.1:${socket.localPort}/clip.mp4"
+        // IPv4 by name: Android's getLoopbackAddress() is ::1, which a 127.0.0.1 URL never reaches.
+        private val socket = ServerSocket(0, BACKLOG, InetAddress.getByName(LOOPBACK))
+        val url = "http://$LOOPBACK:${socket.localPort}/clip.mp4"
 
         init {
             thread(isDaemon = true) {
@@ -291,6 +292,7 @@ class VideoBackgroundTest {
         const val LUMA_LO: Byte = 16
         const val CHROMA: Byte = 128.toByte()
         const val BACKLOG = 16
+        const val LOOPBACK = "127.0.0.1"
         const val PLAYED_BEFORE_MS = 3_000L
         const val PLAYED_AFTER_MS = 2_000L
         const val BACKGROUND_MS = 5_000L
