@@ -10,26 +10,11 @@
 # :androidApp:installDebugAndroidTest`) and one device on adb. Run by instrumented.yml.
 set -euo pipefail
 
-APP=one.rarebit.heyarr.mobile
-RUNNER="$APP.test/androidx.test.runner.AndroidJUnitRunner"
-CLASS="$APP.ProcessDeathTest"
-
-# One test, one phase. Every status line must be a pass: an assumption that skipped the test
-# (no phase reached it) is a failure here, not a quiet "OK".
-phase() {
-  local test=$1 name=$2 out
-  out=$(adb shell am instrument -w -r -e phase "$name" -e class "$CLASS#$test" "$RUNNER" | tr -d '\r')
-  echo "$out" | grep -E "INSTRUMENTATION_STATUS: (test|stack)=|INSTRUMENTATION_STATUS_CODE|INSTRUMENTATION_CODE" || true
-  if ! grep -q "^INSTRUMENTATION_STATUS_CODE: 0$" <<<"$out" || grep -q "^INSTRUMENTATION_STATUS_CODE: -" <<<"$out"; then
-    echo "$out"
-    echo "::error::ProcessDeathTest#$test (phase $name) did not pass"
-    exit 1
-  fi
-  echo "ProcessDeathTest#$test passed (phase $name)"
-}
+# shellcheck source=instrument-lib.sh
+source "$(dirname "$0")/instrument-lib.sh"
 
 adb shell pm clear "$APP" >/dev/null
-phase leaveAFilmPlaying leave
+instrument ProcessDeathTest#leaveAFilmPlaying leave
 
 # The instrumentation ends the process with it; make sure, as `am kill` does in the background.
 adb shell am kill "$APP" || true
@@ -42,4 +27,4 @@ if adb shell pidof "$APP" >/dev/null 2>&1; then
   exit 1
 fi
 
-phase restoreItPaused restore
+instrument ProcessDeathTest#restoreItPaused restore
