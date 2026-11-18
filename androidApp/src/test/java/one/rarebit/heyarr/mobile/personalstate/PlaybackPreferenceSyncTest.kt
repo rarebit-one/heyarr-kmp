@@ -6,6 +6,7 @@ import one.rarebit.heyarr.core.playback.QualityPreference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 /**
@@ -91,5 +92,40 @@ class PlaybackPreferenceSyncTest {
         tv.setPlaybackPreference(PlaybackPreference(QualityPreference.FIT, maxHeight = 1080))
         assertEquals(PlaybackPreference(QualityPreference.FIT, maxHeight = 1080), phone.playbackPreference())
         assertEquals("the phone kept its space", phoneSpace, phoneRegistry.preferencesSpace())
+    }
+
+    @Test fun aLosingPreferencesSpaceIsNeverAPlaylist() {
+        val raw = session()
+        val winner = raw.createSpace("personal")
+        raw.setReadingPosition(winner, PLAYBACK_KEY, PlaybackPreference(QualityPreference.BEST).planJson())
+        val loser = raw.createSpace("personal")
+        raw.setReadingPosition(loser, PLAYBACK_KEY, PlaybackPreference(QualityPreference.DATA_SAVER).planJson())
+        val registry = InMemorySpaceRegistry().apply { setPreferencesSpace(loser) }
+        val phone = device(registry)
+        val playlist = phone.createPlaylist("Roadtrip")
+
+        assertEquals(PlaybackPreference(QualityPreference.BEST), phone.playbackPreference())
+        assertEquals("only the real playlist is listed", listOf(playlist), phone.playlists().map { it.spaceId })
+    }
+
+    @Test fun aSpaceThatWillNotOpenIsAFailedReadNotNoPreference() {
+        val registry = InMemorySpaceRegistry()
+        val phone = device(registry)
+        phone.setPlaybackPreference(PlaybackPreference(QualityPreference.BEST))
+        val space = registry.preferencesSpace()!!
+        // A rotation whose history row went missing: this device has a copy but cannot unroll it.
+        val crypto = IdentityCrypto()
+        val device = FakeDeviceKey(1)
+        val prev = crypto.unwrap(server.wrapped(space, device.recipientId()), device.seed())
+        val next = crypto.newSpaceKey()
+        server.rotate(
+            space,
+            mapOf(device.recipientId() to crypto.seal(next, device.publicKey())),
+            IdentityCrypto.sealSpaceKey(next, prev),
+        )
+        server.dropHistory(space)
+
+        assertThrows(SpaceUnreadableException::class.java) { phone.playbackPreference() }
+        assertEquals("the record is kept, not traded away", space, registry.preferencesSpace())
     }
 }
