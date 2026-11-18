@@ -114,7 +114,13 @@ class ReaderActivity :
     private var status: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        // Nothing is restored from the saved state, on purpose (heyarr-kmp#232). After a rotation
+        // or the process dying behind other apps, Android would put the old navigator fragment
+        // back before this activity has fetched the publication: Readium's navigator can only be
+        // made by the factory that publication sets up, so restoring it fails. Instead the book
+        // is opened afresh, as on a first open, at the page this phone kept for it
+        // (ReadingPositionStore, written as the page moves), which is where it was.
+        super.onCreate(null)
         val app = application as HeyarrApp
         val container = FrameLayout(this).apply { id = R.id.reader_container }
         val root = LinearLayout(this).apply {

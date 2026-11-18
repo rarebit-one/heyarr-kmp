@@ -201,7 +201,10 @@ object PlayerRestore {
     const val MAX_AGE_MS = 7L * 24 * 60 * 60 * 1000
 
     fun restorable(snapshot: ResumePoint, nowMs: Long): Boolean =
-        !snapshot.item.blobHash.isNullOrBlank() && nowMs - snapshot.updatedAtMs in 0..MAX_AGE_MS
+        !snapshot.item.blobHash.isNullOrBlank() && fresh(snapshot.updatedAtMs, nowMs)
+
+    /** Written within the last [MAX_AGE_MS]: the film's snapshot, or the music queue's. */
+    fun fresh(updatedAtMs: Long, nowMs: Long): Boolean = nowMs - updatedAtMs in 0..MAX_AGE_MS
 }
 
 /**

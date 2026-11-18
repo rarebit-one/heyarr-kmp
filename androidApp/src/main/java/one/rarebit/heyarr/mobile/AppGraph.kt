@@ -15,7 +15,9 @@ import one.rarebit.heyarr.mobile.net.AuthInterceptor
 import one.rarebit.heyarr.mobile.net.NsdMdnsResolver
 import one.rarebit.heyarr.mobile.net.OkHttpTransport
 import one.rarebit.heyarr.mobile.playback.AudioPlayer
+import one.rarebit.heyarr.mobile.playback.AudioQueueSnapshot
 import one.rarebit.heyarr.mobile.playback.PlaybackProgress
+import one.rarebit.heyarr.mobile.playback.PrefsAudioQueueStore
 import one.rarebit.heyarr.mobile.playback.PrefsPlayerSnapshotStore
 import one.rarebit.heyarr.mobile.playback.PrefsResumeStore
 import one.rarebit.heyarr.mobile.playback.RenderCapabilityCache
@@ -86,7 +88,16 @@ class AppGraph(app: Application, scope: CoroutineScope) {
      * The audio queue, behind the seam: a MediaController bound to PlaybackService, so
      * music outlives the screen AND the Activity, with notification controls.
      */
-    val audio: AudioPlayer by lazy { SessionAudioPlayer(app, scope, renderCapabilities) }
+    val audio: AudioPlayer by lazy { SessionAudioPlayer(app, scope, renderCapabilities, audioQueue) }
+
+    /** The music queue as it stood when the app last left it, for the restore after process death. */
+    private val audioQueue = PrefsAudioQueueStore(app)
+
+    /** What queue a process that died left (heyarr-kmp#232), handed over once, like [takeRestore]. */
+    private var audioRestore: AudioQueueSnapshot? =
+        audioQueue.read()?.takeIf { PlayerRestore.fresh(it.updatedAtMs, System.currentTimeMillis()) }
+
+    fun takeAudioRestore(): AudioQueueSnapshot? = audioRestore.also { audioRestore = null }
 
     /**
      * Render capabilities for the audio queue (heyarr-core ADR-0112), minted when a queue

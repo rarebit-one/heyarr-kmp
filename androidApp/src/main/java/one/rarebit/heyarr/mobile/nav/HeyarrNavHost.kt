@@ -203,12 +203,20 @@ fun HeyarrNavHost(
     // passed, so the plan is made with the credential the app restores at start-up. Nothing is
     // put back over something the person has started meanwhile.
     val currentSession by rememberUpdatedState(session)
+    // The music queue the same way: it is put back paused too, unless a film was (only one of
+    // the two plays at a time, so only one is ever left).
     LaunchedEffect(Unit) {
-        val point = graph.takeRestore() ?: return@LaunchedEffect
+        val point = graph.takeRestore()
+        val queue = graph.takeAudioRestore()
+        if (point == null && queue == null) return@LaunchedEffect
         withTimeoutOrNull(RESTORE_WAIT_MS) {
             snapshotFlow { currentSession.connection }.first { it != Connection.UNKNOWN }
         }
-        if (vm.playback.nowPlaying.value == null && audio.state.value.item == null) vm.playback.restore(point)
+        if (vm.playback.nowPlaying.value != null || audio.state.value.item != null) return@LaunchedEffect
+        when {
+            point != null -> vm.playback.restore(point)
+            queue != null -> audio.restoreQueue(queue.items, queue.index, queue.positionMs)
+        }
     }
     LaunchedEffect(audioState.item?.assetId) {
         if (openPlayerOnAudio && audioState.item != null) {

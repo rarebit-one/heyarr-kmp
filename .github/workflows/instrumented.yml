@@ -136,6 +136,10 @@ jobs:
               # from network-outage-check.sh, not here.
               (pkg + "NetworkResilienceTest", "anOutageLongerThanTheBufferIsRiddenOutAndCarriesOnWhereItStalled"),
               (pkg + "NetworkResilienceTest", "aStreamThatLapsesIsPlannedAgainAndCarriesOnAtThePlace"),
+              (pkg + "NetworkResilienceTest", "theMusicQueueRidesOutAnOutageLongerThanItsBuffer"),
+              # The reader recreated from its saved state, as after process death, opens at its
+              # page instead of failing to restore Readium's navigator (#232).
+              (pkg + "ReaderRestoreTest", "theBookComesBackAtItsPageWhenTheActivityIsRecreated"),
           }
           executed = set()
           reports = Path("androidApp/build/outputs/androidTest-results/connected")
