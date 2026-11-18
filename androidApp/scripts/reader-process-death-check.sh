@@ -215,7 +215,8 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 grep -q "$REFUSED_TEXT" <<<"$shown" || { echo "::error::no refusal message"; grep -o 'text="[^"]*"' <<<"$shown" | grep -v 'text=""' || true; exit 1; }
-for want in 'text="Retry"' 'text="Back"'; do
+# The shared buttons set their labels in capitals.
+for want in 'text="RETRY"' 'text="BACK"'; do
   grep -q "$want" <<<"$shown" || { echo "::error::the refusal has no $want"; exit 1; }
 done
 if grep -qE "org\.readium|RetrieveUrlError|Exception" <<<"$shown"; then
@@ -225,7 +226,7 @@ if grep -qE "org\.readium|RetrieveUrlError|Exception" <<<"$shown"; then
 fi
 echo "the refusal is shown in words, with Retry and Back"
 rm "$work/refuse"
-bounds=$(grep -o 'text="Retry"[^>]*bounds="\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]"' <<<"$shown" | grep -o 'bounds="[^"]*"' | head -1)
+bounds=$(grep -o 'text="RETRY"[^>]*bounds="\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]"' <<<"$shown" | grep -o 'bounds="[^"]*"' | head -1)
 read -r x1 y1 x2 y2 < <(grep -oE '[0-9]+' <<<"$bounds" | tr '\n' ' ')
 adb shell input tap $(((x1 + x2) / 2)) $(((y1 + y2) / 2))
 await_opened "after Retry"

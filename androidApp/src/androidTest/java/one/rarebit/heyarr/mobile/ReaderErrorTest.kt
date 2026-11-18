@@ -54,7 +54,8 @@ class ReaderErrorTest {
             val title = ReaderProblem.REFUSED.title
             compose.waitUntil(TIMEOUT_MS) { compose.onAllNodesWithText(title).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText(ReaderProblem.REFUSED.detail).assertExists()
-            compose.onNodeWithText("Back").assertExists()
+            // The shared buttons set their labels in capitals (Primitives' PrimaryButton/SecondaryButton).
+            compose.onNodeWithText("BACK").assertExists()
             // Nothing of the error object reaches the screen.
             for (code in listOf("org.readium", "RetrieveUrlError", "Exception", "@")) {
                 compose.onAllNodesWithText(code, substring = true).assertCountEquals(0)
@@ -74,7 +75,7 @@ class ReaderErrorTest {
             assertTrue("the message starts below the status bar (top $top, bar $bars)", bars > 0 && top >= bars)
 
             server.refusing = false
-            compose.onNodeWithText("Retry").performClick()
+            compose.onNodeWithText("RETRY").performClick()
             TestEpub.awaitOpenedInChapterTwo(positions, ASSET, "chapter two, after Retry")
         }
     }
