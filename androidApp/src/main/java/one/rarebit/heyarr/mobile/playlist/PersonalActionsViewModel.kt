@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import one.rarebit.heyarr.core.playback.PlaybackPreference
 import one.rarebit.heyarr.mobile.library.ItemResolver
@@ -50,6 +52,13 @@ internal class PersonalActionsViewModel(
     private val _accountPlayback = MutableStateFlow<PlaybackPreference?>(null)
     val accountPlayback: StateFlow<PlaybackPreference?> = _accountPlayback.asStateFlow()
 
+    /**
+     * One preference write at a time, in tap order: two concurrent writes fold the same register
+     * and mint the same Lamport counter, and the tie would then go to a random writer id rather
+     * than to the later tap.
+     */
+    private val playbackWrites = Mutex()
+
     val enabled: Boolean get() = personalState != null
 
     init {
@@ -73,13 +82,38 @@ internal class PersonalActionsViewModel(
         }
     }
 
-    /** Set the person's playback default for all their devices. Optimistic; a failed write re-reads. */
+    /**
+     * Set the person's playback default for all their devices. Optimistic; writes are serialised
+     * ([playbackWrites]), and the last one settles what is shown: re-read after it, so a write
+     * that failed, or another device's later one, is what the phone plays by.
+     */
     fun setAccountPlayback(preference: PlaybackPreference) {
         val ps = personalState ?: return
         _accountPlayback.value = preference
         viewModelScope.launch {
-            val written = withContext(io) { runCatching { ps.setPlaybackPreference(preference) }.isSuccess }
-            if (!written) refresh()
+            playbackWrites.withLock {
+                withContext(io) {
+                    runCatching { ps.setPlaybackPreference(preference) }
+                    // A later tap is still queued behind this write: it settles what is shown.
+                    if (_accountPlayback.value == preference) {
+                        runCatching { ps.playbackPreference() }.onSuccess { _accountPlayback.value = it }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Re-read the person's playback default: another device may have changed it since. The app
+     * calls this whenever it comes back to the foreground, so a change made on the television
+     * applies to the phone's next play.
+     */
+    fun refreshPlayback() {
+        val ps = personalState ?: return
+        viewModelScope.launch {
+            playbackWrites.withLock {
+                withContext(io) { runCatching { ps.playbackPreference() }.onSuccess { _accountPlayback.value = it } }
+            }
         }
     }
 

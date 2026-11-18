@@ -19,9 +19,12 @@ class PlaybackPreferenceSyncTest {
     private var writer = 0
 
     /** One of the person's devices: its own role registry, the same node and key. */
-    private fun device(registry: SpaceRegistry = InMemorySpaceRegistry()): PersonalStateCoordinator {
+    private fun device(registry: SpaceRegistry = InMemorySpaceRegistry()): PersonalStateCoordinator =
+        PersonalStateCoordinator(session(), registry)
+
+    private fun session(): SpaceSession {
         var tag = 0
-        val session = SpaceSession(
+        return SpaceSession(
             client = PersonalStateClient(server, server.base, Credential.Session("t")),
             device = FakeDeviceKey(1),
             crypto = IdentityCrypto(),
@@ -29,7 +32,6 @@ class PlaybackPreferenceSyncTest {
             newTag = { "tag${tag++}" },
             newWriter = { "w${writer++}" },
         )
-        return PersonalStateCoordinator(session, registry)
     }
 
     @Test fun theDefaultRoundTripsAndTheLastWriteWins() {
@@ -65,5 +67,29 @@ class PlaybackPreferenceSyncTest {
         tv.setPlaybackPreference(PlaybackPreference(QualityPreference.FIT, maxHeight = 2160))
         assertEquals("…and writes to the same space, not one of its own", adopted, tvRegistry.preferencesSpace())
         assertEquals(PlaybackPreference(QualityPreference.FIT, maxHeight = 2160), phone.playbackPreference())
+    }
+
+    @Test fun twoDevicesThatEachMintedASpaceSettleOnTheLowestId() {
+        // Both set a default before either could see the other's space (Codex P2 on
+        // heyarr-kmp#245): the phone's space-0 and the television's space-1.
+        val raw = session()
+        val phoneSpace = raw.createSpace("personal")
+        raw.setReadingPosition(phoneSpace, PLAYBACK_KEY, PlaybackPreference(QualityPreference.DATA_SAVER).planJson())
+        val tvSpace = raw.createSpace("personal")
+        raw.setReadingPosition(tvSpace, PLAYBACK_KEY, PlaybackPreference(QualityPreference.BEST).planJson())
+        val phoneRegistry = InMemorySpaceRegistry().apply { setPreferencesSpace(phoneSpace) }
+        val tvRegistry = InMemorySpaceRegistry().apply { setPreferencesSpace(tvSpace) }
+        val phone = device(phoneRegistry)
+        val tv = device(tvRegistry)
+
+        assertEquals(
+            "the television gives up its own space for the lowest id, value and all",
+            PlaybackPreference(QualityPreference.DATA_SAVER),
+            tv.playbackPreference(),
+        )
+        assertEquals(phoneSpace, tvRegistry.preferencesSpace())
+        tv.setPlaybackPreference(PlaybackPreference(QualityPreference.FIT, maxHeight = 1080))
+        assertEquals(PlaybackPreference(QualityPreference.FIT, maxHeight = 1080), phone.playbackPreference())
+        assertEquals("the phone kept its space", phoneSpace, phoneRegistry.preferencesSpace())
     }
 }

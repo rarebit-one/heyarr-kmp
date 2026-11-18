@@ -33,6 +33,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -306,6 +308,8 @@ fun HeyarrNavHost(
     // The person's synced playback default (heyarr-core#887): every play reads it through the
     // ViewModel, under this phone's override.
     val accountPlayback by personalActions.accountPlayback.collectAsStateWithLifecycle()
+    // Another device may have changed it while this one was away (heyarr-core#887).
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { personalActions.refreshPlayback() }
     LaunchedEffect(accountPlayback, personalActions) {
         vm.onAccountPlaybackPreference(accountPlayback)
         session.accountPlayback =

@@ -100,16 +100,19 @@ internal class PersonalStateCoordinator(private val session: SpaceSession, priva
     }
 
     /**
-     * The preferences space: the one this device recorded, else one another of the person's
-     * devices made, adopted and recorded. Role spaces are recorded per device, so a phone
-     * signing in beside a television finds the television's space by what it holds: a space it
-     * can open whose register holds [PLAYBACK_KEY]. The lowest id wins when there are two, so
-     * two devices that each minted one before seeing the other settle on the same space.
+     * The preferences space, found by what it holds and re-checked on every read. Role spaces
+     * are recorded per device, so a phone signing in beside a television finds the
+     * television's space as a space it can open whose register holds [PLAYBACK_KEY]. The
+     * lowest such id wins and is recorded, even over one this device recorded earlier, so two
+     * devices that each minted one before seeing the other settle on the same space, and on
+     * its value: the losing space's last write is set aside, not merged, because two spaces'
+     * Lamport clocks do not compare. A listing that fails keeps the recorded space.
      */
     private fun preferencesSpace(): String? {
-        registry.preferencesSpace()?.let { return it }
-        val others = registry.roleSpaceIds()
-        val found = session.listSpaces()
+        val recorded = registry.preferencesSpace()
+        val others = registry.roleSpaceIds() - setOfNotNull(recorded)
+        val listed = runCatching { session.listSpaces() }.getOrNull() ?: return recorded
+        val found = listed
             .filter { it.kind == "personal" } // role spaces; a playlist is "shared"
             .map { it.id }
             .filter { it !in others }
@@ -118,8 +121,8 @@ internal class PersonalStateCoordinator(private val session: SpaceSession, priva
                 runCatching { session.readingPositions(id)?.position(PLAYBACK_KEY) }.getOrNull()
                     ?.let { PlaybackPreference.parse(it) } != null
             }
-        found?.let(registry::setPreferencesSpace)
-        return found
+        if (found != null && found != recorded) registry.setPreferencesSpace(found)
+        return found ?: recorded
     }
 
     // --- role space ids (for pointing the Mac gateway) ----------------------------
