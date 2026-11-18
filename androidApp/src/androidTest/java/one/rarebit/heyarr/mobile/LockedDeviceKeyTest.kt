@@ -129,7 +129,9 @@ class LockedDeviceKeyTest {
         }
         compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText(summary))
         compose.onNodeWithText(summary).assertIsDisplayed()
-        compose.onNodeWithText("Unlock").performClick()
+        // SecondaryButton draws its label in capitals (as the banner's "RETRY" in the issue).
+        compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("UNLOCK"))
+        compose.onNodeWithText("UNLOCK").performClick()
         compose.runOnIdle {
             assertEquals("This device's button unlocks", 1, unlocks)
             assertEquals("not a QR sign-in", 0, signIns)
