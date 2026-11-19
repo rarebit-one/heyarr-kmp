@@ -187,7 +187,7 @@ internal class CastManager(
 
     @Synchronized
     fun refresh(): CastStatus? {
-        val connection = connection ?: return status
+        val connection = (if (reattaching()) reconnect() else connection) ?: return status
         try {
             val fresh = connection.refresh()
             val fate = settle(connection, fresh)
@@ -209,6 +209,17 @@ internal class CastManager(
             holdSleep()
         }
         return status
+    }
+
+    /**
+     * Attached to media we don't own (Now Playing's controls), no watcher replaces a failed
+     * channel, so [refresh] does, backed off as the watcher's [reconnect] is (#242 review):
+     * while the channel has failed, or a reconnect is pending. A give-up ends it.
+     */
+    private fun reattaching(): Boolean {
+        val current = connection
+        val failed = current?.error != null || (current == null && lostAt != null)
+        return failed && ownedMediaSessionId == null && selected != null
     }
 
     /** What [fresh] means for the media we own (null: none), releasing it when it is no longer ours. */

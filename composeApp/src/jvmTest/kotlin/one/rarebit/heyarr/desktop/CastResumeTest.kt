@@ -319,6 +319,32 @@ class CastResumeTest {
     }
 
     @Test
+    fun anAttachedReceiversFailedChannelIsReplacedSoItsControlsWorkAgain() {
+        // #242 review: Now Playing attached to media we don't own; the network dropped. No
+        // watcher runs for unowned media, so the screen's refresh replaces the channel.
+        Rig().use { rig ->
+            rig.manager.attach(first)
+            assertEquals(1, rig.connects)
+            rig.channel.error = "Cast connection lost"
+            rig.refuse = "unreachable"
+            rig.manager.refresh()
+            assertEquals(2, rig.connects)
+            assertTrue(rig.manager.error.orEmpty().startsWith("Reconnecting to First"), rig.manager.error)
+            rig.manager.refresh()
+            assertEquals(2, rig.connects, "Backed off: no second try inside a second")
+            rig.refuse = null
+            rig.clock.advance(1.0)
+            rig.manager.refresh()
+            assertEquals(3, rig.connects)
+            assertNull(rig.manager.error)
+            assertNull(rig.manager.castingAsset, "Attached, never owned")
+            rig.manager.control("pause")
+            assertEquals("pause" to null, rig.channel.lastControl, "The controls reach the new channel")
+            assertEquals(0, rig.channel.loadCount)
+        }
+    }
+
+    @Test
     fun anotherSendersRelaunchedAppIsNotOursEvenWithOurMediaSessionNumber() {
         // heyarr-kmp#242 review: while our channel was down another sender relaunched the
         // receiver app; its first media session reuses our number. The reconnected channel
