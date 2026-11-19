@@ -146,12 +146,21 @@ class CastManager(
     private val mutex = Mutex()
     private var source: CastSource? = null
 
-
     /** The receiver plays the node's HLS presentation, not the live stream: it seeks natively. */
     private val presenting: Boolean get() = source?.restartSeekable == false
 
     /** [clock] when [source] was asked for: its stream token only starts a stream for an hour. */
     private var plannedAt = 0L
+
+    /**
+     * The plan's live stream behind a presentation the receiver has not yet been seen PLAYING.
+     * A receiver can acknowledge the HLS LOAD and only then fail on the playlist or its first
+     * segments (heyarr-kmp#255 review, the desktop's rule too): that is a presentation it cannot
+     * play, so a drop or a stall before it plays falls back to this stream for the rest of the
+     * cast ([fallBackFromPresentation]) rather than reloading the presentation until the
+     * budget runs out. Null once it has played, or when the cast is the live stream already.
+     */
+    private var unprovenFallback: CastSource? = null
     private var item: CastItem? = null
     private var route: CastRoute? = null
     private var directFailed = false
@@ -227,6 +236,7 @@ class CastManager(
                     .isSuccess
             } == true
             if (!presented) castFrom(next, receiver, start, relaunch)
+            unprovenFallback = next.takeIf { presented }
             error = null
             startWatch()
             Result.success(Unit)
@@ -355,8 +365,12 @@ class CastManager(
                 }
 
                 // Dropped mid-film, most likely having played out the buffer of a stream that
-                // broke while this phone slept or left the network. Put it back.
-                Fate.DROPPED -> resumeAt(lastFilm, relaunch = true)
+                // broke while this phone slept or left the network. Put it back: as the live
+                // stream if it never played the presentation it was given.
+                Fate.DROPPED -> {
+                    fallBackFromPresentation()
+                    resumeAt(lastFilm, relaunch = true)
+                }
 
                 Fate.OURS -> follow(requireNotNull(fresh))
             }
@@ -368,7 +382,12 @@ class CastManager(
     /** Acts on what our film's progress says: a cut stream, an unreachable seek or a stall. */
     private suspend fun follow(fresh: ReceiverReport) {
         when (fresh.state) {
-            "PLAYING" -> playIntent = true
+            "PLAYING" -> {
+                playIntent = true
+                // Seen playing: a presentation it plays, so its later failures are drops.
+                unprovenFallback = null
+            }
+
             "PAUSED", "PAUSED_PLAYBACK" -> playIntent = false
         }
         lastReport = fresh
@@ -426,6 +445,9 @@ class CastManager(
                 error = "${deviceName()} keeps stalling. Stop and cast again, or restart the receiver."
             } else {
                 recover {
+                    // A presentation that never started (stuck buffering its playlist) is not
+                    // relaunched as itself: the live stream takes over from there.
+                    fallBackFromPresentation()
                     // A presentation's fetches are unsigned: a locked phone can still relaunch it.
                     if (!presenting) ensureSignable()
                     recoveries++
@@ -462,6 +484,20 @@ class CastManager(
             resumedAt = at
             streamCut = false
         }
+    }
+
+    /**
+     * Swaps a presentation the receiver never played for the plan's live stream, routed again
+     * (the stream needs a credential, so it is relayed); the next LOAD is the restartable
+     * stream, as if the receiver had refused the presentation's LOAD outright.
+     */
+    private suspend fun fallBackFromPresentation() {
+        val stream = unprovenFallback?.takeIf { presenting } ?: return
+        val receiver = channel.receiver ?: lastReceiver ?: return
+        unprovenFallback = null
+        source = stream
+        directFailed = false
+        route = withContext(io) { CastRouting.decide(stream, receiver.address) { URI(stream.url).host?.let(resolve) } }
     }
 
     /** Runs one recovery step; a locked phone waits for the unlock, anything else is the panel's error. */
@@ -707,6 +743,7 @@ class CastManager(
         relay?.close()
         relay = null
         source = null
+        unprovenFallback = null
         item = null
         route = null
         directFailed = false

@@ -569,6 +569,45 @@ class CastManagerTest {
         )
     }
 
+    @Test fun aPresentationTheReceiverAcknowledgedButFailedOnFallsBackToTheLiveStream() {
+        // heyarr-kmp#255 review: the LOAD is accepted (a media session, BUFFERING), and the
+        // receiver then fails fetching or decoding the playlist. A refusal, only a late one.
+        val m = manager(presented, node = v4("192.168.1.20"))
+        play(m, start = 600.0)
+        assertTrue(channel.loads.single().hls)
+        m.see(600.0, state = "BUFFERING")
+        m.see(600.0, "IDLE", idle = "ERROR")
+        assertEquals(2, channel.loads.size)
+        val load = channel.loads.last()
+        assertFalse("the live stream, not the same presentation again", load.hls)
+        assertTrue("relayed, as the stream needs a credential", m.state.value.route is CastRoute.Relay)
+        assertEquals("http://192.168.1.10:4000/media/0?start=600", load.url)
+        assertEquals(source.url, doorways.last().first)
+        // ...and for the rest of the cast: its seeks are restarts.
+        m.see(4.0)
+        runBlocking { m.control(Control.SEEK, 1800.0).getOrThrow() }
+        assertTrue(channel.loads.last().url.endsWith("?start=1800"))
+    }
+
+    @Test fun aPresentationThatNeverStartsStallsOverToTheLiveStream() {
+        val m = manager(presented)
+        play(m)
+        repeat(12) { m.see(0.0, state = "BUFFERING") }
+        assertEquals(CastRecovery.Kind.RESTARTING, m.state.value.recovery?.kind)
+        assertEquals(2, channel.loads.size)
+        assertFalse("relaunched with the live stream", channel.loads.last().hls)
+    }
+
+    @Test fun aPresentationThatPlayedAndThenDroppedIsResumedAsThePresentation() {
+        val m = manager(presented)
+        play(m)
+        m.see(1200.0)
+        m.see(0.0, "IDLE", idle = "ERROR")
+        assertEquals(2, channel.loads.size)
+        assertTrue(channel.loads.last().hls)
+        assertEquals(1200.0, channel.loads.last().startSeconds, 0.0)
+    }
+
     @Test fun aFarSeekThePresentationWaitsOnIsNotRestartedButAStallIsAndACutIsNotOne() {
         val m = manager(presented)
         play(m)
