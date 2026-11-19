@@ -1,6 +1,7 @@
 package one.rarebit.heyarr.desktop.cast
 
 import com.sun.net.httpserver.HttpExchange
+import one.rarebit.heyarr.core.playback.HlsPresentation
 import one.rarebit.heyarr.desktop.playback.LocalStreamForwarder
 import java.net.DatagramSocket
 import java.net.HttpURLConnection.HTTP_BAD_METHOD
@@ -12,8 +13,19 @@ import java.net.InetSocketAddress
 import java.net.URI
 import java.security.SecureRandom
 
-/** A receiver-scoped LAN doorway to the loopback credential proxy, with no credential in the URL. */
-internal class CastMediaRelay(private val receiver: Inet4Address, private val upstream: URI) : AutoCloseable {
+/**
+ * A receiver-scoped LAN doorway to the loopback credential proxy, with no credential in the URL.
+ *
+ * For a live stream it is one URL, [upstream], with only `?start=` let through. For an HLS
+ * presentation ([presentation], ADR-0126) [upstream] is the proxy's playlist URL and the
+ * doorway forwards the whole prefix the playlist's relative entries resolve under: the
+ * playlist, the init and each segment, with no query at all ([HlsPresentation]).
+ */
+internal class CastMediaRelay(
+    private val receiver: Inet4Address,
+    private val upstream: URI,
+    private val presentation: Boolean = false,
+) : AutoCloseable {
     private val path = "/media/" + ByteArray(CAPABILITY_BYTES).also(SecureRandom()::nextBytes)
         .joinToString("") { "%02x".format(it) }
     private val local = DatagramSocket().use { route ->
@@ -41,7 +53,12 @@ internal class CastMediaRelay(private val receiver: Inet4Address, private val up
         ::serve,
     )
 
-    val url: String get() = "http://${local.hostAddress}:${forwarder.port}$path"
+    val url: String get() = "http://${local.hostAddress}:${forwarder.port}$path" +
+        if (presentation) "/${HlsPresentation.PLAYLIST}" else ""
+
+    /** The HLS entry a presentation request names (null: none, or not a presentation). */
+    private fun entryOf(rawPath: String): String? = rawPath.takeIf { presentation && it.startsWith("$path/") }
+        ?.substring(path.length + 1)?.takeIf(HlsPresentation::isEntry)
 
     // The forwarder closes the exchange once this returns.
     private fun serve(exchange: HttpExchange) {
@@ -59,18 +76,29 @@ internal class CastMediaRelay(private val receiver: Inet4Address, private val up
     // buffer while the manager restarts the film.
     private fun forward(exchange: HttpExchange) = forwarder.forward(
         exchange,
-        withQuery(exchange.requestURI.rawQuery),
+        entryOf(exchange.requestURI.rawPath)?.let(upstream::resolve) ?: withQuery(exchange.requestURI.rawQuery),
         downstreamHeaders = CORS,
         onUpstreamCut = { severed = true },
     )
 
     private fun rejection(exchange: HttpExchange): Int? {
         val query = exchange.requestURI.rawQuery
+        val known = if (presentation) {
+            entryOf(exchange.requestURI.rawPath) != null
+        } else {
+            exchange.requestURI.rawPath ==
+                path
+        }
         return when {
-            exchange.remoteAddress.address != receiver || exchange.requestURI.rawPath != path -> HTTP_NOT_FOUND
+            exchange.remoteAddress.address != receiver || !known -> HTTP_NOT_FOUND
+
             exchange.requestMethod == "OPTIONS" -> null
+
             exchange.requestMethod !in listOf("GET", "HEAD") -> HTTP_BAD_METHOD
-            query != null && !query.matches(SEEK_QUERY) -> HTTP_BAD_REQUEST
+
+            // A presentation is seeked by fetching another segment: nothing takes a query.
+            query != null && (presentation || !query.matches(SEEK_QUERY)) -> HTTP_BAD_REQUEST
+
             else -> null
         }
     }
@@ -97,7 +125,8 @@ internal class CastMediaRelay(private val receiver: Inet4Address, private val up
         private const val CAST_PORT = 8009
         private val SEEK_QUERY = Regex("start=[0-9]+(?:\\.[0-9]+)?")
         private val REQUEST_HEADERS = listOf("Range", "If-Range", "If-None-Match")
-        private val RESPONSE_HEADERS = listOf("Content-Type", "Content-Range", "Accept-Ranges", "Content-Length")
+        private val RESPONSE_HEADERS =
+            listOf("Content-Type", "Content-Range", "Accept-Ranges", "Content-Length", "Retry-After")
 
         // The receiver's media element fetches cross-origin from the Cast app's page.
         private val CORS = mapOf("Access-Control-Allow-Origin" to "*")

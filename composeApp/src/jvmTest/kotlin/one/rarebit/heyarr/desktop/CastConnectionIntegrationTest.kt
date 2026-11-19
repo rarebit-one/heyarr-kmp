@@ -267,6 +267,40 @@ class CastConnectionIntegrationTest {
     }
 
     @Test
+    fun anHlsPresentationIsLoadedAsFmp4HlsFromItsStartPoint() {
+        // What the Default Media Receiver played on hardware: the x-mpegURL content type and
+        // fMP4 segment formats (without them it takes the segments for MPEG-TS), the
+        // playlist's own duration, and a start in film time.
+        Receiver().use { receiver ->
+            CastConnection(receiver.device).use { cast ->
+                val load = CompletableFuture.runAsync {
+                    cast.loadPresentation("http://127.0.0.1/media/cap/index.m3u8", "Example", start = 1860.0)
+                }
+                val request = receiver.take("LOAD")
+                val media = JsonScan.objectAt(request.payload, "media")!!
+                assertEquals("http://127.0.0.1/media/cap/index.m3u8", JsonScan.stringField(media, "contentId"))
+                assertEquals("application/x-mpegURL", JsonScan.stringField(media, "contentType"))
+                assertEquals("fmp4", JsonScan.stringField(media, "hlsSegmentFormat"))
+                assertEquals("fmp4", JsonScan.stringField(media, "hlsVideoSegmentFormat"))
+                assertEquals("BUFFERED", JsonScan.stringField(media, "streamType"))
+                assertNull(JsonScan.doubleField(media, "duration"))
+                assertEquals(1860.0, JsonScan.doubleField(request.payload, "currentTime"))
+                receiver.reply(request, mediaStatus(8))
+                load.get(4, TimeUnit.SECONDS)
+
+                // A live stream is still plain progressive MP4, with no HLS fields.
+                val live = CompletableFuture.runAsync { cast.load("http://127.0.0.1/media/live", "Example") }
+                val second = receiver.take("LOAD")
+                receiver.reply(second, mediaStatus(9))
+                val progressive = JsonScan.objectAt(second.payload, "media")!!
+                live.get(4, TimeUnit.SECONDS)
+                assertEquals("video/mp4", JsonScan.stringField(progressive, "contentType"))
+                assertNull(JsonScan.stringField(progressive, "hlsSegmentFormat"))
+            }
+        }
+    }
+
+    @Test
     fun aBroadcastIdleReasonOutlivesTheEmptyStatusAndALoadForgetsIt() {
         // heyarr-kmp#249: the receiver closes a session between polls; the next poll finds an
         // empty status, but the reason it broadcast on the way out must still be known.

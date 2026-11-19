@@ -2,6 +2,7 @@ package one.rarebit.heyarr.desktop.cast
 
 import one.rarebit.heyarr.core.mcp.JsonWrite
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.playback.HlsPresentation
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.security.SecureRandom
@@ -56,6 +57,12 @@ internal interface CastChannel : AutoCloseable {
      * stays short; only an HLS stream with a real playlist fixes that (heyarr-core#908).
      */
     fun load(url: String, title: String, autoplay: Boolean = true, start: Double = 0.0, duration: Double? = null)
+
+    /**
+     * LOADs [url], an fMP4 HLS playlist (ADR-0126), from film time [start]. The receiver reads
+     * the whole film's duration from the playlist and seeks it natively.
+     */
+    fun loadPresentation(url: String, title: String, autoplay: Boolean = true, start: Double = 0.0)
     fun control(action: String, seconds: Double? = null)
     fun refresh(): CastStatus?
 
@@ -141,19 +148,33 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
     }
 
     override fun load(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?) {
+        val media = media(url, "video/mp4", title)
+        duration?.takeIf { it.isFinite() && it > 0 }?.let { media["duration"] = it }
+        loadMedia(media, autoplay, start)
+    }
+
+    override fun loadPresentation(url: String, title: String, autoplay: Boolean, start: Double) {
+        val media = media(url, HlsPresentation.CAST_CONTENT_TYPE, title)
+        // Without these the receiver takes the segments for MPEG-TS and fails on the first.
+        media["hlsSegmentFormat"] = HlsPresentation.CAST_SEGMENT_FORMAT
+        media["hlsVideoSegmentFormat"] = HlsPresentation.CAST_SEGMENT_FORMAT
+        loadMedia(media, autoplay, start)
+    }
+
+    private fun media(url: String, contentType: String, title: String) = mutableMapOf<String, Any?>(
+        "contentId" to url,
+        "contentType" to contentType,
+        "streamType" to "BUFFERED",
+        "metadata" to mapOf("metadataType" to 0, "title" to title),
+    )
+
+    private fun loadMedia(media: Map<String, Any?>, autoplay: Boolean, start: Double) {
         forgetSightings()
         if (transportId == null) {
             adopt(request(RECEIVER_NS, RECEIVER, mapOf("type" to "LAUNCH", "appId" to DEFAULT_RECEIVER)))
             checkNotNull(transportId) { "Cast receiver did not launch the media application" }
             send(CONNECTION, requireNotNull(transportId), mapOf("type" to "CONNECT"))
         }
-        val media = mutableMapOf<String, Any?>(
-            "contentId" to url,
-            "contentType" to "video/mp4",
-            "streamType" to "BUFFERED",
-            "metadata" to mapOf("metadataType" to 0, "title" to title),
-        )
-        duration?.takeIf { it.isFinite() && it > 0 }?.let { media["duration"] = it }
         val reply = request(
             MEDIA,
             requireNotNull(transportId),
