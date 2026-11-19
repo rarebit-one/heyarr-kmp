@@ -89,27 +89,40 @@ class PlaybackSession {
     val active: Boolean get() = current != null
     val type: MediaType get() = current?.typeHint ?: MediaType.MOVIE
 
-    /** Begin (or replace) playback. The host starts mpv when one is needed. */
-    fun play(item: Route.Player) {
+    /**
+     * The receiver this app is casting [Route.Player.assetId] to, or null. [AppSession]
+     * answers from its Cast manager; the default (tests, previews) is never casting.
+     */
+    var castingTo: (assetId: String) -> String? = { null }
+
+    /**
+     * Begin (or replace) playback. The host starts mpv when one is needed. False when the
+     * item is a video this app is casting: a local start would open a second transcode of
+     * the same film beside the receiver's, which is what preceded a wedged receiver
+     * (heyarr-kmp#248). The caller says so and offers to move playback back here.
+     */
+    fun play(item: Route.Player): Boolean {
+        if (castBlocks(item)) return false
         val same = current?.assetId == item.assetId
         if (item.workId != filmCopies?.workId) filmCopies = null
         current = item
         startError = null
         if (same && player.isRunning) {
             player.play()
-            return
+        } else {
+            audioTracks = emptyList()
+            selectedAudioTrack = null
+            currentTarget = null
+            if (!item.typeHint.isListening()) {
+                audioQueue = emptyList()
+            } else if (audioQueue.none { it.assetId == item.assetId }) {
+                audioQueue = listOf(item)
+            }
+            // The host resolves/loads on IO, including changes between tracks.
+            pendingStart = true
+            refreshSubtitles() // adds now if the queue is already known + player up; else a no-op re-run does it
         }
-        audioTracks = emptyList()
-        selectedAudioTrack = null
-        currentTarget = null
-        if (!item.typeHint.isListening()) {
-            audioQueue = emptyList()
-        } else if (audioQueue.none { it.assetId == item.assetId }) {
-            audioQueue = listOf(item)
-        }
-        // The host resolves/loads on IO, including changes between tracks.
-        pendingStart = true
-        refreshSubtitles() // adds now if the queue is already known + player up; else a no-op re-run does it
+        return true
     }
 
     /** The subtitle-sidecar blob URLs for [item], from its episode in the loaded [queue] (empty when unknown yet). */
@@ -179,6 +192,10 @@ class PlaybackSession {
 
     fun title(item: Route.Player): String = item.title + (item.subtitle?.let { " — $it" } ?: "")
 }
+
+/** Whether [item] is a film this app is casting. Music and podcasts are never cast, so only a video collides. */
+fun PlaybackSession.castBlocks(item: Route.Player): Boolean =
+    !item.typeHint.isListening() && castingTo(item.assetId) != null
 
 /** A film's copies, offered to the player for the work they belong to (heyarr-kmp#225). */
 data class FilmCopies(val workId: String, val copies: List<Copy<Track>>)

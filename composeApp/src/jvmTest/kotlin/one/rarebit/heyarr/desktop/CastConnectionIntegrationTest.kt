@@ -22,6 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** A real TLS socket and Cast framing, confined to localhost and an ephemeral test certificate. */
@@ -215,6 +216,53 @@ class CastConnectionIntegrationTest {
     }
 
     @Test
+    fun loadDeclaresTheDurationAndAReceiverStopForcesAFreshLaunch() {
+        Receiver().use { receiver ->
+            CastConnection(receiver.device).use { cast ->
+                val sender = receiver.sender()
+                val load = CompletableFuture.runAsync {
+                    cast.load("http://127.0.0.1/example", "Example", duration = 5400.0)
+                }
+                val request = receiver.take("LOAD")
+                val media = JsonScan.objectAt(request.payload, "media")!!
+                assertEquals(5400.0, JsonScan.doubleField(media, "duration"))
+                receiver.reply(request, mediaStatus(8))
+                load.get(4, TimeUnit.SECONDS)
+
+                // heyarr-kmp#248: a wedged Default Media Receiver is cleared only by quitting it.
+                val stop = CompletableFuture.runAsync { cast.stopReceiver() }
+                val quit = receiver.take("STOP")
+                assertEquals(RECEIVER_NS, quit.namespace)
+                assertEquals("receiver-0", quit.destination)
+                assertEquals("session-1", JsonScan.stringField(quit.payload, "sessionId"))
+                receiver.reply(quit, """{"type":"RECEIVER_STATUS","status":{"applications":[]}}""")
+                stop.get(4, TimeUnit.SECONDS)
+                assertNull(cast.status)
+
+                // A late report from the quit app's transport is no longer ours.
+                receiver.send("web-4", "*", MEDIA, mediaStatus(8))
+                receiver.send("receiver-0", sender, HEARTBEAT, """{"type":"PING"}""")
+                receiver.take("PONG")
+                assertNull(cast.status)
+
+                val relaunch = CompletableFuture.runAsync { cast.load("http://127.0.0.1/example", "Example") }
+                val launch = receiver.take("LAUNCH")
+                receiver.reply(
+                    launch,
+                    """{"type":"RECEIVER_STATUS","status":{"applications":[{"appId":"CC1AD845",""" +
+                        """"transportId":"web-5","sessionId":"session-2"}]}}""",
+                )
+                val fresh = receiver.take("LOAD")
+                assertEquals("web-5", fresh.destination)
+                assertNull(JsonScan.objectAt(fresh.payload, "media")?.let { JsonScan.doubleField(it, "duration") })
+                receiver.reply(fresh, mediaStatus(9))
+                relaunch.get(4, TimeUnit.SECONDS)
+                assertEquals(9, cast.status?.mediaSessionId)
+            }
+        }
+    }
+
+    @Test
     fun rejectedInitialStatusClosesTlsSocket() {
         Receiver("reject").use { receiver ->
             assertFails { CastConnection(receiver.device) }
@@ -228,7 +276,8 @@ class CastConnectionIntegrationTest {
         private const val CONNECTION = "urn:x-cast:com.google.cast.tp.connection"
         private const val HEARTBEAT = "urn:x-cast:com.google.cast.tp.heartbeat"
         private const val RECEIVER_STATUS =
-            """{"type":"RECEIVER_STATUS","status":{"applications":[{"appId":"CC1AD845","transportId":"web-4"}]}}"""
+            """{"type":"RECEIVER_STATUS","status":{"applications":[{"appId":"CC1AD845","transportId":"web-4",""" +
+                """"sessionId":"session-1"}]}}"""
 
         private fun mediaStatus(id: Int) =
             """{"type":"MEDIA_STATUS","status":[{"mediaSessionId":$id,"playerState":"PLAYING","currentTime":1}]}"""

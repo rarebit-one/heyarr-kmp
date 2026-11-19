@@ -62,6 +62,7 @@ import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
 import one.rarebit.heyarr.desktop.settings.SiteDefaults
+import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.theme.Appearance
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
@@ -222,6 +223,32 @@ class AppSession(
             { emptyList() }
         },
     )
+
+    init {
+        // The local player defers to a Cast of the same film rather than streaming it twice.
+        playback.castingTo = { assetId -> cast.castingTo?.takeIf { cast.castingAsset == assetId } }
+    }
+
+    /**
+     * Says that [item] is playing on a receiver instead of starting it here, with a way to
+     * move it: "Play here" stops the receiver's media first, then calls [playHere].
+     */
+    fun castHolds(item: Route.Player, playHere: () -> Unit) {
+        val device = playback.castingTo(item.assetId) ?: return
+        toast(
+            Toast.Kind.INFO,
+            "Playing on $device",
+            "Stop casting to watch it here.",
+            action = ToastAction("Play here") {
+                launch {
+                    io { cast.control("stop") }.fold(
+                        onSuccess = { playHere() },
+                        onFailure = { toast(Toast.Kind.ERROR, "Couldn't stop casting", it.message) },
+                    )
+                }
+            },
+        )
+    }
 
     fun mediaUrl(url: String): String = mediaProxy.value.urlFor(url)
 

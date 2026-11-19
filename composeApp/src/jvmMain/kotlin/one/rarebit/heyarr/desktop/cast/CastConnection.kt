@@ -27,9 +27,23 @@ internal data class CastStatus(
 internal interface CastChannel : AutoCloseable {
     val status: CastStatus?
     val error: String?
-    fun load(url: String, title: String, autoplay: Boolean = true, start: Double = 0.0)
+
+    /**
+     * [duration] is the length of what [url] plays, when known. A live repackage has no
+     * duration in its header, so without it the receiver reports (and its own scrub bar
+     * spans) only the buffered end: a few seconds to a minute, not the film.
+     */
+    fun load(url: String, title: String, autoplay: Boolean = true, start: Double = 0.0, duration: Double? = null)
     fun control(action: String, seconds: Double? = null)
     fun refresh(): CastStatus?
+
+    /**
+     * Quits the receiver's media app (a receiver-level STOP of its session), so the next
+     * [load] launches a fresh one. A wedged Default Media Receiver keeps its broken
+     * pipeline across every LOAD into the same session; only a new session clears it.
+     * A no-op when the media app is not running.
+     */
+    fun stopReceiver()
 }
 
 /** One persistent Cast v2 channel. Request IDs correlate replies; broadcasts update status. */
@@ -55,6 +69,9 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
 
     @Volatile private var transportId: String? = null
 
+    /** The media app's receiver session, which a receiver-level STOP names. */
+    @Volatile private var appSessionId: String? = null
+
     @Volatile private var lastPong = System.nanoTime()
 
     @Volatile override var status: CastStatus? = null
@@ -75,8 +92,7 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         runCatching {
             send(CONNECTION, RECEIVER, mapOf("type" to "CONNECT"))
             val reply = request(RECEIVER_NS, RECEIVER, mapOf("type" to "GET_STATUS"))
-            val app = application(reply)
-            transportId = if (app?.first == DEFAULT_RECEIVER) app.second else null
+            adopt(reply)
             if (transportId != null) {
                 send(CONNECTION, requireNotNull(transportId), mapOf("type" to "CONNECT"))
                 request(MEDIA, requireNotNull(transportId), mapOf("type" to "GET_STATUS"))
@@ -84,27 +100,23 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         }.onFailure { close() }.getOrThrow()
     }
 
-    override fun load(url: String, title: String, autoplay: Boolean, start: Double) {
+    override fun load(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?) {
         if (transportId == null) {
-            val launched = request(RECEIVER_NS, RECEIVER, mapOf("type" to "LAUNCH", "appId" to DEFAULT_RECEIVER))
-            transportId = application(launched)?.takeIf { it.first == DEFAULT_RECEIVER }?.second
-                ?: error("Cast receiver did not launch the media application")
+            adopt(request(RECEIVER_NS, RECEIVER, mapOf("type" to "LAUNCH", "appId" to DEFAULT_RECEIVER)))
+            checkNotNull(transportId) { "Cast receiver did not launch the media application" }
             send(CONNECTION, requireNotNull(transportId), mapOf("type" to "CONNECT"))
         }
+        val media = mutableMapOf<String, Any?>(
+            "contentId" to url,
+            "contentType" to "video/mp4",
+            "streamType" to "BUFFERED",
+            "metadata" to mapOf("metadataType" to 0, "title" to title),
+        )
+        duration?.takeIf { it.isFinite() && it > 0 }?.let { media["duration"] = it }
         val reply = request(
             MEDIA,
             requireNotNull(transportId),
-            mapOf(
-                "type" to "LOAD",
-                "media" to mapOf(
-                    "contentId" to url,
-                    "contentType" to "video/mp4",
-                    "streamType" to "BUFFERED",
-                    "metadata" to mapOf("metadataType" to 0, "title" to title),
-                ),
-                "autoplay" to autoplay,
-                "currentTime" to start,
-            ),
+            mapOf("type" to "LOAD", "media" to media, "autoplay" to autoplay, "currentTime" to start),
         )
         requireResponse(reply, "MEDIA_STATUS")
         check(status?.state != "IDLE" || status?.error == null) { "Cast receiver failed to play the media" }
@@ -127,12 +139,28 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
 
     override fun refresh(): CastStatus? {
         if (transportId == null) {
-            val app = application(request(RECEIVER_NS, RECEIVER, mapOf("type" to "GET_STATUS")))
-            transportId = if (app?.first == DEFAULT_RECEIVER) app.second else null
+            adopt(request(RECEIVER_NS, RECEIVER, mapOf("type" to "GET_STATUS")))
             if (transportId != null) send(CONNECTION, requireNotNull(transportId), mapOf("type" to "CONNECT"))
         }
         if (transportId != null) request(MEDIA, requireNotNull(transportId), mapOf("type" to "GET_STATUS"))
         return status
+    }
+
+    override fun stopReceiver() {
+        val session = appSessionId ?: return
+        request(RECEIVER_NS, RECEIVER, mapOf("type" to "STOP", "sessionId" to session))
+        // The old transport's late MEDIA_STATUS frames are now refused by acceptsInbound,
+        // and its media session can no longer be controlled or reported as ours.
+        transportId = null
+        appSessionId = null
+        status = null
+    }
+
+    /** Takes the Default Media Receiver's transport and session from a RECEIVER_STATUS, or forgets them. */
+    private fun adopt(reply: String) {
+        val app = application(reply)?.takeIf { it.first == DEFAULT_RECEIVER }
+        transportId = app?.second
+        appSessionId = app?.let { sessionOf(reply) }
     }
 
     private fun request(namespace: String, destination: String, values: Map<String, Any?>): String {
@@ -259,6 +287,10 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
                 val transport = JsonScan.stringField(app, "transportId")
                 if (id == null || transport == null) null else id to transport
             }
+
+        internal fun sessionOf(body: String): String? = JsonScan.objectAt(body, "status")
+            ?.let { JsonScan.objectsOf(it, listOf("applications")).firstOrNull() }
+            ?.let { JsonScan.stringField(it, "sessionId") }
 
         internal fun parseStatus(body: String): CastStatus? {
             val first = JsonScan.objectsOf(body, listOf("status")).firstOrNull() ?: return null

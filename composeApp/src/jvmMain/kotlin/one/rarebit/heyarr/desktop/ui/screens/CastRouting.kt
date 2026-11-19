@@ -12,6 +12,7 @@ import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.state.ToastAction
 import one.rarebit.heyarr.desktop.cast.CastDevice
+import one.rarebit.heyarr.desktop.cast.CastRecovery
 import one.rarebit.heyarr.desktop.heyarr.CastResult
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.state.AppSession
@@ -82,6 +83,21 @@ private fun CastDeviceGroup(devices: List<CastDevice>, onCast: (CastDevice) -> U
     }
 }
 
+/** What the Cast manager is doing for a receiver, in film time, for a toast or the Cast panel. */
+internal fun castRecoveryText(r: CastRecovery): Pair<String, String> = when (r.kind) {
+    CastRecovery.Kind.SEEKING ->
+        "Seeking on ${r.device}" to
+            "Restarting the stream at ${clock(r.position)}: the receiver can't skip ahead in it by itself."
+
+    CastRecovery.Kind.RESTARTING ->
+        "${r.device} stopped playing" to
+            "Restarting its Cast session at ${clock(r.position)}."
+
+    CastRecovery.Kind.GAVE_UP ->
+        "${r.device} keeps stalling" to
+            "Stopped retrying at ${clock(r.position)}. Stop and cast again, or restart the receiver."
+}
+
 internal fun castLocally(
     session: AppSession,
     device: CastDevice,
@@ -93,6 +109,10 @@ internal fun castLocally(
         val api = session.api ?: return@launch
         session.io { session.cast.play(device, api, assetId, title) }.fold(
             onSuccess = {
+                // The receiver owns the film now. A paused local player kept its own
+                // stream open on the node, and resuming or reopening it started a second
+                // transcode beside the receiver's (heyarr-kmp#248): stop it, don't pause.
+                if (session.playback.current?.assetId == assetId) session.playback.stop()
                 afterSuccess()
                 session.toast(Toast.Kind.SUCCESS, "Playing on ${device.name}", "Keep this app open while it plays.")
             },

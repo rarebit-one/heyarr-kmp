@@ -44,6 +44,7 @@ import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.desktop.cast.CastDevice
+import one.rarebit.heyarr.desktop.cast.CastRecovery
 import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.ui.components.EmptyState
@@ -201,7 +202,15 @@ private fun DeviceTabs(session: AppSession, state: NowPlayingState) {
 private fun CastPanel(session: AppSession, state: NowPlayingState, device: CastDevice, scope: CoroutineScope) {
     val cast = session.cast
     Panel(device.name) {
-        cast.error?.let { Notice(it, tone = Tokens.danger) }
+        // While the manager seeks or relaunches the receiver, say so rather than leaving a spinner.
+        cast.recovery?.takeIf { cast.selected?.id == device.id }?.let { r ->
+            val (title, detail) = castRecoveryText(r)
+            val tone = if (r.kind == CastRecovery.Kind.GAVE_UP) Tokens.danger else Tokens.warning
+            Notice(title, tone = tone, icon = HeyarrIcons.Cast, detail = detail)
+        }
+        cast.error?.takeIf {
+            cast.recovery?.kind != CastRecovery.Kind.GAVE_UP
+        }?.let { Notice(it, tone = Tokens.danger) }
         val report = cast.status
         if (cast.selected?.id != device.id || report == null) {
             Text("No active media session reported.", color = Tokens.textMuted)
