@@ -65,6 +65,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.mcp.RendererListResult
+import one.rarebit.heyarr.core.playback.clockLabel
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.library.WorkDetail
@@ -341,7 +342,7 @@ fun PlayerScreen(
                     }, size = 36.dp)
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        "${clock(ps.position)} / ${clock(ps.duration)}",
+                        "${clockLabel(ps.position)} / ${clockLabel(ps.duration)}",
                         style = MaterialTheme.typography.labelLarge,
                         color = Tokens.textPrimary,
                     )
@@ -676,9 +677,9 @@ private fun SeekBar(ps: PlayerState, onSeek: (Float) -> Unit) {
                 },
                 modifier = Modifier.fillMaxWidth().height(24.dp).semantics {
                     contentDescription =
-                        "Position ${clock(
+                        "Position ${clockLabel(
                             ps.position,
-                        )} of ${clock(ps.duration)}, buffered ${(buffered * 100).toInt()} percent"
+                        )} of ${clockLabel(ps.duration)}, buffered ${(buffered * 100).toInt()} percent"
                 },
                 colors = SliderDefaults.colors(
                     thumbColor = theme.accentGradientEnd,
@@ -752,11 +753,3 @@ internal fun accentHex(c: Color): String = "#%02X%02X%02X".format(
             255
         ).toInt(),
 )
-
-internal fun clock(s: Double): String {
-    val t = s.toLong().coerceAtLeast(0)
-    val h = t / 3600
-    val m = (t % 3600) / 60
-    val sec = t % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
-}

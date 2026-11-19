@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.mcp.Renderer
 import one.rarebit.heyarr.core.mcp.RendererListResult
+import one.rarebit.heyarr.core.playback.clockLabel
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.state.ToastAction
 import one.rarebit.heyarr.desktop.cast.CastDevice
@@ -87,21 +88,21 @@ private fun CastDeviceGroup(devices: List<CastDevice>, onCast: (CastDevice) -> U
 internal fun castRecoveryText(r: CastRecovery): Pair<String, String> = when (r.kind) {
     CastRecovery.Kind.SEEKING ->
         "Seeking on ${r.device}" to
-            "Restarting the stream at ${clock(r.position)}: the receiver can't skip ahead in it by itself."
+            "Restarting the stream at ${clockLabel(r.position)}: the receiver can't skip ahead in it by itself."
 
     CastRecovery.Kind.RESTARTING ->
         "${r.device} stopped playing" to
-            "Restarting its Cast session at ${clock(r.position)}."
+            "Restarting its Cast session at ${clockLabel(r.position)}."
 
     CastRecovery.Kind.GAVE_UP ->
         "${r.device} keeps failing" to
-            "Stopped retrying at ${clock(r.position)}. Stop and cast again, or restart the receiver."
+            "Stopped retrying at ${clockLabel(r.position)}. Stop and cast again, or restart the receiver."
 
     CastRecovery.Kind.RECONNECTED ->
-        "Reconnected to ${r.device}" to "Resuming at ${clock(r.position)}."
+        "Reconnected to ${r.device}" to "Resuming at ${clockLabel(r.position)}."
 
     CastRecovery.Kind.RESUMING ->
-        "${r.device} lost the stream" to "Resuming at ${clock(r.position)}."
+        "${r.device} lost the stream" to "Resuming at ${clockLabel(r.position)}."
 }
 
 internal fun castLocally(
