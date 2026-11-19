@@ -1,5 +1,7 @@
 package one.rarebit.heyarr.desktop.playback
 
+import one.rarebit.heyarr.core.playback.StreamStart
+
 /**
  * The playback seam. heyarr serves a work's file as a range-capable blob stream
  * (`GET /api/v1/blobs/{hash}/content`, ADR-0013); on the desktop we do not decode it
@@ -67,7 +69,8 @@ object BlobStream {
  * seeks the *input* to that instant (cheap — `-ss` before `-i` lands on a keyframe
  * without decoding up to it).
  *
- * Pure and unit-tested, the desktop twin of the phone's `PlaybackTarget.streamUrl`.
+ * The URL itself is :core's [StreamStart], shared with the phone and the Cast restart; this
+ * keeps the desktop player's name for it.
  */
 object StreamSeek {
 
@@ -78,16 +81,8 @@ object StreamSeek {
      * `start`, or a second seek stacks one param on another. The path token goes on
      * the wire VERBATIM (the `blake3:`→`blake3%3A` trap [BlobStream] exists to avoid).
      */
-    fun urlAt(base: String, startSeconds: Double): String {
-        if (startSeconds <= 0.0) return base
-        val sep = if (base.contains('?')) '&' else '?'
-        return base + sep + "start=" + seconds(startSeconds)
-    }
+    fun urlAt(base: String, startSeconds: Double): String = StreamStart.url(base, startSeconds)
 
     /** Seconds as an integer when whole, else up to 3 decimals with no trailing zeros. */
-    fun seconds(value: Double): String {
-        val whole = value.toLong()
-        if (value == whole.toDouble()) return whole.toString()
-        return String.format(java.util.Locale.ROOT, "%.3f", value).trimEnd('0').trimEnd('.')
-    }
+    fun seconds(value: Double): String = StreamStart.seconds(value)
 }

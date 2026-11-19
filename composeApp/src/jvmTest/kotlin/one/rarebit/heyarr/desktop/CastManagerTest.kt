@@ -101,7 +101,7 @@ class CastManagerTest {
             manager.control("pause")
             manager.control("seek", 35.0)
             assertEquals(false, channel.lastLoad?.second)
-            assertTrue(channel.lastLoad!!.first.contains("?start=35.0"))
+            assertTrue(channel.lastLoad!!.first.contains("?start=35"))
             assertEquals(35.0, manager.status?.position)
             assertEquals(120.0, manager.status?.duration)
         }
@@ -317,7 +317,7 @@ class CastManagerTest {
             clock.advance(CastManager.SEEK_GRACE_SECONDS.toDouble())
             manager.refresh()
             assertEquals(loads + 1, channel.loadCount)
-            assertEquals("start=110.0", channel.lastLoad!!.first.substringAfter("?"))
+            assertEquals("start=110", channel.lastLoad!!.first.substringAfter("?"))
             assertEquals(true, channel.lastLoad!!.second)
             assertEquals(1, channel.receiverStops, "Only the first Cast quit a foreign app; a seek reloads")
             assertEquals(CastRecovery(CastRecovery.Kind.SEEKING, "First", 110.0), manager.recovery)
