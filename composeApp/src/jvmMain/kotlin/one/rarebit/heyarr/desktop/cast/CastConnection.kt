@@ -22,14 +22,50 @@ internal data class CastStatus(
     val title: String?,
     val mediaSessionId: Int?,
     val error: String? = null,
+    /**
+     * Why an IDLE session ended: FINISHED, CANCELLED (a stop, from any sender or the TV's
+     * remote), INTERRUPTED (a new LOAD) or ERROR. Whether a dropped film is resumed hangs on it.
+     */
+    val idleReason: String? = null,
 )
+
+/**
+ * What one channel saw of a media session in any MEDIA_STATUS, a reply or the receiver's
+ * unsolicited broadcast. [idleReason] is latched: once the session reported why it ended, a
+ * later report that says nothing (the empty status after the receiver closes it) keeps it.
+ */
+internal data class SessionSighting(val idleReason: String?)
 
 internal interface CastChannel : AutoCloseable {
     val status: CastStatus?
     val error: String?
-    fun load(url: String, title: String, autoplay: Boolean = true, start: Double = 0.0)
+
+    /**
+     * [duration] is the length of what [url] plays, when known. A live repackage has no
+     * duration in its header, so the receiver otherwise reports only the buffered end. On a
+     * real Default Media Receiver the declaration holds for about a second after LOAD before
+     * the media element replaces it with the buffered end again, so the TV's own scrub bar
+     * stays short; only an HLS stream with a real playlist fixes that (heyarr-core#908).
+     */
+    fun load(url: String, title: String, autoplay: Boolean = true, start: Double = 0.0, duration: Double? = null)
     fun control(action: String, seconds: Double? = null)
     fun refresh(): CastStatus?
+
+    /**
+     * What this channel saw of [mediaSessionId] since the last [load] or [stopReceiver]: null
+     * when it never saw it. The Default Media Receiver can close a session between two polls
+     * (it played out the buffer of a stream that ended mid-film), so the next poll finds only
+     * an empty status; the reason it broadcast on the way out is kept here.
+     */
+    fun sighting(mediaSessionId: Int): SessionSighting?
+
+    /**
+     * Quits the receiver's media app (a receiver-level STOP of its session), so the next
+     * [load] launches a fresh one. A wedged Default Media Receiver keeps its broken
+     * pipeline across every LOAD into the same session; only a new session clears it.
+     * A no-op when the media app is not running.
+     */
+    fun stopReceiver()
 }
 
 /** One persistent Cast v2 channel. Request IDs correlate replies; broadcasts update status. */
@@ -55,7 +91,20 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
 
     @Volatile private var transportId: String? = null
 
+    /** The media app's receiver session, which a receiver-level STOP names. */
+    @Volatile private var appSessionId: String? = null
+
     @Volatile private var lastPong = System.nanoTime()
+
+    /**
+     * Every media session a MEDIA_STATUS named, newest last, bounded: written on the reader
+     * thread, read by the manager's poll. Cleared per LOAD and receiver STOP, because a freshly
+     * launched media app numbers its sessions from the start again, and an old session's
+     * CANCELLED must never be read as the stop of a new one.
+     */
+    private val sightings = object : LinkedHashMap<Int, SessionSighting>() {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, SessionSighting>?) = size > MAX_SIGHTINGS
+    }
 
     @Volatile override var status: CastStatus? = null
         private set
@@ -75,8 +124,7 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         runCatching {
             send(CONNECTION, RECEIVER, mapOf("type" to "CONNECT"))
             val reply = request(RECEIVER_NS, RECEIVER, mapOf("type" to "GET_STATUS"))
-            val app = application(reply)
-            transportId = if (app?.first == DEFAULT_RECEIVER) app.second else null
+            adopt(reply)
             if (transportId != null) {
                 send(CONNECTION, requireNotNull(transportId), mapOf("type" to "CONNECT"))
                 request(MEDIA, requireNotNull(transportId), mapOf("type" to "GET_STATUS"))
@@ -84,27 +132,24 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         }.onFailure { close() }.getOrThrow()
     }
 
-    override fun load(url: String, title: String, autoplay: Boolean, start: Double) {
+    override fun load(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?) {
+        forgetSightings()
         if (transportId == null) {
-            val launched = request(RECEIVER_NS, RECEIVER, mapOf("type" to "LAUNCH", "appId" to DEFAULT_RECEIVER))
-            transportId = application(launched)?.takeIf { it.first == DEFAULT_RECEIVER }?.second
-                ?: error("Cast receiver did not launch the media application")
+            adopt(request(RECEIVER_NS, RECEIVER, mapOf("type" to "LAUNCH", "appId" to DEFAULT_RECEIVER)))
+            checkNotNull(transportId) { "Cast receiver did not launch the media application" }
             send(CONNECTION, requireNotNull(transportId), mapOf("type" to "CONNECT"))
         }
+        val media = mutableMapOf<String, Any?>(
+            "contentId" to url,
+            "contentType" to "video/mp4",
+            "streamType" to "BUFFERED",
+            "metadata" to mapOf("metadataType" to 0, "title" to title),
+        )
+        duration?.takeIf { it.isFinite() && it > 0 }?.let { media["duration"] = it }
         val reply = request(
             MEDIA,
             requireNotNull(transportId),
-            mapOf(
-                "type" to "LOAD",
-                "media" to mapOf(
-                    "contentId" to url,
-                    "contentType" to "video/mp4",
-                    "streamType" to "BUFFERED",
-                    "metadata" to mapOf("metadataType" to 0, "title" to title),
-                ),
-                "autoplay" to autoplay,
-                "currentTime" to start,
-            ),
+            mapOf("type" to "LOAD", "media" to media, "autoplay" to autoplay, "currentTime" to start),
         )
         requireResponse(reply, "MEDIA_STATUS")
         check(status?.state != "IDLE" || status?.error == null) { "Cast receiver failed to play the media" }
@@ -127,12 +172,40 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
 
     override fun refresh(): CastStatus? {
         if (transportId == null) {
-            val app = application(request(RECEIVER_NS, RECEIVER, mapOf("type" to "GET_STATUS")))
-            transportId = if (app?.first == DEFAULT_RECEIVER) app.second else null
+            adopt(request(RECEIVER_NS, RECEIVER, mapOf("type" to "GET_STATUS")))
             if (transportId != null) send(CONNECTION, requireNotNull(transportId), mapOf("type" to "CONNECT"))
         }
         if (transportId != null) request(MEDIA, requireNotNull(transportId), mapOf("type" to "GET_STATUS"))
         return status
+    }
+
+    override fun stopReceiver() {
+        val session = appSessionId ?: return
+        request(RECEIVER_NS, RECEIVER, mapOf("type" to "STOP", "sessionId" to session))
+        // The old transport's late MEDIA_STATUS frames are now refused by acceptsInbound,
+        // and its media session can no longer be controlled or reported as ours.
+        transportId = null
+        appSessionId = null
+        status = null
+        forgetSightings()
+    }
+
+    override fun sighting(mediaSessionId: Int): SessionSighting? = synchronized(sightings) { sightings[mediaSessionId] }
+
+    private fun forgetSightings() = synchronized(sightings) { sightings.clear() }
+
+    /** Latches each session [body] names, keeping an earlier idleReason when this report has none. */
+    private fun sight(body: String) = synchronized(sightings) {
+        for ((session, reason) in sightingsOf(body)) {
+            sightings[session] = SessionSighting(reason ?: sightings[session]?.idleReason)
+        }
+    }
+
+    /** Takes the Default Media Receiver's transport and session from a RECEIVER_STATUS, or forgets them. */
+    private fun adopt(reply: String) {
+        val app = application(reply)?.takeIf { it.first == DEFAULT_RECEIVER }
+        transportId = app?.second
+        appSessionId = app?.let { sessionOf(reply) }
     }
 
     private fun request(namespace: String, destination: String, values: Map<String, Any?>): String {
@@ -182,6 +255,8 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         } else {
             if (type == "CLOSE") error("Cast receiver closed the connection")
             if (frame.namespace == MEDIA && type == "MEDIA_STATUS") {
+                // Broadcasts too: they carry the idleReason a poll can miss (heyarr-kmp#249).
+                sight(frame.payload)
                 status = mergeStatus(status, parseStatus(frame.payload))
             }
             completeReply(frame)
@@ -215,7 +290,12 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
                 }
                 if (running) send(HEARTBEAT, RECEIVER, mapOf("type" to "PING"))
             } catch (_: Exception) {
-                if (running) close()
+                // A failed PING is a dead socket. Say so: the manager reconnects on an error,
+                // and a channel that closed silently would look healthy to it.
+                if (running) {
+                    error = error ?: "Cast connection lost"
+                    close()
+                }
             }
         }
     }
@@ -240,6 +320,9 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         private const val HEARTBEAT_TIMEOUT_SECONDS = 25L
         private const val REQUEST_ID_DIVISOR = 2
 
+        /** Ours, the one before it across a restart, and a few foreign ones: plenty. */
+        private const val MAX_SIGHTINGS = 8
+
         private val castTls = SSLContext.getInstance("TLS").apply {
             init(
                 null,
@@ -260,6 +343,10 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
                 if (id == null || transport == null) null else id to transport
             }
 
+        internal fun sessionOf(body: String): String? = JsonScan.objectAt(body, "status")
+            ?.let { JsonScan.objectsOf(it, listOf("applications")).firstOrNull() }
+            ?.let { JsonScan.stringField(it, "sessionId") }
+
         internal fun parseStatus(body: String): CastStatus? {
             val first = JsonScan.objectsOf(body, listOf("status")).firstOrNull() ?: return null
             val media = JsonScan.objectAt(first, "media")
@@ -271,8 +358,16 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
                 metadata?.let { JsonScan.stringField(it, "title") },
                 JsonScan.longField(first, "mediaSessionId")?.toInt(),
                 JsonScan.stringField(first, "idleReason")?.takeIf { it == "ERROR" || it == "INTERRUPTED" },
+                JsonScan.stringField(first, "idleReason"),
             )
         }
+
+        /** Each media session [body] reports on, with the idleReason it gave (null: none). */
+        internal fun sightingsOf(body: String): List<Pair<Int, String?>> =
+            JsonScan.objectsOf(body, listOf("status")).mapNotNull { entry ->
+                val session = JsonScan.longField(entry, "mediaSessionId")?.toInt()
+                session?.let { it to JsonScan.stringField(entry, "idleReason") }
+            }
 
         internal fun mergeStatus(previous: CastStatus?, next: CastStatus?): CastStatus? =
             if (next?.mediaSessionId == null || next.mediaSessionId != previous?.mediaSessionId) {

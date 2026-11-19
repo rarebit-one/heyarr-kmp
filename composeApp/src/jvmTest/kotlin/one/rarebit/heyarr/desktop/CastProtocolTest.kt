@@ -4,10 +4,12 @@ import one.rarebit.heyarr.desktop.cast.CastConnection
 import one.rarebit.heyarr.desktop.cast.CastDiscovery
 import one.rarebit.heyarr.desktop.cast.CastFrame
 import one.rarebit.heyarr.desktop.cast.CastManager
+import one.rarebit.heyarr.desktop.cast.CastStatus
 import one.rarebit.heyarr.desktop.cast.CastWire
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.net.InetAddress
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -105,5 +107,48 @@ class CastProtocolTest {
         val merged = CastConnection.mergeStatus(buffering, failed)
         assertEquals("IDLE", merged?.state)
         assertEquals("ERROR", merged?.error)
+        assertEquals("ERROR", merged?.idleReason)
+    }
+
+    @Test
+    fun everyIdleReasonIsKeptSoAStopIsToldFromADroppedFilm() {
+        for (reason in listOf("FINISHED", "CANCELLED", "INTERRUPTED", "ERROR")) {
+            val ended = CastConnection.parseStatus(
+                """{"type":"MEDIA_STATUS","status":[{"mediaSessionId":7,"playerState":"IDLE",""" +
+                    """"idleReason":"$reason","currentTime":12}]}""",
+            )
+            assertEquals(reason, ended?.idleReason)
+        }
+        val playing = CastConnection.parseStatus(
+            """{"type":"MEDIA_STATUS","status":[{"mediaSessionId":7,"playerState":"PLAYING","currentTime":3}]}""",
+        )
+        assertNull(playing?.idleReason)
+    }
+
+    @Test
+    fun receiverSessionIsReadForAReceiverLevelStop() {
+        val receiver = """{"type":"RECEIVER_STATUS","status":{"applications":[""" +
+            """{"appId":"CC1AD845","transportId":"web-4","sessionId":"abc-1"}]}}"""
+        assertEquals("abc-1", CastConnection.sessionOf(receiver))
+        assertNull(CastConnection.sessionOf("""{"type":"RECEIVER_STATUS","status":{"applications":[]}}"""))
+    }
+
+    @Test
+    fun aForwardSeekWhilePausedIsFollowedOnlyOnceTheReceiverWaitsOnIt() {
+        val second = TimeUnit.SECONDS.toNanos(1)
+        fun report(state: String, at: Double) = CastStatus(state, at, null, null, 3)
+        var judged = CastManager.judge(null, report("PAUSED", 10.0), 0, wantsPlay = false)
+        judged = CastManager.judge(judged.progress, report("PAUSED", 900.0), 60 * second, wantsPlay = false)
+        assertEquals(true, judged.progress.jumped)
+        assertEquals(CastManager.Companion.Verdict.STEADY, judged.verdict, "Paused time never counts")
+        judged = CastManager.judge(judged.progress, report("BUFFERING", 900.0), 62 * second, wantsPlay = true)
+        assertEquals(CastManager.Companion.Verdict.STEADY, judged.verdict)
+        judged = CastManager.judge(judged.progress, report("BUFFERING", 900.0), 66 * second, wantsPlay = true)
+        assertEquals(CastManager.Companion.Verdict.UNREACHED_SEEK, judged.verdict)
+        // Had it played on from there, the jump was served from its buffer: nothing to do.
+        val played = CastManager.judge(judged.progress, report("PLAYING", 902.0), 67 * second, wantsPlay = true)
+        assertEquals(CastManager.Companion.Verdict.STEADY, played.verdict)
+        assertEquals(true, played.played)
+        assertEquals(false, played.progress.jumped)
     }
 }

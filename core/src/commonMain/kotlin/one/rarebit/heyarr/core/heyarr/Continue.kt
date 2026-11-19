@@ -1,6 +1,7 @@
 package one.rarebit.heyarr.core.heyarr
 
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.playback.clockLabel
 
 /**
  * One row of the node's continue rail — `GET /api/v1/consumption/continue` (ADR-0075):
@@ -47,23 +48,14 @@ data class ContinueEntry(
             return when {
                 v == null -> locator
 
-                unit == "seconds" || unit == "s" -> clock(v.toLong()) +
-                    (durationSeconds?.let { " / " + clock(it.toLong()) } ?: "")
+                unit == "seconds" || unit == "s" -> clockLabel(v.toLong()) +
+                    (durationSeconds?.let { " / " + clockLabel(it.toLong()) } ?: "")
 
                 unit == "percent" || unit == "%" -> "${v.toInt()}%"
 
                 else -> "$locator ${unit ?: ""}".trim()
             }
         }
-
-    private fun clock(s: Long): String {
-        val h = s / 3600
-        val m = (s % 3600) / 60
-        val sec = s % 60
-        val ss = sec.toString().padStart(2, '0')
-        val mm = m.toString().padStart(2, '0')
-        return if (h > 0) "$h:$mm:$ss" else "$m:$ss"
-    }
 }
 
 object ContinueJson {

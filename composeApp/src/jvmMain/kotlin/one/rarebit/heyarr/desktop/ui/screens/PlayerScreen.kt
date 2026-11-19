@@ -65,6 +65,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.mcp.RendererListResult
+import one.rarebit.heyarr.core.playback.clockLabel
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.library.WorkDetail
@@ -341,7 +342,7 @@ fun PlayerScreen(
                     }, size = 36.dp)
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        "${clock(ps.position)} / ${clock(ps.duration)}",
+                        "${clockLabel(ps.position)} / ${clockLabel(ps.duration)}",
                         style = MaterialTheme.typography.labelLarge,
                         color = Tokens.textPrimary,
                     )
@@ -490,7 +491,7 @@ fun PlayerScreen(
                     }
                 })
             }
-            if (state.castOpen) Box(Modifier.padding(horizontal = 24.dp)) { CastRow(session, state, item) }
+            if (state.castOpen) Box(Modifier.padding(horizontal = 24.dp)) { CastRow(session, state, item, onBack) }
 
             // Keep the picture inside the height left after the header, the transport and
             // the up-next card. Sized from the width alone, a maximized window's 16:9 picture
@@ -676,9 +677,9 @@ private fun SeekBar(ps: PlayerState, onSeek: (Float) -> Unit) {
                 },
                 modifier = Modifier.fillMaxWidth().height(24.dp).semantics {
                     contentDescription =
-                        "Position ${clock(
+                        "Position ${clockLabel(
                             ps.position,
-                        )} of ${clock(ps.duration)}, buffered ${(buffered * 100).toInt()} percent"
+                        )} of ${clockLabel(ps.duration)}, buffered ${(buffered * 100).toInt()} percent"
                 },
                 colors = SliderDefaults.colors(
                     thumbColor = theme.accentGradientEnd,
@@ -707,8 +708,9 @@ private fun StartingOverlay(label: String) {
     }
 }
 
+@Suppress("FunctionNaming") // Compose components use title case.
 @Composable
-private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.Player) {
+private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.Player, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     Panel("Play on a renderer", trailing = { GhostButton("Close", { state.castOpen = false }) }) {
         val rl = state.rendererList
@@ -727,7 +729,8 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
                 Caster(session, a, x, before = { session.playback.player.pause() }).cast(item.assetId)
             }, onCast = { device ->
                 state.castOpen = false
-                castLocally(session, device, item.assetId, item.title) { session.playback.player.pause() }
+                // castLocally stops the local player; leave the empty player behind with it.
+                castLocally(session, device, item.assetId, item.title) { onBack() }
             })
         }
         GhostButton("Search the network again", {
@@ -750,11 +753,3 @@ internal fun accentHex(c: Color): String = "#%02X%02X%02X".format(
             255
         ).toInt(),
 )
-
-internal fun clock(s: Double): String {
-    val t = s.toLong().coerceAtLeast(0)
-    val h = t / 3600
-    val m = (t % 3600) / 60
-    val sec = t % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
-}
