@@ -161,6 +161,9 @@ class MainActivity : FragmentActivity() {
         // background, behind another app, the screen off) and picks up where it was when it
         // starts again (#231). A rotation is not a stop for it.
         lifecycle.addObserver(app.graph.video.lifecycleObserver { isChangingConfigurations })
+        // Google Cast (heyarr-kmp#250): the framework starts with the first Activity, which its
+        // MediaRouteButton needs; a phone without Play services gets no Cast button.
+        app.graph.startCast()
         // The music keeps playing in the background; where it stands is written down as the app
         // goes there, in case the process does not come back (#232).
         lifecycle.addObserver(

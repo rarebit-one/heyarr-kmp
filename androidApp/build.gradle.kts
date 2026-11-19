@@ -283,6 +283,12 @@ dependencies {
     // The audio queue lives in a MediaSessionService (notification controls, survives the
     // Activity); the app talks to it through a MediaController behind the AudioPlayer seam.
     implementation(libs.androidx.media3.session)
+    // Google Cast (heyarr-kmp#250, cast/): the Cast SDK's session, notification and lock-screen
+    // controls over the Default Media Receiver, and the MediaRouteButton that picks a receiver.
+    // Not Media3's CastPlayer: its timeline is the receiver's, which restarts at zero on every
+    // restart seek of the live repackage; the film-absolute clock is cast/CastManager's.
+    implementation(libs.play.services.cast.framework)
+    implementation(libs.androidx.mediarouter)
 
     // ── The reader ──────────────────────────────────────────────────────────────
     // EPUB and comic archives through the Readium Kotlin toolkit, fetched over the

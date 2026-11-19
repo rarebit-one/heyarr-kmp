@@ -23,6 +23,11 @@ serialization = "1.13.0"
 compose-bom = "2026.09.00"
 camerax = "1.4.2"
 media3 = "1.4.1"
+# Google Cast (heyarr-kmp#250): the sender framework (sessions, the Default Media Receiver, its
+# notification, lock-screen and volume-key controls) and the MediaRouteButton it plugs into.
+# 22.3.x, not 23.0.0: a fresh major line of the framework, unproven against these receivers.
+play-services-cast = "22.3.1"
+mediarouter = "1.8.1"
 readium = "3.4.0"
 # The PDF reader (#162): Jetpack's PdfViewerFragment, which replaced Readium's PDFium adapter.
 # That adapter's natives were 4 KB-aligned, and every Readium with aligned ones pulls its
@@ -84,6 +89,8 @@ androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", versi
 androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
 androidx-media3-datasource-okhttp = { module = "androidx.media3:media3-datasource-okhttp", version.ref = "media3" }
 androidx-media3-session = { module = "androidx.media3:media3-session", version.ref = "media3" }
+play-services-cast-framework = { module = "com.google.android.gms:play-services-cast-framework", version.ref = "play-services-cast" }
+androidx-mediarouter = { module = "androidx.mediarouter:mediarouter", version.ref = "mediarouter" }
 
 readium-shared = { module = "org.readium.kotlin-toolkit:readium-shared", version.ref = "readium" }
 readium-streamer = { module = "org.readium.kotlin-toolkit:readium-streamer", version.ref = "readium" }

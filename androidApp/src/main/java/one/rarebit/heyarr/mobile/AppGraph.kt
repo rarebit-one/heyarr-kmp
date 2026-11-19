@@ -2,7 +2,10 @@ package one.rarebit.heyarr.mobile
 
 import android.app.Application
 import androidx.media3.common.util.UnstableApi
+import com.google.android.gms.cast.framework.CastContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import one.rarebit.heyarr.core.discovery.MdnsResolver
 import one.rarebit.heyarr.core.net.HttpTransport
@@ -10,6 +13,11 @@ import one.rarebit.heyarr.core.playback.PlayerRestore
 import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.core.playback.ResumeRecorder
 import one.rarebit.heyarr.core.state.ExternalMetadata
+import one.rarebit.heyarr.mobile.cast.CastManager
+import one.rarebit.heyarr.mobile.cast.CastProgress
+import one.rarebit.heyarr.mobile.cast.CastRelay
+import one.rarebit.heyarr.mobile.cast.CastRelayHold
+import one.rarebit.heyarr.mobile.cast.SdkCastChannel
 import one.rarebit.heyarr.mobile.net.AuthHeaderSource
 import one.rarebit.heyarr.mobile.net.AuthInterceptor
 import one.rarebit.heyarr.mobile.net.NsdMdnsResolver
@@ -29,6 +37,7 @@ import one.rarebit.heyarr.mobile.settings.SettingsStore
 import one.rarebit.heyarr.mobile.state.PhoneExternalMetadata
 import one.rarebit.heyarr.mobile.state.RecentSearches
 import java.io.File
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 /**
@@ -45,7 +54,7 @@ import java.util.concurrent.TimeUnit
  * public-metadata cache and the recent-searches file.
  */
 @UnstableApi
-class AppGraph(app: Application, scope: CoroutineScope) {
+class AppGraph(private val app: Application, private val scope: CoroutineScope) {
 
     val settings: SettingsStore = PrefsSettingsStore(app)
 
@@ -166,6 +175,71 @@ class AppGraph(app: Application, scope: CoroutineScope) {
             PlaybackProgress.Event.CHECKPOINT,
             -> resumeRecorder.checkpoint(item, progress.seconds, duration)
         }
+    }
+
+    /**
+     * Google Cast (heyarr-kmp#250), process-wide like the video player: a cast outlives every
+     * screen, and the relay outlives the Activity. [castHold] is what [one.rarebit.heyarr.mobile.cast.CastRelayService]
+     * follows; the channel has no framework until [startCast].
+     */
+    val castHold = CastRelayHold(app)
+    private val castChannel = SdkCastChannel(app)
+
+    /** A cast's resume points: the same store as the player's, but no snapshot to put back here after process death. */
+    private val castResume = ResumeRecorder(resumePoints, null, System::currentTimeMillis)
+
+    val cast: CastManager = CastManager(
+        channel = castChannel,
+        // The relay's upstream rides the players' client: no call timeout, and the
+        // AuthInterceptor stamps a fresh credential on each request to the node.
+        doorway = { receiver, upstream -> CastRelay(receiver, upstream, streamHttp) },
+        canSign = { runCatching { authHeader.current() }.isSuccess },
+        hold = castHold,
+        io = Dispatchers.IO,
+        scope = scope,
+        available = false,
+    ).also { cast ->
+        cast.onProgress = { item, event, film, duration ->
+            when (event) {
+                CastProgress.TICK -> castResume.progress(item, film, duration)
+                CastProgress.CHECKPOINT -> castResume.checkpoint(item, film, duration)
+                CastProgress.ENDED -> castResume.ended(item)
+            }
+        }
+        castChannel.events = object : SdkCastChannel.Events {
+            override fun live() {
+                scope.launch { cast.sessionLive() }
+            }
+
+            override fun suspended() {
+                scope.launch { cast.sessionSuspended() }
+            }
+
+            override fun ended(lost: Boolean) {
+                scope.launch { cast.sessionEnded(lost) }
+            }
+        }
+    }
+
+    private var castStarted = false
+
+    /**
+     * Starts the Cast framework, once, from the Activity (its MediaRouteButton needs one).
+     * A phone without Google Play services fails here, and simply shows no Cast button.
+     */
+    fun startCast() {
+        if (castStarted) return
+        castStarted = true
+        runCatching {
+            CastContext.getSharedInstance(app, Executors.newSingleThreadExecutor())
+                .addOnSuccessListener { framework ->
+                    castChannel.castContext = framework
+                    cast.setAvailable(true)
+                    // A session the framework resumed at start-up (setResumeSavedSession) is already up.
+                    if (castChannel.live) scope.launch { cast.sessionLive() }
+                }
+                .addOnFailureListener { cast.setAvailable(false) }
+        }.onFailure { cast.setAvailable(false) }
     }
 
     /** Cover art and synopses from keyless public sources, cached under the app's cache dir (Settings → Appearance turns it off). */

@@ -20,7 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Build
-import androidx.compose.material.icons.rounded.Cast
+import androidx.compose.material.icons.rounded.ConnectedTv
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.OpenInNew
@@ -504,7 +504,9 @@ internal fun CastPicker(session: AppSession, state: DetailState) {
             state.busy = null
         }
     }
-    Panel("Play on a renderer", trailing = { GhostButton("Close", { state.castAssetId = null }) }) {
+    Panel("Play on a TV the server can reach (DLNA)", trailing = {
+        GhostButton("Close", { state.castAssetId = null })
+    }) {
         val r = state.renderers
         when {
             r == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
@@ -519,7 +521,7 @@ internal fun CastPicker(session: AppSession, state: DetailState) {
                 Modifier.horizontalScroll(rememberScrollState()),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                for (x in r) FilterChip(x.name, false, { playOn(x) }, icon = Icons.Rounded.Cast)
+                for (x in r) FilterChip(x.name, false, { playOn(x) }, icon = Icons.Rounded.ConnectedTv)
             }
         }
         GhostButton("Search the network again", {

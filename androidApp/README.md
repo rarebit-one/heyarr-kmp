@@ -22,7 +22,7 @@ phone's bottom bar (a rail on a tablet), consumption first with curation one tab
 | **Player** — in-app ExoPlayer with a persistent now-playing bar across screens (play/pause, ±10 s, seek, title), fullscreen, captions as a menu with language names, cast to a renderer | `/api/v1/blobs/{hash}/content` (Range/206), `POST /playback/plan`, `play_here` |
 | **Library** — grid/list, type + status filters, plus **Downloads** (wants in flight: state/phase/detail, and the job queue — the node reports state, not a percentage) and this phone's **Playlists** | `GET /works` + the want index; `GET /desired`, `GET /jobs` |
 | **Missing** — bulk search-now / monitor on-off, Want by title; Want a season lives on the series | `get_missing_content`, `get_upgrade_candidates`, `search_releases`, `monitor_content`, `want_content` |
-| **Cast** — renderers, live status, transport | `list_renderers`, `playback_status` (polled), `control_playback` |
+| **Cast** — **Google Cast** (the Cast button in the player and on a film or show; while connected, Play sends the film to the TV, relayed through this phone; film-absolute scrubber, stall and drop recovery, the SDK's notification, lock-screen and volume controls), and the DLNA renderers the server reaches: live status, transport | `POST /playback/plan` (Cast profile), `/api/v1/playback/stream/{token}` (`?start=`), `list_renderers`, `playback_status` (polled), `control_playback` |
 | **Settings** — connection + telemetry (`/session`, `/providers`, `/capabilities`, peers, libraries, jobs), device enrolment, followed sources, peers, appearance (adaptive accents, reduce motion, public cover art) | `list_followed`, `follow_source`, `unfollow`, `get_peer_status`, `sync_peer`, `GET /quality-profiles` |
 
 **Library status** (In library · Wanted · Missing · Not tracked) derives only from real
@@ -132,6 +132,10 @@ These need real hardware / a live server and can't be proven in CI:
 - **On-device personal-state decrypt** — the real `Unwrapper` (X25519 ECDH in-enclave → HKDF →
   the space key) + AEAD decryption of opaque changes, and the local **Personal MCP** (#372/#387)
   that reads the decrypted state. **No crypto ships in this repo.**
+- **Google Cast on a real TV** (`cast/`, heyarr-kmp#250) — the manager, relay, routing and
+  gate are unit-tested over a scripted receiver and a socket round-trip; the SDK session, a TV
+  fetching from the phone's relay, the notification / lock-screen / volume-key controls and the
+  wake and Wi-Fi locks with the screen off need a phone and a TV.
 - **Subsonic/OPDS/DLNA reach** — deciding whether to ship the compat adapters at all vs. leaning
   on the native API; `library/SubsonicClient` marks the fork as a decision, not an omission.
 

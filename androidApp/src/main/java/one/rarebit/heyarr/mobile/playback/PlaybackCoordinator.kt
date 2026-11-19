@@ -19,6 +19,7 @@ import one.rarebit.heyarr.core.playback.ResumeItem
 import one.rarebit.heyarr.core.playback.ResumePoint
 import one.rarebit.heyarr.core.playback.ResumePoints
 import one.rarebit.heyarr.core.playback.ResumeStore
+import one.rarebit.heyarr.mobile.cast.CastGate
 import one.rarebit.heyarr.mobile.consumption.ProgressReporter
 import one.rarebit.heyarr.mobile.library.Work
 import one.rarebit.heyarr.mobile.library.WorkAsset
@@ -401,10 +402,44 @@ class PlaybackCoordinator(
         scope.launch {
             val full = withCopies(np)
             val start = knownStart ?: resumeStart(full) ?: 0.0
-            full.assetId?.let { reporter.begin(it, full.verb) }
-            _nowPlaying.value = full.copy(startSeconds = start.coerceAtLeast(0.0), request = ++requests)
+            val playing = full.copy(startSeconds = start.coerceAtLeast(0.0))
+            val sink = cast
+            when (sink?.route(playing) ?: CastGate.Route.LOCAL) {
+                CastGate.Route.LOCAL -> Unit
+
+                CastGate.Route.CAST -> {
+                    sink?.send(playing)
+                    return@launch
+                }
+
+                CastGate.Route.BLOCKED -> {
+                    _notice.value = "Playing on ${sink?.device ?: "the TV"}. Stop casting to watch it here."
+                    return@launch
+                }
+            }
+            playing.assetId?.let { reporter.begin(it, playing.verb) }
+            _nowPlaying.value = playing.copy(request = ++requests)
         }
     }
+
+    /**
+     * Google Cast's door into playback (heyarr-kmp#250): while a session is up, a video goes
+     * to the TV instead of this phone's player, and the film this phone is casting cannot
+     * start here beside it ([CastGate]). Not a player: the coordinator still plans and finds
+     * the resume point, then hands the film over.
+     */
+    interface CastSink {
+        fun route(np: NowPlaying): CastGate.Route
+
+        fun send(np: NowPlaying)
+
+        /** The TV the cast is on, for the notice that it is playing there. */
+        val device: String?
+    }
+
+    /** Where a video goes while Google Cast is up; null (tests, previews, no Play services) plays everything here. */
+    @Volatile
+    var cast: CastSink? = null
 
     /**
      * A film that comes back by its file alone (put back after process death, a Continue

@@ -22,7 +22,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Build
-import androidx.compose.material.icons.rounded.Cast
+import androidx.compose.material.icons.rounded.ConnectedTv
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.OpenInNew
@@ -289,12 +289,15 @@ internal fun DetailHero(
             primary = { HeroPrimary(h, play, resume) { onGetIt(work.id, work.title, type) } },
             secondary = {
                 val castId = h.castId
+                // Google Cast for a film or a show: with a session up, the primary Play goes to
+                // the TV (cast/CastGate). Music never casts.
+                if (type == MediaType.MOVIE || type == MediaType.SERIES) CastButton()
                 if (castId != null && type != MediaType.BOOK &&
                     type != MediaType.FEED
                 ) {
                     SecondaryButton("Play on…", {
                         toggleCast(session, state, castId, scope)
-                    }, icon = Icons.Rounded.Cast)
+                    }, icon = Icons.Rounded.ConnectedTv)
                 }
             },
         )

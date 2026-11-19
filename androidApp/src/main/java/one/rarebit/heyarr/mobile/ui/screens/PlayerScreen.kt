@@ -30,8 +30,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Audiotrack
-import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.ClosedCaption
+import androidx.compose.material.icons.rounded.ConnectedTv
 import androidx.compose.material.icons.rounded.Forward10
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.FullscreenExit
@@ -427,7 +427,7 @@ private fun CaptionMenu(video: VideoSession, open: Boolean, onDismiss: () -> Uni
 @Composable
 private fun CastRow(session: AppSession, state: PlayerScreenState, assetId: String?, video: VideoSession) {
     val scope = rememberCoroutineScope()
-    Panel("Play on a renderer", trailing = { GhostButton("Close", { state.castOpen = false }) }) {
+    Panel("Play on a TV the server can reach (DLNA)", trailing = { GhostButton("Close", { state.castOpen = false }) }) {
         val r = state.renderers
         when {
             assetId == null -> Text(
@@ -465,7 +465,7 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, assetId: Stri
                                 }
                             }
                         }
-                    }, icon = Icons.Rounded.Cast)
+                    }, icon = Icons.Rounded.ConnectedTv)
                 }
             }
         }
