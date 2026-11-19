@@ -68,6 +68,9 @@ internal class CastManager(
     @Volatile private var assetId: String? = null
 
     @Volatile private var ownedMediaSessionId: Int? = null
+
+    /** The receiver app our media was loaded into: another app's same-numbered session is not ours. */
+    private var ownedAppSession: String? = null
     private var title = ""
     private var sourceOffset = 0.0
     private var playIntent = false
@@ -161,6 +164,7 @@ internal class CastManager(
             target = plan
             this.assetId = assetId
             ownedMediaSessionId = mediaSessionId
+            ownedAppSession = next.appSession
             this.title = title
             sourceOffset = 0.0
             playIntent = true
@@ -211,7 +215,15 @@ internal class CastManager(
     private fun settle(connection: CastChannel, fresh: CastStatus?): Fate? {
         val owned = ownedMediaSessionId ?: return null
         val cut = streamCut || relay?.severed == true
-        val fate = fateOf(fresh, owned, lastFilm, target?.durationSeconds, cut, connection.sighting(owned), playIntent)
+        // heyarr-kmp#242 review: another sender may relaunch the receiver app while our channel
+        // is down, and its first media session can reuse our number. A reconnected channel
+        // talks to whichever app now runs; a different one is someone else's.
+        val otherApp = ownedAppSession != null && connection.appSession.let { it != null && it != ownedAppSession }
+        val fate = if (otherApp) {
+            Fate.FOREIGN
+        } else {
+            fateOf(fresh, owned, lastFilm, target?.durationSeconds, cut, connection.sighting(owned), playIntent)
+        }
         // Another sender can replace the media without replacing the receiver app. Its
         // status and seeks must never reuse our previous film's plan. A stop from the
         // TV's remote, or the film's real end, also releases it.
@@ -487,6 +499,7 @@ internal class CastManager(
         relay?.close()
         relay = doorway
         ownedMediaSessionId = mediaSessionId
+        ownedAppSession = connection.appSession
         sourceOffset = position
         lastFilm = position
         playIntent = autoplay
@@ -565,6 +578,7 @@ internal class CastManager(
         target = null
         assetId = null
         ownedMediaSessionId = null
+        ownedAppSession = null
         sourceOffset = 0.0
         title = ""
         playIntent = false

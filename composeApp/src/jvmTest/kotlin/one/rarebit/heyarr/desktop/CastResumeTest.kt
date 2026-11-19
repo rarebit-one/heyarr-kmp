@@ -82,7 +82,10 @@ class CastResumeTest {
                 connects++
                 refuse?.let { error(it) }
                 FakeChannel(sessions).also { fresh ->
-                    channels.lastOrNull()?.let { fresh.status = it.status }
+                    channels.lastOrNull()?.let {
+                        fresh.status = it.status
+                        fresh.appSession = it.appSession
+                    }
                     channels += fresh
                 }
             },
@@ -312,6 +315,37 @@ class CastResumeTest {
             assertEquals(0, rig.channel.loadCount)
             assertEquals(loads, rig.channels.first().loadCount)
             assertEquals("Another film", rig.manager.status?.title)
+        }
+    }
+
+    @Test
+    fun anotherSendersRelaunchedAppIsNotOursEvenWithOurMediaSessionNumber() {
+        // heyarr-kmp#242 review: while our channel was down another sender relaunched the
+        // receiver app; its first media session reuses our number. The reconnected channel
+        // talks to that app, whose media must not inherit our film's plan, offset or seeks.
+        Rig().use { rig ->
+            rig.play()
+            rig.manager.control("seek", 1200.0)
+            rig.channel.report("PLAYING", 30.0)
+            rig.poll()
+            val ours = rig.channel.status!!.mediaSessionId
+            rig.channel.error = "Cast connection lost"
+            // What the receiver now runs, as the next channel will find it.
+            rig.channel.appSession = "app-2"
+            rig.channel.status = CastStatus("PLAYING", 4.0, 900.0, "Another film", ours)
+            rig.poll() // reconnects, onto the other sender's app
+            assertNull(rig.manager.castingAsset, "Another app's media is never ours")
+            assertEquals("Another film", rig.manager.status?.title)
+            assertEquals(4.0, rig.manager.status?.position, "No offset of ours applied")
+        }
+        Rig().use { rig ->
+            // Our own app across a reconnect is still ours.
+            rig.play()
+            rig.channel.report("PLAYING", 30.0)
+            rig.poll()
+            rig.channel.error = "Cast connection lost"
+            rig.poll()
+            assertEquals("asset", rig.manager.castingAsset)
         }
     }
 

@@ -229,6 +229,7 @@ class CastConnectionIntegrationTest {
                 assertEquals(5400.0, JsonScan.doubleField(media, "duration"))
                 receiver.reply(request, mediaStatus(8))
                 load.get(4, TimeUnit.SECONDS)
+                assertEquals("session-1", cast.appSession, "The receiver app our media went into")
 
                 // heyarr-kmp#248: a wedged Default Media Receiver is cleared only by quitting it.
                 val stop = CompletableFuture.runAsync { cast.stopReceiver() }
@@ -239,6 +240,7 @@ class CastConnectionIntegrationTest {
                 receiver.reply(quit, """{"type":"RECEIVER_STATUS","status":{"applications":[]}}""")
                 stop.get(4, TimeUnit.SECONDS)
                 assertNull(cast.status)
+                assertNull(cast.appSession)
 
                 // A late report from the quit app's transport is no longer ours.
                 receiver.send("web-4", "*", MEDIA, mediaStatus(8))
@@ -259,6 +261,7 @@ class CastConnectionIntegrationTest {
                 receiver.reply(fresh, mediaStatus(9))
                 relaunch.get(4, TimeUnit.SECONDS)
                 assertEquals(9, cast.status?.mediaSessionId)
+                assertEquals("session-2", cast.appSession, "A relaunched app is a new one")
             }
         }
     }

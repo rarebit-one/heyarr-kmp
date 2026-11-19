@@ -41,6 +41,13 @@ internal interface CastChannel : AutoCloseable {
     val error: String?
 
     /**
+     * The receiver app's own session (RECEIVER_STATUS `sessionId`) this channel talks to; null
+     * with none. A relaunched Default Media Receiver numbers its media sessions afresh, so a
+     * media session id alone can match one from an app another sender launched since.
+     */
+    val appSession: String?
+
+    /**
      * [duration] is the length of what [url] plays, when known. A live repackage has no
      * duration in its header, so the receiver otherwise reports only the buffered end. On a
      * real Default Media Receiver the declaration holds for about a second after LOAD before
@@ -189,6 +196,8 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         status = null
         forgetSightings()
     }
+
+    override val appSession: String? get() = appSessionId
 
     override fun sighting(mediaSessionId: Int): SessionSighting? = synchronized(sightings) { sightings[mediaSessionId] }
 

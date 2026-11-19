@@ -22,6 +22,9 @@ internal class FakeChannel(private val sessions: AtomicInteger = AtomicInteger(1
     override var status: CastStatus? = CastStatus("PLAYING", 0.0, null, "Example", 1)
     override var error: String? = null
 
+    /** The receiver app; a relaunch (ours or another sender's) starts a new one. */
+    override var appSession: String? = "app-1"
+
     /** What this channel saw of each session, latched as CastConnection's: session to idleReason. */
     private val sightings = mutableMapOf<Int, String?>()
     override fun load(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?) {
