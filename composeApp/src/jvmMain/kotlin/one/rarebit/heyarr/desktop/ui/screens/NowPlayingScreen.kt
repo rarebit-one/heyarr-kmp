@@ -68,8 +68,7 @@ class NowPlayingState {
     var generation = -1
     var rendererList by mutableStateOf<RendererListResult?>(null)
     var error by mutableStateOf<String?>(null)
-    var selected by mutableStateOf<Renderer?>(null)
-    internal var selectedCast by mutableStateOf<CastDevice?>(null)
+    internal var selected by mutableStateOf<SelectedDevice?>(null)
     var status by mutableStateOf<McpResult<PlaybackStatus?>?>(null)
     var busy by mutableStateOf(false)
 }
@@ -90,10 +89,9 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
             session.io { a.renderers(refresh).also { runCatching { session.cast.discover() } } }.fold(
                 onSuccess = { list ->
                     state.rendererList = list
-                    if (state.selected == null && state.selectedCast == null) {
-                        state.selectedCast = session.cast.selected
-                        if (state.selectedCast == null) state.selected = list.renderers.firstOrNull()
-                        if (state.selected == null) state.selectedCast = session.cast.devices.firstOrNull()
+                    if (state.selected == null) {
+                        state.selected =
+                            SelectedDevice.initial(session.cast.selected, list.renderers, session.cast.devices)
                     }
                 },
                 onFailure = { state.error = it.message },
@@ -133,8 +131,11 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
 
             else -> DeviceTabs(session, state)
         }
-        state.selected?.let { r -> RendererPanel(r, state, ::control) }
-        state.selectedCast?.let { device -> CastPanel(session, state, device, scope) }
+        when (val selected = state.selected) {
+            is SelectedDevice.Dlna -> RendererPanel(selected.renderer, state, ::control)
+            is SelectedDevice.Cast -> CastPanel(session, state, selected.device, scope)
+            null -> Unit
+        }
         Notice(
             "Playback position and history are the device's own report, live. heyarr keeps no play history this client can read.",
             icon = HeyarrIcons.Cast,
@@ -147,20 +148,20 @@ fun NowPlayingScreen(session: AppSession, state: NowPlayingState, modifier: Modi
 @Composable
 private fun ObserveSelectedStatus(session: AppSession, state: NowPlayingState) {
     LaunchedEffect(session.cast.selected?.id) {
-        state.selectedCast = session.cast.selected
-        if (state.selectedCast != null) state.selected = null
+        state.selected = state.selected.following(session.cast.selected)
     }
-    LaunchedEffect(state.selected?.udn, session.config) {
-        if (state.selectedCast != null) return@LaunchedEffect
-        val renderer = state.selected ?: return@LaunchedEffect
+    // The two paths stay separate effects, each keyed on its own half of the selection, so
+    // switching between a renderer and a receiver cancels one poll and starts the other.
+    LaunchedEffect(state.selected.dlnaRenderer?.udn, session.config) {
+        val renderer = state.selected.dlnaRenderer ?: return@LaunchedEffect
         val api = session.api ?: return@LaunchedEffect
         while (isActive) {
             session.io { api.playbackStatus(renderer.name) }.onSuccess { state.status = it }
             delay(2000)
         }
     }
-    LaunchedEffect(state.selectedCast?.id, session.generation) {
-        val device = state.selectedCast ?: return@LaunchedEffect
+    LaunchedEffect(state.selected.castReceiver?.id, session.generation) {
+        val device = state.selected.castReceiver ?: return@LaunchedEffect
         val attached = session.io { session.cast.attach(device) }
         if (attached.isFailure) {
             session.toast(
@@ -168,7 +169,7 @@ private fun ObserveSelectedStatus(session: AppSession, state: NowPlayingState) {
                 "Couldn't switch Cast controls",
                 attached.exceptionOrNull()?.message ?: "Attach failed",
             )
-            state.selectedCast = session.cast.selected
+            state.selected = state.selected.following(session.cast.selected)
             return@LaunchedEffect
         }
         while (isActive) {
@@ -183,15 +184,13 @@ private fun ObserveSelectedStatus(session: AppSession, state: NowPlayingState) {
 private fun DeviceTabs(session: AppSession, state: NowPlayingState) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         for (device in session.cast.devices) {
-            DeviceTab(device.name, state.selectedCast?.id == device.id) {
-                state.selectedCast = device
-                state.selected = null
+            DeviceTab(device.name, state.selected.castReceiver?.id == device.id) {
+                state.selected = SelectedDevice.Cast(device)
             }
         }
         for (renderer in state.rendererList?.renderers.orEmpty()) {
-            DeviceTab(renderer.name, state.selectedCast == null && state.selected?.udn == renderer.udn) {
-                state.selected = renderer
-                state.selectedCast = null
+            DeviceTab(renderer.name, state.selected.dlnaRenderer?.udn == renderer.udn) {
+                state.selected = SelectedDevice.Dlna(renderer)
                 state.status = null
             }
         }
@@ -291,7 +290,7 @@ private fun RendererPanel(r: Renderer, state: NowPlayingState, control: (String)
 
 /** Send a transport action to the selected renderer, then read its status back. */
 private fun controlRenderer(session: AppSession, state: NowPlayingState, action: String, scope: CoroutineScope) {
-    val r = state.selected ?: return
+    val r = state.selected.dlnaRenderer ?: return
     val a = session.api ?: return
     scope.launch {
         state.busy = true
