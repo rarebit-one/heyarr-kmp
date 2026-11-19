@@ -28,6 +28,9 @@ class CastManagerTest {
     private var signable = true
     private val channel = FakeChannel()
     private val doorways = mutableListOf<Pair<String, FakeDoorway>>()
+
+    /** Which doorways relay an HLS presentation (as its prefix, with no credential). */
+    private val presentations = mutableListOf<Boolean>()
     private val holds = mutableListOf<CastHold.Hold?>()
     private val recorded = mutableListOf<Pair<CastProgress, Double>>()
     private var connected = 0
@@ -37,8 +40,12 @@ class CastManagerTest {
 
     private fun manager(plan: CastSource = source, node: InetAddress? = null) = CastManager(
         channel = channel,
-        doorway = { _, upstream ->
-            FakeDoorway("http://192.168.1.10:4000/media/${doorways.size}").also { doorways += upstream to it }
+        doorway = { _, upstream, presentation ->
+            val playlist = if (presentation) "/index.m3u8" else ""
+            FakeDoorway("http://192.168.1.10:4000/media/${doorways.size}$playlist").also {
+                doorways += upstream to it
+                presentations += presentation
+            }
         },
         resolve = { node },
         canSign = { signable },
@@ -113,7 +120,7 @@ class CastManagerTest {
         play(manager())
         assertEquals("someone else's (or a wedged) media app is relaunched", 1, channel.relaunches)
         val fresh = FakeChannel()
-        val m = CastManager(fresh, { _, _ -> FakeDoorway("http://x/media/a") }, io = Dispatchers.Unconfined).also {
+        val m = CastManager(fresh, { _, _, _ -> FakeDoorway("http://x/media/a") }, io = Dispatchers.Unconfined).also {
             it.planner =
                 { source }
         }
@@ -464,8 +471,14 @@ class CastManagerTest {
             check(failLoad?.invoke(load) != true) { "LOAD_FAILED" }
             loads += load
             lastId = next++
-            report = ReceiverReport(0.0, if (load.autoplay) "PLAYING" else "PAUSED", lastId)
+            // A presentation starts at the asked film time; the live stream's clock at zero.
+            report = ReceiverReport(load.startSeconds, if (load.autoplay) "PLAYING" else "PAUSED", lastId)
             return lastId
+        }
+
+        override suspend fun seek(seconds: Double) {
+            commands += "seek:$seconds"
+            report = report?.copy(position = seconds)
         }
 
         override suspend fun play() {
@@ -505,6 +518,109 @@ class CastManagerTest {
             receiver = null
             report = null
         }
+    }
+
+    // ── heyarr-core#908: the node's HLS presentation ────────────────────────────────────
+
+    private val presented = source.copy(hlsUrl = "https://node.example/render/hls/cap/index.m3u8")
+
+    @Test fun aPresentationIsRelayedWholeFromItsStartAndSeekedNatively() {
+        val m = manager(presented)
+        play(m, start = 600.0)
+        val load = channel.loads.single()
+        assertTrue("an HLS LOAD", load.hls)
+        assertEquals("http://192.168.1.10:4000/media/0/index.m3u8", load.url)
+        assertEquals("from the film's point, in film time", 600.0, load.startSeconds, 0.0)
+        assertNull("the playlist says how long the film is", load.durationSeconds)
+        assertEquals("the doorway relays the node's playlist, unsigned", presented.hlsUrl, doorways.single().first)
+        assertEquals(listOf(true), presentations)
+        m.see(612.0)
+        assertEquals("receiver time is film time", 612.0, m.state.value.position, 0.0)
+        assertEquals(7200.0, m.state.value.duration!!, 0.0)
+        runBlocking { m.control(Control.SEEK, 3000.0).getOrThrow() }
+        assertEquals("the receiver's own seek", "seek:3000.0", channel.commands.last())
+        assertEquals("no restart", 1, channel.loads.size)
+    }
+
+    @Test fun aPresentationTheTvCanReachGoesStraightFromTheNodeAndALockedPhoneStillCastsIt() {
+        signable = false
+        val m = manager(presented, node = v4("192.168.1.20"))
+        play(m)
+        assertTrue(m.state.value.route is CastRoute.Direct)
+        assertEquals("the node's own capability URL", presented.hlsUrl, channel.loads.single().url)
+        assertTrue("nothing relayed", doorways.isEmpty())
+        assertNull(m.state.value.error)
+    }
+
+    @Test fun aReceiverThatCannotPlayThePresentationGetsTheLiveStream() {
+        channel.failLoad = { it.hls }
+        val m = manager(presented, node = v4("192.168.1.20"))
+        play(m, start = 600.0)
+        // Direct, then relayed, then the live stream through the relay.
+        assertEquals(listOf(true, false), presentations)
+        val load = channel.loads.single()
+        assertFalse(load.hls)
+        assertEquals("http://192.168.1.10:4000/media/1?start=600", load.url)
+        runBlocking { m.control(Control.SEEK, 1800.0).getOrThrow() }
+        assertEquals(
+            "its seeks restart, for the rest of the cast",
+            "http://192.168.1.10:4000/media/2?start=1800",
+            channel.loads.last().url,
+        )
+    }
+
+    @Test fun aPresentationTheReceiverAcknowledgedButFailedOnFallsBackToTheLiveStream() {
+        // heyarr-kmp#255 review: the LOAD is accepted (a media session, BUFFERING), and the
+        // receiver then fails fetching or decoding the playlist. A refusal, only a late one.
+        val m = manager(presented, node = v4("192.168.1.20"))
+        play(m, start = 600.0)
+        assertTrue(channel.loads.single().hls)
+        m.see(600.0, state = "BUFFERING")
+        m.see(600.0, "IDLE", idle = "ERROR")
+        assertEquals(2, channel.loads.size)
+        val load = channel.loads.last()
+        assertFalse("the live stream, not the same presentation again", load.hls)
+        assertTrue("relayed, as the stream needs a credential", m.state.value.route is CastRoute.Relay)
+        assertEquals("http://192.168.1.10:4000/media/0?start=600", load.url)
+        assertEquals(source.url, doorways.last().first)
+        // ...and for the rest of the cast: its seeks are restarts.
+        m.see(4.0)
+        runBlocking { m.control(Control.SEEK, 1800.0).getOrThrow() }
+        assertTrue(channel.loads.last().url.endsWith("?start=1800"))
+    }
+
+    @Test fun aPresentationThatNeverStartsStallsOverToTheLiveStream() {
+        val m = manager(presented)
+        play(m)
+        repeat(12) { m.see(0.0, state = "BUFFERING") }
+        assertEquals(CastRecovery.Kind.RESTARTING, m.state.value.recovery?.kind)
+        assertEquals(2, channel.loads.size)
+        assertFalse("relaunched with the live stream", channel.loads.last().hls)
+    }
+
+    @Test fun aPresentationThatPlayedAndThenDroppedIsResumedAsThePresentation() {
+        val m = manager(presented)
+        play(m)
+        m.see(1200.0)
+        m.see(0.0, "IDLE", idle = "ERROR")
+        assertEquals(2, channel.loads.size)
+        assertTrue(channel.loads.last().hls)
+        assertEquals(1200.0, channel.loads.last().startSeconds, 0.0)
+    }
+
+    @Test fun aFarSeekThePresentationWaitsOnIsNotRestartedButAStallIsAndACutIsNotOne() {
+        val m = manager(presented)
+        play(m)
+        m.see(100.0)
+        m.see(1900.0, state = "BUFFERING") // the TV's remote: +30 min, the node cuts that segment
+        repeat(3) { m.see(1900.0, state = "BUFFERING") }
+        doorways.last().second.severed = true // a segment fetch broke: the receiver refetches it
+        m.see(1900.0, state = "BUFFERING")
+        assertEquals("waiting on a far segment is not an unreachable seek", 1, channel.loads.size)
+        repeat(8) { m.see(1900.0, state = "BUFFERING") }
+        assertEquals(CastRecovery.Kind.RESTARTING, m.state.value.recovery?.kind)
+        assertTrue("relaunched with the presentation", channel.loads.last().hls)
+        assertEquals("at the film point", 1900.0, channel.loads.last().startSeconds, 0.0)
     }
 
     private class FakeDoorway(override val url: String) : MediaDoorway {

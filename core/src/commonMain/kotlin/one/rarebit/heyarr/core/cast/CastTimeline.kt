@@ -42,7 +42,14 @@ object CastTimeline {
         val seenAt: Long,
         val advancedAt: Long,
         val jumped: Boolean,
-    )
+    ) {
+        /** After [next]: a jump still to be reached, a fresh baseline, or this run carried on. */
+        internal fun after(next: ReceiverReport, fresh: Progress, jumped: Boolean, rebased: Boolean): Progress = when {
+            jumped -> fresh.copy(jumped = true)
+            rebased -> fresh
+            else -> copy(position = next.position, state = next.state, seenAt = fresh.seenAt)
+        }
+    }
 
     enum class Verdict { STEADY, UNREACHED_SEEK, STALLED }
 
@@ -130,22 +137,28 @@ object CastTimeline {
      * jumps the clock and then waits forever. So a forward jump only matters once the
      * receiver sits on it for [SEEK_GRACE_SECONDS]; any other lack of progress while
      * meant to play is a stall after [STALL_SECONDS]. Paused time never counts.
+     *
+     * [nativeSeeks]: the receiver plays an HLS presentation (ADR-0126) and reaches any point
+     * itself. A jump is then a fresh baseline, like a rewind: a far seek waits a few seconds
+     * while the node cuts its segment, and only a stall from there is acted on.
      */
-    fun judge(previous: Progress?, next: ReceiverReport, now: Long, wantsPlay: Boolean): Judgement {
+    fun judge(
+        previous: Progress?,
+        next: ReceiverReport,
+        now: Long,
+        wantsPlay: Boolean,
+        nativeSeeks: Boolean = false,
+    ): Judgement {
         val fresh = Progress(next.position, next.state, now, now, jumped = false)
         if (previous == null) return Judgement(fresh, Verdict.STEADY, false)
-        val jumped = next.position > reach(previous, next, now) + SEEK_TOLERANCE_SECONDS
+        val leapt = next.position > reach(previous, next, now) + SEEK_TOLERANCE_SECONDS
         val rewound = next.position < previous.position - SEEK_TOLERANCE_SECONDS
-        val played = !jumped && next.state == "PLAYING" && next.position > previous.position + PROGRESS_EPSILON
+        val played = !leapt && next.state == "PLAYING" && next.position > previous.position + PROGRESS_EPSILON
         val still = next.state in STILL
-        val progress = when {
-            jumped -> fresh.copy(jumped = true)
-
-            // A rewind lands in what was already buffered; give it a fresh baseline.
-            rewound || played || still -> fresh
-
-            else -> previous.copy(position = next.position, state = next.state, seenAt = now)
-        }.let { if (still) it.copy(advancedAt = now) else it } // paused time never counts; a paused jump does
+        // A rewind lands in what was already buffered; give it a fresh baseline.
+        val rebased = rewound || leapt || played || still
+        val progress = previous.after(next, fresh, jumped = leapt && !nativeSeeks, rebased = rebased)
+            .let { if (still) it.copy(advancedAt = now) else it } // paused time never counts; a paused jump does
         val verdict = if (wantsPlay && !still) verdictOf(progress, now) else Verdict.STEADY
         return Judgement(progress, verdict, played)
     }

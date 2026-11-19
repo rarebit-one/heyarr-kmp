@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.mobile.cast
 
+import one.rarebit.heyarr.core.playback.HlsPresentation
 import one.rarebit.heyarr.mobile.playback.ClientCapabilities
 import one.rarebit.heyarr.mobile.playback.PlaybackClient.PlanResult
 import java.net.Inet4Address
@@ -8,16 +9,16 @@ import java.net.InetAddress
 /**
  * What the node offers a Cast receiver for one film, planned with [CastRouting.PROFILE].
  *
- * Today that is always the live fMP4 repackage (`/api/v1/playback/stream/{token}`, ADR-0069):
- * its token is bound to the credential that planned it, and the node refuses it without that
- * credential on every request. A Default Media Receiver cannot send an `Authorization`
- * header, so [credentialFree] is false and the film must be relayed by this phone.
+ * The live fMP4 repackage (`/api/v1/playback/stream/{token}`, ADR-0069): its token is bound
+ * to the credential that planned it, and the node refuses it without that credential on every
+ * request. A Default Media Receiver cannot send an `Authorization` header, so [credentialFree]
+ * is false and the film must be relayed by this phone.
  *
- * TODO(heyarr-core#908): the planner is gaining a seekable HLS presentation beside the stream
- * (`hls_url` in the open PR), a capability URL fetchable without a credential. When the
- * vendored OpenAPI spec carries it, a plan that names one becomes a source with [credentialFree] true and
- * [restartSeekable] false (the receiver seeks a VOD playlist itself), and [CastRouting.decide]
- * can then hand the TV the node's own URL. Nothing else here needs to change for that.
+ * A node that can segment also offers [hlsUrl], the same repackage as a seekable HLS
+ * presentation (ADR-0126, heyarr-core#908): a capability URL fetchable with no credential.
+ * [presentation] is that source, [credentialFree] and not [restartSeekable] (the receiver
+ * seeks a VOD playlist itself), which [CastRouting.decide] may hand the TV directly. The live
+ * stream stays the fallback when the receiver cannot play the presentation.
  */
 data class CastSource(
     /** The node's absolute URL for the film, never shown and never handed to a receiver unless [credentialFree]. */
@@ -29,7 +30,20 @@ data class CastSource(
     val credentialFree: Boolean = false,
     /** It seeks by restarting at `?start=` (the live fMP4), not natively. */
     val restartSeekable: Boolean = true,
-)
+    /** The node's HLS presentation of this film, absolute; null when it offers none. */
+    val hlsUrl: String? = null,
+) {
+    /** The presentation as a source of its own, or null when the node offers none. */
+    fun presentation(): CastSource? = hlsUrl?.let {
+        CastSource(
+            it,
+            HlsPresentation.CAST_CONTENT_TYPE,
+            durationSeconds,
+            credentialFree = true,
+            restartSeekable = false,
+        )
+    }
+}
 
 /**
  * How the film reaches the receiver. [Direct]: the receiver fetches it from the node.
@@ -49,7 +63,7 @@ sealed interface CastRoute {
  *
  * **The decision rule**, in order:
  *  1. A source that needs a credential is relayed. No receiver can authenticate, so there is
- *     nothing to decide — and today every source is one (see [CastSource]).
+ *     nothing to decide — the live stream is one; an HLS presentation is not (see [CastSource]).
  *  2. A credential-free source goes [CastRoute.Direct] only when the node's address and the
  *     receiver's are both RFC 1918 private IPv4: the home LANs, where a TV routes to the node
  *     the way the phone does. Anything else is relayed: a node reached at a public name, over
@@ -81,7 +95,7 @@ object CastRouting {
         is PlanResult.Stream -> {
             val mime = plan.mime ?: "video/mp4"
             check(mime == "video/mp4") { "The server offered a $mime stream, which a Cast receiver cannot play" }
-            CastSource(plan.url, mime, plan.source?.durationSeconds)
+            CastSource(plan.url, mime, plan.source?.durationSeconds, hlsUrl = plan.hlsUrl)
         }
 
         is PlanResult.Direct -> error("The server cannot convert this film for Cast (H.264 with stereo sound)")

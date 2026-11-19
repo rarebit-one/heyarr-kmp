@@ -115,6 +115,19 @@ class PlaybackClientTest {
         assertEquals(1080, r.source?.height)
     }
 
+    @Test fun aStreamAnswersHlsPresentationIsMadeAbsolute() {
+        val t = RecordingTransport(
+            HttpResponse(
+                200,
+                """{"mode":"stream","url":"/api/v1/playback/stream/abc","hls_url":"/render/hls/cap/index.m3u8"}""",
+            ),
+        )
+        val r = PlaybackClient(t, "https://h.example", Credential.Session("tok")).plan("asset-1", CAPS)
+            as PlaybackClient.PlanResult.Stream
+        assertEquals("https://h.example/render/hls/cap/index.m3u8", r.hlsUrl)
+        assertEquals("https://h.example/api/v1/playback/stream/abc", r.url)
+    }
+
     @Test fun olderNodeRejectingClientFieldIsUnavailableNotAnError() {
         val t = RecordingTransport(HttpResponse(400, """{"title":"unknown field \"client\""}"""))
         val client = PlaybackClient(t, "https://h.example", Credential.Session("tok"))

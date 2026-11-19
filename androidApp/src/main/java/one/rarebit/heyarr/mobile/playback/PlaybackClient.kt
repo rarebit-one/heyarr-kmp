@@ -32,9 +32,17 @@ class PlaybackClient(
         /** Play the blob as it is (the node may name the URL; else the blob route). */
         data class Direct(val url: String?, val reason: String?) : PlanResult
 
-        /** Play [url] as a node-repackaged progressive fMP4 stream. */
-        data class Stream(val url: String, val mime: String?, val reason: String?, val source: PlaybackJson.Source?) :
-            PlanResult
+        /**
+         * Play [url] as a node-repackaged progressive fMP4 stream. [hlsUrl], absolute, is the
+         * same repackage as a seekable HLS presentation when the node offers one (ADR-0126).
+         */
+        data class Stream(
+            val url: String,
+            val mime: String?,
+            val reason: String?,
+            val source: PlaybackJson.Source?,
+            val hlsUrl: String? = null,
+        ) : PlanResult
 
         /** The node doesn't speak the contract (400 on `client`), or could not be asked. */
         data class Unavailable(val why: String) : PlanResult
@@ -121,7 +129,7 @@ class PlaybackClient(
         val p = PlaybackJson.parse(resp.body)
         val result = when {
             resp.status == 400 -> PlanResult.Unavailable("node predates the plan contract (HTTP 400)")
-            p.isStream -> PlanResult.Stream(absolute(p.url!!), p.mime, p.reason, p.source)
+            p.isStream -> PlanResult.Stream(absolute(p.url!!), p.mime, p.reason, p.source, p.hlsUrl?.let(::absolute))
             p.isDirect -> PlanResult.Direct(p.url?.let { absolute(it) }, p.reason)
             else -> PlanResult.Unavailable("plan answered mode=${p.mode ?: p.decision ?: "?"} with no stream url")
         }

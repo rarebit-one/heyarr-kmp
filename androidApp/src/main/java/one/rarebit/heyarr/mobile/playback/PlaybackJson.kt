@@ -54,6 +54,13 @@ object PlaybackJson {
          * `preference`. Null when the request sent none, or the node predates the field.
          */
         val preferenceQuality: String? = null,
+        /**
+         * The same repackage as a seekable HLS presentation (ADR-0126, heyarr-core#908):
+         * `/render/hls/{capability}/index.m3u8`, relative like [url], fetched with no
+         * credential. Only ever beside a `stream` plan, on a node that can segment.
+         */
+        val hlsUrl: String? = null,
+        val hlsMime: String? = null,
         /** Pre-#432 fields, read for the transition only. */
         val decision: String? = null,
         val token: String? = null,
@@ -87,6 +94,8 @@ object PlaybackJson {
             source = source,
             assetId = JsonScan.stringField(root, "asset_id"),
             preferenceQuality = JsonScan.objectAt(root, "preference")?.let { JsonScan.stringField(it, "quality") },
+            hlsUrl = JsonScan.stringField(root, "hls_url")?.takeIf { it.isNotBlank() },
+            hlsMime = JsonScan.stringField(root, "hls_mime"),
             decision = JsonScan.stringField(root, "decision"),
             token = JsonScan.stringField(root, "token"),
         )

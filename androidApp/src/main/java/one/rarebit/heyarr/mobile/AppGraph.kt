@@ -82,6 +82,16 @@ class AppGraph(private val app: Application, private val scope: CoroutineScope) 
      */
     val streamHttp: OkHttpClient = okHttp.newBuilder().callTimeout(0, TimeUnit.SECONDS).build()
 
+    /**
+     * The Cast relay's client for an HLS presentation (ADR-0126): the players' client without
+     * the credential interceptor. Those node routes take no credential (the capability in the
+     * path is the authority), and each segment is its own request, so a signing client would
+     * fail every one of them on a locked phone and stop the film.
+     */
+    private val presentationHttp: OkHttpClient = streamHttp.newBuilder()
+        .apply { interceptors().removeAll { it is AuthInterceptor } }
+        .build()
+
     /** A bare client for the public metadata sources: no interceptor, so the node's credential never leaves for another host. */
     private val bareHttp: OkHttpClient = OkHttpClient.Builder().callTimeout(
         20,
@@ -190,9 +200,16 @@ class AppGraph(private val app: Application, private val scope: CoroutineScope) 
 
     val cast: CastManager = CastManager(
         channel = castChannel,
-        // The relay's upstream rides the players' client: no call timeout, and the
-        // AuthInterceptor stamps a fresh credential on each request to the node.
-        doorway = { receiver, upstream -> CastRelay(receiver, upstream, streamHttp) },
+        // The live stream's relay rides the players' client: no call timeout, and the
+        // AuthInterceptor stamps a fresh credential on each request to the node. A
+        // presentation's relay sends none.
+        doorway = { receiver, upstream, presentation ->
+            if (presentation) {
+                CastRelay(receiver, upstream, presentationHttp, presentation = true)
+            } else {
+                CastRelay(receiver, upstream, streamHttp)
+            }
+        },
         canSign = { runCatching { authHeader.current() }.isSuccess },
         hold = castHold,
         io = Dispatchers.IO,

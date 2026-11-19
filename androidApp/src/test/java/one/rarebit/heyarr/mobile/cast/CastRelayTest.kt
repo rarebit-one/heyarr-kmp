@@ -248,4 +248,61 @@ class CastRelayTest {
             ),
         )
     }
+
+    // ── heyarr-core#908: an HLS presentation, relayed as its prefix ──────────────────────
+
+    @Test fun aPresentationIsRelayedAsItsWholePrefixWithNoCredentialAndNoQuery() {
+        val node = Node { head, s ->
+            val name = head.substringAfter("/render/hls/cap/").substringBefore(' ')
+            val (status, body) = when (name) {
+                "index.m3u8" -> "200 OK" to "#EXTM3U\n#EXT-X-MAP:URI=\"init.mp4\"\n0.m4s\n"
+                "init.mp4" -> "200 OK" to "init"
+                "0.m4s" -> "200 OK" to "seg0"
+                else -> "429 Too Many Requests" to ""
+            }
+            val retry = if (status.startsWith("429")) "Retry-After: 5\r\n" else ""
+            s.getOutputStream().write(
+                "HTTP/1.1 $status\r\nContent-Type: video/mp4\r\n${retry}Content-Length: ${body.length}\r\n\r\n$body"
+                    .toByteArray(),
+            )
+        }
+        val playlist = node.url.substringBefore("/api/") + "/render/hls/cap/index.m3u8"
+        // A presentation's client signs nothing: the capability in the path is the authority.
+        val door = CastRelay(loopback, playlist, OkHttpClient(), bindTo = loopback, presentation = true)
+            .also { closers += it }
+        assertTrue(door.url, door.url.endsWith("/index.m3u8"))
+        assertTrue(request(door.url).endsWith("0.m4s\n"))
+        val prefix = door.url.removeSuffix("index.m3u8")
+        assertTrue(request(prefix + "init.mp4").endsWith("init"))
+        assertTrue(request(prefix + "0.m4s").endsWith("seg0"))
+        val busy = request(prefix + "99.m4s")
+        assertTrue(busy, busy.startsWith("HTTP/1.1 429") && busy.contains("Retry-After: 5"))
+        assertEquals(
+            listOf("index.m3u8", "init.mp4", "0.m4s", "99.m4s"),
+            node.heads.map { it.substringAfter("/render/hls/cap/").substringBefore(' ') },
+        )
+        assertFalse("no credential upstream", node.heads.any { it.contains("Authorization") })
+        node.heads.clear()
+        assertTrue(request(door.url, query = "start=60").startsWith("HTTP/1.1 400"))
+        for (name in listOf("x.m4s", "01.m4s", "sub/0.m4s")) {
+            assertTrue(name, request(prefix + name).startsWith("HTTP/1.1 404"))
+        }
+        assertTrue("its bare capability is no stream", request(prefix.removeSuffix("/")).startsWith("HTTP/1.1 404"))
+        assertTrue("refused before the node", node.heads.isEmpty())
+    }
+
+    @Test fun aPresentationsPolicyIsItsPrefixAndEntryNamesOnly() {
+        val head = { target: String -> CastRelay.parseHead("GET $target HTTP/1.1\r\nHost: tv\r\n")!! }
+        val path = "/media/abc"
+        assertNull(CastRelay.rejection(loopback, path, loopback, head("$path/index.m3u8"), presentation = true))
+        assertNull(CastRelay.rejection(loopback, path, loopback, head("$path/12.m4s"), presentation = true))
+        assertEquals(404, CastRelay.rejection(loopback, path, loopback, head(path), presentation = true))
+        assertEquals(
+            400,
+            CastRelay.rejection(loopback, path, loopback, head("$path/0.m4s?start=1"), presentation = true),
+        )
+        assertEquals(404, CastRelay.rejection(loopback, path, loopback, head("$path/index.m3u8"), presentation = false))
+        assertEquals("0.m4s", CastRelay.entryOf(path, "$path/0.m4s", presentation = true))
+        assertNull(CastRelay.entryOf(path, "$path/0.m4s", presentation = false))
+    }
 }

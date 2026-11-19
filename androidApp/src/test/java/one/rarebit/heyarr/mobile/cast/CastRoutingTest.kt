@@ -26,6 +26,21 @@ class CastRoutingTest {
         )
     }
 
+    @Test fun aStreamsHlsPresentationIsACredentialFreeNativelySeekableSourceOfItsOwn() {
+        val hls = "https://node.example/render/hls/cap/index.m3u8"
+        val cast = CastRouting.sourceOf(PlanResult.Stream(stream.url, "video/mp4", null, null, hlsUrl = hls))
+        assertEquals("the live stream stays the source, and the fallback", stream.url, cast.url)
+        val presentation = cast.presentation()!!
+        assertEquals(hls, presentation.url)
+        assertEquals("application/x-mpegURL", presentation.mime)
+        assertTrue("fetched with no credential", presentation.credentialFree)
+        assertFalse("the receiver seeks the playlist itself", presentation.restartSeekable)
+        assertEquals(null, stream.presentation())
+        val home = v4("192.168.1.50")
+        assertTrue(CastRouting.decide(presentation, home) { v4("192.168.1.20") } is CastRoute.Direct)
+        assertTrue(CastRouting.decide(presentation, home) { v4("100.64.0.9") } is CastRoute.Relay)
+    }
+
     @Test fun onlyTheRepackagedMp4StreamIsCastSafe() {
         val source = PlaybackJson.Source("mkv", "hevc", "eac3", 3840, 2160, 7200.0)
         val cast = CastRouting.sourceOf(PlanResult.Stream(stream.url, "video/mp4", "transcode", source))
