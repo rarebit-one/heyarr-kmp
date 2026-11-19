@@ -6,6 +6,7 @@ import java.io.IOException
 import java.net.Inet4Address
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.net.ServerSocket
 import java.net.Socket
 import java.net.URI
 import java.net.http.HttpClient
@@ -18,6 +19,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -179,6 +181,63 @@ class CastMediaRelayTest {
             val revoked = URI.create(replacement.url).resolve(URI.create(oldUrl).path)
             assertEquals(404, send(request(revoked.toString())).statusCode())
             assertNull(requests.poll())
+        }
+    }
+
+    // ── heyarr-kmp#248: a stream cut under the relay ────────────────────────────────────
+
+    /** A node whose live stream sends one chunk, then [ending]: the last chunk, or nothing. */
+    private fun liveNode(ending: String?, body: String = "moov"): Pair<ServerSocket, URI> {
+        val node = ServerSocket(0, 0, receiver)
+        Thread {
+            runCatching {
+                node.accept().use { socket ->
+                    val input = socket.getInputStream().bufferedReader()
+                    while (input.readLine().orEmpty().isNotEmpty()) Unit
+                    val out = socket.getOutputStream()
+                    val head = "HTTP/1.1 200 OK\r\nContent-Type: video/mp4\r\nTransfer-Encoding: chunked\r\n\r\n"
+                    out.write((head + "%x\r\n%s\r\n".format(body.length, body)).toByteArray())
+                    out.flush()
+                    Thread.sleep(300)
+                    ending?.let { out.write(it.toByteArray()) }
+                    out.flush()
+                }
+            }
+        }.apply { isDaemon = true }.start()
+        return node to URI.create("http://127.0.0.1:${node.localPort}/stream")
+    }
+
+    @Test fun a_node_stream_that_breaks_mid_download_marks_the_relay_severed() {
+        val (node, live) = liveNode(ending = null)
+        node.use {
+            CastMediaRelay(receiver, live).use { relay ->
+                runCatching { send(request(relay.url)) }
+                assertTrue(relay.severed, "The receiver will play out its buffer and stop")
+            }
+        }
+    }
+
+    @Test fun the_streams_normal_end_and_a_receiver_hanging_up_are_not_a_cut() {
+        val (node, live) = liveNode(ending = "0\r\n\r\n")
+        node.use {
+            CastMediaRelay(receiver, live).use { relay ->
+                assertEquals("moov", send(request(relay.url)).body())
+                assertFalse(relay.severed)
+            }
+        }
+        // The receiver drops its download (a seek, a stop) while the node still has data.
+        val (busy, endless) = liveNode(ending = null, body = "x".repeat(4 * 1024 * 1024))
+        busy.use {
+            CastMediaRelay(receiver, endless).use { relay ->
+                val uri = URI.create(relay.url)
+                Socket(uri.host, uri.port).use { socket ->
+                    socket.getOutputStream()
+                        .write("GET ${uri.rawPath} HTTP/1.1\r\nHost: ${uri.host}\r\n\r\n".toByteArray())
+                    socket.getInputStream().readNBytes(1024)
+                }
+                Thread.sleep(500)
+                assertFalse(relay.severed, "A receiver hanging up is not the node's stream breaking")
+            }
         }
     }
 

@@ -22,6 +22,11 @@ internal data class CastStatus(
     val title: String?,
     val mediaSessionId: Int?,
     val error: String? = null,
+    /**
+     * Why an IDLE session ended: FINISHED, CANCELLED (a stop, from any sender or the TV's
+     * remote), INTERRUPTED (a new LOAD) or ERROR. Whether a dropped film is resumed hangs on it.
+     */
+    val idleReason: String? = null,
 )
 
 internal interface CastChannel : AutoCloseable {
@@ -243,7 +248,12 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
                 }
                 if (running) send(HEARTBEAT, RECEIVER, mapOf("type" to "PING"))
             } catch (_: Exception) {
-                if (running) close()
+                // A failed PING is a dead socket. Say so: the manager reconnects on an error,
+                // and a channel that closed silently would look healthy to it.
+                if (running) {
+                    error = error ?: "Cast connection lost"
+                    close()
+                }
             }
         }
     }
@@ -303,6 +313,7 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
                 metadata?.let { JsonScan.stringField(it, "title") },
                 JsonScan.longField(first, "mediaSessionId")?.toInt(),
                 JsonScan.stringField(first, "idleReason")?.takeIf { it == "ERROR" || it == "INTERRUPTED" },
+                JsonScan.stringField(first, "idleReason"),
             )
         }
 

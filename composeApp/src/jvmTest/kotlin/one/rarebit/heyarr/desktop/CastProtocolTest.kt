@@ -107,6 +107,22 @@ class CastProtocolTest {
         val merged = CastConnection.mergeStatus(buffering, failed)
         assertEquals("IDLE", merged?.state)
         assertEquals("ERROR", merged?.error)
+        assertEquals("ERROR", merged?.idleReason)
+    }
+
+    @Test
+    fun everyIdleReasonIsKeptSoAStopIsToldFromADroppedFilm() {
+        for (reason in listOf("FINISHED", "CANCELLED", "INTERRUPTED", "ERROR")) {
+            val ended = CastConnection.parseStatus(
+                """{"type":"MEDIA_STATUS","status":[{"mediaSessionId":7,"playerState":"IDLE",""" +
+                    """"idleReason":"$reason","currentTime":12}]}""",
+            )
+            assertEquals(reason, ended?.idleReason)
+        }
+        val playing = CastConnection.parseStatus(
+            """{"type":"MEDIA_STATUS","status":[{"mediaSessionId":7,"playerState":"PLAYING","currentTime":3}]}""",
+        )
+        assertNull(playing?.idleReason)
     }
 
     @Test

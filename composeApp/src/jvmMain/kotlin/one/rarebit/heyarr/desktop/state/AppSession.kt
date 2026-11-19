@@ -59,6 +59,7 @@ import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.playback.AuthenticatedMediaProxy
 import one.rarebit.heyarr.desktop.playback.DesktopDisplay
 import one.rarebit.heyarr.desktop.playback.Player
+import one.rarebit.heyarr.desktop.power.SleepInhibitor
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
 import one.rarebit.heyarr.desktop.settings.SiteDefaults
@@ -222,6 +223,9 @@ class AppSession(
         } else {
             { emptyList() }
         },
+        // Previews and fixture sessions never cast; a real one keeps the machine awake while
+        // it relays a playing film (heyarr-kmp#248).
+        inhibitor = if (enableRendererDiscovery) SleepInhibitor.system() else SleepInhibitor.NONE,
     )
 
     init {

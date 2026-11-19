@@ -94,8 +94,14 @@ internal fun castRecoveryText(r: CastRecovery): Pair<String, String> = when (r.k
             "Restarting its Cast session at ${clock(r.position)}."
 
     CastRecovery.Kind.GAVE_UP ->
-        "${r.device} keeps stalling" to
+        "${r.device} keeps failing" to
             "Stopped retrying at ${clock(r.position)}. Stop and cast again, or restart the receiver."
+
+    CastRecovery.Kind.RECONNECTED ->
+        "Reconnected to ${r.device}" to "Resuming at ${clock(r.position)}."
+
+    CastRecovery.Kind.RESUMING ->
+        "${r.device} lost the stream" to "Resuming at ${clock(r.position)}."
 }
 
 internal fun castLocally(

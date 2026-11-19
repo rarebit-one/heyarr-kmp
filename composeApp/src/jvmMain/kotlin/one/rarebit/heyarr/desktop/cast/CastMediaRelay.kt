@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
 import java.net.DatagramSocket
 import java.net.HttpURLConnection.HTTP_BAD_GATEWAY
 import java.net.HttpURLConnection.HTTP_BAD_METHOD
@@ -40,6 +41,17 @@ internal class CastMediaRelay(private val receiver: Inet4Address, private val up
     }
 
     val url: String get() = "http://${local.hostAddress}:${server.address.port}$path"
+
+    @Volatile private var closed = false
+
+    /**
+     * The node's stream broke under a download the receiver was still reading: the laptop
+     * slept, the network dropped, or the node went away. The receiver plays on from its
+     * buffer and then stops, so the film must be restarted before that. A receiver that
+     * hangs up (a seek, a stop) is not this, nor is the stream's normal end.
+     */
+    @Volatile var severed = false
+        private set
 
     private fun serve(exchange: HttpExchange) {
         exchange.use {
@@ -106,7 +118,23 @@ internal class CastMediaRelay(private val receiver: Inet4Address, private val up
         exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
         val size = responseSize(exchange, response)
         exchange.sendResponseHeaders(response.statusCode(), size)
-        if (size != -1L) body.transferTo(exchange.responseBody)
+        if (size != -1L) relay(body, exchange.responseBody)
+    }
+
+    /** [InputStream.transferTo], but telling a failed read of the node from a failed write to the receiver. */
+    private fun relay(body: InputStream, receiver: OutputStream) {
+        val buffer = ByteArray(COPY_BYTES)
+        while (true) {
+            val read = try {
+                body.read(buffer)
+            } catch (failure: IOException) {
+                // Closing the relay (a restart, a stop) also fails this read; that is ours.
+                if (!closed) severed = true
+                throw failure
+            }
+            if (read < 0) return
+            receiver.write(buffer, 0, read)
+        }
     }
 
     private fun responseSize(exchange: HttpExchange, response: HttpResponse<*>): Long {
@@ -121,6 +149,7 @@ internal class CastMediaRelay(private val receiver: Inet4Address, private val up
     }
 
     override fun close() {
+        closed = true
         server.stop(0)
         executor.shutdownNow()
         client.close()
@@ -129,6 +158,7 @@ internal class CastMediaRelay(private val receiver: Inet4Address, private val up
     companion object {
         private const val CONNECT_TIMEOUT_SECONDS = 10L
         private const val CAPABILITY_BYTES = 24
+        private const val COPY_BYTES = 64 * 1024
         private const val CAST_PORT = 8009
         private val SEEK_QUERY = Regex("start=[0-9]+(?:\\.[0-9]+)?")
         private val REQUEST_HEADERS = listOf("Range", "If-Range", "If-None-Match")

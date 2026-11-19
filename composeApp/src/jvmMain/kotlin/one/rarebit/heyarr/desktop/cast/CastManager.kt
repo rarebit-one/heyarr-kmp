@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
+import one.rarebit.heyarr.desktop.power.SleepInhibitor
 import java.net.URI
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -14,14 +15,22 @@ import java.util.concurrent.atomic.AtomicInteger
  * What the manager is doing on the receiver's behalf, film-absolute, for the UI to say.
  * [SEEKING]: the receiver jumped to a point it cannot reach in a live repackage, so the
  * film is restarted there. [RESTARTING]: the receiver stopped making progress, so its
- * media app is quit and relaunched where it was. [GAVE_UP]: it kept stalling after that.
+ * media app is quit and relaunched where it was. [GAVE_UP]: it kept stalling or dropping
+ * the film after that. [RECONNECTED]: the Cast channel came back (after a suspend, a network
+ * drop) and the film is resumed where it was. [RESUMING]: the node's stream broke or the
+ * receiver dropped the film mid-way, and the film is resumed without a reconnect.
  */
 internal data class CastRecovery(val kind: Kind, val device: String, val position: Double) {
-    enum class Kind { SEEKING, RESTARTING, GAVE_UP }
+    enum class Kind { SEEKING, RESTARTING, GAVE_UP, RECONNECTED, RESUMING }
 }
 
 /** Session-owned Cast transport and media doorway; the API itself is intentionally short-lived. */
-@Suppress("TooGenericExceptionCaught", "TooManyFunctions") // Surface any planner, TLS, relay, or receiver failure.
+@Suppress(
+    "TooGenericExceptionCaught", // Surface any planner, TLS, relay, or receiver failure.
+    "TooManyFunctions",
+    "LargeClass", // One owner of the receiver's media: seeks, stalls, reconnects and the sleep hold share its state.
+    "LongParameterList", // Each seam is a test's hand on one real-world input: sockets, threads, time, power.
+)
 internal class CastManager(
     private val localMediaUrl: (String) -> String,
     private val connect: (CastDevice) -> CastChannel = ::CastConnection,
@@ -34,6 +43,10 @@ internal class CastManager(
      * even when no screen is showing the Cast controls. Tests pass a no-op and poll.
      */
     private val watch: (() -> Unit) -> AutoCloseable = ::watchInBackground,
+    /** Read beside [clock] to notice a suspend: wall time runs through one, monotonic time doesn't. */
+    private val wallClock: () -> Long = System::currentTimeMillis,
+    /** Keeps the machine awake while it relays a playing film; tests record it. */
+    private val inhibitor: SleepInhibitor = SleepInhibitor.NONE,
 ) : AutoCloseable {
     var devices by mutableStateOf<List<CastDevice>>(emptyList())
         private set
@@ -60,6 +73,31 @@ internal class CastManager(
     private var progress: Progress? = null
     private var recoveries = 0
     private var watcher: AutoCloseable? = null
+
+    /** Film-absolute, last seen while our media played or paused: where a dropped film resumes. */
+    private var lastFilm = 0.0
+
+    /**
+     * The node's stream is presumed cut: the machine slept (the node drops a client it cannot
+     * write to), or a resume is under way and not yet loaded. A receiver still playing our
+     * session is then restarted at once, and a session that vanished is resumed.
+     */
+    private var streamCut = false
+    private var resumes = 0
+    private var resumedAt = 0.0
+
+    /** The Cast channel must be replaced before it is trusted again (the machine slept). */
+    private var stale = false
+    private var reconnected = false
+    private var retries = 0
+    private var retryAt = 0L
+    private var lostAt: Long? = null
+
+    /** The last poll's monotonic and wall times, nanoseconds and milliseconds. */
+    private var tick: Pair<Long, Long>? = null
+    private var sleepHold: AutoCloseable? = null
+    private var holding = false
+    private var pausedAt: Long? = null
     private val invalidation = AtomicInteger()
     private val completedInvalidation = AtomicInteger()
     private val invalidating: Boolean get() = invalidation.get() != completedInvalidation.get()
@@ -131,7 +169,11 @@ internal class CastManager(
             selected = device
             status = next.status
             error = null
+            lastFilm = 0.0
+            streamCut = false
+            resumes = 0
             if (watcher == null) watcher = watch(::poll)
+            holdSleep()
         } catch (failure: Exception) {
             error = failure.message ?: "Cast playback failed"
             throw failure
@@ -143,22 +185,44 @@ internal class CastManager(
         val connection = connection ?: return status
         try {
             val fresh = connection.refresh()
-            if (ownedMediaSessionId != null && fresh?.mediaSessionId != ownedMediaSessionId) {
-                // Another sender can replace the media without replacing the receiver
-                // app. Its status and seeks must never reuse our previous film's plan.
-                clearOwnedMedia()
+            val fate = settle(fresh)
+            if (fate == Fate.DROPPED && !invalidating) {
+                // The receiver dropped our film mid-way, most likely having played out the
+                // buffer of a stream the node cut while this machine slept. Put it back.
+                resumeAt(connection, lastFilm, relaunch = true)
+            } else {
+                noteIntent(fresh)
+                publish(fresh)
+                error = connection.error ?: status?.error?.let { "Cast receiver reported $it" }
+                if (fate == Fate.OURS && fresh != null && !invalidating) follow(connection, fresh)
             }
-            when (fresh?.state) {
-                "PLAYING" -> playIntent = true
-                "PAUSED", "PAUSED_PLAYBACK" -> playIntent = false
-            }
-            publish(fresh)
-            error = connection.error ?: status?.error?.let { "Cast receiver reported $it" }
-            if (ownedMediaSessionId != null && fresh != null && !invalidating) follow(connection, fresh)
+            reconnected = false
         } catch (failure: Exception) {
             error = failure.message ?: "Cast status unavailable"
+        } finally {
+            holdSleep()
         }
         return status
+    }
+
+    /** What [fresh] means for the media we own (null: none), releasing it when it is no longer ours. */
+    private fun settle(fresh: CastStatus?): Fate? {
+        val owned = ownedMediaSessionId ?: return null
+        val cut = streamCut || relay?.severed == true
+        val fate = fateOf(fresh, owned, lastFilm, target?.durationSeconds, cut)
+        // Another sender can replace the media without replacing the receiver app. Its
+        // status and seeks must never reuse our previous film's plan. A stop from the
+        // TV's remote, or the film's real end, also releases it.
+        if (fate == Fate.FOREIGN || fate == Fate.ENDED) clearOwnedMedia()
+        return fate
+    }
+
+    /** The receiver's own play and pause (its remote, another sender) are what we mean to do too. */
+    private fun noteIntent(fresh: CastStatus?) {
+        when (fresh?.state) {
+            "PLAYING" -> playIntent = true
+            "PAUSED", "PAUSED_PLAYBACK" -> playIntent = false
+        }
     }
 
     /**
@@ -174,16 +238,29 @@ internal class CastManager(
         )
     }
 
-    /** Acts on what the receiver's progress says: an unreachable seek or a stall. */
+    /** Acts on what the receiver's progress says: a cut stream, an unreachable seek or a stall. */
     private fun follow(connection: CastChannel, fresh: CastStatus) {
+        val film = sourceOffset + fresh.position
+        val live = fresh.state in LIVE
+        if (live) lastFilm = film
+        if (live && (streamCut || relay?.severed == true)) {
+            // Still playing our film from its buffer, but nothing more will reach it. Restart
+            // now, while the buffer lasts: a short reload instead of a stop minutes later.
+            // (The receiver's buffered end is not observable once LOAD declares the film's
+            // duration, so "when the buffer runs low" can't be timed reliably.)
+            resumeAt(connection, film, relaunch = false)
+            return
+        }
         val judged = judge(progress, fresh, clock(), playIntent)
         progress = judged.progress
         if (judged.played) {
             // Playing again: a recovery worked, so the next stall gets a full budget.
             recoveries = 0
             if (recovery?.kind != CastRecovery.Kind.GAVE_UP) recovery = null
+            // A resume that has played on for a while worked; one that keeps failing at the
+            // same point (a node that can't get past it) must not loop forever.
+            if (film >= resumedAt + RESUME_PROOF_SECONDS) resumes = 0
         }
-        val film = sourceOffset + fresh.position
         val device = selected?.name ?: "The receiver"
         when (judged.verdict) {
             Verdict.STEADY -> Unit
@@ -212,14 +289,148 @@ internal class CastManager(
         }
     }
 
+    /**
+     * Puts our film back on the receiver at [at]: into its current session when it still
+     * plays ours ([relaunch] false), else into a freshly launched media app. Said once, as
+     * [CastRecovery.Kind.RECONNECTED] when the channel was just replaced. After
+     * [MAX_RESUMES] without the film playing on, it stops and says so instead.
+     */
+    private fun resumeAt(connection: CastChannel, at: Double, relaunch: Boolean) {
+        val device = selected?.name ?: "The receiver"
+        if (resumes >= MAX_RESUMES) {
+            clearOwnedMedia()
+            recovery = CastRecovery(CastRecovery.Kind.GAVE_UP, device, at)
+            error = "$device keeps dropping the film. Cast it again to retry."
+            return
+        }
+        resumes++
+        resumedAt = at
+        val kind = if (reconnected) CastRecovery.Kind.RECONNECTED else CastRecovery.Kind.RESUMING
+        recovery = CastRecovery(kind, device, restartSeek(at, target?.durationSeconds, playIntent).position)
+        // Until the LOAD lands, a vanished session is still ours to restore: a failure here
+        // is retried on the next poll rather than read as the user's stop.
+        streamCut = true
+        if (relaunch) quitReceiver(connection)
+        loadAt(connection, at, autoplay = playIntent)
+        streamCut = false
+    }
+
+    /**
+     * The watcher's beat: notice a suspend, replace a dead channel, then read the receiver.
+     * Runs only while we own media, so reconnecting never outlives the cast.
+     */
+    @Synchronized
     private fun poll() {
-        refresh()
+        if (ownedMediaSessionId == null) return
+        noteWake()
+        val channel = connection?.takeIf { !stale && it.error == null } ?: reconnect()
+        if (channel != null) refresh() else holdSleep()
+    }
+
+    /**
+     * The monotonic clock stands still while the machine sleeps and the wall clock does not.
+     * A gap between them means a suspend: the Cast socket is dead (or soon found so, after a
+     * heartbeat timeout), and the node has dropped a stream it could not write to.
+     */
+    private fun noteWake() {
+        val mono = clock()
+        val wall = wallClock()
+        val last = tick
+        tick = mono to wall
+        if (last == null) return
+        val slept = (wall - last.second) - TimeUnit.NANOSECONDS.toMillis(mono - last.first)
+        if (slept < WAKE_GAP_MS) return
+        stale = true
+        streamCut = true
+        // The receiver played on while we slept; that is not a seek.
+        progress = null
+        retries = 0
+        retryAt = 0L
+        lostAt = null
+    }
+
+    /**
+     * Replaces a dead channel to the receiver we are casting to, backing off between tries.
+     * Ownership is kept meanwhile (the local player still defers to the cast); after
+     * [RECONNECT_GIVE_UP_SECONDS] of failures the cast is let go.
+     */
+    private fun reconnect(): CastChannel? {
+        val device = selected ?: return null
+        val now = clock()
+        val since = lostAt ?: now.also { lostAt = it }
+        return when {
+            now - since >= TimeUnit.SECONDS.toNanos(RECONNECT_GIVE_UP_SECONDS) -> {
+                connection?.close()
+                connection = null
+                status = null
+                clearOwnedMedia()
+                error = "Lost ${device.name}. Cast again once it is back."
+                null
+            }
+
+            now < retryAt -> null
+
+            else -> tryConnect(device, now)
+        }
+    }
+
+    private fun tryConnect(device: CastDevice, now: Long): CastChannel? {
+        connection?.close()
+        connection = null
+        return try {
+            connect(device).also {
+                connection = it
+                stale = false
+                reconnected = true
+                retries = 0
+                retryAt = 0L
+                lostAt = null
+                progress = null
+            }
+        } catch (failure: Exception) {
+            retries++
+            retryAt = now + TimeUnit.SECONDS.toNanos(backoffSeconds(retries))
+            error = "Reconnecting to ${device.name}: ${failure.message ?: "unreachable"}"
+            null
+        }
+    }
+
+    /**
+     * Holds the machine awake while our film plays on a receiver, and for [PAUSE_GRACE_SECONDS]
+     * after a pause: the TV's remote can resume it while the laptop is idle, and releasing
+     * at once would let an idle laptop suspend straight away and cut the stream it then
+     * needs. A longer pause releases it; a resume takes it again.
+     */
+    private fun holdSleep() {
+        val owned = ownedMediaSessionId != null
+        val now = clock()
+        val paused = if (!owned || playIntent) null else pausedAt ?: now
+        pausedAt = paused
+        val wanted = owned && (paused == null || now - paused < TimeUnit.SECONDS.toNanos(PAUSE_GRACE_SECONDS))
+        if (wanted && !holding) {
+            holding = true
+            val device = selected?.name ?: "a Cast receiver"
+            // Null (no inhibitor here) is remembered too: it is not retried every poll.
+            sleepHold = runCatching { inhibitor.acquire("Casting $title to $device") }.getOrNull()
+        } else if (!wanted && holding) {
+            holding = false
+            runCatching { sleepHold?.close() }
+            sleepHold = null
+        }
     }
 
     @Synchronized
     fun control(action: String, seconds: Double? = null) {
         try {
             check(!invalidating) { "Cast connection is resetting" }
+            if (unreachable()) {
+                // "Play here" must work while the receiver is unreachable: let the cast go.
+                if (action == "stop") {
+                    clearOwnedMedia()
+                    return
+                }
+                error("Reconnecting to ${selected?.name ?: "the receiver"}")
+            }
             val connection = connection ?: error("No Cast receiver connected")
             if (ownedMediaSessionId != null && connection.status?.mediaSessionId != ownedMediaSessionId) {
                 clearOwnedMedia()
@@ -236,10 +447,17 @@ internal class CastManager(
                 clearOwnedMedia()
             }
             refresh()
+            holdSleep()
         } catch (failure: Exception) {
             error = failure.message ?: "Cast control failed"
             throw failure
         }
+    }
+
+    /** We own media but have no live channel to its receiver: a reconnect is pending. */
+    private fun unreachable(): Boolean {
+        val current = connection
+        return ownedMediaSessionId != null && (current == null || stale || current.error != null)
     }
 
     /**
@@ -265,6 +483,7 @@ internal class CastManager(
         relay = doorway
         ownedMediaSessionId = mediaSessionId
         sourceOffset = position
+        lastFilm = position
         playIntent = autoplay
         // A new media session's clock restarts: the old trajectory must not read as a jump.
         progress = null
@@ -288,7 +507,8 @@ internal class CastManager(
 
     @Synchronized
     private fun ensureConnection(device: CastDevice): CastChannel {
-        if (selected?.id == device.id && connection?.error == null) return requireNotNull(connection)
+        // A pending reconnect leaves no connection (or a stale one): casting again opens a fresh one.
+        connection?.takeIf { selected?.id == device.id && it.error == null && !stale }?.let { return it }
         connection?.close()
         connection = null
         clearOwnedMedia()
@@ -296,6 +516,7 @@ internal class CastManager(
         status = null
         return connect(device).also {
             connection = it
+            stale = false
             selected = device
         }
     }
@@ -345,6 +566,16 @@ internal class CastManager(
         progress = null
         recoveries = 0
         recovery = null
+        lastFilm = 0.0
+        streamCut = false
+        resumes = 0
+        resumedAt = 0.0
+        reconnected = false
+        retries = 0
+        retryAt = 0L
+        lostAt = null
+        tick = null
+        holdSleep()
     }
 
     companion object {
@@ -365,6 +596,13 @@ internal class CastManager(
 
         internal enum class Verdict { STEADY, UNREACHED_SEEK, STALLED }
 
+        /**
+         * What a receiver report means for the media we own. [OURS]: still ours. [FOREIGN]:
+         * someone else's media replaced it. [ENDED]: let it go (a stop, the film's end).
+         * [DROPPED]: it ended mid-film without anyone stopping it, so it is resumed.
+         */
+        internal enum class Fate { OURS, FOREIGN, ENDED, DROPPED }
+
         /** [played]: the clock moved forward in play since the last report, the only proof of health. */
         internal data class Judgement(val progress: Progress, val verdict: Verdict, val played: Boolean)
 
@@ -384,10 +622,36 @@ internal class CastManager(
         /** Relaunches without any progress in between before the user is asked to step in. */
         internal const val MAX_RECOVERIES = 2
 
+        /** Resumes of a dropped or cut film without it playing [RESUME_PROOF_SECONDS] on in between. */
+        internal const val MAX_RESUMES = 3
+
+        /** How far a resumed film must play on before its resume counts as having worked. */
+        internal const val RESUME_PROOF_SECONDS = 60.0
+
+        /**
+         * A session that ends this close to the film's end ended with the film: credits, or
+         * the transcode's last frames, not a dropped stream. Not resumed.
+         */
+        internal const val END_MARGIN_SECONDS = 60.0
+
+        /** A wall-clock lead over the monotonic clock this large between two polls is a suspend. */
+        internal const val WAKE_GAP_MS = 10_000L
+
+        /** Failed reconnects for this long (awake time) let the cast go. */
+        internal const val RECONNECT_GIVE_UP_SECONDS = 600L
+
+        /** How long a paused cast keeps the machine awake. */
+        internal const val PAUSE_GRACE_SECONDS = 600L
+
+        private const val MAX_BACKOFF_SECONDS = 30L
+
         private const val PROGRESS_EPSILON = 0.25
         private const val MILLIS = 1_000.0
         private const val WATCH_MS = 2_000L
         private val STILL = setOf("PAUSED", "PAUSED_PLAYBACK", "IDLE")
+
+        /** Our media with a pipeline behind it: what a cut stream restarts and a resume returns to. */
+        private val LIVE = setOf("PLAYING", "BUFFERING", "PAUSED", "PAUSED_PLAYBACK")
 
         private fun resetInBackground(task: () -> Unit) {
             Thread(task, "heyarr-cast-reset").apply {
@@ -412,6 +676,41 @@ internal class CastManager(
                 start()
             }
             return AutoCloseable { running.set(false) }
+        }
+
+        /** 1, 2, 4, … seconds between reconnect attempts, at most [MAX_BACKOFF_SECONDS]. */
+        internal fun backoffSeconds(failures: Int): Long =
+            (1L shl (failures - 1).coerceIn(0, Long.SIZE_BITS - 2)).coerceAtMost(MAX_BACKOFF_SECONDS)
+
+        /**
+         * Reads a receiver report against the media session we own. A session that went IDLE
+         * says why: CANCELLED is a stop (from the TV's remote too) and is never undone;
+         * ERROR or INTERRUPTED mid-film is resumed; FINISHED mid-film is the receiver playing
+         * out a buffer the node stopped filling, resumed when the film's length shows it
+         * ended early (or the stream is known to be [cut]). A session that vanished without
+         * a word, typically while our channel was down, is resumed only when the stream is
+         * known to be cut; otherwise it is taken as stopped. Nothing near the film's end is
+         * resumed. An IDLE report with no reason is the moment around a LOAD, still ours.
+         */
+        internal fun fateOf(fresh: CastStatus?, owned: Int, lastFilm: Double, duration: Double?, cut: Boolean): Fate {
+            val session = fresh?.mediaSessionId
+            val nearEnd = duration != null && lastFilm >= duration - END_MARGIN_SECONDS
+            return when {
+                session != null && session != owned -> Fate.FOREIGN
+                session == owned && !endedWithReason(fresh) -> Fate.OURS
+                !nearEnd && droppedFor(fresh?.idleReason, duration != null, cut) -> Fate.DROPPED
+                else -> Fate.ENDED
+            }
+        }
+
+        private fun endedWithReason(status: CastStatus?): Boolean = status?.state == "IDLE" && status.idleReason != null
+
+        /** Whether a session that ended mid-film for [reason] (null: unseen) was dropped rather than stopped. */
+        private fun droppedFor(reason: String?, knownLength: Boolean, cut: Boolean): Boolean = when (reason) {
+            "CANCELLED" -> false
+            "ERROR", "INTERRUPTED" -> true
+            "FINISHED" -> knownLength || cut
+            else -> cut
         }
 
         internal fun restartSeek(seconds: Double, duration: Double?, playIntent: Boolean): RestartSeek {
