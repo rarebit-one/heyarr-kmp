@@ -1,7 +1,7 @@
 package one.rarebit.heyarr.mobile.playback
 
 import one.rarebit.heyarr.core.auth.Credential
-import java.util.Locale
+import one.rarebit.heyarr.core.playback.StreamStart
 
 /**
  * Everything a player needs to start streaming one item: WHERE the bytes are, WHICH
@@ -113,20 +113,13 @@ data class PlaybackTarget(
          * The stream URL for [base] restarted at [startSeconds] (ADR-0069). At or below
          * zero it is [base] unchanged. Otherwise `?start=<seconds>` is appended (with
          * `&` if [base] already carries a query) — the path token is left **verbatim**,
-         * never percent-encoded (the #16 double-encode trap). Pure + unit-tested.
+         * never percent-encoded (the #16 double-encode trap). One builder for both apps and
+         * the desktop's Cast restart: :core's [StreamStart].
          */
-        fun streamUrl(base: String, startSeconds: Double): String {
-            if (startSeconds <= 0.0) return base
-            val sep = if (base.contains('?')) '&' else '?'
-            return base + sep + "start=" + formatSeconds(startSeconds)
-        }
+        fun streamUrl(base: String, startSeconds: Double): String = StreamStart.url(base, startSeconds)
 
         /** Seconds as an integer when whole, else up to 3 decimals with no trailing zeros. */
-        fun formatSeconds(seconds: Double): String {
-            val whole = seconds.toLong()
-            if (seconds == whole.toDouble()) return whole.toString()
-            return String.format(Locale.ROOT, "%.3f", seconds).trimEnd('0').trimEnd('.')
-        }
+        fun formatSeconds(seconds: Double): String = StreamStart.seconds(seconds)
 
         /**
          * Decide whether an item is video from the signals a browse row or a playback

@@ -3,6 +3,7 @@ package one.rarebit.heyarr.desktop.cast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import one.rarebit.heyarr.core.playback.StreamStart
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
 import one.rarebit.heyarr.desktop.power.SleepInhibitor
@@ -477,7 +478,7 @@ internal class CastManager(
         val doorway = CastMediaRelay(requireNotNull(selected).address, URI.create(localMediaUrl(base)))
         val remaining = plan.durationSeconds?.let { (it - position).coerceAtLeast(0.0) }
         val mediaSessionId = try {
-            connection.load("${doorway.url}?start=$position", title, autoplay = autoplay, duration = remaining)
+            connection.load(StreamStart.url(doorway.url, position), title, autoplay = autoplay, duration = remaining)
             requireNotNull(connection.status?.mediaSessionId) { "Cast receiver did not open a media session" }
         } catch (failure: Exception) {
             doorway.close()

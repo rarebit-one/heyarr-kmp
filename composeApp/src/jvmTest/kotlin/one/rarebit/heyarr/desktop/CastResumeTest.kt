@@ -240,7 +240,7 @@ class CastResumeTest {
             assertTrue(old.closed, "A socket from before the suspend is never trusted")
             assertEquals(loads, old.loadCount)
             assertEquals(listOf("load"), rig.channel.events, "Reloaded into the receiver's session, not relaunched")
-            assertEquals("start=2350.0", rig.channel.lastLoad!!.first.substringAfter("?"))
+            assertEquals("start=2350", rig.channel.lastLoad!!.first.substringAfter("?"))
             assertEquals(true, rig.channel.lastLoad!!.second)
             assertEquals(CastRecovery(CastRecovery.Kind.RECONNECTED, "First", 2350.0), rig.manager.recovery)
             assertEquals("asset", rig.manager.castingAsset)
@@ -268,7 +268,7 @@ class CastResumeTest {
                 rig.channel.status = requireNotNull(rig.channel.status).copy(state = "IDLE", idleReason = reason)
                 rig.poll()
                 assertEquals(listOf("stop-receiver", "load"), rig.channel.events, reason)
-                assertEquals("start=620.0", rig.channel.lastLoad!!.first.substringAfter("?"), reason)
+                assertEquals("start=620", rig.channel.lastLoad!!.first.substringAfter("?"), reason)
                 assertEquals(CastRecovery(CastRecovery.Kind.RESUMING, "First", 620.0), rig.manager.recovery, reason)
                 assertEquals("asset", rig.manager.castingAsset, reason)
                 assertEquals(1, rig.hold.open, reason)
@@ -325,7 +325,7 @@ class CastResumeTest {
             rig.channel.status = null // played out its buffer and closed the media while we were away
             rig.poll()
             assertEquals(listOf("load"), rig.channel.events, "Its media app is gone: a fresh launch")
-            assertEquals("start=100.0", rig.channel.lastLoad!!.first.substringAfter("?"))
+            assertEquals("start=100", rig.channel.lastLoad!!.first.substringAfter("?"))
             assertEquals(CastRecovery.Kind.RECONNECTED, rig.manager.recovery?.kind)
         }
         Rig().use { rig ->
@@ -360,7 +360,7 @@ class CastResumeTest {
                 rig.channel.vanish(reason)
                 rig.poll()
                 assertEquals(listOf("load"), rig.channel.events, "Its media app is closed already: just a LOAD")
-                assertEquals("start=620.0", rig.channel.lastLoad!!.first.substringAfter("?"), "$reason")
+                assertEquals("start=620", rig.channel.lastLoad!!.first.substringAfter("?"), "$reason")
                 assertEquals(true, rig.channel.lastLoad!!.second, "$reason")
                 assertEquals(CastRecovery(CastRecovery.Kind.RESUMING, "First", 620.0), rig.manager.recovery, "$reason")
                 assertEquals("asset", rig.manager.castingAsset, "$reason")
@@ -408,7 +408,7 @@ class CastResumeTest {
             rig.channel.vanish("ERROR")
             rig.poll()
             assertEquals(listOf("load"), rig.channel.events)
-            assertEquals("start=620.0", rig.channel.lastLoad!!.first.substringAfter("?"))
+            assertEquals("start=620", rig.channel.lastLoad!!.first.substringAfter("?"))
             assertEquals(false, rig.channel.lastLoad!!.second, "Put back as it was: paused")
             assertEquals("asset", rig.manager.castingAsset)
         }
@@ -431,7 +431,7 @@ class CastResumeTest {
             rig.channel.vanish()
             rig.poll()
             assertEquals(listOf("load"), rig.channel.events, "The new session vanished unseen, mid-film: resumed")
-            assertEquals("start=930.0", rig.channel.lastLoad!!.first.substringAfter("?"))
+            assertEquals("start=930", rig.channel.lastLoad!!.first.substringAfter("?"))
         }
     }
 
@@ -494,7 +494,7 @@ class CastResumeTest {
                 }
                 rig.channel.report("PLAYING", 32.0)
                 rig.poll()
-                assertEquals("start=1232.0", rig.channel.lastLoad!!.first.substringAfter("?"))
+                assertEquals("start=1232", rig.channel.lastLoad!!.first.substringAfter("?"))
                 assertEquals(CastRecovery(CastRecovery.Kind.RESUMING, "First", 1232.0), rig.manager.recovery)
                 assertNotNull(rig.manager.castingAsset)
             }
