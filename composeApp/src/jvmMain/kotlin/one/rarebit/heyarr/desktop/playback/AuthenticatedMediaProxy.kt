@@ -44,21 +44,26 @@ class AuthenticatedMediaProxy(private val baseUrl: () -> String, private val cre
         return "http://127.0.0.1:${forwarder.port}$path"
     }
 
+    // The forwarder closes the exchange once this returns.
     private fun serve(exchange: HttpExchange) {
-        exchange.use {
-            val target = targets[it.requestURI.rawPath]
-            if (target == null || !sameOrigin(target, URI.create(baseUrl()))) {
-                it.sendResponseHeaders(HTTP_NOT_FOUND, -1)
-                return
-            }
-            if (it.requestMethod != "GET" && it.requestMethod != "HEAD") {
-                it.sendResponseHeaders(HTTP_BAD_METHOD, -1)
-                return
-            }
-            forwarder.forward(it, withQuery(target, it.requestURI.rawQuery), upstreamHeaders = {
-                credential().asHeader()
-            })
+        val target = targets[exchange.requestURI.rawPath]
+        if (target == null || !sameOrigin(target, URI.create(baseUrl()))) {
+            exchange.sendResponseHeaders(HTTP_NOT_FOUND, -1)
+            return
         }
+        if (exchange.requestMethod != "GET" && exchange.requestMethod != "HEAD") {
+            exchange.sendResponseHeaders(HTTP_BAD_METHOD, -1)
+            return
+        }
+        // A node stream that breaks is passed on as a break, not a clean end: the Cast relay
+        // reads through this proxy and restarts the film only when it sees the cut, and mpv
+        // must not take a broken transcode for the film's end either.
+        forwarder.forward(
+            exchange,
+            withQuery(target, exchange.requestURI.rawQuery),
+            upstreamHeaders = { credential().asHeader() },
+            passCutOn = true,
+        )
     }
 
     /** Restart seeks add ?start= to the local URL. Preserve the original plan's query. */

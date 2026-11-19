@@ -43,19 +43,20 @@ internal class CastMediaRelay(private val receiver: Inet4Address, private val up
 
     val url: String get() = "http://${local.hostAddress}:${forwarder.port}$path"
 
+    // The forwarder closes the exchange once this returns.
     private fun serve(exchange: HttpExchange) {
-        exchange.use {
-            val refusal = rejection(it)
-            when {
-                refusal != null -> it.sendResponseHeaders(refusal, -1)
-                it.requestMethod == "OPTIONS" -> preflight(it)
-                else -> forward(it)
-            }
+        val refusal = rejection(exchange)
+        when {
+            refusal != null -> exchange.sendResponseHeaders(refusal, -1)
+            exchange.requestMethod == "OPTIONS" -> preflight(exchange)
+            else -> forward(exchange)
         }
     }
 
     // A failed read of the node mid-download marks the relay severed; the forwarder already
-    // leaves out a receiver hanging up, the stream's normal end and our own close.
+    // leaves out a receiver hanging up, the stream's normal end and our own close. The
+    // receiver's answer still ends cleanly, as it did on the hardware run: it plays out its
+    // buffer while the manager restarts the film.
     private fun forward(exchange: HttpExchange) = forwarder.forward(
         exchange,
         withQuery(exchange.requestURI.rawQuery),

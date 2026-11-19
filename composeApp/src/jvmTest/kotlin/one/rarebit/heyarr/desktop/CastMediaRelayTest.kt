@@ -1,7 +1,9 @@
 package one.rarebit.heyarr.desktop
 
 import com.sun.net.httpserver.HttpServer
+import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.desktop.cast.CastMediaRelay
+import one.rarebit.heyarr.desktop.playback.AuthenticatedMediaProxy
 import java.io.IOException
 import java.net.Inet4Address
 import java.net.InetAddress
@@ -238,6 +240,36 @@ class CastMediaRelayTest {
                 Thread.sleep(500)
                 assertFalse(relay.severed, "A receiver hanging up is not the node's stream breaking")
             }
+        }
+    }
+
+    /**
+     * As production wires it: the relay reads the loopback credential proxy, which reads the
+     * node. A cut the proxy turned into a clean end would never mark the relay severed, and
+     * the film would not be restarted before the receiver played out its buffer (#249 review).
+     */
+    private fun <T> throughTheProxy(ending: String?, check: (CastMediaRelay) -> T): T {
+        val (node, _) = liveNode(ending)
+        return node.use {
+            val origin = "http://127.0.0.1:${node.localPort}"
+            AuthenticatedMediaProxy({ origin }, { Credential.Device("cert", "proof") }).use { proxy ->
+                val local = proxy.urlFor("$origin/api/v1/playback/stream/token")
+                CastMediaRelay(receiver, URI.create(local)).use(check)
+            }
+        }
+    }
+
+    @Test fun a_node_stream_that_breaks_behind_the_credential_proxy_still_marks_the_relay_severed() {
+        throughTheProxy(ending = null) { relay ->
+            runCatching { send(request(relay.url)) }
+            assertTrue(relay.severed, "The proxy must pass the node's cut on, not end its answer cleanly")
+        }
+    }
+
+    @Test fun the_streams_normal_end_behind_the_credential_proxy_is_not_a_cut() {
+        throughTheProxy(ending = "0\r\n\r\n") { relay ->
+            assertEquals("moov", send(request(relay.url)).body())
+            assertFalse(relay.severed)
         }
     }
 
