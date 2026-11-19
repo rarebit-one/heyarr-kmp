@@ -2,6 +2,7 @@ package one.rarebit.heyarr.desktop.playback
 
 import com.sun.net.httpserver.HttpExchange
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.core.playback.HlsPresentation
 import java.net.HttpURLConnection.HTTP_BAD_METHOD
 import java.net.HttpURLConnection.HTTP_NOT_FOUND
 import java.net.InetSocketAddress
@@ -14,11 +15,20 @@ import java.util.concurrent.ConcurrentHashMap
  * current credential on every upstream request, including ranges, reconnects and restart
  * seeks. Only explicitly registered media URLs at the configured node can be read; neither
  * the device credential nor its keys are handed to mpv or sent to another origin.
+ *
+ * An HLS presentation (ADR-0126) is registered by its playlist but served as its whole
+ * capability prefix, because the playlist names its init and segments relative to itself:
+ * one local prefix maps to the node's, and only [HlsPresentation]'s entry names pass under
+ * it. Those routes take no credential (the capability is the authority), so none is sent.
  */
 class AuthenticatedMediaProxy(private val baseUrl: () -> String, private val credential: () -> Credential) :
     AutoCloseable {
     private val targets = ConcurrentHashMap<String, URI>()
     private val paths = ConcurrentHashMap<URI, String>()
+
+    /** Local prefix (no trailing slash) → the node's presentation prefix (with one). */
+    private val presentations = ConcurrentHashMap<String, URI>()
+    private val presentationPaths = ConcurrentHashMap<URI, String>()
 
     // Loopback only: mpv is on this machine, and the credential it never sees is added here.
     private val forwarder = LocalStreamForwarder(
@@ -33,6 +43,7 @@ class AuthenticatedMediaProxy(private val baseUrl: () -> String, private val cre
     fun urlFor(url: String): String {
         val target = URI.create(url)
         require(sameOrigin(target, URI.create(baseUrl()))) { "Media URL belongs to another node" }
+        if (HlsPresentation.isPlaylistPath(target.rawPath)) return presentationUrl(target)
         require(target.rawPath.startsWith("/api/v1/blobs/") || target.rawPath.startsWith("/api/v1/playback/stream/")) {
             "Not a media URL"
         }
@@ -44,9 +55,35 @@ class AuthenticatedMediaProxy(private val baseUrl: () -> String, private val cre
         return "http://127.0.0.1:${forwarder.port}$path"
     }
 
+    /** The local URL of [playlist]'s presentation: its own capability prefix, then the playlist. */
+    private fun presentationUrl(playlist: URI): String {
+        require(playlist.rawQuery == null && playlist.rawFragment == null) { "Not an HLS playlist URL" }
+        val prefix = URI.create(HlsPresentation.prefixOf(playlist.toASCIIString()))
+        val local = presentationPaths.computeIfAbsent(prefix) {
+            val fresh = "/" + UUID.randomUUID()
+            presentations[fresh] = prefix
+            fresh
+        }
+        return "http://127.0.0.1:${forwarder.port}$local/${HlsPresentation.PLAYLIST}"
+    }
+
+    /** The node URL an HLS entry request maps to, or null when [path] is none of a presentation's. */
+    private fun presentationEntry(path: String, query: String?): URI? {
+        val slash = path.lastIndexOf('/')
+        val name = path.substring(slash + 1)
+        return if (slash > 0 && query == null && HlsPresentation.isEntry(name)) {
+            presentations[path.substring(0, slash)]?.resolve(name)
+        } else {
+            null
+        }
+    }
+
     // The forwarder closes the exchange once this returns.
     private fun serve(exchange: HttpExchange) {
-        val target = targets[exchange.requestURI.rawPath]
+        val uri = exchange.requestURI
+        val registered = targets[uri.rawPath]
+        val entry = if (registered == null) presentationEntry(uri.rawPath, uri.rawQuery) else null
+        val target = registered ?: entry
         if (target == null || !sameOrigin(target, URI.create(baseUrl()))) {
             exchange.sendResponseHeaders(HTTP_NOT_FOUND, -1)
             return
@@ -60,8 +97,9 @@ class AuthenticatedMediaProxy(private val baseUrl: () -> String, private val cre
         // must not take a broken transcode for the film's end either.
         forwarder.forward(
             exchange,
-            withQuery(target, exchange.requestURI.rawQuery),
-            upstreamHeaders = { credential().asHeader() },
+            entry ?: withQuery(target, uri.rawQuery),
+            // The capability is an HLS entry's authority: the device's proof goes nowhere it isn't asked for.
+            upstreamHeaders = if (entry != null) ::emptyMap else ({ credential().asHeader() }),
             passCutOn = true,
         )
     }
@@ -88,6 +126,8 @@ class AuthenticatedMediaProxy(private val baseUrl: () -> String, private val cre
             "ETag",
             "Last-Modified",
             "Cache-Control",
+            // A presentation answers 429 when every stream slot is busy; the player backs off by it.
+            "Retry-After",
         )
 
         private fun sameOrigin(a: URI, b: URI): Boolean = a.userInfo == null && a.scheme in listOf("http", "https") &&

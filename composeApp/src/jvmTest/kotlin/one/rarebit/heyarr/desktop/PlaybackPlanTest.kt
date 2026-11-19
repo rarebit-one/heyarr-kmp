@@ -106,6 +106,39 @@ class PlaybackPlanTest {
     }
 
     @Test
+    fun aStreamPlanCarriesItsHlsPresentationAbsoluteBesideTheFallback() {
+        // ADR-0126 (heyarr-core#908): the same repackage as a seekable HLS presentation,
+        // relative like `url`; the live stream stays the fallback.
+        val t = transport(
+            200,
+            """{"mode":"stream","url":"/api/v1/playback/stream/tok","mime":"video/mp4",""" +
+                """"hls_url":"/render/hls/cap/index.m3u8","hls_mime":"application/vnd.apple.mpegurl"}""",
+        )
+        val target = api(t).playbackTarget("asset-1", "blake3:abc")
+        assertEquals("$base/render/hls/cap/index.m3u8", target.hlsUrl)
+        assertEquals("application/vnd.apple.mpegurl", target.hlsMime)
+        assertEquals("$base/api/v1/playback/stream/tok", target.streamBaseUrl)
+        assertTrue(target.nodeMixesAudio)
+    }
+
+    @Test
+    fun aNodeThatCannotSegmentOrADirectPlanHasNoPresentation() {
+        val stream = api(transport(200, """{"mode":"stream","url":"/api/v1/playback/stream/tok"}"""))
+            .playbackTarget("asset-1", "blake3:abc")
+        assertNull(stream.hlsUrl)
+        assertNull(stream.hlsMime)
+        // A stray hls_url beside a direct plan is not one (the node only offers it beside a stream).
+        val direct = api(
+            transport(
+                200,
+                """{"mode":"direct","url":"/api/v1/blobs/blake3:abc/content","hls_url":"/render/hls/cap/index.m3u8"}""",
+            ),
+        ).playbackTarget("asset-1", "blake3:abc")
+        assertNull(direct.hlsUrl)
+        assertTrue(!direct.nodeMixesAudio, "mpv switches a direct blob's tracks itself")
+    }
+
+    @Test
     fun aDirectPlanIsNotRestartSeekable() {
         // The blob endpoint answers ranges, so mpv seeks it itself — restarting would
         // throw away a perfectly good native seek.

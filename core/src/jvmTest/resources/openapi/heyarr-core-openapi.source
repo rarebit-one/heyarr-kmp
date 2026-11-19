@@ -1,5 +1,5 @@
 # Vendored by scripts/refresh-openapi-spec.sh — do not edit by hand.
 repo=rarebit-one/heyarr-core
 path=api/openapi.yaml
-commit=5181af95e692596edc65673229cf1aaad0f78293
-yaml_blob=87480ee1238db2b02e7dff9d0a7ad26c16beb36a
+commit=b9ead39cff572691a79b1c1ec66a4a631a2d20b4
+yaml_blob=19dca3852835c5a3e512e651b04f6157a1cae215

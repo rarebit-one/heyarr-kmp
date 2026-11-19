@@ -233,7 +233,7 @@ private fun switchSourceAudio(
 ) {
     if (ordinal == playback.selectedAudioTrack) return
     val ps = p.state
-    if (playback.currentTarget?.streamBaseUrl == null) {
+    if (playback.currentTarget?.nodeMixesAudio != true) {
         ps.audio.getOrNull(ordinal)?.id?.let { id ->
             p.setAudio(id)
             playback.selectedAudioTrack = ordinal

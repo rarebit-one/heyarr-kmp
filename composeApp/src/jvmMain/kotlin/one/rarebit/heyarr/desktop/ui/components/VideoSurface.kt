@@ -105,7 +105,7 @@ fun PlaybackHost(session: AppSession) {
     val target = playback.currentTarget
     val ps = playback.player.state
     LaunchedEffect(ps.loaded, ps.audio, target, playback.selectedAudioTrack) {
-        if (ps.loaded && target?.streamBaseUrl == null) {
+        if (ps.loaded && target?.nodeMixesAudio != true) {
             playback.selectedAudioTrack?.let { ordinal ->
                 ps.audio.getOrNull(ordinal)?.id?.takeIf { it != ps.audioId }?.let(playback.player::setAudio)
             }

@@ -12,8 +12,13 @@ import java.util.concurrent.atomic.AtomicInteger
 internal class FakeChannel(private val sessions: AtomicInteger = AtomicInteger(1)) : CastChannel {
     var closed = false
     var failLoad = false
+
+    /** The receiver refuses an HLS LOAD (a playlist it cannot fetch or play) but plays a live stream. */
+    var failHls = false
     var lastLoad: Pair<String, Boolean>? = null
     var lastDuration: Double? = null
+    var lastStart = 0.0
+    var lastHls = false
     var loadCount = 0
     var receiverStops = 0
     var refuseStop = false
@@ -27,14 +32,24 @@ internal class FakeChannel(private val sessions: AtomicInteger = AtomicInteger(1
 
     /** What this channel saw of each session, latched as CastConnection's: session to idleReason. */
     private val sightings = mutableMapOf<Int, String?>()
-    override fun load(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?) {
+    override fun load(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?) =
+        record(url, title, autoplay, start, duration, hls = false)
+
+    override fun loadPresentation(url: String, title: String, autoplay: Boolean, start: Double) =
+        record(url, title, autoplay, start, duration = null, hls = true)
+
+    @Suppress("LongParameterList") // Records every LOAD input a test asserts on.
+    private fun record(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?, hls: Boolean) {
         sightings.clear()
-        if (failLoad) error("LOAD_FAILED")
+        if (failLoad || (hls && failHls)) error("LOAD_FAILED")
         loadCount++
         events += "load"
         lastLoad = url to autoplay
         lastDuration = duration
-        status = CastStatus(if (autoplay) "PLAYING" else "PAUSED", 0.0, null, title, sessions.incrementAndGet())
+        lastStart = start
+        lastHls = hls
+        // An HLS receiver starts at the asked film time; a live stream's clock starts at zero.
+        status = CastStatus(if (autoplay) "PLAYING" else "PAUSED", start, null, title, sessions.incrementAndGet())
         sight(status)
     }
     override fun stopReceiver() {

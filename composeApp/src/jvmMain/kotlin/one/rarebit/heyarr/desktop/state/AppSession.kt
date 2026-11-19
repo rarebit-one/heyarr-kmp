@@ -58,6 +58,7 @@ import one.rarebit.heyarr.desktop.music.Track
 import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.playback.AuthenticatedMediaProxy
 import one.rarebit.heyarr.desktop.playback.DesktopDisplay
+import one.rarebit.heyarr.desktop.playback.LocalPresentation
 import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.power.SleepInhibitor
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
@@ -256,10 +257,9 @@ class AppSession(
 
     fun mediaUrl(url: String): String = mediaProxy.value.urlFor(url)
 
-    fun mediaTarget(target: PlaybackTarget): PlaybackTarget = target.copy(
-        url = mediaUrl(target.url),
-        streamBaseUrl = target.streamBaseUrl?.let(::mediaUrl),
-    )
+    /** What mpv plays for [target]: its HLS presentation when the node has one, else as planned, via the proxy. */
+    fun mediaTarget(target: PlaybackTarget): PlaybackTarget =
+        LocalPresentation.choose(target, ::mediaUrl, LocalPresentation::probe)
 
     fun closeMediaProxy() {
         cast.close()

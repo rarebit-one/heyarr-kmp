@@ -72,6 +72,24 @@ internal class CastManager(
     /** The receiver app our media was loaded into: another app's same-numbered session is not ours. */
     private var ownedAppSession: String? = null
     private var title = ""
+
+    /**
+     * The receiver plays the node's HLS presentation of the film (ADR-0126) rather than the
+     * live stream: it knows the whole film from the playlist and seeks natively, so its clock
+     * is film-absolute ([sourceOffset] stays 0), a seek is the receiver's own, and a broken
+     * segment fetch is the receiver's to retry, not a cut stream to restart.
+     */
+    private var hls = false
+
+    /**
+     * The receiver has been seen PLAYING the presentation. Until then a LOAD it acknowledged
+     * may still fail on it (an ERROR or a stall while fetching or decoding the playlist or its
+     * first segments, heyarr-kmp#255 review): that is a presentation it cannot play, so the
+     * cast falls back to the live stream ([fallBackFromPresentation]) instead of reloading
+     * the same presentation until the retry budget runs out. Once it has played, a later
+     * failure is a dropped film like any other and is resumed with the presentation.
+     */
+    private var hlsPlayed = false
     private var sourceOffset = 0.0
     private var playIntent = false
     private var progress: Progress? = null
@@ -150,15 +168,17 @@ internal class CastManager(
             // Default Media Receiver stalls every LOAD into its session identically, even
             // from a restarted app (heyarr-kmp#248). A fresh launch costs a splash screen.
             if (!ownsHealthyMedia(next)) quitReceiver(next)
-            val doorway = CastMediaRelay(device.address, URI.create(localMediaUrl(plan.url)))
-            val mediaSessionId = try {
-                next.load(doorway.url, title, duration = plan.durationSeconds)
-                check(!invalidating) { "Cast connection was reset" }
-                requireNotNull(next.status?.mediaSessionId) { "Cast receiver did not open a media session" }
-            } catch (failure: Exception) {
-                doorway.close()
-                throw failure
+            // The presentation when the node offers one: the TV's own remote and scrub bar
+            // then reach the whole film (heyarr-kmp#248). A receiver that refuses it (a
+            // playlist the node can't cut, a receiver that can't play it) gets the live stream.
+            val presented = plan.hlsUrl?.let {
+                runCatching { open(next, device, plan, title, presentation = true, at = 0.0, autoplay = true) }
+                    .getOrNull()
             }
+            val (doorway, mediaSessionId) =
+                presented ?: open(next, device, plan, title, presentation = false, at = 0.0, autoplay = true)
+            hls = presented != null
+            hlsPlayed = false
             relay?.close()
             relay = doorway
             target = plan
@@ -194,7 +214,9 @@ internal class CastManager(
             if (fate == Fate.DROPPED && !invalidating) {
                 // The receiver dropped our film mid-way, most likely having played out the
                 // buffer of a stream the node cut (this machine slept) or ended early (its
-                // ffmpeg died). Put it back.
+                // ffmpeg died). Put it back: as the live stream if it never played the
+                // presentation it was given.
+                fallBackFromPresentation()
                 resumeAt(connection, lastFilm, relaunch = true)
             } else {
                 noteIntent(fresh)
@@ -225,7 +247,9 @@ internal class CastManager(
     /** What [fresh] means for the media we own (null: none), releasing it when it is no longer ours. */
     private fun settle(connection: CastChannel, fresh: CastStatus?): Fate? {
         val owned = ownedMediaSessionId ?: return null
-        val cut = streamCut || relay?.severed == true
+        // A presentation's segment that broke is refetched by the receiver; only a wake or a
+        // resume under way presumes anything lost.
+        val cut = streamCut || (!hls && relay?.severed == true)
         // heyarr-kmp#242 review: another sender may relaunch the receiver app while our channel
         // is down, and its first media session can reuse our number. A reconnected channel
         // talks to whichever app now runs; a different one is someone else's.
@@ -242,10 +266,18 @@ internal class CastManager(
         return fate
     }
 
-    /** The receiver's own play and pause (its remote, another sender) are what we mean to do too. */
+    /**
+     * The receiver's own play and pause (its remote, another sender) are what we mean to do too.
+     * Media we no longer own was released by [settle] first, so PLAYING here is our film's,
+     * and a presentation seen playing has proven it plays ([hlsPlayed]).
+     */
     private fun noteIntent(fresh: CastStatus?) {
         when (fresh?.state) {
-            "PLAYING" -> playIntent = true
+            "PLAYING" -> {
+                playIntent = true
+                if (hls) hlsPlayed = true
+            }
+
             "PAUSED", "PAUSED_PLAYBACK" -> playIntent = false
         }
     }
@@ -259,7 +291,13 @@ internal class CastManager(
         val plan = target
         status = fresh?.copy(
             position = fresh.position + sourceOffset,
-            duration = if (plan != null) plan.durationSeconds else fresh.duration,
+            // A presentation's receiver read the whole film from its playlist, so its own
+            // duration is right where the plan has none; a live stream's never is.
+            duration = when {
+                plan == null -> fresh.duration
+                hls -> plan.durationSeconds ?: fresh.duration
+                else -> plan.durationSeconds
+            },
         )
     }
 
@@ -268,15 +306,8 @@ internal class CastManager(
         val film = sourceOffset + fresh.position
         val live = fresh.state in LIVE
         if (live) lastFilm = film
-        if (live && (streamCut || relay?.severed == true)) {
-            // Still playing our film from its buffer, but nothing more will reach it. Restart
-            // now, while the buffer lasts: a short reload instead of a stop minutes later.
-            // (The receiver's buffered end is not observable once LOAD declares the film's
-            // duration, so "when the buffer runs low" can't be timed reliably.)
-            resumeAt(connection, film, relaunch = false)
-            return
-        }
-        val judged = judge(progress, fresh, clock(), playIntent)
+        if (live && restartedCutStream(connection, film)) return
+        val judged = judge(progress, fresh, clock(), playIntent, nativeSeeks = hls)
         progress = judged.progress
         if (judged.played) {
             // Playing again: a recovery worked, so the next stall gets a full budget.
@@ -290,6 +321,7 @@ internal class CastManager(
         when (judged.verdict) {
             Verdict.STEADY -> Unit
 
+            // Never for a presentation (judge's nativeSeeks): its receiver reaches any point itself.
             Verdict.UNREACHED_SEEK -> {
                 // The receiver (its remote, Google TV's controls, another sender) jumped
                 // past what the repackage has produced and cannot fetch ahead in it. The
@@ -311,10 +343,28 @@ internal class CastManager(
             } else {
                 recoveries++
                 recovery = CastRecovery(CastRecovery.Kind.RESTARTING, device, film)
+                // A presentation that never started (stuck buffering its playlist) is not
+                // relaunched as itself: the live stream takes over from there.
+                fallBackFromPresentation()
                 quitReceiver(connection)
                 loadAt(connection, film, autoplay = true)
             }
         }
+    }
+
+    /**
+     * Restarts our live stream at [film] when it is known cut while the receiver still plays
+     * it from its buffer; true when it did. Restarting now, while the buffer lasts, is a short
+     * reload instead of a stop minutes later. (The receiver's buffered end is not observable
+     * once LOAD declares the film's duration, so "when the buffer runs low" can't be timed.)
+     */
+    private fun restartedCutStream(connection: CastChannel, film: Double): Boolean {
+        // Still playing the presentation after a wake: there is no long stream to have been
+        // cut, the receiver just fetches its next segment. Nothing to restart.
+        if (hls) streamCut = false
+        val cut = !hls && (streamCut || relay?.severed == true)
+        if (cut) resumeAt(connection, film, relaunch = false)
+        return cut
     }
 
     /**
@@ -464,8 +514,7 @@ internal class CastManager(
                 clearOwnedMedia()
             }
             if (action == "seek" && target?.restartSeekable == true) {
-                val restart = restartSeek(requireNotNull(seconds), target?.durationSeconds, playIntent)
-                loadAt(connection, restart.position, restart.autoplay)
+                seek(connection, requireNotNull(seconds))
             } else {
                 connection.control(action, seconds)
                 if (action == "pause") playIntent = false
@@ -482,6 +531,25 @@ internal class CastManager(
         }
     }
 
+    /**
+     * Drops a presentation the receiver acknowledged but never played (see [hlsPlayed]) for
+     * the live stream, for the rest of this cast; its next LOAD is the restartable stream, as
+     * if the receiver had refused the presentation's LOAD outright.
+     */
+    private fun fallBackFromPresentation() {
+        if (hls && !hlsPlayed) hls = false
+    }
+
+    /** A presentation seeks natively, in film time; a live stream is restarted there. */
+    private fun seek(connection: CastChannel, seconds: Double) {
+        val restart = restartSeek(seconds, target?.durationSeconds, playIntent)
+        if (hls) {
+            connection.control("seek", restart.position)
+        } else {
+            loadAt(connection, restart.position, restart.autoplay)
+        }
+    }
+
     /** We own media but have no live channel to its receiver: a reconnect is pending. */
     private fun unreachable(): Boolean {
         val current = connection
@@ -489,34 +557,71 @@ internal class CastManager(
     }
 
     /**
-     * A restart seek: a new receiver-scoped doorway and a LOAD of the node's stream from
-     * film time [at]. The receiver's clock starts again at zero, so [sourceOffset] keeps
-     * what the user sees film-absolute; the declared duration is what remains.
+     * A fresh LOAD from film time [at], through a new receiver-scoped doorway: a restart seek,
+     * a stall's relaunch or a resume. A live stream is cut again from [at] and the receiver's
+     * clock starts at zero, so [sourceOffset] keeps what the user sees film-absolute and the
+     * declared duration is what remains. A presentation is loaded whole and started at [at].
      */
     private fun loadAt(connection: CastChannel, at: Double, autoplay: Boolean) {
         // Offset plus receiver time is binary noise past the millisecond the node's -ss keeps.
         val position = Math.round(at * MILLIS) / MILLIS
         val plan = requireNotNull(target)
-        val base = requireNotNull(plan.streamBaseUrl)
-        val doorway = CastMediaRelay(requireNotNull(selected).address, URI.create(localMediaUrl(base)))
-        val remaining = plan.durationSeconds?.let { (it - position).coerceAtLeast(0.0) }
-        val mediaSessionId = try {
-            connection.load(StreamStart.url(doorway.url, position), title, autoplay = autoplay, duration = remaining)
-            requireNotNull(connection.status?.mediaSessionId) { "Cast receiver did not open a media session" }
-        } catch (failure: Exception) {
-            doorway.close()
-            throw failure
-        }
+        val (doorway, mediaSessionId) =
+            open(
+                connection,
+                requireNotNull(selected),
+                plan,
+                title,
+                presentation = hls,
+                at = position,
+                autoplay = autoplay,
+            )
         relay?.close()
         relay = doorway
         ownedMediaSessionId = mediaSessionId
         ownedAppSession = connection.appSession
-        sourceOffset = position
+        sourceOffset = if (hls) 0.0 else position
         lastFilm = position
         playIntent = autoplay
         // A new media session's clock restarts: the old trajectory must not read as a jump.
         progress = null
         status = status?.copy(position = position, state = if (autoplay) "PLAYING" else "PAUSED")
+    }
+
+    /**
+     * Opens a doorway for [plan] (its HLS [presentation], or its live stream cut from [at])
+     * and LOADs it; the receiver's new media session, or the doorway closed and the failure
+     * thrown.
+     */
+    @Suppress("LongParameterList") // One LOAD's every input; play and loadAt differ in each.
+    private fun open(
+        channel: CastChannel,
+        device: CastDevice,
+        plan: PlaybackTarget,
+        title: String,
+        presentation: Boolean,
+        at: Double,
+        autoplay: Boolean,
+    ): Pair<CastMediaRelay, Int> {
+        val doorway = if (presentation) {
+            CastMediaRelay(device.address, URI.create(localMediaUrl(requireNotNull(plan.hlsUrl))), presentation = true)
+        } else {
+            CastMediaRelay(device.address, URI.create(localMediaUrl(requireNotNull(plan.streamBaseUrl))))
+        }
+        try {
+            if (presentation) {
+                channel.loadPresentation(doorway.url, title, autoplay = autoplay, start = at)
+            } else {
+                val remaining = plan.durationSeconds?.let { (it - at).coerceAtLeast(0.0) }
+                channel.load(StreamStart.url(doorway.url, at), title, autoplay = autoplay, duration = remaining)
+            }
+            check(!invalidating) { "Cast connection was reset" }
+            return doorway to
+                requireNotNull(channel.status?.mediaSessionId) { "Cast receiver did not open a media session" }
+        } catch (failure: Exception) {
+            doorway.close()
+            throw failure
+        }
     }
 
     /**
@@ -592,6 +697,8 @@ internal class CastManager(
         ownedAppSession = null
         sourceOffset = 0.0
         title = ""
+        hls = false
+        hlsPlayed = false
         playIntent = false
         progress = null
         recoveries = 0
@@ -778,24 +885,43 @@ internal class CastManager(
          * jumps the clock and then waits forever. So a forward jump only matters once the
          * receiver sits on it for [SEEK_GRACE_SECONDS]; any other lack of progress while
          * meant to play is a stall after [STALL_SECONDS]. Paused time never counts.
+         *
+         * [nativeSeeks]: the receiver plays an HLS presentation and reaches any point itself.
+         * A jump is then a fresh baseline, like a rewind: a far seek waits a few seconds while
+         * the node cuts its segment, and only a stall from there is acted on.
          */
-        internal fun judge(previous: Progress?, next: CastStatus, now: Long, wantsPlay: Boolean): Judgement {
+        internal fun judge(
+            previous: Progress?,
+            next: CastStatus,
+            now: Long,
+            wantsPlay: Boolean,
+            nativeSeeks: Boolean = false,
+        ): Judgement {
             val fresh = Progress(next.position, next.state, now, now, jumped = false)
             if (previous == null) return Judgement(fresh, Verdict.STEADY, false)
-            val jumped = next.position > reach(previous, next, now) + SEEK_TOLERANCE_SECONDS
+            val leapt = next.position > reach(previous, next, now) + SEEK_TOLERANCE_SECONDS
             val rewound = next.position < previous.position - SEEK_TOLERANCE_SECONDS
-            val played = !jumped && next.state == "PLAYING" && next.position > previous.position + PROGRESS_EPSILON
+            val played = !leapt && next.state == "PLAYING" && next.position > previous.position + PROGRESS_EPSILON
             val still = next.state in STILL
-            val progress = when {
-                jumped -> fresh.copy(jumped = true)
-
-                // A rewind lands in what was already buffered; give it a fresh baseline.
-                rewound || played || still -> fresh
-
-                else -> previous.copy(position = next.position, state = next.state, seenAt = now)
-            }.let { if (still) it.copy(advancedAt = now) else it } // paused time never counts; a paused jump does
+            // A rewind lands in what was already buffered; give it a fresh baseline.
+            val rebased = rewound || leapt || played || still
+            val progress = trajectory(previous, next, fresh, jumped = leapt && !nativeSeeks, rebased = rebased)
+                .let { if (still) it.copy(advancedAt = now) else it } // paused time never counts; a paused jump does
             val verdict = if (wantsPlay && !still) verdictOf(progress, now) else Verdict.STEADY
             return Judgement(progress, verdict, played)
+        }
+
+        /** After [next]: a jump still to be reached, a fresh baseline, or the same run carried on. */
+        private fun trajectory(
+            previous: Progress,
+            next: CastStatus,
+            fresh: Progress,
+            jumped: Boolean,
+            rebased: Boolean,
+        ): Progress = when {
+            jumped -> fresh.copy(jumped = true)
+            rebased -> fresh
+            else -> previous.copy(position = next.position, state = next.state, seenAt = fresh.seenAt)
         }
 
         /** The furthest the receiver's clock could have run since [previous] without a seek. */

@@ -63,6 +63,12 @@ import java.net.URLEncoder
  * *restart* seek instead, and [streamBaseUrl] is what makes it reachable: the token
  * URL with no `start` param, from which [HeyarrApi.streamUrl] builds `?start=<s>`.
  * Null for a direct blob, which the blob endpoint already seeks natively (ADR-0013).
+ *
+ * A node that can segment also offers the same repackage as a seekable HLS presentation
+ * ([hlsUrl], ADR-0126, heyarr-core#908): a VOD playlist of fMP4 segments listing the whole
+ * film, fetched with no credential (the capability in its path is the authority). A player
+ * that takes it seeks natively and needs none of the restart machinery; [url] and
+ * [streamBaseUrl] stay the fallback for a node or source that cannot segment.
  */
 data class SourceAudioTrack(val ordinal: Int, val language: String?, val title: String?, val commentary: Boolean)
 
@@ -73,9 +79,17 @@ data class PlaybackTarget(
     val audioTracks: List<SourceAudioTrack> = emptyList(),
     val selectedAudioTrack: Int? = null,
     val mime: String? = null,
+    val hlsUrl: String? = null,
+    val hlsMime: String? = null,
 ) {
     /** True for a node-repackaged stream: a seek is a restart, not an offset. */
     val restartSeekable: Boolean get() = streamBaseUrl != null
+
+    /**
+     * True when the node chose the audio track into what is played (the restartable stream,
+     * or its HLS presentation): switching it is a re-plan, not a change of mpv's track.
+     */
+    val nodeMixesAudio: Boolean get() = streamBaseUrl != null || hlsUrl != null
 }
 
 private fun parsePlaybackPlan(baseUrl: String, body: String, requestedAudioTrack: Int?): PlaybackTarget {
@@ -99,8 +113,21 @@ private fun parsePlaybackPlan(baseUrl: String, body: String, requestedAudioTrack
     require(requestedAudioTrack == null || selected == requestedAudioTrack) {
         "The selected audio track is unavailable"
     }
-    val streamBase = absolute.takeIf { JsonScan.stringField(root, "mode") == "stream" }
-    return PlaybackTarget(absolute, duration, streamBase, tracks, selected, JsonScan.stringField(root, "mime"))
+    val stream = JsonScan.stringField(root, "mode") == "stream"
+    val streamBase = absolute.takeIf { stream }
+    // Relative like `url`, and only ever beside a stream plan (ADR-0126).
+    val hls = JsonScan.stringField(root, "hls_url")?.takeIf { stream && it.isNotBlank() }
+        ?.let { if (it.startsWith("http")) it else baseUrl.trimEnd('/') + it }
+    return PlaybackTarget(
+        absolute,
+        duration,
+        streamBase,
+        tracks,
+        selected,
+        JsonScan.stringField(root, "mime"),
+        hls,
+        hls?.let { JsonScan.stringField(root, "hls_mime") },
+    )
 }
 
 private const val HTTP_OK_MIN = 200
