@@ -349,22 +349,26 @@ private fun CastPicker(session: AppSession, state: DetailState) {
         when {
             rl == null -> Skeleton(Modifier.fillMaxWidth().height(36.dp))
 
-            rl.renderers.isEmpty() -> Text(
+            rl.renderers.isEmpty() && session.cast.devices.isEmpty() -> Text(
                 "No renderers found. A device that is switched off will not be listed — that is not the same as it not existing.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Tokens.textMuted,
             )
 
-            else -> RendererGroups(rl) { x ->
+            else -> RendererGroups(rl, session.cast.devices, onPick = { x ->
                 val a = session.api ?: return@RendererGroups
                 state.castAssetId = null
                 Caster(session, a, x, before = { state.busy = "cast" }, after = { state.busy = null }).cast(assetId)
-            }
+            }, onCast = { device ->
+                state.castAssetId = null
+                castLocally(session, device, assetId, state.detail?.work?.title.orEmpty().ifBlank { "Media" })
+            })
         }
         GhostButton("Search the network again", {
             scope.launch {
                 session.api?.let { a ->
-                    session.io { a.renderers(refresh = true) }.onSuccess { state.rendererList = it }
+                    session.io { a.renderers(refresh = true).also { runCatching { session.cast.discover() } } }
+                        .onSuccess { state.rendererList = it }
                 }
             }
         })

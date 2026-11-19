@@ -49,6 +49,7 @@ import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.playback.Copies
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.desktop.cast.CastRecovery
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
@@ -97,6 +98,7 @@ import one.rarebit.heyarr.desktop.ui.screens.SettingsState
 import one.rarebit.heyarr.desktop.ui.screens.SourcesScreen
 import one.rarebit.heyarr.desktop.ui.screens.WantByTitle
 import one.rarebit.heyarr.desktop.ui.screens.accentHex
+import one.rarebit.heyarr.desktop.ui.screens.castRecoveryText
 import one.rarebit.heyarr.ui.components.GhostButton
 import one.rarebit.heyarr.ui.components.HeyarrIcons
 import one.rarebit.heyarr.ui.components.OfflineBanner
@@ -128,7 +130,9 @@ data class WantRequest(
  * desktop's own when Appearance → "Follow desktop colours" is on and [desktopPalette] finds one;
  * adaptive media accents follow whichever is in force and can be disabled in Appearance.
  */
+// Detekt's existing App findings are keyed to the full signature, which changes for this opt-in.
 @Composable
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "FunctionNaming")
 fun App(
     settings: SettingsStore,
     transport: HttpTransport,
@@ -154,6 +158,8 @@ fun App(
      * tests leave it false so they stay guest and touch no device key store.
      */
     enableDeviceEnrol: Boolean = false,
+    /** Real Cast and SSDP LAN browsing is opt-in; fixture compositions leave it disabled. */
+    enableRendererDiscovery: Boolean = false,
     /** The probe's clock ([AppSession]); previews pass a constant one. */
     nanoClock: () -> Long = System::nanoTime,
     /** Appearance at launch; previews ask for reduced motion so animated glyphs render one fixed frame. */
@@ -175,7 +181,7 @@ fun App(
                     downloader,
                     opener,
                 ),
-                scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol, nanoClock,
+                scope, artworkLoader, externalMetadata, mdns, enableDeviceEnrol, enableRendererDiscovery, nanoClock,
             ).also {
                 onSession(it)
                 it.appearance = initialAppearance
@@ -236,6 +242,12 @@ fun App(
     }
     // A different node means different work ids: the per-work detail caches are worthless.
     LaunchedEffect(session.generation) { if (session.generation > 0) details.clear() }
+    // A receiver seek or stall is handled off-screen; say what is happening wherever the user is.
+    LaunchedEffect(session.cast.recovery) {
+        val r = session.cast.recovery ?: return@LaunchedEffect
+        val (title, detail) = castRecoveryText(r)
+        session.toast(if (r.kind == CastRecovery.Kind.GAVE_UP) Toast.Kind.ERROR else Toast.Kind.INFO, title, detail)
+    }
     LaunchedEffect(focusSearchTick) { if (focusSearchTick > 0) runCatching { searchFocus.requestFocus() } }
 
     fun openSearch() {
@@ -248,7 +260,8 @@ fun App(
     // frame already has something to show and nothing bounces back to the previous screen.
     fun go(route: Route) {
         if (route is Route.Player) {
-            playback.play(route)
+            // A film this app is casting stays on the receiver until "Play here" moves it.
+            if (!playback.play(route)) return session.castHolds(route) { go(route) }
             // Music stays in the shell while the reader/catalog retains focus.
             if (route.typeHint.isListening()) return
         }
@@ -343,10 +356,10 @@ fun App(
     // Navigating to a Player route hands the item to the session; the surface host does the rest.
     LaunchedEffect(current) {
         (current as? Route.Player)?.let { r ->
-            if (playback.current?.assetId !=
-                r.assetId
-            ) {
-                playback.play(r)
+            if (playback.current?.assetId != r.assetId && !playback.play(r)) {
+                // Back into a player whose film is now on a receiver: leave it there.
+                nav.back()
+                session.castHolds(r) { go(r) }
             }
         }
     }

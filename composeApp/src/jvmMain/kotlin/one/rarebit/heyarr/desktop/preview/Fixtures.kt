@@ -266,6 +266,8 @@ class FakeHeyarrTransport(private val delayMs: Long = 0) : HttpTransport {
 
             path.startsWith("works/") -> Fixtures.workDetail(path.removePrefix("works/"))
 
+            path == "renderers" -> Fixtures.renderers
+
             else -> return HttpResponse(404, """{"title":"Not Found","detail":"no route matches /api/v1/$path"}""")
         }
         return HttpResponse(200, body)

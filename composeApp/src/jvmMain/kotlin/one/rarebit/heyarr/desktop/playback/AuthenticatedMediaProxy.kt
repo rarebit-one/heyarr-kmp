@@ -1,22 +1,13 @@
 package one.rarebit.heyarr.desktop.playback
 
 import com.sun.net.httpserver.HttpExchange
-import com.sun.net.httpserver.HttpServer
 import one.rarebit.heyarr.core.auth.Credential
-import java.net.HttpURLConnection.HTTP_BAD_GATEWAY
 import java.net.HttpURLConnection.HTTP_BAD_METHOD
 import java.net.HttpURLConnection.HTTP_NOT_FOUND
-import java.net.HttpURLConnection.HTTP_NOT_MODIFIED
-import java.net.HttpURLConnection.HTTP_NO_CONTENT
 import java.net.InetSocketAddress
 import java.net.URI
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.time.Duration
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.Executors
 
 /**
  * mpv cannot renew Voidbind possession proofs. Give it loopback media URLs and obtain the
@@ -26,17 +17,18 @@ import java.util.concurrent.Executors
  */
 class AuthenticatedMediaProxy(private val baseUrl: () -> String, private val credential: () -> Credential) :
     AutoCloseable {
-    private val client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(CONNECT_TIMEOUT_SECONDS)).build()
     private val targets = ConcurrentHashMap<String, URI>()
     private val paths = ConcurrentHashMap<URI, String>()
-    private val executor = Executors.newCachedThreadPool { task ->
-        Thread(task, "heyarr-media").apply { isDaemon = true }
-    }
-    private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
-        executor = this@AuthenticatedMediaProxy.executor
-        createContext("/", ::serve)
-        start()
-    }
+
+    // Loopback only: mpv is on this machine, and the credential it never sees is added here.
+    private val forwarder = LocalStreamForwarder(
+        InetSocketAddress("127.0.0.1", 0),
+        "heyarr-media",
+        CONNECT_TIMEOUT_SECONDS,
+        REQUEST_HEADERS,
+        RESPONSE_HEADERS,
+        ::serve,
+    )
 
     fun urlFor(url: String): String {
         val target = URI.create(url)
@@ -49,61 +41,29 @@ class AuthenticatedMediaProxy(private val baseUrl: () -> String, private val cre
             targets[fresh] = target
             fresh
         }
-        return "http://127.0.0.1:${server.address.port}$path"
+        return "http://127.0.0.1:${forwarder.port}$path"
     }
 
+    // The forwarder closes the exchange once this returns.
     private fun serve(exchange: HttpExchange) {
-        exchange.use {
-            val target = targets[it.requestURI.rawPath]
-            if (target == null || !sameOrigin(target, URI.create(baseUrl()))) {
-                it.sendResponseHeaders(HTTP_NOT_FOUND, -1)
-                return
-            }
-            if (it.requestMethod != "GET" && it.requestMethod != "HEAD") {
-                it.sendResponseHeaders(HTTP_BAD_METHOD, -1)
-                return
-            }
-            forward(it, target)
+        val target = targets[exchange.requestURI.rawPath]
+        if (target == null || !sameOrigin(target, URI.create(baseUrl()))) {
+            exchange.sendResponseHeaders(HTTP_NOT_FOUND, -1)
+            return
         }
-    }
-
-    private fun forward(exchange: HttpExchange, target: URI) {
-        var headersSent = false
-        try {
-            val upstream = withQuery(target, exchange.requestURI.rawQuery)
-            val request = HttpRequest.newBuilder(upstream)
-                .method(exchange.requestMethod, HttpRequest.BodyPublishers.noBody())
-            for (name in REQUEST_HEADERS) {
-                exchange.requestHeaders.getFirst(name)?.let { request.header(name, it) }
-            }
-            credential().asHeader().forEach { (name, value) -> request.header(name, value) }
-            val response = client.send(request.build(), HttpResponse.BodyHandlers.ofInputStream())
-            response.body().use { body ->
-                for (name in RESPONSE_HEADERS) {
-                    response.headers().firstValue(name).ifPresent { exchange.responseHeaders.set(name, it) }
-                }
-                val size = responseSize(exchange, response)
-                exchange.sendResponseHeaders(response.statusCode(), size)
-                headersSent = true
-                if (size != -1L) body.transferTo(exchange.responseBody)
-            }
-        } catch (_: java.io.IOException) {
-            // A seek closes the previous download. Once streaming, simply close that exchange.
-            if (!headersSent) exchange.sendResponseHeaders(HTTP_BAD_GATEWAY, -1)
-        } catch (_: InterruptedException) {
-            Thread.currentThread().interrupt()
-            if (!headersSent) exchange.sendResponseHeaders(HTTP_BAD_GATEWAY, -1)
-        } catch (_: IllegalStateException) {
-            if (!headersSent) exchange.sendResponseHeaders(HTTP_BAD_GATEWAY, -1)
+        if (exchange.requestMethod != "GET" && exchange.requestMethod != "HEAD") {
+            exchange.sendResponseHeaders(HTTP_BAD_METHOD, -1)
+            return
         }
-    }
-
-    private fun responseSize(exchange: HttpExchange, response: HttpResponse<*>): Long {
-        if (exchange.requestMethod == "HEAD" || response.statusCode() in listOf(HTTP_NOT_MODIFIED, HTTP_NO_CONTENT)) {
-            return -1
-        }
-        val size = response.headers().firstValueAsLong("Content-Length")
-        return if (size.isPresent && size.asLong == 0L) -1 else size.orElse(0)
+        // A node stream that breaks is passed on as a break, not a clean end: the Cast relay
+        // reads through this proxy and restarts the film only when it sees the cut, and mpv
+        // must not take a broken transcode for the film's end either.
+        forwarder.forward(
+            exchange,
+            withQuery(target, exchange.requestURI.rawQuery),
+            upstreamHeaders = { credential().asHeader() },
+            passCutOn = true,
+        )
     }
 
     /** Restart seeks add ?start= to the local URL. Preserve the original plan's query. */
@@ -113,11 +73,7 @@ class AuthenticatedMediaProxy(private val baseUrl: () -> String, private val cre
         URI.create(target.toASCIIString() + (if (target.rawQuery == null) "?" else "&") + query)
     }
 
-    override fun close() {
-        server.stop(0)
-        executor.shutdownNow()
-        client.close()
-    }
+    override fun close() = forwarder.close()
 
     companion object {
         private const val CONNECT_TIMEOUT_SECONDS = 15L

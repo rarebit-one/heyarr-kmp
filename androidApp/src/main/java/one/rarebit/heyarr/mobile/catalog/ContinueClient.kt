@@ -3,6 +3,7 @@ package one.rarebit.heyarr.mobile.catalog
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.net.HttpTransport
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.core.playback.clockLabel
 
 /**
  * One card of the continue rail (heyarr-core ADR-0075 `ContinueEntry`): the newest
@@ -46,21 +47,14 @@ data class ContinueEntry(
             return when {
                 v == null -> progressLocator
 
-                progressUnit == "seconds" || progressUnit == "s" -> clock(v.toLong()) +
-                    (durationSeconds?.let { " / " + clock(it.toLong()) } ?: "")
+                progressUnit == "seconds" || progressUnit == "s" -> clockLabel(v.toLong()) +
+                    (durationSeconds?.let { " / " + clockLabel(it.toLong()) } ?: "")
 
                 progressUnit == "percent" || progressUnit == "%" -> "${v.toInt()}%"
 
                 else -> "$progressLocator ${progressUnit ?: ""}".trim()
             }
         }
-
-    private fun clock(s: Long): String {
-        val h = s / 3600
-        val m = (s % 3600) / 60
-        val sec = s % 60
-        return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
-    }
 
     /** `S01E02` when both numbers are known, else the edition label. */
     val subtitle: String? get() = when {

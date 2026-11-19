@@ -142,6 +142,14 @@ compose.desktop {
     }
 }
 
+// Manual receiver smoke entry. It is separate from the GUI and never runs in CI.
+tasks.register<JavaExec>("castProbe") {
+    val compilation = kotlin.targets.getByName("jvm").compilations.getByName("main")
+    classpath = files(compilation.output.allOutputs, compilation.runtimeDependencyFiles)
+    mainClass.set("one.rarebit.heyarr.desktop.cast.CastProbeKt")
+    standardInput = System.`in`
+}
+
 // jpackage records what the bundled runtime links against, not what the app loads through
 // JNA at run time, so the .rpm and .deb would install without the one library playback
 // needs. Declare it. libsecret stays optional on purpose: with no Secret Service the device

@@ -122,6 +122,18 @@ class PlaybackPlanTest {
     }
 
     @Test
+    fun castProfileRequestsStereoEncodingAndNeverFallsBack() {
+        var sentBody: String? = null
+        val t = transport(200, """{"mode":"stream","mime":"video/mp4","url":"/api/v1/playback/stream/cap"}""") {
+            sentBody = it
+        }
+        val plan = api(t).playbackTarget("asset", "", strict = true)
+        assertEquals("video/mp4", plan.mime)
+        assertTrue(sentBody!!.contains("\"audio\":[]"), "an empty allowlist forces stereo AAC on the node")
+        assertFails { api(transport(500, "unavailable")).playbackTarget("asset", "", strict = true) }
+    }
+
+    @Test
     fun aDirectPlanIsPlayedAsThePlansUrl() {
         val t = transport(200, """{"mode":"direct","url":"/api/v1/blobs/blake3:abc/content"}""")
         val target = api(t).playbackTarget("asset-1", "blake3:abc")

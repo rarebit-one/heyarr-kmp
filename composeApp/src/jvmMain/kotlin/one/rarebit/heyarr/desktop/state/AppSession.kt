@@ -41,6 +41,7 @@ import one.rarebit.heyarr.core.state.LibraryIndex
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.state.ToastAction
 import one.rarebit.heyarr.core.theme.MediaType
+import one.rarebit.heyarr.desktop.cast.CastManager
 import one.rarebit.heyarr.desktop.device.DesktopDeviceEnroller
 import one.rarebit.heyarr.desktop.device.DesktopDeviceKeyring
 import one.rarebit.heyarr.desktop.device.DevicePairingSteps
@@ -58,9 +59,11 @@ import one.rarebit.heyarr.desktop.open.OpenExternally
 import one.rarebit.heyarr.desktop.playback.AuthenticatedMediaProxy
 import one.rarebit.heyarr.desktop.playback.DesktopDisplay
 import one.rarebit.heyarr.desktop.playback.Player
+import one.rarebit.heyarr.desktop.power.SleepInhibitor
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.SettingsStore
 import one.rarebit.heyarr.desktop.settings.SiteDefaults
+import one.rarebit.heyarr.desktop.ui.Route
 import one.rarebit.heyarr.ui.theme.Appearance
 
 /** Whether heyarr can be reached right now — drives the offline banner. */
@@ -103,6 +106,7 @@ private const val PROBE_TIMEOUT_MS = 6_000L
  * Plain Compose state (the org's stance for this app; a ViewModel layer comes with the
  * shared module). Network work is launched on [Dispatchers.IO] through [io].
  */
+@Suppress("LongParameterList") // The existing session seam gains one explicit LAN discovery opt-in.
 class AppSession(
     private val settings: SettingsStore,
     private val transport: HttpTransport,
@@ -120,6 +124,8 @@ class AppSession(
      * ([one.rarebit.heyarr.desktop.MainKt]) turns it on.
      */
     enableDeviceEnrol: Boolean = false,
+    /** Real Cast and SSDP LAN browsing is opt-in; previews and tests stay off the network. */
+    private val enableRendererDiscovery: Boolean = false,
     /** Times the liveness probe; previews pin it so the rail's latency reads the same on every render. */
     private val nanoClock: () -> Long = System::nanoTime,
 ) {
@@ -182,7 +188,18 @@ class AppSession(
     val api: HeyarrApi? get() = apiFor(credential)
 
     private fun apiFor(credential: Credential): HeyarrApi? = config.baseUrl.trim().takeIf { it.isNotEmpty() }?.let {
-        HeyarrApi(transport, config.baseUrl, credential)
+        HeyarrApi(
+            transport,
+            config.baseUrl,
+            credential,
+            rendererScanner = if (enableRendererDiscovery) {
+                one.rarebit.heyarr.desktop.ssdp.JvmSsdpScanner()
+            } else {
+                object : one.rarebit.heyarr.core.mcp.SsdpScanner {
+                    override fun scan(): List<one.rarebit.heyarr.core.mcp.SsdpResponse> = emptyList()
+                }
+            },
+        )
     }
 
     /** Shared provider-discovery request state for Search and the standalone Discover surface. */
@@ -198,6 +215,45 @@ class AppSession(
 
     private val mediaProxy = lazy { AuthenticatedMediaProxy({ config.baseUrl }, { credential }) }
 
+    /** One Cast connection survives picker and screen composition. */
+    internal val cast = CastManager(
+        ::mediaUrl,
+        discoverDevices = if (enableRendererDiscovery) {
+            { one.rarebit.heyarr.desktop.cast.CastDiscovery().discover() }
+        } else {
+            { emptyList() }
+        },
+        // Previews and fixture sessions never cast; a real one keeps the machine awake while
+        // it relays a playing film (heyarr-kmp#248).
+        inhibitor = if (enableRendererDiscovery) SleepInhibitor.system() else SleepInhibitor.NONE,
+    )
+
+    init {
+        // The local player defers to a Cast of the same film rather than streaming it twice.
+        playback.castingTo = { assetId -> cast.castingTo?.takeIf { cast.castingAsset == assetId } }
+    }
+
+    /**
+     * Says that [item] is playing on a receiver instead of starting it here, with a way to
+     * move it: "Play here" stops the receiver's media first, then calls [playHere].
+     */
+    fun castHolds(item: Route.Player, playHere: () -> Unit) {
+        val device = playback.castingTo(item.assetId) ?: return
+        toast(
+            Toast.Kind.INFO,
+            "Playing on $device",
+            "Stop casting to watch it here.",
+            action = ToastAction("Play here") {
+                launch {
+                    io { cast.control("stop") }.fold(
+                        onSuccess = { playHere() },
+                        onFailure = { toast(Toast.Kind.ERROR, "Couldn't stop casting", it.message) },
+                    )
+                }
+            },
+        )
+    }
+
     fun mediaUrl(url: String): String = mediaProxy.value.urlFor(url)
 
     fun mediaTarget(target: PlaybackTarget): PlaybackTarget = target.copy(
@@ -206,6 +262,7 @@ class AppSession(
     )
 
     fun closeMediaProxy() {
+        cast.close()
         if (mediaProxy.isInitialized()) mediaProxy.value.close()
     }
 
@@ -270,6 +327,7 @@ class AppSession(
         artwork.reset()
         connection = if (updated.baseUrl.isBlank()) Connection.UNCONFIGURED else Connection.UNKNOWN
         if (otherNode) {
+            cast.invalidate()
             profiles = emptyList()
             index = LibraryIndex.EMPTY
             indexLoaded = false
@@ -317,6 +375,7 @@ class AppSession(
      * live by [credential]; this only refreshes what depends on being enrolled.
      */
     fun reauthenticated() {
+        cast.invalidate()
         profiles = emptyList()
         index = LibraryIndex.EMPTY
         indexLoaded = false

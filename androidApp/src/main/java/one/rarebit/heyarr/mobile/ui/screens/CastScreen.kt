@@ -37,6 +37,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.mcp.PlaybackStatus
 import one.rarebit.heyarr.core.mcp.Renderer
+import one.rarebit.heyarr.core.playback.clockLabel
 import one.rarebit.heyarr.mobile.heyarr.McpResult
 import one.rarebit.heyarr.mobile.state.AppSession
 import one.rarebit.heyarr.mobile.theme.Tokens
@@ -198,9 +199,9 @@ private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -> Un
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(
-                clock(st.elapsedSeconds) + (
+                clockLabel(st.elapsedSeconds) + (
                     dur?.let {
-                        " / " + clock(it)
+                        " / " + clockLabel(it)
                     } ?: ""
                     ),
                 style = MaterialTheme.typography.labelMedium,
@@ -228,11 +229,4 @@ private fun Transport(st: PlaybackStatus, busy: Boolean, control: (String) -> Un
             )
         }
     }
-}
-
-private fun clock(s: Long): String {
-    val h = s / 3600
-    val m = (s % 3600) / 60
-    val sec = s % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
 }

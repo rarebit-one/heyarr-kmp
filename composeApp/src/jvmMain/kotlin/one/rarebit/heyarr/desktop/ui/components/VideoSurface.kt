@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import one.rarebit.heyarr.desktop.state.AppSession
+import one.rarebit.heyarr.desktop.state.castBlocks
 import org.jetbrains.skia.Rect
 import org.jetbrains.skia.SamplingMode
 import java.awt.GraphicsEnvironment
@@ -62,7 +63,8 @@ fun PlaybackHost(session: AppSession) {
         }
     }
     LaunchedEffect(item.assetId, playback.pendingStart) {
-        if (!playback.pendingStart && playback.player.isRunning) return@LaunchedEffect
+        // The now-playing bar must not reopen a film that has moved to a receiver (heyarr-kmp#248).
+        if (playback.castBlocks(item) || (!playback.pendingStart && playback.player.isRunning)) return@LaunchedEffect
         val embedded = !playback.popout
         val err = session.io {
             // resolvePlaybackTarget asks the server's playback plan (a network call), so

@@ -51,7 +51,7 @@
         <error line="1" column="1" source="standard:filename" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/CastScreen.kt">
-        <error line="132" column="121" source="standard:max-line-length" />
+        <error line="133" column="121" source="standard:max-line-length" />
     </file>
     <file name="src/main/java/one/rarebit/heyarr/mobile/ui/screens/CurateSections.kt">
         <error line="249" column="121" source="standard:max-line-length" />

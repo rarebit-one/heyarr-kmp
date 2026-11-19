@@ -97,6 +97,7 @@ class OpenApiContractTest {
 
         /** Declarations that read JSON keys but not from a heyarr response openapi.yaml describes. */
         val OUT_OF_SCOPE: Map<String, String> = buildMap {
+            put("CastConnection", "Google Cast receiver protocol status, not a heyarr REST response")
             val mcp = "an MCP tool result: openapi.yaml types JSON-RPC `result` as a free-form object and the tools " +
                 "publish no outputSchema, so there is no schema to hold it to"
             listOf(
