@@ -261,7 +261,7 @@ class CastResumeTest {
 
     @Test
     fun aFilmTheReceiverDropsMidwayIsRelaunchedWhereItWas() {
-        for (reason in listOf("ERROR", "INTERRUPTED", "FINISHED")) {
+        for (reason in listOf("ERROR", "FINISHED")) {
             Rig().use { rig ->
                 rig.play()
                 rig.manager.control("seek", 600.0)
@@ -315,6 +315,33 @@ class CastResumeTest {
             assertEquals(0, rig.channel.loadCount)
             assertEquals(loads, rig.channels.first().loadCount)
             assertEquals("Another film", rig.manager.status?.title)
+        }
+    }
+
+    @Test
+    fun anotherSendersLoadOverOurFilmIsLetGoNotReloadedOverTheirs() {
+        // #242 review: INTERRUPTED is a sender LOADing other media over ours. The receiver can
+        // report our session so before it reports the replacement; resuming then would quit
+        // their app and reload our film over their choice. Polled or latched, it is let go.
+        for (latched in listOf(false, true)) {
+            Rig().use { rig ->
+                rig.play()
+                rig.manager.control("seek", 600.0)
+                rig.channel.report("PLAYING", 20.0)
+                rig.poll()
+                rig.channel.events.clear()
+                if (latched) {
+                    rig.channel.vanish("INTERRUPTED")
+                } else {
+                    rig.channel.status =
+                        requireNotNull(rig.channel.status).copy(state = "IDLE", idleReason = "INTERRUPTED")
+                }
+                rig.poll()
+                assertEquals(emptyList(), rig.channel.events, "latched=$latched")
+                assertNull(rig.manager.castingAsset, "latched=$latched")
+                assertNull(rig.manager.error, "Not a failure: latched=$latched")
+                assertEquals(0, rig.hold.open)
+            }
         }
     }
 
@@ -581,6 +608,7 @@ class CastResumeTest {
         assertEquals(CastManager.Companion.Fate.FOREIGN, fate("PLAYING", session = 6))
         assertEquals(CastManager.Companion.Fate.FOREIGN, fate("IDLE", "ERROR", session = 6, cut = true))
         assertEquals(CastManager.Companion.Fate.ENDED, fate("IDLE", "CANCELLED", cut = true))
+        assertEquals(CastManager.Companion.Fate.ENDED, fate("IDLE", "INTERRUPTED", cut = true), "Another sender's LOAD")
         assertEquals(CastManager.Companion.Fate.DROPPED, fate("IDLE", "ERROR"))
         assertEquals(CastManager.Companion.Fate.DROPPED, fate("IDLE", "FINISHED"))
         assertEquals(CastManager.Companion.Fate.ENDED, fate("IDLE", "FINISHED", film = 7150.0))
@@ -593,6 +621,7 @@ class CastResumeTest {
         fun gone(reason: String?, seen: Boolean = true, playing: Boolean = true, film: Double = 600.0) =
             CastManager.fateOf(null, 5, film, 7200.0, false, SessionSighting(reason).takeIf { seen }, playing)
         assertEquals(CastManager.Companion.Fate.ENDED, gone("CANCELLED"))
+        assertEquals(CastManager.Companion.Fate.ENDED, gone("INTERRUPTED"))
         assertEquals(CastManager.Companion.Fate.DROPPED, gone("ERROR"))
         assertEquals(CastManager.Companion.Fate.DROPPED, gone("FINISHED"))
         assertEquals(CastManager.Companion.Fate.DROPPED, gone(null), "Watched in play, no reason seen: dropped")

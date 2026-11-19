@@ -24,7 +24,8 @@ internal data class CastStatus(
     val error: String? = null,
     /**
      * Why an IDLE session ended: FINISHED, CANCELLED (a stop, from any sender or the TV's
-     * remote), INTERRUPTED (a new LOAD) or ERROR. Whether a dropped film is resumed hangs on it.
+     * remote), INTERRUPTED (a sender LOADed other media over it) or ERROR. Whether a dropped
+     * film is resumed hangs on it; only ERROR is a failure ([error]).
      */
     val idleReason: String? = null,
 )
@@ -366,7 +367,9 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
                 media?.let { JsonScan.doubleField(it, "duration") },
                 metadata?.let { JsonScan.stringField(it, "title") },
                 JsonScan.longField(first, "mediaSessionId")?.toInt(),
-                JsonScan.stringField(first, "idleReason")?.takeIf { it == "ERROR" || it == "INTERRUPTED" },
+                // INTERRUPTED is a sender's LOAD replacing the media (ours on a restart seek),
+                // not a failure: it must neither fail that LOAD nor show as an error.
+                JsonScan.stringField(first, "idleReason")?.takeIf { it == "ERROR" },
                 JsonScan.stringField(first, "idleReason"),
             )
         }

@@ -716,8 +716,9 @@ internal class CastManager(
          * Reads a receiver report against the media session we own. A session that went IDLE
          * says why, in the report itself or in a broadcast the channel latched ([sighting]):
          * the Default Media Receiver can close a session between two polls, leaving the next
-         * an empty status. CANCELLED is a stop (from the TV's remote too) and is never
-         * undone; ERROR or INTERRUPTED mid-film is resumed; FINISHED mid-film is the receiver
+         * an empty status. CANCELLED is a stop (from the TV's remote too) and INTERRUPTED is
+         * another sender's LOAD over our film (ours move ownership to the new session at
+         * once); neither is ever undone (#242 review). ERROR mid-film is resumed; FINISHED mid-film is the receiver
          * playing out a buffer the node stopped filling, resumed when the film's length shows
          * it ended early (or the stream is known to be [cut]).
          *
@@ -754,12 +755,12 @@ internal class CastManager(
         /**
          * Whether a session that ended mid-film for [reason] (null: unseen) was dropped rather
          * than stopped. [watchedInPlay]: it vanished in front of a channel that saw it, while
-         * we meant to play; with no CANCELLED seen, nobody stopped it.
+         * we meant to play; with no CANCELLED or INTERRUPTED seen, nobody stopped or replaced it.
          */
         private fun droppedFor(reason: String?, knownLength: Boolean, cut: Boolean, watchedInPlay: Boolean): Boolean =
             when (reason) {
-                "CANCELLED" -> false
-                "ERROR", "INTERRUPTED" -> true
+                "CANCELLED", "INTERRUPTED" -> false
+                "ERROR" -> true
                 "FINISHED" -> knownLength || cut
                 else -> cut || (watchedInPlay && knownLength)
             }
