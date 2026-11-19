@@ -7,6 +7,7 @@ import one.rarebit.heyarr.desktop.cast.CastDevice
 import one.rarebit.heyarr.desktop.cast.CastManager
 import one.rarebit.heyarr.desktop.cast.CastRecovery
 import one.rarebit.heyarr.desktop.cast.CastStatus
+import one.rarebit.heyarr.desktop.cast.SessionSighting
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.power.SleepInhibitor
 import java.net.Inet4Address
@@ -332,10 +333,105 @@ class CastResumeTest {
             rig.channel.report("PLAYING", 100.0)
             rig.poll()
             val loads = rig.channel.loadCount
-            rig.channel.status = null // no suspend, no cut stream: someone closed it
+            rig.channel.vanish("CANCELLED") // no suspend, no cut stream: someone closed it
             rig.poll()
             assertNull(rig.manager.castingAsset)
             assertEquals(loads, rig.channel.loadCount)
+        }
+    }
+
+    /** Casts, restarts at [restart] and plays [played] seconds on from it, then forgets the events so far. */
+    private fun Rig.castTo(restart: Double, played: Double = 20.0) {
+        play()
+        manager.control("seek", restart)
+        channel.report("PLAYING", played)
+        poll()
+        channel.events.clear()
+    }
+
+    @Test
+    fun aSessionThatClosesBetweenPollsIsJudgedByTheReasonItBroadcast() {
+        // heyarr-kmp#249, on a real TV: the node ended the stream cleanly mid-film, the receiver
+        // played out its buffer and closed the session between two polls. The poll found only an
+        // empty status and the app let go silently; the reason, when there is one, is broadcast.
+        for (reason in listOf("ERROR", null)) {
+            Rig().use { rig ->
+                rig.castTo(600.0)
+                rig.channel.vanish(reason)
+                rig.poll()
+                assertEquals(listOf("load"), rig.channel.events, "Its media app is closed already: just a LOAD")
+                assertEquals("start=620.0", rig.channel.lastLoad!!.first.substringAfter("?"), "$reason")
+                assertEquals(true, rig.channel.lastLoad!!.second, "$reason")
+                assertEquals(CastRecovery(CastRecovery.Kind.RESUMING, "First", 620.0), rig.manager.recovery, "$reason")
+                assertEquals("asset", rig.manager.castingAsset, "$reason")
+                assertEquals(1, rig.hold.open, "$reason")
+            }
+        }
+        Rig().use { rig ->
+            rig.castTo(600.0)
+            rig.channel.vanish("CANCELLED") // the TV's remote, or another sender, stopped it
+            rig.poll()
+            assertEquals(emptyList(), rig.channel.events)
+            assertNull(rig.manager.castingAsset, "A latched CANCELLED is still a stop")
+            assertNull(rig.manager.error)
+            assertEquals(0, rig.hold.open)
+        }
+        Rig().use { rig ->
+            rig.castTo(7100.0, played = 50.0) // 7150 of 7200: the credits
+            rig.channel.vanish()
+            rig.poll()
+            assertEquals(emptyList(), rig.channel.events)
+            assertNull(rig.manager.castingAsset, "Gone at the film's end, unseen: it ended")
+        }
+    }
+
+    @Test
+    fun aPausedFilmsVanishedSessionIsLetGoUnlessItSaidItFailed() {
+        // A receiver closes a session that sat paused on its own. Relaunching the film would
+        // wake a TV someone walked away from, so a paused session that vanished without a word
+        // is let go; one that broadcast ERROR is put back, still paused.
+        Rig().use { rig ->
+            rig.castTo(600.0)
+            rig.manager.control("pause")
+            rig.poll()
+            rig.channel.events.clear()
+            rig.channel.vanish()
+            rig.poll()
+            assertEquals(emptyList(), rig.channel.events)
+            assertNull(rig.manager.castingAsset)
+        }
+        Rig().use { rig ->
+            rig.castTo(600.0)
+            rig.manager.control("pause")
+            rig.poll()
+            rig.channel.events.clear()
+            rig.channel.vanish("ERROR")
+            rig.poll()
+            assertEquals(listOf("load"), rig.channel.events)
+            assertEquals("start=620.0", rig.channel.lastLoad!!.first.substringAfter("?"))
+            assertEquals(false, rig.channel.lastLoad!!.second, "Put back as it was: paused")
+            assertEquals("asset", rig.manager.castingAsset)
+        }
+    }
+
+    @Test
+    fun aLoadForgetsWhatTheChannelLatchedSoAnOldStopCannotBlockALaterResume() {
+        Rig().use { rig ->
+            rig.castTo(600.0)
+            // A stop latched for the session number the next LOAD gets, as a relaunched media
+            // app numbering its sessions afresh would reuse an old, stopped one's.
+            val next = rig.channel.status!!.mediaSessionId!! + 1
+            rig.channel.hear(next, "CANCELLED")
+            rig.manager.control("seek", 900.0) // the app's scrubber: a fresh LOAD, that session
+            assertEquals(next, rig.channel.status?.mediaSessionId)
+            assertEquals(SessionSighting(null), rig.channel.sighting(next), "A LOAD clears every latched reason")
+            rig.channel.report("PLAYING", 30.0)
+            rig.poll()
+            rig.channel.events.clear()
+            rig.channel.vanish()
+            rig.poll()
+            assertEquals(listOf("load"), rig.channel.events, "The new session vanished unseen, mid-film: resumed")
+            assertEquals("start=930.0", rig.channel.lastLoad!!.first.substringAfter("?"))
         }
     }
 
@@ -432,5 +528,35 @@ class CastResumeTest {
         assertEquals(CastManager.Companion.Fate.ENDED, fate(null))
         assertEquals(CastManager.Companion.Fate.DROPPED, fate(null, cut = true))
         assertEquals(CastManager.Companion.Fate.ENDED, fate(null, film = 7150.0, cut = true))
+
+        // heyarr-kmp#249: what the channel latched speaks for a session that has since vanished.
+        fun gone(reason: String?, seen: Boolean = true, playing: Boolean = true, film: Double = 600.0) =
+            CastManager.fateOf(null, 5, film, 7200.0, false, SessionSighting(reason).takeIf { seen }, playing)
+        assertEquals(CastManager.Companion.Fate.ENDED, gone("CANCELLED"))
+        assertEquals(CastManager.Companion.Fate.DROPPED, gone("ERROR"))
+        assertEquals(CastManager.Companion.Fate.DROPPED, gone("FINISHED"))
+        assertEquals(CastManager.Companion.Fate.DROPPED, gone(null), "Watched in play, no reason seen: dropped")
+        assertEquals(CastManager.Companion.Fate.ENDED, gone(null, film = 7150.0))
+        assertEquals(CastManager.Companion.Fate.ENDED, gone(null, playing = false), "Paused: let go")
+        assertEquals(CastManager.Companion.Fate.ENDED, gone(null, seen = false), "Never seen by this channel")
+        assertEquals(
+            CastManager.Companion.Fate.ENDED,
+            CastManager.fateOf(null, 5, 600.0, null, false, SessionSighting(null), true),
+            "No known length: a vanish could be the film's end",
+        )
+        val idle = CastStatus("IDLE", 0.0, null, null, 5)
+        assertEquals(
+            CastManager.Companion.Fate.OURS,
+            CastManager.fateOf(idle, 5, 600.0, 7200.0, false, SessionSighting(null), true),
+        )
+        assertEquals(
+            CastManager.Companion.Fate.DROPPED,
+            CastManager.fateOf(idle, 5, 600.0, 7200.0, false, SessionSighting("ERROR"), true),
+            "An IDLE report without its reason takes the latched one",
+        )
+        assertEquals(
+            CastManager.Companion.Fate.FOREIGN,
+            CastManager.fateOf(idle.copy(mediaSessionId = 6), 5, 600.0, 7200.0, false, SessionSighting("ERROR"), true),
+        )
     }
 }

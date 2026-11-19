@@ -5,6 +5,7 @@ import one.rarebit.heyarr.desktop.cast.CastConnection
 import one.rarebit.heyarr.desktop.cast.CastDevice
 import one.rarebit.heyarr.desktop.cast.CastFrame
 import one.rarebit.heyarr.desktop.cast.CastWire
+import one.rarebit.heyarr.desktop.cast.SessionSighting
 import java.io.DataOutputStream
 import java.net.InetAddress
 import java.nio.file.Files
@@ -263,6 +264,38 @@ class CastConnectionIntegrationTest {
     }
 
     @Test
+    fun aBroadcastIdleReasonOutlivesTheEmptyStatusAndALoadForgetsIt() {
+        // heyarr-kmp#249: the receiver closes a session between polls; the next poll finds an
+        // empty status, but the reason it broadcast on the way out must still be known.
+        Receiver().use { receiver ->
+            CastConnection(receiver.device).use { cast ->
+                val sender = receiver.sender()
+                assertEquals(SessionSighting(null), cast.sighting(7), "Seen in the opening GET_STATUS reply")
+                receiver.send("web-4", "*", MEDIA, idleStatus(7, "CANCELLED"))
+                receiver.send(
+                    "web-4",
+                    "*",
+                    MEDIA,
+                    """{"type":"MEDIA_STATUS","status":[{"mediaSessionId":7,"playerState":"IDLE","currentTime":0}]}""",
+                )
+                receiver.send("web-4", sender, MEDIA, """{"type":"MEDIA_STATUS","status":[]}""")
+                receiver.send("foreign", sender, MEDIA, idleStatus(7, "ERROR")) // refused: not our transport
+                receiver.send("receiver-0", sender, HEARTBEAT, """{"type":"PING"}""")
+                receiver.take("PONG")
+                assertNull(cast.status)
+                assertEquals(SessionSighting("CANCELLED"), cast.sighting(7))
+                assertNull(cast.sighting(8))
+
+                // A relaunched media app numbers its sessions afresh: the LOAD forgets the old 7.
+                val load = CompletableFuture.runAsync { cast.load("http://127.0.0.1/example", "Example") }
+                receiver.reply(receiver.take("LOAD"), mediaStatus(7))
+                load.get(4, TimeUnit.SECONDS)
+                assertEquals(SessionSighting(null), cast.sighting(7))
+            }
+        }
+    }
+
+    @Test
     fun rejectedInitialStatusClosesTlsSocket() {
         Receiver("reject").use { receiver ->
             assertFails { CastConnection(receiver.device) }
@@ -278,6 +311,10 @@ class CastConnectionIntegrationTest {
         private const val RECEIVER_STATUS =
             """{"type":"RECEIVER_STATUS","status":{"applications":[{"appId":"CC1AD845","transportId":"web-4",""" +
                 """"sessionId":"session-1"}]}}"""
+
+        private fun idleStatus(id: Int, reason: String) =
+            """{"type":"MEDIA_STATUS","status":[{"mediaSessionId":$id,"playerState":"IDLE",""" +
+                """"idleReason":"$reason","currentTime":0}]}"""
 
         private fun mediaStatus(id: Int) =
             """{"type":"MEDIA_STATUS","status":[{"mediaSessionId":$id,"playerState":"PLAYING","currentTime":1}]}"""

@@ -185,10 +185,11 @@ internal class CastManager(
         val connection = connection ?: return status
         try {
             val fresh = connection.refresh()
-            val fate = settle(fresh)
+            val fate = settle(connection, fresh)
             if (fate == Fate.DROPPED && !invalidating) {
                 // The receiver dropped our film mid-way, most likely having played out the
-                // buffer of a stream the node cut while this machine slept. Put it back.
+                // buffer of a stream the node cut (this machine slept) or ended early (its
+                // ffmpeg died). Put it back.
                 resumeAt(connection, lastFilm, relaunch = true)
             } else {
                 noteIntent(fresh)
@@ -206,10 +207,10 @@ internal class CastManager(
     }
 
     /** What [fresh] means for the media we own (null: none), releasing it when it is no longer ours. */
-    private fun settle(fresh: CastStatus?): Fate? {
+    private fun settle(connection: CastChannel, fresh: CastStatus?): Fate? {
         val owned = ownedMediaSessionId ?: return null
         val cut = streamCut || relay?.severed == true
-        val fate = fateOf(fresh, owned, lastFilm, target?.durationSeconds, cut)
+        val fate = fateOf(fresh, owned, lastFilm, target?.durationSeconds, cut, connection.sighting(owned), playIntent)
         // Another sender can replace the media without replacing the receiver app. Its
         // status and seeks must never reuse our previous film's plan. A stop from the
         // TV's remote, or the film's real end, also releases it.
@@ -268,7 +269,10 @@ internal class CastManager(
             Verdict.UNREACHED_SEEK -> {
                 // The receiver (its remote, Google TV's controls, another sender) jumped
                 // past what the repackage has produced and cannot fetch ahead in it. The
-                // film is restarted at that point, as the app's own scrubber does.
+                // film is restarted at that point, as the app's own scrubber does. A real
+                // Default Media Receiver never reports such a target (it jumps back to the
+                // restart point instead, which reads as a harmless rewind), so this fires only
+                // on receivers that do; remote seeking there needs HLS (heyarr-core#909).
                 val landing = restartSeek(film, target?.durationSeconds, playIntent = true).position
                 recovery = CastRecovery(CastRecovery.Kind.SEEKING, device, landing)
                 loadAt(connection, landing, autoplay = true)
@@ -684,34 +688,55 @@ internal class CastManager(
 
         /**
          * Reads a receiver report against the media session we own. A session that went IDLE
-         * says why: CANCELLED is a stop (from the TV's remote too) and is never undone;
-         * ERROR or INTERRUPTED mid-film is resumed; FINISHED mid-film is the receiver playing
-         * out a buffer the node stopped filling, resumed when the film's length shows it
-         * ended early (or the stream is known to be [cut]). A session that vanished without
-         * a word, typically while our channel was down, is resumed only when the stream is
-         * known to be cut; otherwise it is taken as stopped. Nothing near the film's end is
-         * resumed. An IDLE report with no reason is the moment around a LOAD, still ours.
+         * says why, in the report itself or in a broadcast the channel latched ([sighting]):
+         * the Default Media Receiver can close a session between two polls, leaving the next
+         * an empty status. CANCELLED is a stop (from the TV's remote too) and is never
+         * undone; ERROR or INTERRUPTED mid-film is resumed; FINISHED mid-film is the receiver
+         * playing out a buffer the node stopped filling, resumed when the film's length shows
+         * it ended early (or the stream is known to be [cut]).
+         *
+         * A session that vanished without a word is resumed when the stream is known to be
+         * cut, or when this channel watched it while we meant to play a film of known length
+         * (heyarr-kmp#249: a stream the node ended cleanly mid-film, no reason ever seen). A
+         * channel that never saw it (opened after it went, as on a reconnect) knows nothing,
+         * and a paused film's session that vanished is let go: a receiver closes a session
+         * that sat paused, and relaunching it would wake a TV someone walked away from.
+         * Nothing near the film's end is resumed. An IDLE report with no reason, here or
+         * latched, is the moment around a LOAD, still ours.
          */
-        internal fun fateOf(fresh: CastStatus?, owned: Int, lastFilm: Double, duration: Double?, cut: Boolean): Fate {
+        internal fun fateOf(
+            fresh: CastStatus?,
+            owned: Int,
+            lastFilm: Double,
+            duration: Double?,
+            cut: Boolean,
+            sighting: SessionSighting? = null,
+            playIntent: Boolean = false,
+        ): Fate {
             val session = fresh?.mediaSessionId
             val nearEnd = duration != null && lastFilm >= duration - END_MARGIN_SECONDS
+            val reason = fresh?.idleReason ?: sighting?.idleReason
+            val watchedInPlay = sighting != null && playIntent
             return when {
                 session != null && session != owned -> Fate.FOREIGN
-                session == owned && !endedWithReason(fresh) -> Fate.OURS
-                !nearEnd && droppedFor(fresh?.idleReason, duration != null, cut) -> Fate.DROPPED
+                session == owned && !(fresh.state == "IDLE" && reason != null) -> Fate.OURS
+                !nearEnd && droppedFor(reason, duration != null, cut, watchedInPlay) -> Fate.DROPPED
                 else -> Fate.ENDED
             }
         }
 
-        private fun endedWithReason(status: CastStatus?): Boolean = status?.state == "IDLE" && status.idleReason != null
-
-        /** Whether a session that ended mid-film for [reason] (null: unseen) was dropped rather than stopped. */
-        private fun droppedFor(reason: String?, knownLength: Boolean, cut: Boolean): Boolean = when (reason) {
-            "CANCELLED" -> false
-            "ERROR", "INTERRUPTED" -> true
-            "FINISHED" -> knownLength || cut
-            else -> cut
-        }
+        /**
+         * Whether a session that ended mid-film for [reason] (null: unseen) was dropped rather
+         * than stopped. [watchedInPlay]: it vanished in front of a channel that saw it, while
+         * we meant to play; with no CANCELLED seen, nobody stopped it.
+         */
+        private fun droppedFor(reason: String?, knownLength: Boolean, cut: Boolean, watchedInPlay: Boolean): Boolean =
+            when (reason) {
+                "CANCELLED" -> false
+                "ERROR", "INTERRUPTED" -> true
+                "FINISHED" -> knownLength || cut
+                else -> cut || (watchedInPlay && knownLength)
+            }
 
         internal fun restartSeek(seconds: Double, duration: Double?, playIntent: Boolean): RestartSeek {
             require(seconds.isFinite()) { "Invalid Cast seek position" }

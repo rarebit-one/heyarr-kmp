@@ -2,6 +2,7 @@ package one.rarebit.heyarr.desktop
 
 import one.rarebit.heyarr.desktop.cast.CastChannel
 import one.rarebit.heyarr.desktop.cast.CastStatus
+import one.rarebit.heyarr.desktop.cast.SessionSighting
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -20,13 +21,18 @@ internal class FakeChannel(private val sessions: AtomicInteger = AtomicInteger(1
     var lastControl: Pair<String, Double?>? = null
     override var status: CastStatus? = CastStatus("PLAYING", 0.0, null, "Example", 1)
     override var error: String? = null
+
+    /** What this channel saw of each session, latched as CastConnection's: session to idleReason. */
+    private val sightings = mutableMapOf<Int, String?>()
     override fun load(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?) {
+        sightings.clear()
         if (failLoad) error("LOAD_FAILED")
         loadCount++
         events += "load"
         lastLoad = url to autoplay
         lastDuration = duration
         status = CastStatus(if (autoplay) "PLAYING" else "PAUSED", 0.0, null, title, sessions.incrementAndGet())
+        sight(status)
     }
     override fun stopReceiver() {
         if (status == null) return // no media app running: a no-op, as CastConnection's
@@ -34,6 +40,28 @@ internal class FakeChannel(private val sessions: AtomicInteger = AtomicInteger(1
         receiverStops++
         events += "stop-receiver"
         status = null
+        sightings.clear()
+    }
+    override fun sighting(mediaSessionId: Int): SessionSighting? =
+        if (mediaSessionId in sightings) SessionSighting(sightings[mediaSessionId]) else null
+
+    /**
+     * The receiver closes the current session between two polls, broadcasting [idleReason]
+     * on the way out (null: nothing this channel heard), so the next poll finds no media.
+     */
+    fun vanish(idleReason: String? = null) {
+        idleReason?.let { reason -> status?.mediaSessionId?.let { sightings[it] = reason } }
+        status = null
+    }
+
+    /** A broadcast this channel heard: [session] ended for [idleReason]. */
+    fun hear(session: Int, idleReason: String) {
+        sightings[session] = idleReason
+    }
+
+    private fun sight(seen: CastStatus?) {
+        val session = seen?.mediaSessionId ?: return
+        sightings[session] = seen.idleReason ?: sightings[session]
     }
     override fun control(action: String, seconds: Double?) {
         lastControl = action to seconds
@@ -43,6 +71,7 @@ internal class FakeChannel(private val sessions: AtomicInteger = AtomicInteger(1
     override fun refresh(): CastStatus? {
         // A dead connection throws on its next request, as CastConnection's does.
         error?.let { throw IllegalStateException(it) }
+        sight(status)
         return status
     }
     override fun close() {
