@@ -241,6 +241,49 @@ class CastMediaRelayTest {
         }
     }
 
+    @Test fun closing_the_relay_mid_download_is_ours_not_a_cut() {
+        // A restart or a stop closes the relay under a download it is still reading; the
+        // read that fails as a result must not read as the node's stream breaking. The node
+        // sends a chunk and then holds the connection open (a live ffmpeg between frames), so
+        // the relay is blocked reading the node, not writing to the receiver, when it closes.
+        val chunk = 256 * 1024
+        val node = ServerSocket(0, 0, receiver)
+        Thread {
+            runCatching {
+                node.accept().use { socket ->
+                    val input = socket.getInputStream().bufferedReader()
+                    while (input.readLine().orEmpty().isNotEmpty()) Unit
+                    val head = "HTTP/1.1 200 OK\r\nContent-Type: video/mp4\r\nTransfer-Encoding: chunked\r\n\r\n"
+                    socket.getOutputStream().apply {
+                        write((head + "%x\r\n".format(chunk)).toByteArray())
+                        write(ByteArray(chunk) { 'x'.code.toByte() })
+                        write("\r\n".toByteArray())
+                        flush()
+                    }
+                    Thread.sleep(5_000)
+                }
+            }
+        }.apply { isDaemon = true }.start()
+        node.use {
+            val relay = CastMediaRelay(receiver, URI.create("http://127.0.0.1:${node.localPort}/stream"))
+            val uri = URI.create(relay.url)
+            Socket(uri.host, uri.port).use { socket ->
+                socket.getOutputStream()
+                    .write("GET ${uri.rawPath} HTTP/1.1\r\nHost: ${uri.host}\r\n\r\n".toByteArray())
+                // Drain all but the relay's last partly-filled output chunk: the node's chunk
+                // is through and the relay is waiting on the node for more.
+                val input = socket.getInputStream()
+                var received = 0
+                val buffer = ByteArray(16 * 1024)
+                while (received < chunk - 16 * 1024) received += input.read(buffer).also { check(it > 0) }
+                Thread.sleep(200)
+                relay.close()
+            }
+            Thread.sleep(500)
+            assertFalse(relay.severed, "Our own close is not the node's stream breaking")
+        }
+    }
+
     private fun request(url: String): HttpRequest.Builder =
         HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(5))
 
