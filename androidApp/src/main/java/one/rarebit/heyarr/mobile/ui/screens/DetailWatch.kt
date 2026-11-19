@@ -21,8 +21,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.ClosedCaption
+import androidx.compose.material.icons.rounded.ConnectedTv
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.MenuBook
 import androidx.compose.material.icons.rounded.OpenInNew
@@ -214,7 +214,7 @@ private fun EpisodeRow(
         EpisodeThumb(thumb)
         EpisodeText(ep, ext, Modifier.weight(1f))
         if (ep.isPlayable) {
-            IconButtonRound(Icons.Rounded.Cast, "Play ${ep.label} on a renderer", {
+            IconButtonRound(Icons.Rounded.ConnectedTv, "Play ${ep.label} on a TV the server can reach (DLNA)", {
                 toggleCast(session, state, ep.asset.id, scope)
             }, size = 36.dp)
             IconButtonRound(

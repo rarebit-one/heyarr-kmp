@@ -16,4 +16,9 @@
         <item name="android:windowBackground">#FF0A1410</item>
         <item name="colorSurface">#FF0A1410</item>
     </style>
+
+    <!-- The Google Cast button only (ui/screens/GoogleCast, heyarr-kmp#250): MediaRouter's device
+         picker and controller are AppCompat dialogs, which refuse a platform theme. Dark, so the
+         button's glyph is light; the dialogs take MediaRouter's own theme over it. -->
+    <style name="Theme.Heyarr.CastButton" parent="Theme.AppCompat.NoActionBar" />
 </resources>

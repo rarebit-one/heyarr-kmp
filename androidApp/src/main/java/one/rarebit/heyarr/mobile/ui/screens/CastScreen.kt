@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Cast
+import androidx.compose.material.icons.rounded.ConnectedTv
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
@@ -61,10 +61,12 @@ class CastState {
 }
 
 /**
- * Cast — pick a renderer (`list_renderers`), watch its live `playback_status` (polled
- * every 2 s while the screen is open), and drive it with `control_playback`.
- * Everything shown here is what the device reports right now; there is no history and
- * no resume position, because heyarr cannot see either.
+ * Cast — two kinds of TV, shown apart because they work apart (heyarr-kmp#250). Google Cast
+ * ([GoogleCastPanel]): this phone holds the session and sends the film. Below it, the DLNA
+ * renderers the server can reach: pick one (`list_renderers`), watch its live
+ * `playback_status` (polled every 2 s while the screen is open), and drive it with
+ * `control_playback`. Everything shown for those is what the device reports right now; there
+ * is no history and no resume position, because heyarr cannot see either.
  */
 @Composable
 fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modifier) {
@@ -107,14 +109,16 @@ fun CastScreen(session: AppSession, state: CastState, modifier: Modifier = Modif
         ).padding(horizontal = Tokens.screenPadding).padding(top = Tokens.s4, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
-        SectionHeader("Cast / renderer", subtitle = "Renderers on the network and what each is doing", trailing = {
+        GoogleCastPanel()
+        SectionHeader("Cast / renderer", subtitle = "DLNA TVs the server reaches, and what each is doing", trailing = {
             IconButtonRound(Icons.Rounded.Refresh, "Search the network again", { load(refresh = true) }, size = 36.dp)
         })
         RendererList(state) { load() }
         state.selected?.let { r -> RendererPanel(r, state, ::control) }
         Notice(
-            "Playback position is the device's own report, live. heyarr keeps no play history this client can read; to send something here, use Play on… from a work.",
-            icon = Icons.Rounded.Cast,
+            "Playback position is the device's own report, live. heyarr keeps no play history this client can read; " +
+                "to send something here, use Play on… from a work.",
+            icon = Icons.Rounded.ConnectedTv,
             tone = Tokens.slate,
         )
     }
@@ -130,8 +134,9 @@ private fun RendererList(state: CastState, onRetry: () -> Unit) {
 
         state.renderers!!.isEmpty() -> EmptyState(
             "No renderers found",
-            detail = "A device that is switched off is not listed — that is not the same as it not existing. Switch it on and search again.",
-            icon = Icons.Rounded.Cast,
+            detail = "A device that is switched off is not listed — that is not the same as it not existing. " +
+                "Switch it on and search again.",
+            icon = Icons.Rounded.ConnectedTv,
         )
 
         else -> Row(
@@ -142,7 +147,7 @@ private fun RendererList(state: CastState, onRetry: () -> Unit) {
                 FilterChip(r.name, state.selected?.udn == r.udn, {
                     state.selected = r
                     state.status = null
-                }, icon = Icons.Rounded.Cast)
+                }, icon = Icons.Rounded.ConnectedTv)
             }
         }
     }

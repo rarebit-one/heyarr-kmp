@@ -29,8 +29,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.ClosedCaption
+import androidx.compose.material.icons.rounded.ConnectedTv
 import androidx.compose.material.icons.rounded.Forward10
 import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.rounded.FullscreenExit
@@ -212,7 +212,10 @@ internal fun PlayerTopBar(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        IconButtonRound(Icons.Rounded.Cast, "Play on a renderer", onCast, size = 40.dp)
+        // Two kinds of TV: Google Cast (this phone sends the film) and the DLNA renderers the
+        // server reaches itself. Different glyphs, so neither is mistaken for the other.
+        CastButton()
+        IconButtonRound(Icons.Rounded.ConnectedTv, "Play on a TV the server can reach (DLNA)", onCast, size = 40.dp)
         if (isVideo) {
             IconButtonRound(Icons.Rounded.Fullscreen, "Fullscreen", onFullscreen, size = 40.dp, filled = true)
         }

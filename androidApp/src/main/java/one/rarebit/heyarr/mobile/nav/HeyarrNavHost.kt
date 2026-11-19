@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -57,6 +58,8 @@ import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.mobile.AppGraph
 import one.rarebit.heyarr.mobile.AppViewModel
+import one.rarebit.heyarr.mobile.cast.CastHandoff
+import one.rarebit.heyarr.mobile.cast.CastRouting
 import one.rarebit.heyarr.mobile.device.EnrolAdvance
 import one.rarebit.heyarr.mobile.device.EnrolScreen
 import one.rarebit.heyarr.mobile.device.EnrolUiState
@@ -82,6 +85,7 @@ import one.rarebit.heyarr.mobile.ui.components.HeyarrNavRail
 import one.rarebit.heyarr.mobile.ui.components.NowPlayingBar
 import one.rarebit.heyarr.mobile.ui.screens.AudioQueueScreen
 import one.rarebit.heyarr.mobile.ui.screens.CastScreen
+import one.rarebit.heyarr.mobile.ui.screens.CastingBar
 import one.rarebit.heyarr.mobile.ui.screens.DetailPersonal
 import one.rarebit.heyarr.mobile.ui.screens.DetailPlayback
 import one.rarebit.heyarr.mobile.ui.screens.DetailScreen
@@ -185,6 +189,30 @@ fun HeyarrNavHost(
             { copy -> vm.playback.switchCopy(copy, video.state.positionMs.milliseconds.toDouble(DurationUnit.SECONDS)) }
         // A stream URL or lease that lapsed mid-film is planned again, at the same place (#232).
         video.onRefresh = vm.playback::refresh
+    }
+    // Google Cast (heyarr-kmp#250). The film is planned Cast-safe through this session's node and
+    // credential; while a session is up a video goes to the TV; and a session that comes up while
+    // a film plays here takes it over where it was, the local player stopped first.
+    val castSession by rememberUpdatedState(session)
+    LaunchedEffect(session) {
+        graph.cast.planner = { assetId ->
+            CastRouting.sourceOf(
+                PlaybackClient(env.transport, env.baseUrl, env.credential).plan(assetId, CastRouting.PROFILE),
+            )
+        }
+    }
+    LaunchedEffect(video) {
+        vm.playback.cast = CastHandoff.sink(graph.cast, vm.viewModelScope) {
+            castSession.toast(Toast.Kind.ERROR, "Couldn't cast it", it)
+        }
+        graph.cast.onConnected = {
+            vm.viewModelScope.launch {
+                CastHandoff.takeOver(graph.cast, video.current, video.sourceSeconds(), video.state.paused) {
+                    vm.playback.stop()
+                    video.stop()
+                }?.onFailure { castSession.toast(Toast.Kind.ERROR, "Couldn't cast it", it.message) }
+            }
+        }
     }
     // What the coordinator resolved is what the session plays; a new asset puts the player in front.
     var lastStartedAsset by remember { mutableStateOf<String?>(null) }
@@ -778,6 +806,14 @@ fun HeyarrNavHost(
                                     }
                                 }
                             }
+                        }
+                        if (!fullScreen) {
+                            CastingBar(graph.cast, onOpen = {
+                                navController.navigate(Route.Cast) {
+                                    launchSingleTop =
+                                        true
+                                }
+                            })
                         }
                         if (Decisions.showNowPlayingBar(fullScreen, video.active, audioState.item)) {
                             NowPlayingBar(

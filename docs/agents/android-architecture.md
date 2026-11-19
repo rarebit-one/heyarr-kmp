@@ -126,6 +126,12 @@ androidApp/src/main/java/one/rarebit/heyarr/mobile/
                 between screens: transport, captions, restart-seek for streams, up-next queue, fullscreen flag) ·
                 PlaybackProgress · AudioPlayer seam + SessionAudioPlayer (MediaController over PlaybackService) ·
                 AudioSessionBridge · PlaybackDiagnostics · Subtitles · MediaMime · ClientCapabilities
+  cast/         Google Cast (heyarr-kmp#250): CastManager (the session's media, film-absolute: restart seeks,
+                stall / drop / reconnect recovery over `:core`'s cast/CastTimeline) · CastChannel seam + SdkCastChannel
+                (the Cast SDK) · CastRouting (Cast-profile plan; direct-or-relay rule) · CastRelay (receiver-only LAN
+                doorway, credential added upstream) + CastRelayService (wake + Wi-Fi lock) · CastGate + CastHandoff
+                (never this phone and a TV at once) · CastOptionsProvider (Default Media Receiver). The node-driven
+                DLNA renderers stay in ui/screens/CastScreen; the two share no model
   reader/       ReaderActivity (Readium 3: EPUB / PDF / comic) + ReaderHttp + ReadingPositionStore/Sync · ReaderAsset (formats)
   consumption/  ConsumptionClient · DeviceIdStore · ProgressReporter + ConsumptionReporter
   personalstate/ the M9 engine (ids via `:core`'s PersonalStateId, the four CRDTs, SpaceCrypto, PersonalStateClient, SpaceSession,
@@ -149,5 +155,7 @@ prove out on a device; the `/playback` negotiation (`PlaybackClient.plan`) is wi
 on an enrolled `device_id` — on-device personal-state **decrypt** (Keystore/StrongBox X25519 unwrap + AEAD) and the local
 Personal MCP, **device-cert login** (in-enclave Ed25519 possession proof + enrolment), QR
 **bitmap** rendering, and choosing whether to ship the Subsonic reach. See `androidApp/README.md`'s
-follow-ups. **Keep CI green** — unit tests + `assembleDebug` are the bar; anything needing a
+follow-ups. Google Cast (`cast/`) is unit-tested over a scripted receiver; a real TV
+receiving the relayed film, the SDK's session events and the lock-screen controls are
+phone-and-TV-gated. **Keep CI green** — unit tests + `assembleDebug` are the bar; anything needing a
 real device stays a device-side follow-up, not a scaffold blocker.
