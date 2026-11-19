@@ -4,9 +4,12 @@ import android.content.Context
 import androidx.mediarouter.media.MediaRouter
 import com.google.android.gms.cast.CastDevice
 import com.google.android.gms.cast.CastStatusCodes
+import com.google.android.gms.cast.HlsSegmentFormat
+import com.google.android.gms.cast.HlsVideoSegmentFormat
 import com.google.android.gms.cast.MediaInfo
 import com.google.android.gms.cast.MediaLoadRequestData
 import com.google.android.gms.cast.MediaMetadata
+import com.google.android.gms.cast.MediaSeekOptions
 import com.google.android.gms.cast.MediaStatus
 import com.google.android.gms.cast.framework.CastContext
 import com.google.android.gms.cast.framework.CastSession
@@ -91,20 +94,30 @@ class SdkCastChannel(private val context: Context) : CastChannel {
         val metadata = MediaMetadata(MediaMetadata.MEDIA_TYPE_MOVIE).apply {
             putString(MediaMetadata.KEY_TITLE, load.title)
         }
-        val info = MediaInfo.Builder(load.url)
+        val id = nextLoad++
+        // A presentation fetched straight from the node has one URL for every LOAD, so its
+        // content id is made unique per LOAD, as a relay's fresh capability or `?start=` is.
+        val contentId = if (load.hls) "${load.url}#load-$id" else load.url
+        val info = MediaInfo.Builder(contentId)
             .setContentUrl(load.url)
             .setStreamType(MediaInfo.STREAM_TYPE_BUFFERED)
             .setContentType(load.mime)
             .setMetadata(metadata)
             // The film's length, so the TV's own scrubber spans the film, not the buffered end.
             .apply { load.durationSeconds?.let { setStreamDuration((it * MILLIS).toLong()) } }
+            .apply {
+                if (load.hls) {
+                    // fMP4 segments: without these the receiver takes them for MPEG-TS.
+                    setHlsSegmentFormat(HlsSegmentFormat.FMP4)
+                    setHlsVideoSegmentFormat(HlsVideoSegmentFormat.FMP4)
+                }
+            }
             .build()
         val request = MediaLoadRequestData.Builder().setMediaInfo(
             info,
-        ).setAutoplay(load.autoplay).setCurrentTime(0).build()
+        ).setAutoplay(load.autoplay).setCurrentTime((load.startSeconds * MILLIS).toLong()).build()
         // A wedged receiver never answers a LOAD; the manager's recovery needs to hear that it failed.
-        val id = nextLoad++
-        loads[load.url] = id
+        loads[contentId] = id
         while (loads.size > KEPT_LOADS) loads.remove(loads.keys.first())
         val result = withTimeout(LOAD_TIMEOUT_MS) { client.load(request).await() }
         check(result.status.isSuccess) {
@@ -125,6 +138,9 @@ class SdkCastChannel(private val context: Context) : CastChannel {
     override suspend fun play() = command { it.play() }
 
     override suspend fun pause() = command { it.pause() }
+
+    override suspend fun seek(seconds: Double) =
+        command { it.seek(MediaSeekOptions.Builder().setPosition((seconds * MILLIS).toLong()).build()) }
 
     override suspend fun stop() = command { it.stop() }
 

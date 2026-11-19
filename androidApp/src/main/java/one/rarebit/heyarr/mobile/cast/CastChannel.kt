@@ -19,13 +19,19 @@ data class CastItem(
     val autoplay: Boolean = true,
 )
 
-/** One LOAD into the receiver's media session. [durationSeconds] is what remains of the film from the start. */
+/**
+ * One LOAD into the receiver's media session. [durationSeconds] is what remains of the film
+ * from the start. [hls]: [url] is an fMP4 HLS playlist (ADR-0126), started at [startSeconds]
+ * film time; its duration is the playlist's.
+ */
 data class CastLoad(
     val url: String,
     val title: String,
     val mime: String,
     val autoplay: Boolean,
     val durationSeconds: Double?,
+    val startSeconds: Double = 0.0,
+    val hls: Boolean = false,
 )
 
 /**
@@ -49,6 +55,9 @@ interface CastChannel {
     suspend fun play()
 
     suspend fun pause()
+
+    /** A native seek to [seconds] in the receiver's own clock: only an HLS presentation can. */
+    suspend fun seek(seconds: Double)
 
     /** Stops the media (a user's Stop), leaving the session up. */
     suspend fun stop()

@@ -5,6 +5,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import one.rarebit.heyarr.core.playback.HlsPresentation
 import one.rarebit.heyarr.mobile.net.CredentialUnavailableException
 import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
@@ -62,16 +63,19 @@ interface MediaDoorway : AutoCloseable {
  * unlock instead of reloading into a refusal. A film already flowing needs no new signature;
  * only a restart does.
  *
- * TODO(heyarr-core#908): an HLS source is a playlist and its segments, relative to it. Serving
- * one is a prefix capability — [path] plus segment names in a fixed alphabet, still receiver-only
- * and credential-free — and [rejection] is the one place that widens. A credential-free HLS URL
- * on the home LAN skips the relay altogether ([CastRouting.decide]).
+ * An HLS presentation ([presentation], ADR-0126) is a playlist and its segments, relative to
+ * it, so it is served as a prefix capability: [path] plus [HlsPresentation]'s entry names, each
+ * resolved against [upstream] (the node's playlist URL), still receiver-only, and with no query
+ * at all. Its node routes take no credential, so [client] must not sign: every segment is a new
+ * request, and a locked phone signing none of them keeps the film flowing. A presentation the
+ * TV can reach on the home LAN skips the relay altogether ([CastRouting.decide]).
  */
 class CastRelay(
     private val receiver: Inet4Address,
     upstream: String,
     private val client: OkHttpClient,
     bindTo: Inet4Address = routeTo(receiver),
+    private val presentation: Boolean = false,
 ) : MediaDoorway {
     private val upstream = upstream.toHttpUrl()
     private val path = "/media/" + ByteArray(CAPABILITY_BYTES).also(SecureRandom()::nextBytes)
@@ -90,7 +94,8 @@ class CastRelay(
     @Volatile override var credentialBlocked = false
         private set
 
-    override val url: String = "http://${bindTo.hostAddress}:${server.localPort}$path"
+    override val url: String = "http://${bindTo.hostAddress}:${server.localPort}$path" +
+        if (presentation) "/${HlsPresentation.PLAYLIST}" else ""
 
     init {
         executor.execute(::accept)
@@ -120,7 +125,7 @@ class CastRelay(
                 respond(out, HTTP_BAD_REQUEST)
                 return
             }
-            val refusal = rejection(receiver, path, s.inetAddress, head)
+            val refusal = rejection(receiver, path, s.inetAddress, head, presentation)
             when {
                 refusal != null -> respond(out, refusal)
 
@@ -136,7 +141,8 @@ class CastRelay(
     }
 
     private fun forward(head: Head, out: OutputStream) {
-        val target = head.rawQuery?.let { query ->
+        val entry = entryOf(path, head.rawPath, presentation)
+        val target = entry?.let { requireNotNull(upstream.resolve(it)) } ?: head.rawQuery?.let { query ->
             val separator = if (upstream.encodedQuery == null) "?" else "&"
             "$upstream$separator$query".toHttpUrl()
         } ?: upstream
@@ -248,7 +254,10 @@ class CastRelay(
         private val CRLF = "\r\n".toByteArray(Charsets.US_ASCII)
         private val SEEK_QUERY = Regex("start=[0-9]+(?:\\.[0-9]+)?")
         private val REQUEST_HEADERS = listOf("Range", "If-Range", "If-None-Match")
-        private val RESPONSE_HEADERS = listOf("Content-Type", "Content-Range", "Accept-Ranges", "Content-Length")
+
+        // Retry-After: a presentation's node answers 429 when every stream slot is busy.
+        private val RESPONSE_HEADERS =
+            listOf("Content-Type", "Content-Range", "Accept-Ranges", "Content-Length", "Retry-After")
         private val CORS = listOf("Access-Control-Allow-Origin" to "*")
 
         const val HTTP_OK = 200
@@ -270,15 +279,30 @@ class CastRelay(
         /**
          * Why a request is refused, or null to serve it. Pure, so the doorway's whole policy is
          * unit-tested: not the receiver or not the capability is a 404 (it reveals nothing),
-         * then anything but GET/HEAD/OPTIONS is a 405 and any query but `start=` a 400.
+         * then anything but GET/HEAD/OPTIONS is a 405 and any query but `start=` a 400. A
+         * [presentation]'s capability is its prefix and an entry name, and it takes no query.
          */
-        fun rejection(receiver: InetAddress, path: String, remote: InetAddress?, head: Head): Int? = when {
-            remote != receiver || head.rawPath != path -> HTTP_NOT_FOUND
-            head.method == "OPTIONS" -> null
-            head.method !in listOf("GET", "HEAD") -> HTTP_BAD_METHOD
-            head.rawQuery != null && !head.rawQuery.matches(SEEK_QUERY) -> HTTP_BAD_REQUEST
-            else -> null
+        fun rejection(
+            receiver: InetAddress,
+            path: String,
+            remote: InetAddress?,
+            head: Head,
+            presentation: Boolean = false,
+        ): Int? {
+            val known = if (presentation) entryOf(path, head.rawPath, true) != null else head.rawPath == path
+            return when {
+                remote != receiver || !known -> HTTP_NOT_FOUND
+                head.method == "OPTIONS" -> null
+                head.method !in listOf("GET", "HEAD") -> HTTP_BAD_METHOD
+                head.rawQuery != null && (presentation || !head.rawQuery.matches(SEEK_QUERY)) -> HTTP_BAD_REQUEST
+                else -> null
+            }
         }
+
+        /** The HLS entry [rawPath] names under a presentation's [path]; null when none (or not a presentation). */
+        fun entryOf(path: String, rawPath: String, presentation: Boolean): String? =
+            rawPath.takeIf { presentation && it.startsWith("$path/") }
+                ?.substring(path.length + 1)?.takeIf(HlsPresentation::isEntry)
 
         /** Reads one request head, at most [MAX_HEAD_BYTES]; null when it is not one. */
         @Suppress("ReturnCount") // Each way a head is not one is its own early refusal.

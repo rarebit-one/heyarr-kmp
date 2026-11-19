@@ -21,11 +21,16 @@ class CastTimelineTest {
         ReceiverReport(position, state, session, idle)
 
     /** Feeds [reports] one every [step] seconds and returns the last judgement. */
-    private fun run(vararg reports: ReceiverReport, step: Long = 2, wantsPlay: Boolean = true): CastTimeline.Judgement {
+    private fun run(
+        vararg reports: ReceiverReport,
+        step: Long = 2,
+        wantsPlay: Boolean = true,
+        nativeSeeks: Boolean = false,
+    ): CastTimeline.Judgement {
         var progress: CastTimeline.Progress? = null
         var last: CastTimeline.Judgement? = null
         reports.forEachIndexed { i, r ->
-            last = CastTimeline.judge(progress, r, i * step * second, wantsPlay)
+            last = CastTimeline.judge(progress, r, i * step * second, wantsPlay, nativeSeeks)
             progress = last.progress
         }
         return last!!
@@ -61,6 +66,17 @@ class CastTimelineTest {
             step = 2,
         )
         assertEquals(Verdict.UNREACHED_SEEK, late.verdict)
+    }
+
+    @Test fun anHlsPresentationsFarSeekIsAFreshBaselineAndOnlyAStallFromThereCounts() {
+        // heyarr-core#908: the receiver reaches any point of a presentation itself; it waits a
+        // few seconds while the node cuts that segment, which is no unreached seek.
+        val waiting = Array(4) { report(900.0, "BUFFERING") }
+        val early = run(report(10.0), *waiting, nativeSeeks = true)
+        assertEquals(Verdict.STEADY, early.verdict)
+        assertFalse(early.progress.jumped)
+        val wedged = run(report(10.0), *Array(12) { report(900.0, "BUFFERING") }, nativeSeeks = true)
+        assertEquals(Verdict.STALLED, wedged.verdict, "still stuck there after the stall window")
     }
 
     @Test fun aRewindIsAFreshBaseline() {

@@ -76,4 +76,16 @@ class PlaybackJsonTest {
         assertNull(plan.reason)
         assertNull(plan.source)
     }
+
+    @Test fun aStreamPlanCarriesItsHlsPresentation() {
+        // ADR-0126 (heyarr-core#908): relative like `url`; absent on a node that cannot segment.
+        val plan = PlaybackJson.parse(
+            """{"mode":"stream","url":"/api/v1/playback/stream/t","hls_url":"/render/hls/cap/index.m3u8",""" +
+                """"hls_mime":"application/vnd.apple.mpegurl"}""",
+        )
+        assertTrue(plan.isStream)
+        assertEquals("/render/hls/cap/index.m3u8", plan.hlsUrl)
+        assertEquals("application/vnd.apple.mpegurl", plan.hlsMime)
+        assertNull(PlaybackJson.parse("""{"mode":"stream","url":"/api/v1/playback/stream/t"}""").hlsUrl)
+    }
 }

@@ -93,6 +93,11 @@ class CastLocked : IllegalStateException("Unlock this phone: it relays the film,
  *    up, the receiver is rejoined with a backoff for [CastTimeline.RECONNECT_GIVE_UP_SECONDS].
  *  - **Reachability.** Each cast is routed by [CastRouting.decide]; a relayed one runs through
  *    a [MediaDoorway] made per LOAD, kept awake by [hold].
+ *  - **The presentation first.** A node that can segment offers the film as a seekable HLS
+ *    presentation (ADR-0126, heyarr-core#908). The receiver then knows the whole film and
+ *    seeks it natively ([CastChannel.seek]; its clock is film time, [sourceOffset] 0), so the
+ *    restart machinery is only for the live stream, which stays the fallback when the
+ *    receiver cannot play the presentation.
  *
  * Every entry point takes [mutex]: the watcher, the session events and the UI's controls
  * would otherwise interleave a LOAD with a poll that reads the old session's clock.
@@ -105,8 +110,11 @@ class CastLocked : IllegalStateException("Unlock this phone: it relays the film,
 )
 class CastManager(
     private val channel: CastChannel,
-    /** A relay to [receiver] for [upstream]; [CastRelay] on a phone. Called on [io]. */
-    private val doorway: (receiver: Inet4Address, upstream: String) -> MediaDoorway,
+    /**
+     * A relay to [receiver] for [upstream]; [CastRelay] on a phone. [presentation]: [upstream]
+     * is an HLS playlist, relayed as its prefix with no credential. Called on [io].
+     */
+    private val doorway: (receiver: Inet4Address, upstream: String, presentation: Boolean) -> MediaDoorway,
     /** Resolves the node's host for [CastRouting.decide]. Called on [io]. */
     private val resolve: (host: String) -> InetAddress? = { runCatching { InetAddress.getByName(it) }.getOrNull() },
     /** Whether a request can be signed now (false on a locked phone). Called on [io]. */
@@ -137,6 +145,10 @@ class CastManager(
 
     private val mutex = Mutex()
     private var source: CastSource? = null
+
+
+    /** The receiver plays the node's HLS presentation, not the live stream: it seeks natively. */
+    private val presenting: Boolean get() = source?.restartSeekable == false
 
     /** [clock] when [source] was asked for: its stream token only starts a stream for an hour. */
     private var plannedAt = 0L
@@ -203,14 +215,18 @@ class CastManager(
             // The film we owned until now is left where it was, for Continue watching.
             checkpoint()
             clearOwnedMedia()
-            source = next
             plannedAt = asked
             item = cast
-            route = withContext(io) {
-                CastRouting.decide(next, receiver.address) { URI(next.url).host?.let(resolve) }
-            }
             val start = CastTimeline.restartSeek(cast.startSeconds, next.durationSeconds, cast.autoplay)
-            loadAt(start.position, start.autoplay, relaunchFirst = relaunch)
+            val presented = next.presentation()?.let { presentation ->
+                // The presentation when the node offers one: the TV's own remote and scrubber
+                // then reach the whole film. A receiver that cannot fetch or play it (directly
+                // or through the relay) gets the live stream instead, for the rest of the cast.
+                runCatching { castFrom(presentation, receiver, start, relaunch) }
+                    .onFailure { if (it is CancellationException) throw it }
+                    .isSuccess
+            } == true
+            if (!presented) castFrom(next, receiver, start, relaunch)
             error = null
             startWatch()
             Result.success(Unit)
@@ -222,6 +238,19 @@ class CastManager(
         } finally {
             publish()
         }
+    }
+
+    /** Makes [from] the cast's source, routes it and LOADs it at [start]. */
+    private suspend fun castFrom(
+        from: CastSource,
+        receiver: CastReceiver,
+        start: CastTimeline.RestartSeek,
+        relaunch: Boolean,
+    ) {
+        source = from
+        directFailed = false
+        route = withContext(io) { CastRouting.decide(from, receiver.address) { URI(from.url).host?.let(resolve) } }
+        loadAt(start.position, start.autoplay, relaunchFirst = relaunch)
     }
 
     /** What the UI's controls ask for. A seek is film-absolute. */
@@ -251,10 +280,9 @@ class CastManager(
 
                 Control.SEEK -> {
                     val plan = checkNotNull(source) { "Nothing of this phone's is casting" }
-                    // TODO(heyarr-core#908): a seekable HLS source seeks natively instead.
-                    check(plan.restartSeekable) { "This stream cannot seek" }
                     val restart = CastTimeline.restartSeek(requireNotNull(seconds), plan.durationSeconds, playIntent)
-                    loadAt(restart.position, restart.autoplay)
+                    // A presentation seeks natively, in film time; the live stream restarts there.
+                    if (presenting) channel.seek(restart.position) else loadAt(restart.position, restart.autoplay)
                 }
 
                 Control.STOP -> {
@@ -309,7 +337,8 @@ class CastManager(
             return
         }
         try {
-            val cut = streamCut || relay?.severed == true || reconnected
+            // A presentation's broken segment fetch is the receiver's to retry, not a cut stream.
+            val cut = streamCut || reconnected || (!presenting && relay?.severed == true)
             when (CastTimeline.fateOf(fresh, owned, lastFilm, source?.durationSeconds, cut)) {
                 // Another sender replaced our media without replacing the receiver app: its
                 // status and seeks must never reuse our film's plan or offset.
@@ -347,13 +376,8 @@ class CastManager(
         val live = fresh.state in CastTimeline.LIVE
         if (live) lastFilm = film
         record(fresh, film)
-        if (live && (streamCut || relay?.severed == true)) {
-            // Still playing our film from its buffer, but nothing more will reach it. Restart
-            // now, while the buffer lasts: a short reload instead of a stop minutes later.
-            resumeAt(film, relaunch = false)
-            return
-        }
-        val judged = CastTimeline.judge(progress, fresh, clock(), playIntent)
+        if (live && restartedCutStream(film)) return
+        val judged = CastTimeline.judge(progress, fresh, clock(), playIntent, nativeSeeks = presenting)
         progress = judged.progress
         if (judged.played) {
             // Playing again: a recovery worked, so the next stall gets a full budget.
@@ -365,6 +389,19 @@ class CastManager(
             if (error != null && relay?.credentialBlocked != true) error = null
         }
         act(judged.verdict, film)
+    }
+
+    /**
+     * Restarts our live stream at [film] when it is known cut while the receiver still plays it
+     * from its buffer; true when it did. Restarting now, while the buffer lasts, is a short
+     * reload instead of a stop minutes later. A presentation still playing has no long stream
+     * to have been cut (the receiver just fetches its next segment), so nothing is restarted.
+     */
+    private suspend fun restartedCutStream(film: Double): Boolean {
+        if (presenting) streamCut = false
+        val cut = !presenting && (streamCut || relay?.severed == true)
+        if (cut) resumeAt(film, relaunch = false)
+        return cut
     }
 
     /** The recovery a [verdict] on our film at [film] calls for. */
@@ -389,7 +426,8 @@ class CastManager(
                 error = "${deviceName()} keeps stalling. Stop and cast again, or restart the receiver."
             } else {
                 recover {
-                    ensureSignable()
+                    // A presentation's fetches are unsigned: a locked phone can still relaunch it.
+                    if (!presenting) ensureSignable()
                     recoveries++
                     recovery = CastRecovery(CastRecovery.Kind.RESTARTING, deviceName(), film)
                     loadAt(film, autoplay = true, relaunchFirst = true)
@@ -441,24 +479,30 @@ class CastManager(
     }
 
     /**
-     * A restart seek: a LOAD of the node's stream from film time [at], through a new doorway
-     * when relayed. The receiver's clock starts again at zero, so [sourceOffset] keeps what
-     * the user sees film-absolute; the declared duration is what remains. A direct LOAD the
-     * receiver refuses is made again through the relay, which then carries the rest of the cast.
+     * A LOAD from film time [at], through a new doorway when relayed: a restart seek, a stall's
+     * relaunch or a resume. The live stream is cut again from [at] and the receiver's clock
+     * starts at zero, so [sourceOffset] keeps what the user sees film-absolute and the declared
+     * duration is what remains; a presentation is loaded whole and started at [at]. A direct
+     * LOAD the receiver refuses is made again through the relay, which then carries the rest
+     * of the cast.
      */
     private suspend fun loadAt(at: Double, autoplay: Boolean, relaunchFirst: Boolean = false) {
         val cast = requireNotNull(item)
         val plan = current(cast)
+        val hls = presenting
         val position = CastTimeline.millis(at)
-        val remaining = plan.durationSeconds?.let { (it - position).coerceAtLeast(0.0) }
+        val remaining = plan.durationSeconds?.takeUnless { hls }?.let { (it - position).coerceAtLeast(0.0) }
         val direct = route is CastRoute.Direct && !directFailed
-        if (!direct) ensureSignable()
+        // Only the live stream's relay signs its fetches.
+        if (!direct && !hls) ensureSignable()
         // Best effort: a receiver that refuses to quit still gets the LOAD, into its current session.
         if (relaunchFirst) runCatching { channel.relaunch() }
-        val next = if (direct) null else withContext(io) { doorway(relayAddress(), plan.url) }
+        val next = if (direct) null else withContext(io) { doorway(relayAddress(), plan.url, hls) }
         val base = next?.url ?: plan.url
+        val url = if (hls) base else PlaybackTarget.streamUrl(base, position)
+        val start = if (hls) position else 0.0
         val session = try {
-            channel.load(CastLoad(PlaybackTarget.streamUrl(base, position), cast.title, plan.mime, autoplay, remaining))
+            channel.load(CastLoad(url, cast.title, plan.mime, autoplay, remaining, startSeconds = start, hls = hls))
         } catch (cancel: CancellationException) {
             next?.close()
             throw cancel
@@ -473,12 +517,12 @@ class CastManager(
         relay = next
         ownedMediaSessionId = session
         castingAsset = cast.assetId
-        sourceOffset = position
+        sourceOffset = position - start
         lastFilm = position
         playIntent = autoplay
         // A new media session's clock restarts: the old trajectory must not read as a jump.
         progress = null
-        lastReport = ReceiverReport(0.0, if (autoplay) "PLAYING" else "PAUSED", session)
+        lastReport = ReceiverReport(start, if (autoplay) "PLAYING" else "PAUSED", session)
     }
 
     private fun relayAddress(): Inet4Address = channel.receiver?.address
@@ -503,12 +547,14 @@ class CastManager(
      * (a running stream is not cut off), so every restart past that (a seek, a stall's
      * relaunch, a dropped film's resume) needs a fresh token. A locked phone cannot sign the
      * plan request either; it waits for the unlock ([CastLocked]) like a relayed restart.
-     * Same film, same node, same profile: the route and the offset stay as they are.
+     * Same film, same node, same profile: the route and the offset stay as they are. A
+     * presentation is never planned again here: its capability lasts six hours plus the
+     * film's running time.
      */
     private suspend fun current(cast: CastItem): CastSource {
         val held = requireNotNull(source)
         val now = clock()
-        if (CastTimeline.secondsBetween(plannedAt, now) < PLAN_REFRESH_SECONDS) return held
+        if (presenting || CastTimeline.secondsBetween(plannedAt, now) < PLAN_REFRESH_SECONDS) return held
         ensureSignable()
         return plan(cast.assetId).also {
             source = it
