@@ -151,6 +151,43 @@ class CastHlsTest {
     }
 
     @Test
+    fun aPresentationTheReceiverAcknowledgedButFailedOnFallsBackToTheLiveStream() {
+        // heyarr-kmp#255 review: the receiver accepts the LOAD (a media session, BUFFERING),
+        // then fails fetching or decoding the playlist. That is a refusal, only a late one.
+        Rig().use { rig ->
+            rig.play()
+            assertTrue(rig.channel.lastHls)
+            rig.channel.report("BUFFERING", 0.0)
+            rig.poll()
+            rig.channel.report("IDLE", 0.0)
+            rig.channel.status = rig.channel.status!!.copy(idleReason = "ERROR")
+            rig.poll()
+            assertEquals(2, rig.loads)
+            assertFalse(rig.channel.lastHls, "The live stream, not the same presentation again")
+            assertEquals(7200.0, rig.channel.lastDuration, "Declared as a live stream is")
+            assertEquals("asset", rig.manager.castingAsset)
+            // ...and for the rest of the cast: its seeks are restarts.
+            rig.channel.report("PLAYING", 4.0)
+            rig.poll()
+            rig.manager.control("seek", 3000.0)
+            assertFalse(rig.channel.lastHls)
+            assertEquals("start=3000", rig.channel.lastLoad!!.first.substringAfter("?"))
+        }
+    }
+
+    @Test
+    fun aPresentationThatNeverStartsStallsOverToTheLiveStream() {
+        Rig().use { rig ->
+            rig.play()
+            rig.channel.report("BUFFERING", 0.0)
+            repeat(12) { rig.poll() }
+            assertEquals(CastRecovery.Kind.RESTARTING, rig.manager.recovery?.kind)
+            assertEquals(2, rig.loads)
+            assertFalse(rig.channel.lastHls, "Relaunched with the live stream")
+        }
+    }
+
+    @Test
     fun aFarSeekTheReceiverWaitsOnIsNotRestartedButAStallStillIs() {
         Rig().use { rig ->
             rig.play()

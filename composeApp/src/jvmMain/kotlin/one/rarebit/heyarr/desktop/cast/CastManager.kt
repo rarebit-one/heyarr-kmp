@@ -80,6 +80,16 @@ internal class CastManager(
      * segment fetch is the receiver's to retry, not a cut stream to restart.
      */
     private var hls = false
+
+    /**
+     * The receiver has been seen PLAYING the presentation. Until then a LOAD it acknowledged
+     * may still fail on it (an ERROR or a stall while fetching or decoding the playlist or its
+     * first segments, heyarr-kmp#255 review): that is a presentation it cannot play, so the
+     * cast falls back to the live stream ([fallBackFromPresentation]) instead of reloading
+     * the same presentation until the retry budget runs out. Once it has played, a later
+     * failure is a dropped film like any other and is resumed with the presentation.
+     */
+    private var hlsPlayed = false
     private var sourceOffset = 0.0
     private var playIntent = false
     private var progress: Progress? = null
@@ -168,6 +178,7 @@ internal class CastManager(
             val (doorway, mediaSessionId) =
                 presented ?: open(next, device, plan, title, presentation = false, at = 0.0, autoplay = true)
             hls = presented != null
+            hlsPlayed = false
             relay?.close()
             relay = doorway
             target = plan
@@ -203,7 +214,9 @@ internal class CastManager(
             if (fate == Fate.DROPPED && !invalidating) {
                 // The receiver dropped our film mid-way, most likely having played out the
                 // buffer of a stream the node cut (this machine slept) or ended early (its
-                // ffmpeg died). Put it back.
+                // ffmpeg died). Put it back: as the live stream if it never played the
+                // presentation it was given.
+                fallBackFromPresentation()
                 resumeAt(connection, lastFilm, relaunch = true)
             } else {
                 noteIntent(fresh)
@@ -253,10 +266,18 @@ internal class CastManager(
         return fate
     }
 
-    /** The receiver's own play and pause (its remote, another sender) are what we mean to do too. */
+    /**
+     * The receiver's own play and pause (its remote, another sender) are what we mean to do too.
+     * Media we no longer own was released by [settle] first, so PLAYING here is our film's,
+     * and a presentation seen playing has proven it plays ([hlsPlayed]).
+     */
     private fun noteIntent(fresh: CastStatus?) {
         when (fresh?.state) {
-            "PLAYING" -> playIntent = true
+            "PLAYING" -> {
+                playIntent = true
+                if (hls) hlsPlayed = true
+            }
+
             "PAUSED", "PAUSED_PLAYBACK" -> playIntent = false
         }
     }
@@ -322,6 +343,9 @@ internal class CastManager(
             } else {
                 recoveries++
                 recovery = CastRecovery(CastRecovery.Kind.RESTARTING, device, film)
+                // A presentation that never started (stuck buffering its playlist) is not
+                // relaunched as itself: the live stream takes over from there.
+                fallBackFromPresentation()
                 quitReceiver(connection)
                 loadAt(connection, film, autoplay = true)
             }
@@ -507,6 +531,15 @@ internal class CastManager(
         }
     }
 
+    /**
+     * Drops a presentation the receiver acknowledged but never played (see [hlsPlayed]) for
+     * the live stream, for the rest of this cast; its next LOAD is the restartable stream, as
+     * if the receiver had refused the presentation's LOAD outright.
+     */
+    private fun fallBackFromPresentation() {
+        if (hls && !hlsPlayed) hls = false
+    }
+
     /** A presentation seeks natively, in film time; a live stream is restarted there. */
     private fun seek(connection: CastChannel, seconds: Double) {
         val restart = restartSeek(seconds, target?.durationSeconds, playIntent)
@@ -665,6 +698,7 @@ internal class CastManager(
         sourceOffset = 0.0
         title = ""
         hls = false
+        hlsPlayed = false
         playIntent = false
         progress = null
         recoveries = 0
