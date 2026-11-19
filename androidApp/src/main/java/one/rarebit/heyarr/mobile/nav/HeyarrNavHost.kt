@@ -207,7 +207,7 @@ fun HeyarrNavHost(
         }
         graph.cast.onConnected = {
             vm.viewModelScope.launch {
-                CastHandoff.takeOver(graph.cast, video.current, video.sourceSeconds()) {
+                CastHandoff.takeOver(graph.cast, video.current, video.sourceSeconds(), video.state.paused) {
                     vm.playback.stop()
                     video.stop()
                 }?.onFailure { castSession.toast(Toast.Kind.ERROR, "Couldn't cast it", it.message) }

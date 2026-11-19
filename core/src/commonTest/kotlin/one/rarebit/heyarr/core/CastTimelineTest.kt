@@ -112,6 +112,15 @@ class CastTimelineTest {
         assertEquals(Fate.ENDED, CastTimeline.fateOf(stopped, 7, 600.0, 7200.0, cut = true))
     }
 
+    @Test fun anotherSendersLoadOverOurFilmIsLetGoLikeAStop() {
+        // INTERRUPTED on the session we own is someone else's LOAD; resuming would reload our
+        // film over theirs (heyarr-kmp#242 review). Mid-film and with the stream cut alike.
+        val replaced = report(0.0, "IDLE", idle = "INTERRUPTED")
+        assertEquals(Fate.ENDED, CastTimeline.fateOf(replaced, 7, 600.0, 7200.0, cut = false))
+        assertEquals(Fate.ENDED, CastTimeline.fateOf(replaced, 7, 600.0, 7200.0, cut = true))
+        assertEquals(Fate.ENDED, CastTimeline.fateOf(replaced, 7, 600.0, null, cut = true))
+    }
+
     @Test fun anErrorMidFilmIsResumedButNotNearTheEnd() {
         val error = report(0.0, "IDLE", idle = "ERROR")
         assertEquals(Fate.DROPPED, CastTimeline.fateOf(error, 7, 600.0, 7200.0, cut = false))

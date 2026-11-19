@@ -87,7 +87,8 @@ class CastLocked : IllegalStateException("Unlock this phone: it relays the film,
  *    meant to play is a stall, answered by relaunching the receiver where it was, twice at most.
  *  - **Resume, not revive.** A film dropped mid-way (an ERROR, a cut stream, the receiver
  *    playing out its buffer after this phone fell off the network) is put back where it was;
- *    a user's stop, from any sender or the TV's remote, and the film's real end are final.
+ *    a user's stop, from any sender or the TV's remote, another sender's LOAD over our film
+ *    (INTERRUPTED), and the film's real end are final, and none of them is an error.
  *  - **Reconnect.** The SDK rides out a short drop itself (a suspended session). If it gives
  *    up, the receiver is rejoined with a backoff for [CastTimeline.RECONNECT_GIVE_UP_SECONDS].
  *  - **Reachability.** Each cast is routed by [CastRouting.decide]; a relayed one runs through
@@ -136,6 +137,9 @@ class CastManager(
 
     private val mutex = Mutex()
     private var source: CastSource? = null
+
+    /** [clock] when [source] was asked for: its stream token only starts a stream for an hour. */
+    private var plannedAt = 0L
     private var item: CastItem? = null
     private var route: CastRoute? = null
     private var directFailed = false
@@ -193,16 +197,14 @@ class CastManager(
     suspend fun play(cast: CastItem): Result<Unit> = mutex.withLock {
         try {
             val receiver = channel.receiver?.takeIf { channel.live } ?: error("No Cast receiver is connected")
-            val plan = planner ?: error("Sign in to cast")
-            val next = withContext(io) { plan(cast.assetId) }
-            check(next.mime == "video/mp4") {
-                "The server offered a ${next.mime} stream, which a Cast receiver cannot play"
-            }
+            val asked = clock()
+            val next = plan(cast.assetId)
             val relaunch = channel.report() != null && !ownsHealthyMedia()
             // The film we owned until now is left where it was, for Continue watching.
             checkpoint()
             clearOwnedMedia()
             source = next
+            plannedAt = asked
             item = cast
             route = withContext(io) {
                 CastRouting.decide(next, receiver.address) { URI(next.url).host?.let(resolve) }
@@ -316,7 +318,8 @@ class CastManager(
                     clearOwnedMedia()
                 }
 
-                // A stop from the TV's remote or another sender, or the film's real end: final.
+                // A stop from the TV's remote or another sender, another sender's LOAD over our
+                // film (INTERRUPTED), or the film's real end: final, and not an error.
                 Fate.ENDED -> {
                     if (fresh?.idleReason == "FINISHED") ended() else checkpoint()
                     clearOwnedMedia()
@@ -444,8 +447,8 @@ class CastManager(
      * receiver refuses is made again through the relay, which then carries the rest of the cast.
      */
     private suspend fun loadAt(at: Double, autoplay: Boolean, relaunchFirst: Boolean = false) {
-        val plan = requireNotNull(source)
         val cast = requireNotNull(item)
+        val plan = current(cast)
         val position = CastTimeline.millis(at)
         val remaining = plan.durationSeconds?.let { (it - position).coerceAtLeast(0.0) }
         val direct = route is CastRoute.Direct && !directFailed
@@ -480,6 +483,38 @@ class CastManager(
 
     private fun relayAddress(): Inet4Address = channel.receiver?.address
         ?: error("The TV did not give its address, so this phone cannot relay to it")
+
+    /**
+     * Plans [assetId] Cast-safe through the signed-in session; refuses what a receiver cannot
+     * play. Called with [mutex] held.
+     */
+    private suspend fun plan(assetId: String): CastSource {
+        val planner = planner ?: error("Sign in to cast")
+        val next = withContext(io) { planner(assetId) }
+        check(next.mime == "video/mp4") {
+            "The server offered a ${next.mime} stream, which a Cast receiver cannot play"
+        }
+        return next
+    }
+
+    /**
+     * The plan a LOAD restarts, planned again once it is [PLAN_REFRESH_SECONDS] old. The node
+     * signs a stream token for an hour from planning and then refuses to START it with a 404
+     * (a running stream is not cut off), so every restart past that (a seek, a stall's
+     * relaunch, a dropped film's resume) needs a fresh token. A locked phone cannot sign the
+     * plan request either; it waits for the unlock ([CastLocked]) like a relayed restart.
+     * Same film, same node, same profile: the route and the offset stay as they are.
+     */
+    private suspend fun current(cast: CastItem): CastSource {
+        val held = requireNotNull(source)
+        val now = clock()
+        if (CastTimeline.secondsBetween(plannedAt, now) < PLAN_REFRESH_SECONDS) return held
+        ensureSignable()
+        return plan(cast.assetId).also {
+            source = it
+            plannedAt = now
+        }
+    }
 
     private suspend fun ensureSignable() {
         if (!withContext(io) { canSign() }) throw CastLocked()
@@ -680,5 +715,11 @@ class CastManager(
         /** How often the receiver is read while we own media. */
         const val WATCH_MS = 2_000L
         private const val NANOS = 1_000_000_000L
+
+        /**
+         * How old a plan may be before a restart plans it again: ten minutes inside the
+         * node's hour-long stream token, so a LOAD made near the edge still starts.
+         */
+        const val PLAN_REFRESH_SECONDS = 50L * 60
     }
 }

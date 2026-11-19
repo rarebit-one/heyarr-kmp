@@ -39,9 +39,14 @@ object CastHandoff {
 
     /**
      * Whether a film playing here at [playing] moves to a session that just came up: a video,
-     * with an asset to plan, that the person had not put back paused. Pure.
+     * with an asset to plan, that the person had not put back paused. A film restored paused
+     * after process death ([NowPlaying.startPaused]) that still sits paused here ([paused],
+     * the local player's state) stays here: no one pressed Play, and a takeover would start it
+     * on the TV ([CastGate.route]'s rule for the same film). Once Play is pressed here, it
+     * moves like any other. Pure.
      */
-    fun takesOver(playing: NowPlaying?): Boolean = playing != null && playing.target.isVideo && playing.assetId != null
+    fun takesOver(playing: NowPlaying?, paused: Boolean = false): Boolean =
+        playing != null && playing.target.isVideo && playing.assetId != null && !(playing.startPaused && paused)
 
     /**
      * Moves the film playing here to the session that just came up. [stopLocal] closes the
@@ -52,9 +57,10 @@ object CastHandoff {
         cast: CastManager,
         playing: NowPlaying?,
         positionSeconds: Double,
+        paused: Boolean,
         stopLocal: () -> Unit,
     ): Result<Unit>? {
-        val item = playing?.takeIf(::takesOver)?.let { itemOf(it, positionSeconds) } ?: return null
+        val item = playing?.takeIf { takesOver(it, paused) }?.let { itemOf(it, positionSeconds) } ?: return null
         stopLocal()
         return cast.play(item)
     }

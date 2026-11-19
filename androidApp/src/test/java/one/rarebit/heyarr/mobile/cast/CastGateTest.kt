@@ -65,11 +65,12 @@ class CastGateTest {
         )
     }
 
-    private fun playing(isVideo: Boolean, assetId: String? = "a1") = NowPlaying(
+    private fun playing(isVideo: Boolean, assetId: String? = "a1", startPaused: Boolean = false) = NowPlaying(
         target = PlaybackTarget("https://node.example/x", Credential.Guest, isVideo = isVideo),
         title = "Film",
         assetId = assetId,
         startSeconds = 42.0,
+        startPaused = startPaused,
     )
 
     @Test fun aSessionThatComesUpTakesOverOnlyAPlayingVideo() {
@@ -77,6 +78,14 @@ class CastGateTest {
         assertFalse(CastHandoff.takesOver(playing(isVideo = false)))
         assertFalse(CastHandoff.takesOver(playing(isVideo = true, assetId = null)))
         assertFalse(CastHandoff.takesOver(null))
+    }
+
+    @Test fun aFilmRestoredPausedStaysHereUntilPlayIsPressed() {
+        val restored = playing(isVideo = true, startPaused = true)
+        assertFalse("no one pressed Play", CastHandoff.takesOver(restored, paused = true))
+        assertTrue("Play pressed here since", CastHandoff.takesOver(restored, paused = false))
+        val paused = playing(isVideo = true)
+        assertTrue("a film the person paused moves as before", CastHandoff.takesOver(paused, paused = true))
     }
 
     @Test fun aHandedOverFilmStartsWhereThePlayerWasAndCarriesItsResumePoint() {

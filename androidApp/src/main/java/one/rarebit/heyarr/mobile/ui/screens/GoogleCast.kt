@@ -46,6 +46,7 @@ import com.google.android.gms.cast.framework.CastButtonFactory
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import one.rarebit.heyarr.core.playback.clockLabel
 import one.rarebit.heyarr.mobile.HeyarrApp
 import one.rarebit.heyarr.mobile.R
 import one.rarebit.heyarr.mobile.cast.CastManager
@@ -54,7 +55,6 @@ import one.rarebit.heyarr.mobile.cast.CastRecovery
 import one.rarebit.heyarr.mobile.cast.CastRoute
 import one.rarebit.heyarr.mobile.cast.CastUiState
 import one.rarebit.heyarr.mobile.theme.Tokens
-import one.rarebit.heyarr.mobile.ui.components.clockShort
 import one.rarebit.heyarr.ui.components.IconButtonRound
 import one.rarebit.heyarr.ui.components.Notice
 import one.rarebit.heyarr.ui.components.Panel
@@ -252,8 +252,8 @@ private const val VOLUME_STEP = 0.05
 
 /** `12:34 / 1:58:00 · playing` — film-absolute, and the receiver's state in words. */
 internal fun castLine(state: CastUiState): String {
-    val at = clockShort((state.position * MILLIS).toLong())
-    val of = state.duration?.let { " / " + clockShort((it * MILLIS).toLong()) } ?: ""
+    val at = clockLabel(state.position)
+    val of = state.duration?.let { " / " + clockLabel(it) } ?: ""
     val doing = when (state.state) {
         "PLAYING" -> "playing"
         "PAUSED", "PAUSED_PLAYBACK" -> "paused"
@@ -266,7 +266,7 @@ internal fun castLine(state: CastUiState): String {
 
 /** What the manager is doing about the receiver, for a person. */
 internal fun recoveryText(recovery: CastRecovery): String {
-    val at = clockShort((recovery.position * MILLIS).toLong())
+    val at = clockLabel(recovery.position)
     return when (recovery.kind) {
         CastRecovery.Kind.SEEKING ->
             "${recovery.device} jumped past what the server has made yet; restarting the film at $at."
@@ -283,5 +283,3 @@ internal fun recoveryText(recovery: CastRecovery): String {
             "Unlock this phone to carry on at $at: it relays the film, and a locked phone cannot sign for it."
     }
 }
-
-private const val MILLIS = 1_000.0

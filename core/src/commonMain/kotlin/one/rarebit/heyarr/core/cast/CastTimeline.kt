@@ -152,8 +152,11 @@ object CastTimeline {
 
     /**
      * Reads a receiver report against the media session we own. A session that went IDLE
-     * says why: CANCELLED is a stop (from the TV's remote too) and is never undone;
-     * ERROR or INTERRUPTED mid-film is resumed; FINISHED mid-film is the receiver playing
+     * says why: CANCELLED is a stop (from the TV's remote too) and INTERRUPTED is another
+     * sender's LOAD over our film (our own restart LOADs move ownership to the new session at
+     * once, so on the session we own it is always someone else's choice); neither is ever
+     * undone, and neither is an error (heyarr-kmp#242 review, the desktop's rule too).
+     * ERROR mid-film is resumed; FINISHED mid-film is the receiver playing
      * out a buffer the node stopped filling, resumed when the film's length shows it
      * ended early (or the stream is known to be [cut]). A session that vanished without
      * a word, typically while our channel was down, is resumed only when the stream is
@@ -174,8 +177,8 @@ object CastTimeline {
 
     /** Whether a session that ended for [reason] mid-film was dropped rather than stopped. */
     private fun droppedFor(reason: String?, timed: Boolean, cut: Boolean): Boolean = when (reason) {
-        "CANCELLED" -> false
-        "ERROR", "INTERRUPTED" -> true
+        "CANCELLED", "INTERRUPTED" -> false
+        "ERROR" -> true
         "FINISHED" -> timed || cut
         else -> cut
     }

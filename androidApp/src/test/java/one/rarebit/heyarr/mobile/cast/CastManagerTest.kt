@@ -211,6 +211,18 @@ class CastManagerTest {
         assertEquals(0, channel.relaunches)
     }
 
+    @Test fun anotherSendersLoadOverOurFilmLetsItGoWithoutAnError() {
+        val m = manager()
+        play(m)
+        m.see(100.0)
+        m.see(0.0, "IDLE", idle = "INTERRUPTED")
+        assertNull(m.state.value.item)
+        assertNull("someone else's choice, not a failure", m.state.value.error)
+        assertEquals(CastProgress.CHECKPOINT to 100.0, recorded.last())
+        assertEquals("never reloaded over their media", 1, channel.loads.size)
+        assertEquals(0, channel.relaunches)
+    }
+
     @Test fun theFilmsRealEndIsNotResumed() {
         val m = manager()
         play(m, start = 7100.0)
@@ -267,6 +279,44 @@ class CastManagerTest {
             val seek = m.control(Control.SEEK, 3000.0)
             assertTrue("a seek says why it cannot", seek.exceptionOrNull() is CastLocked)
         }
+    }
+
+    @Test fun aRestartPastTheStreamTokensHourPlansTheFilmAgain() {
+        val m = manager()
+        var plans = 0
+        m.planner = { source.copy(url = "https://node.example/api/v1/playback/stream/tok${++plans}") }
+        play(m)
+        assertEquals(1, plans)
+        runBlocking { m.control(Control.SEEK, 600.0).getOrThrow() }
+        assertEquals("a young plan is reused", 1, plans)
+        assertEquals("https://node.example/api/v1/playback/stream/tok1", doorways.last().first)
+        now += CastManager.PLAN_REFRESH_SECONDS * second
+        runBlocking { m.control(Control.SEEK, 1200.0).getOrThrow() }
+        assertEquals("the token would no longer start: planned again", 2, plans)
+        assertEquals("https://node.example/api/v1/playback/stream/tok2", doorways.last().first)
+        assertTrue(channel.loads.last().url.endsWith("?start=1200"))
+        runBlocking { m.control(Control.SEEK, 1800.0).getOrThrow() }
+        assertEquals("the fresh plan is the one held now", 2, plans)
+    }
+
+    @Test fun aStaleRestartOnALockedPhoneWaitsForTheUnlockBeforePlanning() {
+        val m = manager()
+        var plans = 0
+        m.planner = {
+            plans++
+            source
+        }
+        play(m)
+        m.see(100.0)
+        now += CastManager.PLAN_REFRESH_SECONDS * second
+        doorways.last().second.severed = true
+        signable = false
+        m.see(102.0)
+        assertEquals("nothing planned or reloaded while locked", 1 to 1, plans to channel.loads.size)
+        assertEquals(CastRecovery.Kind.WAITING_FOR_UNLOCK, m.state.value.recovery?.kind)
+        signable = true
+        m.see(104.0)
+        assertEquals(2 to 2, plans to channel.loads.size)
     }
 
     @Test fun aDirectCastTheReceiverCannotFetchFallsBackToTheRelay() {
