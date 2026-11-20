@@ -578,7 +578,7 @@ class CastManager(
     }
 
     /**
-     * The plan a LOAD restarts, planned again once it is [PLAN_REFRESH_SECONDS] old. The node
+     * The plan a LOAD restarts, planned again once [CastTimeline.replanDue] says so. The node
      * signs a stream token for an hour from planning and then refuses to START it with a 404
      * (a running stream is not cut off), so every restart past that (a seek, a stall's
      * relaunch, a dropped film's resume) needs a fresh token. A locked phone cannot sign the
@@ -590,7 +590,7 @@ class CastManager(
     private suspend fun current(cast: CastItem): CastSource {
         val held = requireNotNull(source)
         val now = clock()
-        if (presenting || CastTimeline.secondsBetween(plannedAt, now) < PLAN_REFRESH_SECONDS) return held
+        if (!CastTimeline.replanDue(CastTimeline.secondsBetween(plannedAt, now), presenting)) return held
         ensureSignable()
         return plan(cast.assetId).also {
             source = it
@@ -798,11 +798,5 @@ class CastManager(
         /** How often the receiver is read while we own media. */
         const val WATCH_MS = 2_000L
         private const val NANOS = 1_000_000_000L
-
-        /**
-         * How old a plan may be before a restart plans it again: ten minutes inside the
-         * node's hour-long stream token, so a LOAD made near the edge still starts.
-         */
-        const val PLAN_REFRESH_SECONDS = 50L * 60
     }
 }

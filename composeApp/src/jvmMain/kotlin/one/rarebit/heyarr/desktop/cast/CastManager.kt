@@ -3,6 +3,7 @@ package one.rarebit.heyarr.desktop.cast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import one.rarebit.heyarr.core.cast.CastTimeline
 import one.rarebit.heyarr.core.playback.StreamStart
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
 import one.rarebit.heyarr.desktop.heyarr.PlaybackTarget
@@ -62,6 +63,27 @@ internal class CastManager(
     private var connection: CastChannel? = null
     private var relay: CastMediaRelay? = null
     private var target: PlaybackTarget? = null
+
+    /**
+     * Plans the film being cast again, exactly as [play] planned it (same asset, same Cast
+     * profile, the node's own choice of copy and audio track), for a restart past the stream
+     * token's hour (heyarr-kmp#256). It holds [play]'s API only while we own the film: a node
+     * or credential change [invalidate]s the cast, and with it this.
+     */
+    private var planner: (() -> PlaybackTarget)? = null
+
+    /**
+     * [clock] and [wallClock] when [target] was asked for. The node's token lapses in wall
+     * time and the monotonic clock stands still while the machine sleeps, so a plan is as old
+     * as the larger of the two says: a laptop that slept through the hour must plan again.
+     */
+    private var plannedAt: Pair<Long, Long>? = null
+
+    /**
+     * A re-plan failed and the restart reused the old plan, whose token may no longer start a
+     * stream. Kept as the error every poll would otherwise clear, until a re-plan succeeds.
+     */
+    private var planError: String? = null
 
     // Volatile, not locked: the UI reads castingTo/castingAsset while a recovery may hold
     // the lock for a receiver round-trip.
@@ -157,12 +179,9 @@ internal class CastManager(
         try {
             check(!invalidating) { "Cast connection is resetting" }
             require(assetId.isNotBlank()) { "This item has no playable asset" }
-            val plan = api.playbackTarget(assetId, "", strict = true)
-            // A direct MP4 may still contain HEVC or multichannel AAC when the node
-            // cannot transcode. Only the planner's profile-converted stream is known safe.
-            require(plan.restartSeekable && plan.mime == "video/mp4") {
-                "Playback planner did not provide a Cast-compatible H.264/stereo stream"
-            }
+            val asked = clock() to wallClock()
+            val replan = { castPlan(api, assetId) }
+            val plan = replan()
             val next = ensureConnection(device)
             // A media app this app does not own healthily is never reused: a wedged
             // Default Media Receiver stalls every LOAD into its session identically, even
@@ -182,6 +201,9 @@ internal class CastManager(
             relay?.close()
             relay = doorway
             target = plan
+            planner = replan
+            plannedAt = asked
+            planError = null
             this.assetId = assetId
             ownedMediaSessionId = mediaSessionId
             ownedAppSession = next.appSession
@@ -221,7 +243,7 @@ internal class CastManager(
             } else {
                 noteIntent(fresh)
                 publish(fresh)
-                error = connection.error ?: status?.error?.let { "Cast receiver reported $it" }
+                error = connection.error ?: status?.error?.let { "Cast receiver reported $it" } ?: planError
                 if (fate == Fate.OURS && fresh != null && !invalidating) follow(connection, fresh)
             }
             reconnected = false
@@ -565,7 +587,7 @@ internal class CastManager(
     private fun loadAt(connection: CastChannel, at: Double, autoplay: Boolean) {
         // Offset plus receiver time is binary noise past the millisecond the node's -ss keeps.
         val position = Math.round(at * MILLIS) / MILLIS
-        val plan = requireNotNull(target)
+        val plan = current()
         val (doorway, mediaSessionId) =
             open(
                 connection,
@@ -586,6 +608,39 @@ internal class CastManager(
         // A new media session's clock restarts: the old trajectory must not read as a jump.
         progress = null
         status = status?.copy(position = position, state = if (autoplay) "PLAYING" else "PAUSED")
+    }
+
+    /**
+     * The plan a restart LOADs, planned again first when [CastTimeline.replanDue] says its
+     * stream token is near its hour (heyarr-kmp#256, as Android's #252). Same film, same
+     * request: only the token is new, so the offset and the film's position mean what they
+     * did. A presentation is never planned again: its capability outlives the film. A re-plan
+     * that fails (the node unreachable for a moment, a plan Cast cannot play) keeps the old
+     * plan, which still starts a stream for the ten minutes before its hour is up, and says so.
+     */
+    private fun current(): PlaybackTarget {
+        val held = requireNotNull(target)
+        val now = clock() to wallClock()
+        val due = plannedAt?.let { (mono, wall) ->
+            val age = maxOf(
+                TimeUnit.NANOSECONDS.toSeconds(now.first - mono),
+                TimeUnit.MILLISECONDS.toSeconds(now.second - wall),
+            )
+            CastTimeline.replanDue(age, presentation = hls)
+        } == true
+        if (!due) return held
+        return try {
+            requireNotNull(planner)().also {
+                target = it
+                plannedAt = now
+                planError = null
+            }
+        } catch (failure: Exception) {
+            planError = "Could not refresh the stream for ${selected?.name ?: "the receiver"}: " +
+                (failure.message ?: "planning failed")
+            error = planError
+            held
+        }
     }
 
     /**
@@ -623,6 +678,18 @@ internal class CastManager(
             throw failure
         }
     }
+
+    /**
+     * Plans [assetId] for a Cast receiver. A direct MP4 may still contain HEVC or multichannel
+     * AAC when the node cannot transcode: only the planner's profile-converted stream is known
+     * safe, so anything else is refused.
+     */
+    private fun castPlan(api: HeyarrApi, assetId: String): PlaybackTarget =
+        api.playbackTarget(assetId, "", strict = true).also { plan ->
+            require(plan.restartSeekable && plan.mime == "video/mp4") {
+                "Playback planner did not provide a Cast-compatible H.264/stereo stream"
+            }
+        }
 
     /**
      * Best effort: a receiver that refuses the STOP still gets the LOAD, into its current
@@ -692,6 +759,9 @@ internal class CastManager(
         relay?.close()
         relay = null
         target = null
+        planner = null
+        plannedAt = null
+        planError = null
         assetId = null
         ownedMediaSessionId = null
         ownedAppSession = null

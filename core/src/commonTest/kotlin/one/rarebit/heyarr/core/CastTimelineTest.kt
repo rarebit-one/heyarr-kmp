@@ -163,6 +163,15 @@ class CastTimelineTest {
         assertEquals(30L, CastTimeline.backoffSeconds(Int.MAX_VALUE))
     }
 
+    @Test fun aLiveStreamIsPlannedAgainBeforeItsTokenLapsesButAPresentationNeverIs() {
+        val edge = CastTimeline.PLAN_REFRESH_SECONDS
+        assertFalse(CastTimeline.replanDue(0, presentation = false))
+        assertFalse(CastTimeline.replanDue(edge - 1, presentation = false))
+        assertTrue(CastTimeline.replanDue(edge, presentation = false))
+        assertTrue(edge < 3600, "inside the node's hour-long stream token")
+        assertFalse(CastTimeline.replanDue(5 * 3600, presentation = true), "a capability for 6 h plus the film")
+    }
+
     @Test fun theSenderStaysAwakeWhilePlayingAndForAWhileAfterAPause() {
         assertTrue(CastTimeline.holdWanted(owned = true, pausedAt = null, now = 0))
         assertTrue(CastTimeline.holdWanted(owned = true, pausedAt = 0, now = 599 * second))
