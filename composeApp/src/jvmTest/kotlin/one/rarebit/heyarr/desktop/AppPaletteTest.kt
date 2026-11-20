@@ -1,10 +1,7 @@
 package one.rarebit.heyarr.desktop
 
-import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.use
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.open.BlobDownloader
@@ -15,6 +12,7 @@ import one.rarebit.heyarr.desktop.playback.PlayResult
 import one.rarebit.heyarr.desktop.playback.Player
 import one.rarebit.heyarr.desktop.preview.FakeHeyarrTransport
 import one.rarebit.heyarr.desktop.preview.Fixtures
+import one.rarebit.heyarr.desktop.preview.UiThreadScene
 import one.rarebit.heyarr.desktop.settings.DesktopConfig
 import one.rarebit.heyarr.desktop.settings.InMemorySettingsStore
 import one.rarebit.heyarr.desktop.state.ArtworkLoader
@@ -70,29 +68,28 @@ class AppPaletteTest {
             DownloadResult.Failed("no download in test")
     }
 
-    private fun scene(colors: Path, route: Route): ImageComposeScene =
-        ImageComposeScene(width = 640, height = 400, density = Density(1f)).apply {
-            setContent {
-                App(
-                    settings = InMemorySettingsStore(
-                        DesktopConfig(baseUrl = "https://heyarr.example.test:7777", uiScale = 1f),
-                    ),
-                    transport = FakeHeyarrTransport(),
-                    player = NoPlayer,
-                    opener = NoOpener,
-                    downloader = NoDownloader,
-                    initialRoute = route,
-                    artworkLoader = ArtworkLoader.NONE,
-                    externalMetadata = DesktopExternalMetadata.NONE,
-                    nanoClock = { 0L },
-                    initialAppearance = Appearance(reduceMotion = true),
-                    desktopPalette = DesktopPalette(listOf(WalPalette(colors))),
-                )
-            }
-        }
+    // Driven on the AWT event thread like the screenshot harness: a scene rendered from the test
+    // thread races Compose's own posted rect work and can corrupt its RectList (#247).
+    private fun scene(colors: Path, route: Route): UiThreadScene = UiThreadScene(width = 640, height = 400) {
+        App(
+            settings = InMemorySettingsStore(
+                DesktopConfig(baseUrl = "https://heyarr.example.test:7777", uiScale = 1f),
+            ),
+            transport = FakeHeyarrTransport(),
+            player = NoPlayer,
+            opener = NoOpener,
+            downloader = NoDownloader,
+            initialRoute = route,
+            artworkLoader = ArtworkLoader.NONE,
+            externalMetadata = DesktopExternalMetadata.NONE,
+            nanoClock = { 0L },
+            initialAppearance = Appearance(reduceMotion = true),
+            desktopPalette = DesktopPalette(listOf(WalPalette(colors))),
+        )
+    }
 
     /** The colour covering most of the frame: the ground, whatever the screen draws on it. */
-    private fun ImageComposeScene.groundArgb(): Int {
+    private fun UiThreadScene.groundArgb(): Int {
         val bitmap = Bitmap.makeFromImage(render(System.nanoTime()))
         val counts = HashMap<Int, Int>()
         for (x in 0 until bitmap.width step 4) {
@@ -102,7 +99,7 @@ class AppPaletteTest {
     }
 
     /** Render frames until [done] holds: the watcher and the derivation run off the frame clock. */
-    private fun ImageComposeScene.until(what: String, done: () -> Boolean) {
+    private fun UiThreadScene.until(what: String, done: () -> Boolean) {
         repeat(WAIT_FRAMES) {
             render(System.nanoTime())
             if (done()) return
