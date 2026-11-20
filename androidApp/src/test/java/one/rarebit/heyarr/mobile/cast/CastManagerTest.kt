@@ -297,7 +297,7 @@ class CastManagerTest {
         runBlocking { m.control(Control.SEEK, 600.0).getOrThrow() }
         assertEquals("a young plan is reused", 1, plans)
         assertEquals("https://node.example/api/v1/playback/stream/tok1", doorways.last().first)
-        now += CastManager.PLAN_REFRESH_SECONDS * second
+        now += CastTimeline.PLAN_REFRESH_SECONDS * second
         runBlocking { m.control(Control.SEEK, 1200.0).getOrThrow() }
         assertEquals("the token would no longer start: planned again", 2, plans)
         assertEquals("https://node.example/api/v1/playback/stream/tok2", doorways.last().first)
@@ -315,7 +315,7 @@ class CastManagerTest {
         }
         play(m)
         m.see(100.0)
-        now += CastManager.PLAN_REFRESH_SECONDS * second
+        now += CastTimeline.PLAN_REFRESH_SECONDS * second
         doorways.last().second.severed = true
         signable = false
         m.see(102.0)

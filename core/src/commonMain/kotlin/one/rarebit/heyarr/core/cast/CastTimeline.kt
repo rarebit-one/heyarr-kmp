@@ -27,6 +27,7 @@ data class ReceiverReport(
  * progress for a seek it cannot reach or a stall it will never leave; and it reads an IDLE
  * session's reason to tell a stop or the film's end (let go) from a dropped stream (resumed).
  */
+@Suppress("TooManyFunctions") // One receiver policy, each rule a small pure function both apps call.
 object CastTimeline {
     /** Where a restart seek lands, clamped to the film, and whether it plays on. */
     data class RestartSeek(val position: Double, val autoplay: Boolean)
@@ -99,6 +100,13 @@ object CastTimeline {
      * sender is idle, and a sender that relays the stream must still be there to serve it.
      */
     const val PAUSE_GRACE_SECONDS = 600L
+
+    /**
+     * How old a plan may be before a restart LOAD plans the film again: ten minutes inside
+     * the node's hour-long stream token, so a LOAD made near the edge still starts
+     * (heyarr-kmp#252, #256). See [replanDue].
+     */
+    const val PLAN_REFRESH_SECONDS = 50L * 60
 
     private const val MAX_BACKOFF_SECONDS = 30L
     private const val PROGRESS_EPSILON = 0.25
@@ -203,6 +211,17 @@ object CastTimeline {
      */
     fun holdWanted(owned: Boolean, pausedAt: Long?, now: Long): Boolean =
         owned && (pausedAt == null || now - pausedAt < PAUSE_GRACE_SECONDS * NANOS_PER_SECOND)
+
+    /**
+     * Whether a restart LOAD (a seek, a stall's relaunch, a dropped or cut film's resume) must
+     * plan the film again first, its plan being [ageSeconds] old. The node signs a live
+     * stream's token for an hour from planning and then refuses to START it (a running stream
+     * is not cut off), so every restart past [PLAN_REFRESH_SECONDS] needs a fresh token. A
+     * [presentation] never does: its capability lasts six hours plus the film's running time,
+     * and the receiver fetches its segments itself.
+     */
+    fun replanDue(ageSeconds: Long, presentation: Boolean): Boolean =
+        !presentation && ageSeconds >= PLAN_REFRESH_SECONDS
 
     /** Whole seconds between two monotonic readings. */
     fun secondsBetween(from: Long, to: Long): Long = (to - from) / NANOS_PER_SECOND
