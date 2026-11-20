@@ -1,8 +1,5 @@
 package one.rarebit.heyarr.desktop.preview
 
-import androidx.compose.ui.ImageComposeScene
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.use
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.net.JdkHttpTransport
@@ -107,20 +104,20 @@ private fun renderShot(
     settleMs: Long,
 ) {
     val started = System.currentTimeMillis()
-    ImageComposeScene(width = shot.w, height = shot.h, density = Density(1f)).use { scene ->
-        scene.setContent {
-            App(
-                settings = settings,
-                transport = JdkHttpTransport(),
-                player = LiveNoPlayer,
-                opener = LiveNoOpener,
-                downloader = LiveNoDownloader,
-                initialRoute = shot.route,
-                artworkLoader = art,
-                externalMetadata = external,
-                initialQuery = shot.query,
-            )
-        }
+    // On the AWT event thread, where Compose posts the scene's deferred rect work (#247).
+    UiThreadScene(width = shot.w, height = shot.h) {
+        App(
+            settings = settings,
+            transport = JdkHttpTransport(),
+            player = LiveNoPlayer,
+            opener = LiveNoOpener,
+            downloader = LiveNoDownloader,
+            initialRoute = shot.route,
+            artworkLoader = art,
+            externalMetadata = external,
+            initialQuery = shot.query,
+        )
+    }.use { scene ->
         // Pump until the scene has been quiet for a while or the budget runs out: real
         // requests land on IO at their own pace, and artwork arrives after the list does.
         var image = scene.render(System.nanoTime())

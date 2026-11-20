@@ -60,9 +60,6 @@
         <error line="249" column="120" source="standard:max-line-length" />
         <error line="255" column="121" source="standard:max-line-length" />
     </file>
-    <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/preview/Screenshots.kt">
-        <error line="7" column="1" source="standard:no-wildcard-imports" />
-    </file>
     <file name="src/jvmMain/kotlin/one/rarebit/heyarr/desktop/state/ArtworkLoader.kt">
         <error line="13" column="1" source="standard:no-wildcard-imports" />
     </file>

@@ -1,10 +1,10 @@
 package one.rarebit.heyarr.desktop.preview
 
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.ImageComposeScene
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.use
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import one.rarebit.heyarr.core.auth.Credential
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.open.BlobDownloader
@@ -122,46 +122,46 @@ private fun render(
     val art =
         ArtworkLoader({ "" }, { Credential.Guest }, cacheDir = previewCacheDir, fetcher = { PlaceholderArt.bytes(it) })
     var session: one.rarebit.heyarr.desktop.state.AppSession? = null
-    ImageComposeScene(width = width, height = height, density = Density(1f)).use { scene ->
-        scene.setContent {
-            App(
-                settings = settings,
-                transport = transport,
-                player = NoPlayer,
-                opener = NoOpener,
-                downloader = NoDownloader,
-                initialAudioQueue = if (audio) {
-                    listOf(
-                        Route.Player(
-                            "w-album",
-                            "track-a",
-                            Fixtures.HASH,
-                            "Fixture album",
-                            "First track",
-                            MediaType.MUSIC,
-                        ),
-                        Route.Player(
-                            "w-album",
-                            "track-b",
-                            Fixtures.HASH,
-                            "Fixture album",
-                            "Next track",
-                            MediaType.MUSIC,
-                        ),
-                    )
-                } else {
-                    emptyList()
-                },
-                initialRoute = route,
-                artworkLoader = art,
-                externalMetadata = one.rarebit.heyarr.desktop.state.DesktopExternalMetadata.NONE,
-                initialQuery = query,
-                initialConnectionSheet = connection,
-                nanoClock = { 0L },
-                initialAppearance = Appearance(reduceMotion = true),
-                onSession = { session = it },
-            )
-        }
+    // On the AWT event thread, where Compose posts the scene's deferred rect work (#247).
+    UiThreadScene(width = width, height = height) {
+        App(
+            settings = settings,
+            transport = transport,
+            player = NoPlayer,
+            opener = NoOpener,
+            downloader = NoDownloader,
+            initialAudioQueue = if (audio) {
+                listOf(
+                    Route.Player(
+                        "w-album",
+                        "track-a",
+                        Fixtures.HASH,
+                        "Fixture album",
+                        "First track",
+                        MediaType.MUSIC,
+                    ),
+                    Route.Player(
+                        "w-album",
+                        "track-b",
+                        Fixtures.HASH,
+                        "Fixture album",
+                        "Next track",
+                        MediaType.MUSIC,
+                    ),
+                )
+            } else {
+                emptyList()
+            },
+            initialRoute = route,
+            artworkLoader = art,
+            externalMetadata = one.rarebit.heyarr.desktop.state.DesktopExternalMetadata.NONE,
+            initialQuery = query,
+            initialConnectionSheet = connection,
+            nanoClock = { 0L },
+            initialAppearance = Appearance(reduceMotion = true),
+            onSession = { session = it },
+        )
+    }.use { scene ->
         saveScreenshot(scene, art, ScreenshotTarget(file, width, height, route)) {
             session?.connection != one.rarebit.heyarr.desktop.state.Connection.UNKNOWN
         }
@@ -197,12 +197,7 @@ private val previewCacheDir: File by lazy {
 
 private data class ScreenshotTarget(val file: File, val width: Int, val height: Int, val route: Route)
 
-private fun saveScreenshot(
-    scene: ImageComposeScene,
-    art: ArtworkLoader,
-    target: ScreenshotTarget,
-    probed: () -> Boolean,
-) {
+private fun saveScreenshot(scene: UiThreadScene, art: ArtworkLoader, target: ScreenshotTarget, probed: () -> Boolean) {
     // Let effects (fixture fetches on IO, the first liveness probe) land, then capture once
     // the first probe has answered ([probed]) and the frame has stopped changing. Every tick
     // renders, because the scene's dispatcher only runs queued coroutine continuations during
@@ -266,18 +261,17 @@ private fun verifyShelfSwitch() {
     val selected = mutableStateOf(Experience.WATCH)
     val states = Experience.entries.associateWith { one.rarebit.heyarr.desktop.ui.screens.LibraryState() }
     try {
-        ImageComposeScene(width = 1280, height = 900, density = Density(1f)).use { scene ->
-            scene.setContent {
-                one.rarebit.heyarr.ui.theme.HeyarrTheme {
-                    one.rarebit.heyarr.desktop.ui.screens.LibraryScreen(
-                        session,
-                        states.getValue(selected.value),
-                        {},
-                        { _, _, _ -> },
-                        experience = selected.value,
-                    )
-                }
+        UiThreadScene(width = 1280, height = 900) {
+            one.rarebit.heyarr.ui.theme.HeyarrTheme {
+                one.rarebit.heyarr.desktop.ui.screens.LibraryScreen(
+                    session,
+                    states.getValue(selected.value),
+                    {},
+                    { _, _, _ -> },
+                    experience = selected.value,
+                )
             }
+        }.use { scene ->
             for (experience in Experience.entries + Experience.WATCH) {
                 selected.value = experience
                 val state = states.getValue(experience)
