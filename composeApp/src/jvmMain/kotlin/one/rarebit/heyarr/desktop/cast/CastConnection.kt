@@ -245,7 +245,9 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         val pending = CompletableFuture<String>()
         requests[id] = Pending(namespace, destination, pending)
         try {
-            send(namespace, destination, values + ("requestId" to id))
+            val payload = (values + ("requestId" to id)).toMutableMap()
+            if (namespace == MEDIA) appSessionId?.let { payload["sessionId"] = it }
+            send(namespace, destination, payload)
             return pending.get(REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS).also {
                 requireResponse(it, if (namespace == RECEIVER_NS) "RECEIVER_STATUS" else "MEDIA_STATUS")
             }
