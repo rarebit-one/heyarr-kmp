@@ -129,6 +129,7 @@ class CastConnectionIntegrationTest {
                 assertEquals(7, cast.status?.mediaSessionId)
                 val load = CompletableFuture.runAsync { cast.load("http://127.0.0.1/example", "Example") }
                 val request = receiver.take("LOAD")
+                assertEquals("session-1", JsonScan.stringField(request.payload, "sessionId"))
                 val id = JsonScan.longField(request.payload, "requestId")
                 receiver.send(
                     "foreign",
@@ -146,6 +147,7 @@ class CastConnectionIntegrationTest {
 
                 val pause = CompletableFuture.runAsync { cast.control("pause") }
                 val control = receiver.take("PAUSE")
+                assertEquals("session-1", JsonScan.stringField(control.payload, "sessionId"))
                 assertEquals(8, JsonScan.longField(control.payload, "mediaSessionId"))
                 receiver.reply(control, """{"type":"INVALID_PLAYER_STATE"}""")
                 assertFailsWith<ExecutionException> { pause.get(4, TimeUnit.SECONDS) }
@@ -209,6 +211,7 @@ class CastConnectionIntegrationTest {
                 val launch = receiver.take("LAUNCH")
                 receiver.reply(launch, RECEIVER_STATUS)
                 val media = receiver.take("LOAD")
+                assertEquals("session-1", JsonScan.stringField(media.payload, "sessionId"))
                 receiver.reply(media, mediaStatus(7))
                 load.get(4, TimeUnit.SECONDS)
                 assertEquals(7, cast.status?.mediaSessionId)
