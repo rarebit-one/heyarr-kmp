@@ -127,7 +127,7 @@ compose.desktop {
             // which is why only Deb/Rpm are listed here.
             targetFormats(TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "heyarr-desktop"
-            packageVersion = "1.0.0"
+            packageVersion = providers.gradleProperty("desktopPackageVersion").getOrElse("1.0.0")
             description = "heyarr desktop client (Linux)"
             vendor = "rarebit.one"
 

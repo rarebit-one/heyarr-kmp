@@ -48,7 +48,7 @@ host, runs the command there, and syncs reports and screenshots back.
 | `desktop.yml` | `:core:build :ui:build :vault-client:build :composeApp:build`, the vault-sync uber JAR, screenshots | PRs + `main`, path-filtered |
 | `android.yml` | `:androidApp:testDebugUnitTest :vault-client:testAndroidHostTest :androidApp:assembleDebug` | PRs + `main`, path-filtered |
 | `instrumented.yml` | an on-device Compose smoke test on an emulator | PRs + `main`, path-filtered |
-| `android-release.yml` | the signed release APK, attached to a GitHub Release | `v*` tags |
+| `android-release.yml` | signed Android APK and, on stable tags, Linux x86-64 DEB and RPM installers | `v*` tags |
 | `publish.yml` | publishes `one.rarebit.heyarr:{core,vault-client}` to GitHub Packages | `lib-v*` tags |
 
 ### Publishing the client libraries
@@ -58,7 +58,7 @@ registry at one version, `publishedLibraryVersion` in the root `build.gradle.kts
 bump that line (and its changelog comment) in a PR, merge it, then tag the merge commit
 `lib-v<version>` and push the tag. `publish.yml` refuses a tag that does not match the
 version, re-runs the libraries' JVM and Android tests, and publishes. Library tags never use
-the bare `v*` prefix, which cuts an Android app release.
+the bare `v*` prefix, which cuts an app release.
 
 A consumer resolves it like `void-which-binds-client` (a `read:packages` token), from
 `https://maven.pkg.github.com/rarebit-one/*` with `includeGroup("one.rarebit.heyarr")`, and

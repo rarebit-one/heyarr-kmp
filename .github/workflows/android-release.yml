@@ -1,11 +1,7 @@
 name: android-release
 
-# Cuts a signed, installable Android release. Triggered by a `v*` tag: builds the
-# release APK for :androidApp signed with the release keystore (repo secrets), then
-# publishes it as the tag's GitHub Release asset — the artefact the phone installs.
-# Ported from the pre-consolidation heyarr-mobile release.yml (:app -> :androidApp).
-#
-# The debug CI (android.yml) is unchanged and remains the merge gate.
+# Stable app tags publish Linux installers and a signed Android APK.
+# Prerelease tags publish the signed APK.
 
 on:
   push:
@@ -24,16 +20,16 @@ permissions:
   packages: read
 
 concurrency:
-  group: android-release-${{ inputs.tag || github.ref }}
+  group: android-release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: refs/tags/${{ inputs.tag || github.ref_name }}
           fetch-depth: 0
           persist-credentials: false
 
@@ -43,8 +39,9 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           tag="${RELEASE_TAG}"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z][0-9A-Za-z.-]*)?$ ]] || exit 1
+          if [[ "$tag" == *-* ]]; then stable=false; else stable=true; fi
+          printf 'stable=%s\ntag=%s\nversion=%s\n' "$stable" "$tag" "${tag#v}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
@@ -94,36 +91,63 @@ jobs:
       - name: Name the APK after the release
         id: apk
         run: |
-          src="$(ls androidApp/build/outputs/apk/release/*.apk 2>/dev/null | head -1)"
-          test -n "$src" && test -f "$src" || { echo "no release APK found"; ls -R androidApp/build/outputs/apk || true; exit 1; }
+          src=(androidApp/build/outputs/apk/release/*.apk)
+          [[ ${#src[@]} == 1 && -f "${src[0]}" ]]
           out="heyarr-mobile-${{ steps.version.outputs.version }}.apk"
-          cp "$src" "$out"
+          cp "${src[0]}" "$out"
           echo "path=$out" >> "$GITHUB_OUTPUT"
 
       - name: Prove it carries the release certificate
         run: |
-          signer="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+          signer="$(printf '%s\n' "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
           "$signer" verify --print-certs "${{ steps.apk.outputs.path }}"
+
+      - name: Build and verify Linux installers
+        if: steps.version.outputs.stable == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends rpm fakeroot
+          ./gradlew :composeApp:packageDeb :composeApp:packageRpm "-PdesktopPackageVersion=$VERSION" --no-daemon
+          deb=(composeApp/build/compose/binaries/main/deb/*.deb)
+          rpm=(composeApp/build/compose/binaries/main/rpm/*.rpm)
+          [[ ${#deb[@]} == 1 && ${#rpm[@]} == 1 ]]
+          deb_version=$(dpkg-deb -f "${deb[0]}" Version)
+          [[ "${deb_version%-*}" == "$VERSION" && "$(dpkg-deb -f "${deb[0]}" Architecture)" == amd64 ]]
+          [[ "$(rpm -qp --queryformat '%{VERSION} %{ARCH}' "${rpm[0]}")" == "$VERSION x86_64" ]]
+          dpkg-deb -f "${deb[0]}" Depends | tr ',' '\n' | grep -E '^[[:space:]]*libmpv2([[:space:]]|$)'
+          rpm -qp --requires "${rpm[0]}" | grep -x 'mpv-libs'
+          dpkg-deb -c "${deb[0]}" | grep '/lib/app/resources/THIRD_PARTY_LICENSES.txt$'
+          rpm -qlp "${rpm[0]}" | grep '/lib/app/resources/THIRD_PARTY_LICENSES.txt$'
+          cp "${deb[0]}" "heyarr-desktop-${VERSION}-amd64.deb"
+          cp "${rpm[0]}" "heyarr-desktop-${VERSION}-x86_64.rpm"
 
       - name: Publish the GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.version.outputs.tag }}
           VERSION: ${{ steps.version.outputs.version }}
+          STABLE: ${{ steps.version.outputs.stable }}
           APK: ${{ steps.apk.outputs.path }}
         run: |
-          {
-            printf '**heyarr mobile %s**\n\n' "$VERSION"
-            printf 'Signed release APK. Download and `adb install` it, or open this page\n'
-            printf 'on the phone.\n\n'
-            printf -- '- Version: `%s`\n' "$VERSION"
-            printf -- '- Tag: `%s`\n' "$TAG"
-            printf -- '- Commit: `%s`\n' "$GITHUB_SHA"
-            printf -- '- Signed with the heyarr release key (`apksigner verify` ran in CI).\n'
-          } > notes.md
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$APK" --clobber
-            gh release edit "$TAG" --title "$TAG" --notes-file notes.md
+          assets=("$APK")
+          flags=()
+          if [[ "$STABLE" == true ]]; then
+            assets+=("heyarr-desktop-${VERSION}-amd64.deb" "heyarr-desktop-${VERSION}-x86_64.rpm")
+            sha256sum "${assets[@]}" > SHA256SUMS
+            assets+=(SHA256SUMS)
+            printf 'Linux x86-64 installers for Ubuntu 24.04+ / Debian 13+ (DEB) and Fedora (RPM).\n\n' > notes.md
           else
-            gh release create "$TAG" "$APK" --title "$TAG" --notes-file notes.md
+            flags+=(--prerelease)
+            : > notes.md
+          fi
+          printf 'Android APK signed with the heyarr release key and verified with apksigner.\n\n' >> notes.md
+          printf 'Built from commit %s.\n' "$(git rev-parse HEAD)" >> notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${assets[@]}" --clobber
+          else
+            gh release create "$TAG" "${assets[@]}" --verify-tag --title "$TAG" --notes-file notes.md --generate-notes "${flags[@]}"
           fi
