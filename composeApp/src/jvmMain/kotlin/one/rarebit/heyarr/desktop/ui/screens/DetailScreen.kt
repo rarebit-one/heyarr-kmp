@@ -45,6 +45,7 @@ import one.rarebit.heyarr.core.auth.Surface
 import one.rarebit.heyarr.core.feeds.FollowedItem
 import one.rarebit.heyarr.core.heyarr.Candidate
 import one.rarebit.heyarr.core.heyarr.DesiredItem
+import one.rarebit.heyarr.core.heyarr.WantAcquisition
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.mcp.ExternalId
 import one.rarebit.heyarr.core.mcp.Renderer
@@ -105,6 +106,9 @@ class DetailState(val workId: String) {
     var externalIds by mutableStateOf<List<ExternalId>>(emptyList())
     var satisfaction by mutableStateOf<Map<String, McpResult<Satisfaction?>>>(emptyMap())
     var candidates by mutableStateOf<Map<String, List<Candidate>>>(emptyMap())
+
+    /** Each want's two-site status (heyarr-core ADR-0119), by want id; absent until it loads. */
+    var acquisition by mutableStateOf<Map<String, WantAcquisition>>(emptyMap())
     var acquisitionError by mutableStateOf<String?>(null)
     var acquisitionRefused by mutableStateOf(false)
     var replicas by mutableStateOf<McpResult<List<Replica>>?>(null)
@@ -369,6 +373,11 @@ private fun loadWantDetails(session: AppSession, state: DetailState, wants: List
             session.io { a.candidates(w.id) }.onSuccess { c ->
                 state.candidates =
                     state.candidates + (w.id to (c?.candidates ?: emptyList()))
+            }
+        }
+        scope.launch {
+            session.io { a.acquisition(w.id) }.onSuccess { s ->
+                if (s != null) state.acquisition = state.acquisition + (w.id to s)
             }
         }
     }

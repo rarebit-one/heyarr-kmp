@@ -59,6 +59,11 @@ data class DesiredItem(
     val bytesDone: Long? = null,
     val managed: Boolean? = null,
     val updatedAt: String?,
+    /**
+     * The sibling site whose choice of release created this want (heyarr-core ADR-0119); null for
+     * one this site created.
+     */
+    val originSite: String? = null,
 ) {
     /** Fraction 0f..1f of the in-flight transfer that is done, or null when
      *  there is no transfer or the client has not reported a size yet. */
@@ -97,6 +102,7 @@ object DesiredItemJson {
             bytesDone = acq?.let { JsonScan.longField(it, "bytes_done") },
             managed = acq?.let { JsonScan.boolField(it, "managed") },
             updatedAt = JsonScan.stringField(obj, "updated_at"),
+            originSite = JsonScan.stringField(obj, "origin_site"),
         )
     }
 }

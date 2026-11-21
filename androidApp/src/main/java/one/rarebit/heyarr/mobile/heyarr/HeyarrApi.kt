@@ -19,6 +19,8 @@ import one.rarebit.heyarr.core.heyarr.SessionInfoJson
 import one.rarebit.heyarr.core.heyarr.SidecarAction
 import one.rarebit.heyarr.core.heyarr.SidecarClient
 import one.rarebit.heyarr.core.heyarr.SidecarReply
+import one.rarebit.heyarr.core.heyarr.WantAcquisition
+import one.rarebit.heyarr.core.heyarr.WantAcquisitionJson
 import one.rarebit.heyarr.core.mcp.DiscoveryHit
 import one.rarebit.heyarr.core.mcp.DiscoveryJson
 import one.rarebit.heyarr.core.mcp.Explanation
@@ -421,6 +423,15 @@ class HeyarrApi(private val http: HttpTransport, val baseUrl: String, private va
     /** `GET /api/v1/desired/{id}/candidates` — the releases the last search found, scored. */
     fun candidates(desiredItemId: String): CandidateList? = CandidateJson.parse(
         get("$baseUrl/api/v1/desired/${enc(desiredItemId)}/candidates", "GET /desired/{id}/candidates"),
+    )
+
+    /**
+     * `GET /api/v1/desired/{id}/acquisition` — the want's two-site status (heyarr-core ADR-0119):
+     * where a sibling's want came from and what this site did with it, and at the origin what each
+     * sibling did with the release this site chose. Both blocks are absent on a single-site node.
+     */
+    fun acquisition(desiredItemId: String): WantAcquisition? = WantAcquisitionJson.parse(
+        get("$baseUrl/api/v1/desired/${enc(desiredItemId)}/acquisition", "GET /desired/{id}/acquisition"),
     )
 
     /**

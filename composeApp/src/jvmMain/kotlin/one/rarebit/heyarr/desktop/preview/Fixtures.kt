@@ -260,6 +260,9 @@ class FakeHeyarrTransport(private val delayMs: Long = 0) : HttpTransport {
                 "/candidates",
             ) -> Fixtures.candidates(path.removePrefix("desired/").removeSuffix("/candidates"))
 
+            path.startsWith("desired/") && path.endsWith("/acquisition") ->
+                singleSiteAcquisition(path.removePrefix("desired/").removeSuffix("/acquisition"))
+
             path.startsWith(
                 "works/",
             ) && path.endsWith("/assets") -> Fixtures.assets(path.removePrefix("works/").removeSuffix("/assets"))
@@ -344,3 +347,12 @@ class FakeHeyarrTransport(private val delayMs: Long = 0) : HttpTransport {
         return HttpResponse(200, Fixtures.rpc(text))
     }
 }
+
+/**
+ * A single-site node's acquisition status: the two-site blocks (ADR-0119) are absent, so the
+ * detail screens show nothing for them. At the end of the file so the line-keyed lint baseline
+ * above does not shift.
+ */
+private fun singleSiteAcquisition(id: String) =
+    """{"desired_item_id":"$id","phase":"idle","state":"MISSING","managed":false,"content":"not_satisfied",""" +
+        """"placement":"not_applicable"}"""
