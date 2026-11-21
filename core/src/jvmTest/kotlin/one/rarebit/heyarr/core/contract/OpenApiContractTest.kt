@@ -29,6 +29,7 @@ class OpenApiContractTest {
             "QualityProfileJson" to listOf("GET /api/v1/quality-profiles"),
             "DesiredItemJson" to listOf("GET /api/v1/desired", "GET /api/v1/desired/{id}", "POST /api/v1/desired"),
             "CandidateJson" to listOf("GET /api/v1/desired/{id}/candidates"),
+            "WantAcquisitionJson" to listOf("GET /api/v1/desired/{id}/acquisition"),
             "Problem" to listOf("#Problem"),
             "SessionInfoJson" to listOf("GET /api/v1/session"),
             "ProviderJson" to listOf("GET /api/v1/providers"),

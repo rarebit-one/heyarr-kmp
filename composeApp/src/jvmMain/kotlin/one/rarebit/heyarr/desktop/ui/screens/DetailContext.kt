@@ -11,6 +11,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import one.rarebit.heyarr.core.heyarr.Candidate
 import one.rarebit.heyarr.core.heyarr.DesiredItem
+import one.rarebit.heyarr.core.heyarr.fanOutLines
 import one.rarebit.heyarr.core.state.LibraryStatus
 import one.rarebit.heyarr.core.theme.MediaType
 import one.rarebit.heyarr.desktop.library.WorkDetail
@@ -75,6 +76,11 @@ private fun AcquisitionStatus(
             KeyValue("Monitoring", if (w.monitor) "on — keeps looking for better" else "off")
             w.detail?.takeIf { it.isNotBlank() }?.let {
                 Text(it, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+            }
+            // Two sites (ADR-0119): where a sibling's want came from and what became of it here,
+            // or, at the origin, what each sibling did with this site's choice. Nothing on one site.
+            for (line in fanOutLines(w, state.acquisition[w.id])) {
+                Text(line, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
             }
         }
         GhostButton("Releases", { state.tab = DetailTab.RELEASES }, icon = HeyarrIcons.Forward)

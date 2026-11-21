@@ -566,6 +566,15 @@ class HeyarrApi(
         get("$baseUrl/api/v1/desired/${enc(desiredItemId)}/candidates", "GET /desired/{id}/candidates"),
     )
 
+    /**
+     * `GET /api/v1/desired/{id}/acquisition` — the want's two-site status (heyarr-core ADR-0119):
+     * where a sibling's want came from and what this site did with it, and at the origin what each
+     * sibling did with the release this site chose. Both blocks are absent on a single-site node.
+     */
+    fun acquisition(desiredItemId: String): WantAcquisition? = WantAcquisitionJson.parse(
+        get("$baseUrl/api/v1/desired/${enc(desiredItemId)}/acquisition", "GET /desired/{id}/acquisition"),
+    )
+
     /** A cheap liveness probe for the offline banner: one authenticated page of one work. The HTTP status; a transport failure throws. */
     fun ping(): Int = http.get("$baseUrl/api/v1/works?limit=1", credential.asHeader()).status
 

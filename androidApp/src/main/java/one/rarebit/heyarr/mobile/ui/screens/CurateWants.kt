@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import one.rarebit.heyarr.core.heyarr.DesiredItem
+import one.rarebit.heyarr.core.heyarr.fanOutLines
 import one.rarebit.heyarr.core.library.Series
 import one.rarebit.heyarr.core.library.Variants
 import one.rarebit.heyarr.core.mcp.AssetVerdict
@@ -111,6 +112,20 @@ internal fun WantsSection(
         for (w in wants) {
             (state.satisfaction[w.id] as? McpResult.Refused)?.let {
                 Notice("get_content_satisfaction: ${it.message}", tone = Tokens.danger)
+            }
+        }
+        // Two sites (ADR-0119): where a sibling's want came from and what became of it here, or,
+        // at the origin, what each sibling did with this site's choice. Nothing on one site.
+        for (w in wants) {
+            val lines = fanOutLines(w, state.acquisition[w.id])
+            if (lines.isEmpty()) continue
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                if (wants.size > 1) {
+                    Text(w.scope, style = MaterialTheme.typography.labelSmall, color = Tokens.textMuted)
+                }
+                for (line in lines) {
+                    Text(line, style = MaterialTheme.typography.bodySmall, color = Tokens.textMuted)
+                }
             }
         }
     }
