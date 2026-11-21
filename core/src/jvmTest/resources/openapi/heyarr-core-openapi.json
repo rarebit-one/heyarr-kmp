@@ -2859,6 +2859,68 @@
     }
    }
   },
+  "/api/v1/libraries/{id}/retype": {
+   "post": {
+    "tags": [
+     "content"
+    ],
+    "operationId": "retypeLibrary",
+    "summary": "Correct a library type Heyarr does not understand. Requires `write`.",
+    "description": "Gives a library whose stored `content_type` is not one Heyarr\nunderstands (one created before the type was checked, such as `show`)\na type it does (#896, ADR-0127). Only the type changes: the id, roots\nand assets stay as they are, and works already identified under the old\ntype are not re-identified. Emits `content.library.retyped` with\n`library_id`, `name`, `content_type` and `previous_content_type`.\n\nOne-way on purpose. A `content_type` that is not a known one is a\n`400`. A library whose current type is already known, and different,\nis a `409`: that is a real content-type change, which would re-identify\nevery work in the library and is not done in place. Retyping to the type\nthe library already has is a `200` that emits no event, so the call is\nsafe to repeat. A library declared in the configuration file must say\nthe new type there too.\n",
+    "parameters": [
+     {
+      "$ref": "#/components/parameters/id"
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "type": "object",
+        "required": [
+         "content_type"
+        ],
+        "additionalProperties": false,
+        "properties": {
+         "content_type": {
+          "type": "string",
+          "description": "One of the types Heyarr understands, as `POST\n/api/v1/libraries` accepts: `movie`, `series`, `music`,\n`book`, `document`, `game` or `rom`.\n"
+         }
+        }
+       }
+      }
+     }
+    },
+    "responses": {
+     "200": {
+      "description": "The library, with its new type and its roots.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Library"
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     },
+     "409": {
+      "$ref": "#/components/responses/Conflict"
+     }
+    }
+   }
+  },
   "/api/v1/libraries/{id}/roots": {
    "post": {
     "tags": [
@@ -6733,6 +6795,26 @@
         "false"
        ]
       }
+     },
+     {
+      "name": "fan_out",
+      "in": "query",
+      "description": "Only the wants a sibling site's choice of release created through\nfan-out (ADR-0119), or only the ones this site created itself.\n",
+      "schema": {
+       "type": "string",
+       "enum": [
+        "true",
+        "false"
+       ]
+      }
+     },
+     {
+      "name": "origin_site",
+      "in": "query",
+      "description": "Only the wants fan-out created from this sibling site's choice, by\nthe site name the acquire op carries (`origin_site` on the want).\n",
+      "schema": {
+       "type": "string"
+      }
      }
     ],
     "responses": {
@@ -7636,6 +7718,130 @@
      },
      "404": {
       "$ref": "#/components/responses/NotFound"
+     }
+    }
+   }
+  },
+  "/api/v1/desired/{id}/acquisition": {
+   "get": {
+    "tags": [
+     "desired"
+    ],
+    "operationId": "getAcquisitionStatus",
+    "summary": "What a want is doing right now, and where it came from.",
+    "description": "Where a want is in §64's pipeline and, when a download is in flight,\nthe transfer behind it: which release was chosen (its name carries the\nresolution and size), how far it has got, any trouble the download\nclient reported, and `stopped` when the client has held it stopped for\nmore than ten minutes. The same read as MCP `get_acquisition_status`.\n\nA want a sibling site's choice created (fan-out, ADR-0119) carries\n`fan_out`: the origin site and release, what this site did with the\nacquire op (`no_site_source` when it could not fetch it), whether it\nreported that to the origin, and the peer-pull outcome of any hold the\norigin published for the work. This is the answer to \"why didn't this\nsite get X\" without SQL (#799).\n\nA want whose release this site published to its siblings carries\n`published`: the acquire op, the sibling sites that reported they could\nnot source it, and the holds this site published for them to pull.\n",
+    "parameters": [
+     {
+      "name": "id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The want's pipeline position, transfer and fan-out origin.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AcquisitionStatus"
+        }
+       }
+      }
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
+     },
+     "404": {
+      "$ref": "#/components/responses/NotFound"
+     }
+    }
+   }
+  },
+  "/api/v1/fan-out": {
+   "get": {
+    "tags": [
+     "desired"
+    ],
+    "operationId": "listFanOut",
+    "summary": "What this site did with its siblings' choices of release.",
+    "description": "Every acquire op a sibling site published (fan-out, ADR-0119) that\nthis site has an outcome for, most recently applied first, with the\noutcome and its detail. The same read as MCP `list_fan_out`.\n\n`GET /desired/{id}/acquisition` answers \"why didn't this site get X\"\nfor a want fan-out created. This answers it for the outcomes that never\ncreate one: `scope_unresolved` (the op names an edition or item this\nsite does not know), `tombstoned`, and a private release's\n`no_site_source` (#799). This site's own ops are not fan-out and are\nnot listed.\n\nNot cursor-paged: the ops are bounded by the catalog op-log, and\n`truncated` says when `limit` cut the list.\n",
+    "parameters": [
+     {
+      "name": "outcome",
+      "in": "query",
+      "schema": {
+       "type": "string",
+       "enum": [
+        "applied",
+        "held",
+        "deferred",
+        "tombstoned",
+        "scope_unresolved",
+        "no_site_source",
+        "profile_unknown"
+       ]
+      }
+     },
+     {
+      "name": "origin_site",
+      "in": "query",
+      "description": "Only ops a sibling at this site signed.",
+      "schema": {
+       "type": "string"
+      }
+     },
+     {
+      "name": "limit",
+      "in": "query",
+      "schema": {
+       "type": "integer",
+       "minimum": 1,
+       "maximum": 500,
+       "default": 100
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The siblings' acquire ops and this site's outcomes.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "items",
+          "truncated"
+         ],
+         "properties": {
+          "items": {
+           "type": "array",
+           "items": {
+            "$ref": "#/components/schemas/FanOutOp"
+           }
+          },
+          "truncated": {
+           "type": "boolean",
+           "description": "The list reached `limit`; there may be more."
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "$ref": "#/components/responses/BadRequest"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/Forbidden"
      }
     }
    }
@@ -9191,6 +9397,104 @@
      },
      "503": {
       "description": "This node does not converge a catalog with a sibling."
+     }
+    }
+   }
+  },
+  "/peer/v1/fan-out": {
+   "get": {
+    "tags": [
+     "peer"
+    ],
+    "operationId": "getPeerFanOut",
+    "summary": "What this node did with the acquire ops the caller signed (ADR-0119",
+    "description": "Answers an origin asking what this sibling did with the acquire ops\nit published (ADR-0119): each op's outcome here (`applied`, `held`,\n`deferred`, `tombstoned`, `scope_unresolved`, `no_site_source`), and\nthe §64 state of the want it reached. The origin shows it in\nacquisition status (`published.siblings`).\n\n**Only the caller's own ops.** The signer is the key the client\ncertificate proved, never a parameter, so a member sees its own ops'\noutcomes and nobody else's. It is a read, and nothing acts on it: a\nsignal fan-out decides on rides the op-log (`unsourced`), because it\nmust survive the sibling being unreachable.\n",
+    "security": [
+     {
+      "peerCertificate": []
+     }
+    ],
+    "parameters": [
+     {
+      "name": "op",
+      "in": "query",
+      "required": false,
+      "description": "Narrow the answer to one acquire op, by hash. Without it, the newest 500.",
+      "schema": {
+       "type": "string",
+       "maxLength": 128
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "This node's outcomes for the caller's acquire ops, most recently applied first (possibly empty).",
+      "content": {
+       "application/json": {
+        "schema": {
+         "type": "object",
+         "required": [
+          "site",
+          "applications"
+         ],
+         "properties": {
+          "site": {
+           "type": "string",
+           "description": "This node's configured site."
+          },
+          "applications": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "required": [
+             "op_hash",
+             "outcome",
+             "applied_at",
+             "reported_unsourced"
+            ],
+            "properties": {
+             "op_hash": {
+              "type": "string"
+             },
+             "outcome": {
+              "type": "string",
+              "enum": [
+               "applied",
+               "held",
+               "deferred",
+               "tombstoned",
+               "scope_unresolved",
+               "no_site_source"
+              ]
+             },
+             "detail": {
+              "type": "string"
+             },
+             "applied_at": {
+              "type": "string",
+              "format": "date-time"
+             },
+             "state": {
+              "type": "string",
+              "description": "The §64 state of the want the op reached here; absent when it reached none."
+             },
+             "reported_unsourced": {
+              "type": "boolean",
+              "description": "Whether this node signed an `unsourced` op for it."
+             }
+            }
+           }
+          }
+         }
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "The `op` parameter is not an op hash."
+     },
+     "503": {
+      "description": "This node evaluates no siblings' acquire ops."
      }
     }
    }
@@ -11160,10 +11464,16 @@
     ],
     "operationId": "revokeIdentityDevice",
     "summary": "Revoke a device. Requires `admin`.",
-    "description": "A tombstone, unlike a user revoke: the row stays and `revoked_at` is set,\nso a re-presented cert for the key is refused rather than silently\nre-enrolled, and the revocation is auditable.\n",
+    "description": "A tombstone, unlike a user revoke: the row stays and `revoked_at` is set,\nso a re-presented cert for the key is refused rather than silently\nre-enrolled, and the revocation is auditable. Idempotent: an already\nrevoked device is returned unchanged.\n\nMounted on both profiles: it is the one identity admin route the\npersonal (Mnemosyne) profile serves, because an uninstalled app's\nadmission stays valid until it expires and this is how a peer stops\nhonouring it early (#914).\n",
     "parameters": [
      {
-      "$ref": "#/components/parameters/publicKey"
+      "name": "key",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "string"
+      },
+      "description": "The device: its rendered key (`ed25519:<64 hex characters>`), the\nsame key as bare hex, or its device identity id. The \":\" is a legal\npath character and no key contains a \"/\".\n"
      }
     ],
     "responses": {
@@ -14106,7 +14416,7 @@
      "max_height": {
       "type": "integer",
       "minimum": 0,
-      "description": "The tallest picture the client will take. Zero or absent means no\nlimit. A taller picture is still served: as a `stream` with the\nvideo re-encoded and scaled down to this height, even when the\nclient decodes the source codec. When choosing among a work's\ncopies, a copy taller than this does not fit.\n"
+      "description": "The tallest picture the client will take. Zero or absent means no\nlimit. A taller picture is still served: as a `stream` with the\nvideo re-encoded and scaled down to this height, even when the\nclient decodes the source codec, and the plan's `decision` is then\n`transcode` with `resolution_too_high` among its `reasons` (#892).\nBeside a `device_id`, the lower of this and the device's stored\nheight is the one the decision holds the picture to. When choosing\namong a work's copies, a copy taller than this does not fit.\n"
      }
     },
     "example": {
@@ -15201,6 +15511,10 @@
       "type": "string",
       "description": "Free text, never interpreted. It exists because a library\naccumulates wants and six months later nobody remembers why one is\nthere.\n"
      },
+     "origin_site": {
+      "type": "string",
+      "description": "The sibling site whose choice of release created this want through\nfan-out (ADR-0119, #799). Absent for a want this site created\nitself. `GET /desired/{id}/acquisition` says what this site did\nwith that choice.\n"
+     },
      "acquisition": {
       "$ref": "#/components/schemas/AcquisitionState"
      },
@@ -15294,6 +15608,478 @@
       "type": "integer",
       "format": "int64",
       "description": "Bytes fetched so far of the transfer in flight, refreshed on every\ndownload poll. With `bytes_total`, this is how far a download has\ngot — omitted when there is no transfer.\n"
+     }
+    }
+   },
+   "AcquisitionStatus": {
+    "type": "object",
+    "description": "A want's pipeline phase, the transfer in flight behind it, and, for a\nwant fan-out created, the sibling's choice behind it (#799).\n",
+    "required": [
+     "desired_item_id",
+     "phase",
+     "state",
+     "managed",
+     "content",
+     "placement"
+    ],
+    "properties": {
+     "desired_item_id": {
+      "type": "string"
+     },
+     "phase": {
+      "type": "string",
+      "enum": [
+       "idle",
+       "searching",
+       "candidates_found",
+       "selected",
+       "queued",
+       "downloading",
+       "verifying",
+       "ingesting"
+      ]
+     },
+     "state": {
+      "type": "string",
+      "description": "§64's display name for the phase and both axes."
+     },
+     "managed": {
+      "type": "boolean"
+     },
+     "content": {
+      "type": "string",
+      "enum": [
+       "unknown",
+       "not_satisfied",
+       "satisfied"
+      ]
+     },
+     "placement": {
+      "type": "string",
+      "enum": [
+       "unknown",
+       "not_satisfied",
+       "converging",
+       "satisfied",
+       "not_applicable"
+      ]
+     },
+     "detail": {
+      "type": "string",
+      "description": "Why the last pipeline move happened, when it was a failure."
+     },
+     "transfer": {
+      "$ref": "#/components/schemas/AcquisitionTransfer"
+     },
+     "fan_out": {
+      "$ref": "#/components/schemas/AcquisitionFanOut"
+     },
+     "published": {
+      "$ref": "#/components/schemas/AcquisitionPublished"
+     }
+    }
+   },
+   "AcquisitionPublished": {
+    "type": "object",
+    "description": "The origin's side of fan-out (ADR-0119, #799): the newest acquire op this\nsite signed for the want's work, scope and aspect, and what came back\nfrom its siblings. Absent when this site published nothing for it.\n\nThe op is keyed on (work, scope, aspect), not on the profile, so two\nwants for the same work at the same scope under different profiles show\nthe same publication. What a sibling did with the op is recorded only\nat that sibling (its `fan_out` block, `GET /fan-out`). The one answer\nthat travels back on the op-log is an `unsourced` report\n(`unsourced_by`); the rest is asked of each sibling over the peer\nsurface when the status is read (`siblings`, ADR-0119 #924 amendment).\n",
+    "required": [
+     "op_hash",
+     "infohash",
+     "release_name",
+     "scope",
+     "aspect",
+     "private",
+     "selected_at"
+    ],
+    "properties": {
+     "op_hash": {
+      "type": "string"
+     },
+     "infohash": {
+      "type": "string"
+     },
+     "release_name": {
+      "type": "string"
+     },
+     "scope": {
+      "type": "string"
+     },
+     "aspect": {
+      "type": "string"
+     },
+     "private": {
+      "type": "boolean",
+      "description": "The release came from a private indexer, so the op carries no trackers."
+     },
+     "selected_at": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "unsourced_by": {
+      "type": "array",
+      "description": "The current sibling sites that reported they can resolve no source\nfor the release, so this site holds the bytes for them to pull.\n",
+      "items": {
+       "type": "object",
+       "required": [
+        "site",
+        "op_hash",
+        "reported_at"
+       ],
+       "properties": {
+        "site": {
+         "type": "string"
+        },
+        "op_hash": {
+         "type": "string"
+        },
+        "reported_at": {
+         "type": "string",
+         "format": "date-time"
+        }
+       }
+      }
+     },
+     "holds": {
+      "type": "array",
+      "description": "The hold ops this site published for the work, for a sibling to pull.",
+      "items": {
+       "type": "object",
+       "required": [
+        "op_hash",
+        "blob_hash",
+        "scope",
+        "held_at"
+       ],
+       "properties": {
+        "op_hash": {
+         "type": "string"
+        },
+        "blob_hash": {
+         "type": "string"
+        },
+        "scope": {
+         "type": "string"
+        },
+        "held_at": {
+         "type": "string",
+         "format": "date-time"
+        }
+       }
+      }
+     },
+     "siblings": {
+      "type": "array",
+      "description": "Each current sibling's outcome for the op, asked over the peer\nsurface (`GET /peer/v1/fan-out`) when the status is read, under a\nshort timeout and cached for about thirty seconds. A sibling that\ncould not be asked is listed with `reachable: false` and outcome\n`unknown`; nothing about it is inferred. Absent on a node with no\npeer surface.\n",
+      "items": {
+       "type": "object",
+       "required": [
+        "peer",
+        "peer_id",
+        "reachable",
+        "outcome",
+        "reported_unsourced",
+        "asked_at"
+       ],
+       "properties": {
+        "peer": {
+         "type": "string",
+         "description": "This site's name for the sibling."
+        },
+        "peer_id": {
+         "type": "string"
+        },
+        "site": {
+         "type": "string",
+         "description": "The site the sibling says it is; absent when it did not answer."
+        },
+        "reachable": {
+         "type": "boolean",
+         "description": "Whether the sibling answered at all."
+        },
+        "outcome": {
+         "type": "string",
+         "enum": [
+          "applied",
+          "held",
+          "deferred",
+          "tombstoned",
+          "scope_unresolved",
+          "no_site_source",
+          "pending",
+          "unknown"
+         ],
+         "description": "What the sibling did with the op. `pending`: it answered but\nhas not evaluated the op yet (catalog sync has not carried\nit there). `unknown`: it could not be asked, or did not\nanswer the question (an older build).\n"
+        },
+        "detail": {
+         "type": "string"
+        },
+        "applied_at": {
+         "type": "string",
+         "format": "date-time"
+        },
+        "state": {
+         "type": "string",
+         "description": "The §64 state of the sibling's want for the release (\"DOWNLOADING\", \"AVAILABLE\", ...), absent when the op reached no want there."
+        },
+        "reported_unsourced": {
+         "type": "boolean",
+         "description": "Whether the sibling signed an `unsourced` op for it."
+        },
+        "asked_at": {
+         "type": "string",
+         "format": "date-time",
+         "description": "When the sibling was asked; an answer can be cached briefly."
+        }
+       }
+      }
+     }
+    }
+   },
+   "AcquisitionTransfer": {
+    "type": "object",
+    "description": "The download client's side of an in-flight acquisition. Absent when\nnothing is downloading.\n",
+    "required": [
+     "provider",
+     "external_id",
+     "release_name",
+     "bytes_total",
+     "bytes_done",
+     "percent_done"
+    ],
+    "properties": {
+     "provider": {
+      "type": "string"
+     },
+     "external_id": {
+      "type": "string",
+      "description": "The client's own identifier, an infohash for a torrent."
+     },
+     "release_name": {
+      "type": "string",
+      "description": "What was grabbed, verbatim; the resolution, codec and size live here."
+     },
+     "remote_path": {
+      "type": "string"
+     },
+     "local_path": {
+      "type": "string"
+     },
+     "bytes_total": {
+      "type": "integer",
+      "format": "int64"
+     },
+     "bytes_done": {
+      "type": "integer",
+      "format": "int64"
+     },
+     "percent_done": {
+      "type": "number"
+     },
+     "trouble": {
+      "type": "string",
+      "description": "The client's last error for this transfer, absent when healthy."
+     },
+     "stopped": {
+      "type": "object",
+      "description": "The client has held the transfer stopped for more than ten minutes\n(#883). Not trouble: the want is still waiting on it.\n",
+      "required": [
+       "reason",
+       "since",
+       "detail"
+      ],
+      "properties": {
+       "reason": {
+        "type": "string",
+        "enum": [
+         "held",
+         "after_run"
+        ],
+        "description": "`held`: added stopped by the client's own default and never\nrun. `after_run`: stopped after it ran.\n"
+       },
+       "since": {
+        "type": "string",
+        "format": "date-time"
+       },
+       "detail": {
+        "type": "string",
+        "description": "What happened, and what to do about it."
+       }
+      }
+     }
+    }
+   },
+   "AcquisitionFanOut": {
+    "type": "object",
+    "description": "The sibling's acquire op behind a want fan-out created, and this site's\noutcomes for it (ADR-0119). Absent for a want this site created.\n",
+    "required": [
+     "origin_site",
+     "op_hash",
+     "infohash",
+     "release_name",
+     "scope",
+     "aspect",
+     "outcome",
+     "applied_at",
+     "reported_unsourced"
+    ],
+    "properties": {
+     "origin_site": {
+      "type": "string",
+      "description": "The site that chose the release."
+     },
+     "op_hash": {
+      "type": "string"
+     },
+     "infohash": {
+      "type": "string"
+     },
+     "release_name": {
+      "type": "string"
+     },
+     "scope": {
+      "type": "string"
+     },
+     "aspect": {
+      "type": "string"
+     },
+     "outcome": {
+      "type": "string",
+      "enum": [
+       "applied",
+       "own",
+       "held",
+       "deferred",
+       "tombstoned",
+       "scope_unresolved",
+       "no_site_source",
+       "profile_unknown"
+      ],
+      "description": "What this site did with the acquire op."
+     },
+     "detail": {
+      "type": "string",
+      "description": "Why, in a sentence that names the origin site."
+     },
+     "applied_at": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "reported_unsourced": {
+      "type": "boolean",
+      "description": "This site signed an `unsourced` op for the release: it told the\norigin it can resolve no source, so the origin holds the bytes for\nit to pull (ADR-0119, #800).\n"
+     },
+     "peer_pull": {
+      "type": "array",
+      "description": "This site's outcome for each hold op naming the want's work.",
+      "items": {
+       "type": "object",
+       "required": [
+        "op_hash",
+        "blob_hash",
+        "outcome",
+        "applied_at"
+       ],
+       "properties": {
+        "op_hash": {
+         "type": "string"
+        },
+        "blob_hash": {
+         "type": "string"
+        },
+        "outcome": {
+         "type": "string"
+        },
+        "detail": {
+         "type": "string"
+        },
+        "library": {
+         "type": "string"
+        },
+        "applied_at": {
+         "type": "string",
+         "format": "date-time"
+        }
+       }
+      }
+     }
+    }
+   },
+   "FanOutOp": {
+    "type": "object",
+    "description": "One sibling's acquire op and what this site did with it (ADR-0119,",
+    "required": [
+     "op_hash",
+     "origin_site",
+     "content_type",
+     "work_key",
+     "release_name",
+     "infohash",
+     "scope",
+     "aspect",
+     "selected_at",
+     "outcome",
+     "applied_at",
+     "reported_unsourced"
+    ],
+    "properties": {
+     "op_hash": {
+      "type": "string"
+     },
+     "origin_site": {
+      "type": "string",
+      "description": "The site that chose the release."
+     },
+     "content_type": {
+      "type": "string"
+     },
+     "work_key": {
+      "type": "string"
+     },
+     "work_title": {
+      "type": "string"
+     },
+     "release_name": {
+      "type": "string"
+     },
+     "infohash": {
+      "type": "string"
+     },
+     "scope": {
+      "type": "string"
+     },
+     "aspect": {
+      "type": "string"
+     },
+     "selected_at": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "outcome": {
+      "type": "string",
+      "enum": [
+       "applied",
+       "held",
+       "deferred",
+       "tombstoned",
+       "scope_unresolved",
+       "no_site_source",
+       "profile_unknown"
+      ]
+     },
+     "detail": {
+      "type": "string"
+     },
+     "desired_item_id": {
+      "type": "string",
+      "description": "The want the op reached here. Absent when it reached none."
+     },
+     "applied_at": {
+      "type": "string",
+      "format": "date-time"
+     },
+     "reported_unsourced": {
+      "type": "boolean",
+      "description": "This site told the origin it can resolve no source for the release."
      }
     }
    },
