@@ -27,6 +27,7 @@ data class MpvTrack(
     val lang: String?,
     val selected: Boolean,
     val external: Boolean,
+    val externalFilename: String? = null,
 ) {
     val label: String get() = listOfNotNull(lang?.uppercase(), title).joinToString(" · ").ifBlank { "#$id" }
 }
@@ -721,6 +722,7 @@ object PlayerEvents {
                     lang = JsonScan.stringField(t, "lang"),
                     selected = JsonScan.boolField(t, "selected") ?: false,
                     external = JsonScan.boolField(t, "external") ?: false,
+                    externalFilename = JsonScan.stringField(t, "external-filename"),
                 )
             }
             s.copy(subtitles = tracks.filter { it.type == "sub" }, audio = tracks.filter { it.type == "audio" })

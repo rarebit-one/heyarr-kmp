@@ -46,6 +46,7 @@ import one.rarebit.heyarr.core.playback.clockLabel
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.desktop.cast.CastDevice
 import one.rarebit.heyarr.desktop.cast.CastRecovery
+import one.rarebit.heyarr.desktop.cast.CastStatus
 import one.rarebit.heyarr.desktop.heyarr.McpResult
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.ui.components.EmptyState
@@ -236,6 +237,7 @@ private fun CastPanel(session: AppSession, state: NowPlayingState, device: CastD
                 }
             }
             Transport(display, state.busy) { act(it) }
+            CastSubtitles(session, state, report, scope)
             val duration = report.duration
             if (duration != null && duration > 0) {
                 var dragging by remember(device.id, report.mediaSessionId) { mutableStateOf(false) }
@@ -254,6 +256,31 @@ private fun CastPanel(session: AppSession, state: NowPlayingState, device: CastD
                     enabled = !state.busy,
                 )
             }
+        }
+    }
+}
+
+@Suppress("FunctionNaming") // Compose components use title case.
+@Composable
+private fun CastSubtitles(session: AppSession, state: NowPlayingState, report: CastStatus, scope: CoroutineScope) {
+    if (!report.textTracks.isNullOrEmpty() && report.mediaSessionId != null) {
+        fun select(id: Int?) {
+            scope.launch {
+                state.busy = true
+                try {
+                    session.io { session.cast.selectCaption(id, report.mediaSessionId) }.onFailure {
+                        session.toast(Toast.Kind.REFUSED, "Couldn’t change subtitles", it.message.orEmpty())
+                    }
+                } finally {
+                    state.busy = false
+                }
+            }
+        }
+        Text("Subtitles", style = MaterialTheme.typography.labelSmall)
+        val active = report.activeTrackIds.orEmpty()
+        FilterChip("Off", report.textTracks.none { it.id in active }, { select(null) }, enabled = !state.busy)
+        for (track in report.textTracks) {
+            FilterChip(track.name, track.id in active, { select(track.id) }, enabled = !state.busy)
         }
     }
 }

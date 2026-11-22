@@ -103,6 +103,22 @@ class CastHlsTest {
     }
 
     @Test
+    fun handingOffTheLocalPlayerStartsAtTheFilmPositionOnEitherTransport() {
+        Rig().use { rig ->
+            rig.manager.play(first, presented, "asset", start = 120.5)
+            assertEquals(120.5, rig.channel.lastStart)
+            assertEquals(120.5, rig.manager.status?.position)
+        }
+        Rig(failHls = true).use { rig ->
+            rig.manager.play(first, presented, "asset", start = 120.5)
+            assertEquals(0.0, rig.channel.lastStart)
+            assertTrue(rig.channel.lastLoad!!.first.endsWith("?start=120.5"))
+            assertEquals(120.5, rig.manager.status?.position)
+            assertEquals(7200.0 - 120.5, rig.channel.lastDuration)
+        }
+    }
+
+    @Test
     fun aPresentationIsLoadedWholeAndSeekedNativelyInFilmTime() {
         Rig().use { rig ->
             rig.play()

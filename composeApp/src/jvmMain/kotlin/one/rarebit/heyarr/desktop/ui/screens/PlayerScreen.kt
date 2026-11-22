@@ -730,7 +730,7 @@ private fun CastRow(session: AppSession, state: PlayerScreenState, item: Route.P
             }, onCast = { device ->
                 state.castOpen = false
                 // castLocally stops the local player; leave the empty player behind with it.
-                castLocally(session, device, item.assetId, item.title) { onBack() }
+                castLocally(session, device, item.assetId, session.playback.title(item)) { onBack() }
             })
         }
         GhostButton("Search the network again", {

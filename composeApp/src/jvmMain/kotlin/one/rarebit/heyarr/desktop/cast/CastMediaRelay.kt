@@ -4,10 +4,12 @@ import com.sun.net.httpserver.HttpExchange
 import one.rarebit.heyarr.core.playback.HlsPresentation
 import one.rarebit.heyarr.desktop.playback.LocalStreamForwarder
 import java.net.DatagramSocket
+import java.net.HttpURLConnection.HTTP_BAD_GATEWAY
 import java.net.HttpURLConnection.HTTP_BAD_METHOD
 import java.net.HttpURLConnection.HTTP_BAD_REQUEST
 import java.net.HttpURLConnection.HTTP_NOT_FOUND
 import java.net.HttpURLConnection.HTTP_NO_CONTENT
+import java.net.HttpURLConnection.HTTP_OK
 import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.net.URI
@@ -25,6 +27,8 @@ internal class CastMediaRelay(
     private val receiver: Inet4Address,
     private val upstream: URI,
     private val presentation: Boolean = false,
+    private val captions: List<CastCaption> = emptyList(),
+    private val captionOffset: Double = 0.0,
 ) : AutoCloseable {
     private val path = "/media/" + ByteArray(CAPABILITY_BYTES).also(SecureRandom()::nextBytes)
         .joinToString("") { "%02x".format(it) }
@@ -56,18 +60,39 @@ internal class CastMediaRelay(
     val url: String get() = "http://${local.hostAddress}:${forwarder.port}$path" +
         if (presentation) "/${HlsPresentation.PLAYLIST}" else ""
 
+    private fun captionPath(index: Int) = "$path/captions/$index.vtt"
+
+    val tracks: List<CastCaption> get() = captions.mapIndexed { index, track ->
+        track.copy(url = "http://${local.hostAddress}:${forwarder.port}" + captionPath(index))
+    }
+
     /** The HLS entry a presentation request names (null: none, or not a presentation). */
     private fun entryOf(rawPath: String): String? = rawPath.takeIf { presentation && it.startsWith("$path/") }
         ?.substring(path.length + 1)?.takeIf(HlsPresentation::isEntry)
 
     // The forwarder closes the exchange once this returns.
     private fun serve(exchange: HttpExchange) {
-        val refusal = rejection(exchange)
+        val caption = captions.indices.firstOrNull { captionPath(it) == exchange.requestURI.rawPath }
+        val refusal = rejection(exchange, caption != null)
         when {
             refusal != null -> exchange.sendResponseHeaders(refusal, -1)
             exchange.requestMethod == "OPTIONS" -> preflight(exchange)
+            caption != null -> serveCaption(exchange, captions[caption])
             else -> forward(exchange)
         }
+    }
+
+    private fun serveCaption(exchange: HttpExchange, caption: CastCaption) {
+        val bytes = runCatching { caption.webVtt(captionOffset) }.getOrElse {
+            exchange.sendResponseHeaders(HTTP_BAD_GATEWAY, -1)
+            return
+        }
+        exchange.responseHeaders.set("Access-Control-Allow-Origin", "*")
+        exchange.responseHeaders.set("Content-Type", "text/vtt; charset=utf-8")
+        exchange.responseHeaders.set("Content-Length", bytes.size.toString())
+        val head = exchange.requestMethod == "HEAD"
+        exchange.sendResponseHeaders(HTTP_OK, if (head) -1 else bytes.size.toLong())
+        if (!head) exchange.responseBody.write(bytes)
     }
 
     // A failed read of the node mid-download marks the relay severed; the forwarder already
@@ -81,7 +106,7 @@ internal class CastMediaRelay(
         onUpstreamCut = { severed = true },
     )
 
-    private fun rejection(exchange: HttpExchange): Int? {
+    private fun rejection(exchange: HttpExchange, caption: Boolean): Int? {
         val query = exchange.requestURI.rawQuery
         val known = if (presentation) {
             entryOf(exchange.requestURI.rawPath) != null
@@ -90,14 +115,14 @@ internal class CastMediaRelay(
                 path
         }
         return when {
-            exchange.remoteAddress.address != receiver || !known -> HTTP_NOT_FOUND
+            exchange.remoteAddress.address != receiver || (!known && !caption) -> HTTP_NOT_FOUND
 
             exchange.requestMethod == "OPTIONS" -> null
 
             exchange.requestMethod !in listOf("GET", "HEAD") -> HTTP_BAD_METHOD
 
             // A presentation is seeked by fetching another segment: nothing takes a query.
-            query != null && (presentation || !query.matches(SEEK_QUERY)) -> HTTP_BAD_REQUEST
+            query != null && (caption || presentation || !query.matches(SEEK_QUERY)) -> HTTP_BAD_REQUEST
 
             else -> null
         }

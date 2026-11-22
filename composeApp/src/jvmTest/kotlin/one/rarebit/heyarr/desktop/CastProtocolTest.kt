@@ -18,6 +18,22 @@ import kotlin.test.assertNull
 
 class CastProtocolTest {
     @Test
+    fun captionChoicesSurvivePartialStatusAndCanBeDisabled() {
+        val first = CastConnection.parseStatus(
+            """{"status":[{"mediaSessionId":2,"activeTrackIds":[4],"media":{"tracks":[""" +
+                """{"type":"TEXT","trackId":4,"name":"English"},{"type":"AUDIO","trackId":7}]}}]}""",
+        )!!
+        assertEquals(listOf("English"), first.textTracks?.map { it.name })
+        assertEquals(listOf(4), first.activeTrackIds)
+        val update = CastConnection.parseStatus(
+            """{"status":[{"mediaSessionId":2,"activeTrackIds":[],"media":{"duration":60}}]}""",
+        )
+        val merged = CastConnection.mergeStatus(first, update)!!
+        assertEquals(first.textTracks, merged.textTracks)
+        assertEquals(emptyList(), merged.activeTrackIds)
+    }
+
+    @Test
     fun fragmentedLengthPrefixedFrameAndUnknownFields() {
         val frame = CastFrame("sender-7", "receiver-0", "urn:x-cast:test", """{"type":"PING"}""")
         val output = ByteArrayOutputStream()

@@ -1,5 +1,6 @@
 package one.rarebit.heyarr.desktop
 
+import one.rarebit.heyarr.desktop.cast.CastCaption
 import one.rarebit.heyarr.desktop.cast.CastChannel
 import one.rarebit.heyarr.desktop.cast.CastStatus
 import one.rarebit.heyarr.desktop.cast.SessionSighting
@@ -32,11 +33,22 @@ internal class FakeChannel(private val sessions: AtomicInteger = AtomicInteger(1
 
     /** What this channel saw of each session, latched as CastConnection's: session to idleReason. */
     private val sightings = mutableMapOf<Int, String?>()
-    override fun load(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?) =
-        record(url, title, autoplay, start, duration, hls = false)
+    override fun load(
+        url: String,
+        title: String,
+        autoplay: Boolean,
+        start: Double,
+        duration: Double?,
+        captions: List<CastCaption>,
+    ) = record(url, title, autoplay, start, duration, hls = false)
 
-    override fun loadPresentation(url: String, title: String, autoplay: Boolean, start: Double) =
-        record(url, title, autoplay, start, duration = null, hls = true)
+    override fun loadPresentation(
+        url: String,
+        title: String,
+        autoplay: Boolean,
+        start: Double,
+        captions: List<CastCaption>,
+    ) = record(url, title, autoplay, start, duration = null, hls = true)
 
     @Suppress("LongParameterList") // Records every LOAD input a test asserts on.
     private fun record(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?, hls: Boolean) {
@@ -86,6 +98,10 @@ internal class FakeChannel(private val sessions: AtomicInteger = AtomicInteger(1
         if (action == "pause") status = status?.copy(state = "PAUSED")
         if (action == "resume") status = status?.copy(state = "PLAYING")
     }
+    override fun selectTracks(ids: List<Int>) {
+        status = status?.copy(activeTrackIds = ids)
+    }
+
     override fun refresh(): CastStatus? {
         // A dead connection throws on its next request, as CastConnection's does.
         error?.let { throw IllegalStateException(it) }

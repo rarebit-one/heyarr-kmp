@@ -361,7 +361,8 @@ private fun CastPicker(session: AppSession, state: DetailState) {
                 Caster(session, a, x, before = { state.busy = "cast" }, after = { state.busy = null }).cast(assetId)
             }, onCast = { device ->
                 state.castAssetId = null
-                castLocally(session, device, assetId, state.detail?.work?.title.orEmpty().ifBlank { "Media" })
+                val episodes = Series.seasons(state.assets.orEmpty()).flatMap { it.episodes }
+                castLocally(session, device, assetId, state.detail?.work?.title.orEmpty().ifBlank { "Media" }, episodes)
             })
         }
         GhostButton("Search the network again", {
