@@ -14,7 +14,7 @@
 #   DEVCONTAINER_REMOTE_HOST      the container host (ssh name). Required unless set once per
 #                                 clone: git config heyarr.devcontainerHost <host> (local
 #                                 config, never committed: this repository is public)
-#   DEVCONTAINER_REMOTE_PATH      default ~/Workspace/rarebit-one/heyarr-desktop
+#   DEVCONTAINER_REMOTE_PATH      default ~/Workspace/rarebit-one/heyarr-kmp
 #   DEVCONTAINER_REMOTE_PATHDIRS  default /opt/homebrew/bin:/opt/podman/bin
 #   DEVCONTAINER_LOCAL=1          run the container half directly (on the host)
 #   DEVCONTAINER_NO_PULL=1        skip syncing results back
@@ -40,7 +40,7 @@ if [[ "${DEVCONTAINER_LOCAL:-}" != "1" && "${DEVCONTAINER_SSH_THROUGH:-}" != "1"
     echo "ERROR: no container host. Set DEVCONTAINER_REMOTE_HOST, or once: git config heyarr.devcontainerHost <host>" >&2
     exit 1
   }
-  REMOTE_PATH="${DEVCONTAINER_REMOTE_PATH:-~/Workspace/rarebit-one/heyarr-desktop}"
+  REMOTE_PATH="${DEVCONTAINER_REMOTE_PATH:-~/Workspace/rarebit-one/heyarr-kmp}"
   REMOTE_PATHDIRS="${DEVCONTAINER_REMOTE_PATHDIRS:-/opt/homebrew/bin:/opt/podman/bin}"
   SSH_TRANSPORT="ssh -o ConnectTimeout=10 -o ServerAliveInterval=5 -o ServerAliveCountMax=3"
 
