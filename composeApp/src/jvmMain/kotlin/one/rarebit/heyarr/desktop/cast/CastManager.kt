@@ -94,6 +94,7 @@ internal class CastManager(
     /** The receiver app our media was loaded into: another app's same-numbered session is not ours. */
     private var ownedAppSession: String? = null
     private var title = ""
+    private var captions: List<CastCaption> = emptyList()
 
     /**
      * The receiver plays the node's HLS presentation of the film (ADR-0126) rather than the
@@ -175,13 +176,21 @@ internal class CastManager(
     }
 
     @Synchronized
-    fun play(device: CastDevice, api: HeyarrApi, assetId: String, title: String = "Media") {
+    fun play(
+        device: CastDevice,
+        api: HeyarrApi,
+        assetId: String,
+        title: String = "Media",
+        start: Double = 0.0,
+        captions: List<CastCaption> = emptyList(),
+    ) {
         try {
             check(!invalidating) { "Cast connection is resetting" }
             require(assetId.isNotBlank()) { "This item has no playable asset" }
             val asked = clock() to wallClock()
             val replan = { castPlan(api, assetId) }
             val plan = replan()
+            val at = restartSeek(start, plan.durationSeconds, playIntent = true).position
             val next = ensureConnection(device)
             // A media app this app does not own healthily is never reused: a wedged
             // Default Media Receiver stalls every LOAD into its session identically, even
@@ -191,11 +200,23 @@ internal class CastManager(
             // then reach the whole film (heyarr-kmp#248). A receiver that refuses it (a
             // playlist the node can't cut, a receiver that can't play it) gets the live stream.
             val presented = plan.hlsUrl?.let {
-                runCatching { open(next, device, plan, title, presentation = true, at = 0.0, autoplay = true) }
+                runCatching {
+                    open(next, device, plan, title, presentation = true, at = at, autoplay = true, captions = captions)
+                }
                     .getOrNull()
             }
             val (doorway, mediaSessionId) =
-                presented ?: open(next, device, plan, title, presentation = false, at = 0.0, autoplay = true)
+                presented
+                    ?: open(
+                        next,
+                        device,
+                        plan,
+                        title,
+                        presentation = false,
+                        at = at,
+                        autoplay = true,
+                        captions = captions,
+                    )
             hls = presented != null
             hlsPlayed = false
             relay?.close()
@@ -208,15 +229,16 @@ internal class CastManager(
             ownedMediaSessionId = mediaSessionId
             ownedAppSession = next.appSession
             this.title = title
-            sourceOffset = 0.0
+            this.captions = captions
+            sourceOffset = if (hls) 0.0 else at
             playIntent = true
             progress = null
             recoveries = 0
             recovery = null
             selected = device
-            status = next.status
+            publish(next.status)
             error = null
-            lastFilm = 0.0
+            lastFilm = at
             streamCut = false
             resumes = 0
             if (watcher == null) watcher = watch(::poll)
@@ -311,6 +333,11 @@ internal class CastManager(
      */
     private fun publish(fresh: CastStatus?) {
         val plan = target
+        if (fresh != null && ownedMediaSessionId != null && fresh.mediaSessionId == ownedMediaSessionId) {
+            fresh.activeTrackIds?.let { active ->
+                captions = captions.mapIndexed { i, caption -> caption.copy(selected = i + 1 in active) }
+            }
+        }
         status = fresh?.copy(
             position = fresh.position + sourceOffset,
             // A presentation's receiver read the whole film from its playlist, so its own
@@ -520,6 +547,19 @@ internal class CastManager(
     }
 
     @Synchronized
+    fun selectCaption(trackId: Int?, sessionId: Int) {
+        check(!invalidating && !unreachable()) { "Cast receiver is reconnecting" }
+        val channel = requireNotNull(connection) { "No Cast receiver connected" }
+        val current = requireNotNull(channel.refresh())
+        require(current.mediaSessionId == sessionId) { "Cast session changed" }
+        val available = current.textTracks.orEmpty().map { it.id }
+        require(trackId == null || trackId in available) { "Subtitle track is unavailable" }
+        val others = current.activeTrackIds.orEmpty().filterNot { it in available }
+        channel.selectTracks(others + listOfNotNull(trackId))
+        refresh()
+    }
+
+    @Synchronized
     fun control(action: String, seconds: Double? = null) {
         try {
             check(!invalidating) { "Cast connection is resetting" }
@@ -657,18 +697,28 @@ internal class CastManager(
         presentation: Boolean,
         at: Double,
         autoplay: Boolean,
+        captions: List<CastCaption> = this.captions,
     ): Pair<CastMediaRelay, Int> {
-        val doorway = if (presentation) {
-            CastMediaRelay(device.address, URI.create(localMediaUrl(requireNotNull(plan.hlsUrl))), presentation = true)
-        } else {
-            CastMediaRelay(device.address, URI.create(localMediaUrl(requireNotNull(plan.streamBaseUrl))))
-        }
+        val media = if (presentation) plan.hlsUrl else plan.streamBaseUrl
+        val doorway = CastMediaRelay(
+            device.address,
+            URI.create(localMediaUrl(requireNotNull(media))),
+            presentation,
+            captions,
+            captionOffset = if (presentation) 0.0 else at,
+        )
         try {
             if (presentation) {
-                channel.loadPresentation(doorway.url, title, autoplay = autoplay, start = at)
+                channel.loadPresentation(doorway.url, title, autoplay = autoplay, start = at, captions = doorway.tracks)
             } else {
                 val remaining = plan.durationSeconds?.let { (it - at).coerceAtLeast(0.0) }
-                channel.load(StreamStart.url(doorway.url, at), title, autoplay = autoplay, duration = remaining)
+                channel.load(
+                    StreamStart.url(doorway.url, at),
+                    title,
+                    autoplay = autoplay,
+                    duration = remaining,
+                    captions = doorway.tracks,
+                )
             }
             check(!invalidating) { "Cast connection was reset" }
             return doorway to
@@ -754,6 +804,7 @@ internal class CastManager(
     }
 
     private fun clearOwnedMedia() {
+        captions = emptyList()
         watcher?.close()
         watcher = null
         relay?.close()

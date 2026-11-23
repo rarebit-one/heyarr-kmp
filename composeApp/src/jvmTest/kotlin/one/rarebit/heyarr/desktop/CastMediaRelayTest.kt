@@ -2,6 +2,7 @@ package one.rarebit.heyarr.desktop
 
 import com.sun.net.httpserver.HttpServer
 import one.rarebit.heyarr.core.auth.Credential
+import one.rarebit.heyarr.desktop.cast.CastCaption
 import one.rarebit.heyarr.desktop.cast.CastMediaRelay
 import one.rarebit.heyarr.desktop.playback.AuthenticatedMediaProxy
 import java.io.IOException
@@ -93,6 +94,27 @@ class CastMediaRelayTest {
                 Seen("GET", "profile=1&start=90.5", "bytes=2-5", "source-validator", null),
                 requests.poll(5, TimeUnit.SECONDS),
             )
+        }
+    }
+
+    @Test fun captions_use_a_receiver_scoped_url_and_follow_the_progressive_start() {
+        val body = "1\r\n00:00:02,000 --> 00:00:03,000\r\nBefore\r\n\r\n" +
+            "2\r\n00:00:09,500 --> 00:00:12,250\r\nHello\r\n"
+        server.createContext("/sidecar") { exchange ->
+            exchange.use {
+                it.sendResponseHeaders(200, body.length.toLong())
+                it.responseBody.write(body.toByteArray())
+            }
+        }
+        val source = CastCaption(upstream.resolve("/sidecar").toString(), "English", "en", true)
+        CastMediaRelay(receiver, upstream, captions = listOf(source), captionOffset = 10.0).use { relay ->
+            val url = relay.tracks.single().url
+            assertNotEquals(source.url, url)
+            val response = send(request(url).GET())
+            assertEquals("WEBVTT\n\n00:00:00.000 --> 00:00:02.250\nHello\n\n", response.body())
+            assertEquals("text/vtt; charset=utf-8", response.headers().firstValue("Content-Type").get())
+            assertEquals("*", response.headers().firstValue("Access-Control-Allow-Origin").get())
+            assertEquals(400, send(request("$url?start=1").GET()).statusCode())
         }
     }
 

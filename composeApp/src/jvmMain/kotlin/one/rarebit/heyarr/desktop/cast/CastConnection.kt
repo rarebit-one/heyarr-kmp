@@ -16,6 +16,8 @@ import javax.net.ssl.SSLSocket
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 
+internal data class CastTextTrack(val id: Int, val name: String)
+
 internal data class CastStatus(
     val state: String,
     val position: Double,
@@ -29,6 +31,8 @@ internal data class CastStatus(
      * film is resumed hangs on it; only ERROR is a failure ([error]).
      */
     val idleReason: String? = null,
+    val textTracks: List<CastTextTrack>? = null,
+    val activeTrackIds: List<Int>? = null,
 )
 
 /**
@@ -38,6 +42,7 @@ internal data class CastStatus(
  */
 internal data class SessionSighting(val idleReason: String?)
 
+@Suppress("LongParameterList") // The receiver LOAD carries media metadata, transport state and optional text tracks.
 internal interface CastChannel : AutoCloseable {
     val status: CastStatus?
     val error: String?
@@ -56,14 +61,28 @@ internal interface CastChannel : AutoCloseable {
      * the media element replaces it with the buffered end again, so the TV's own scrub bar
      * stays short; only an HLS stream with a real playlist fixes that (heyarr-core#908).
      */
-    fun load(url: String, title: String, autoplay: Boolean = true, start: Double = 0.0, duration: Double? = null)
+    fun load(
+        url: String,
+        title: String,
+        autoplay: Boolean = true,
+        start: Double = 0.0,
+        duration: Double? = null,
+        captions: List<CastCaption> = emptyList(),
+    )
 
     /**
      * LOADs [url], an fMP4 HLS playlist (ADR-0126), from film time [start]. The receiver reads
      * the whole film's duration from the playlist and seeks it natively.
      */
-    fun loadPresentation(url: String, title: String, autoplay: Boolean = true, start: Double = 0.0)
+    fun loadPresentation(
+        url: String,
+        title: String,
+        autoplay: Boolean = true,
+        start: Double = 0.0,
+        captions: List<CastCaption> = emptyList(),
+    )
     fun control(action: String, seconds: Double? = null)
+    fun selectTracks(ids: List<Int>)
     fun refresh(): CastStatus?
 
     /**
@@ -147,18 +166,31 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         }.onFailure { close() }.getOrThrow()
     }
 
-    override fun load(url: String, title: String, autoplay: Boolean, start: Double, duration: Double?) {
+    override fun load(
+        url: String,
+        title: String,
+        autoplay: Boolean,
+        start: Double,
+        duration: Double?,
+        captions: List<CastCaption>,
+    ) {
         val media = media(url, "video/mp4", title)
         duration?.takeIf { it.isFinite() && it > 0 }?.let { media["duration"] = it }
-        loadMedia(media, autoplay, start)
+        loadMedia(media, autoplay, start, captions)
     }
 
-    override fun loadPresentation(url: String, title: String, autoplay: Boolean, start: Double) {
+    override fun loadPresentation(
+        url: String,
+        title: String,
+        autoplay: Boolean,
+        start: Double,
+        captions: List<CastCaption>,
+    ) {
         val media = media(url, HlsPresentation.CAST_CONTENT_TYPE, title)
         // Without these the receiver takes the segments for MPEG-TS and fails on the first.
         media["hlsSegmentFormat"] = HlsPresentation.CAST_SEGMENT_FORMAT
         media["hlsVideoSegmentFormat"] = HlsPresentation.CAST_SEGMENT_FORMAT
-        loadMedia(media, autoplay, start)
+        loadMedia(media, autoplay, start, captions)
     }
 
     private fun media(url: String, contentType: String, title: String) = mutableMapOf<String, Any?>(
@@ -168,7 +200,12 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         "metadata" to mapOf("metadataType" to 0, "title" to title),
     )
 
-    private fun loadMedia(media: Map<String, Any?>, autoplay: Boolean, start: Double) {
+    private fun loadMedia(
+        media: MutableMap<String, Any?>,
+        autoplay: Boolean,
+        start: Double,
+        captions: List<CastCaption>,
+    ) {
         forgetSightings()
         if (transportId == null) {
             adopt(request(RECEIVER_NS, RECEIVER, mapOf("type" to "LAUNCH", "appId" to DEFAULT_RECEIVER)))
@@ -178,7 +215,16 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         val reply = request(
             MEDIA,
             requireNotNull(transportId),
-            mapOf("type" to "LOAD", "media" to media, "autoplay" to autoplay, "currentTime" to start),
+            buildMap {
+                put("type", "LOAD")
+                put("media", media)
+                put("autoplay", autoplay)
+                put("currentTime", start)
+                if (captions.isNotEmpty()) {
+                    media["tracks"] = captions.mapIndexed { i, track -> track.metadata(i + 1) }
+                    put("activeTrackIds", captions.mapIndexedNotNull { i, track -> (i + 1).takeIf { track.selected } })
+                }
+            },
         )
         requireResponse(reply, "MEDIA_STATUS")
         check(status?.state != "IDLE" || status?.error == null) { "Cast receiver failed to play the media" }
@@ -197,6 +243,19 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
         if (type == "SEEK") args["currentTime"] = requireNotNull(seconds)
         val reply = request(MEDIA, requireNotNull(transportId), args)
         requireResponse(reply, "MEDIA_STATUS")
+    }
+
+    override fun selectTracks(ids: List<Int>) {
+        val session = requireNotNull(status?.mediaSessionId) { "Cast receiver has no active media session" }
+        request(
+            MEDIA,
+            requireNotNull(transportId),
+            mapOf(
+                "type" to "EDIT_TRACKS_INFO",
+                "mediaSessionId" to session,
+                "activeTrackIds" to ids,
+            ),
+        )
     }
 
     override fun refresh(): CastStatus? {
@@ -394,6 +453,19 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
                 // not a failure: it must neither fail that LOAD nor show as an error.
                 JsonScan.stringField(first, "idleReason")?.takeIf { it == "ERROR" },
                 JsonScan.stringField(first, "idleReason"),
+                media?.let { JsonScan.arrayOf(it, listOf("tracks")) }
+                    ?.let { JsonScan.objectsOf(it, emptyList()).mapNotNull(::textTrack) },
+                JsonScan.arrayOf(first, listOf("activeTrackIds"))?.removeSurrounding("[", "]")
+                    ?.split(',')?.mapNotNull { it.trim().toIntOrNull() },
+            )
+        }
+
+        private fun textTrack(json: String): CastTextTrack? {
+            val id = JsonScan.longField(json, "trackId")?.toInt()
+            if (id == null || JsonScan.stringField(json, "type") != "TEXT") return null
+            return CastTextTrack(
+                id,
+                JsonScan.stringField(json, "name") ?: JsonScan.stringField(json, "language") ?: "Subtitles $id",
             )
         }
 
@@ -408,7 +480,12 @@ internal class CastConnection(private val device: CastDevice) : CastChannel {
             if (next?.mediaSessionId == null || next.mediaSessionId != previous?.mediaSessionId) {
                 next
             } else {
-                next.copy(duration = next.duration ?: previous.duration, title = next.title ?: previous.title)
+                next.copy(
+                    duration = next.duration ?: previous.duration,
+                    title = next.title ?: previous.title,
+                    textTracks = next.textTracks ?: previous.textTracks,
+                    activeTrackIds = next.activeTrackIds ?: previous.activeTrackIds,
+                )
             }
 
         internal fun requireResponse(body: String, expected: String) {

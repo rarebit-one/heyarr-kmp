@@ -1,6 +1,7 @@
 package one.rarebit.heyarr.desktop
 
 import one.rarebit.heyarr.core.net.JsonScan
+import one.rarebit.heyarr.desktop.cast.CastCaption
 import one.rarebit.heyarr.desktop.cast.CastConnection
 import one.rarebit.heyarr.desktop.cast.CastDevice
 import one.rarebit.heyarr.desktop.cast.CastFrame
@@ -277,7 +278,14 @@ class CastConnectionIntegrationTest {
         Receiver().use { receiver ->
             CastConnection(receiver.device).use { cast ->
                 val load = CompletableFuture.runAsync {
-                    cast.loadPresentation("http://127.0.0.1/media/cap/index.m3u8", "Example", start = 1860.0)
+                    cast.loadPresentation(
+                        "http://127.0.0.1/media/cap/index.m3u8",
+                        "Example",
+                        start = 1860.0,
+                        captions = listOf(
+                            CastCaption("http://127.0.0.1/media/cap/captions/0.vtt", "English", "en", true),
+                        ),
+                    )
                 }
                 val request = receiver.take("LOAD")
                 val media = JsonScan.objectAt(request.payload, "media")!!
@@ -287,9 +295,20 @@ class CastConnectionIntegrationTest {
                 assertEquals("fmp4", JsonScan.stringField(media, "hlsVideoSegmentFormat"))
                 assertEquals("BUFFERED", JsonScan.stringField(media, "streamType"))
                 assertNull(JsonScan.doubleField(media, "duration"))
+                val track = JsonScan.objectsOf(media, listOf("tracks")).single()
+                assertEquals("text/vtt", JsonScan.stringField(track, "trackContentType"))
+                assertEquals("TEXT", JsonScan.stringField(track, "type"))
+                assertEquals("[1]", JsonScan.arrayOf(request.payload, listOf("activeTrackIds")))
                 assertEquals(1860.0, JsonScan.doubleField(request.payload, "currentTime"))
                 receiver.reply(request, mediaStatus(8))
                 load.get(4, TimeUnit.SECONDS)
+
+                val disable = CompletableFuture.runAsync { cast.selectTracks(emptyList()) }
+                val edit = receiver.take("EDIT_TRACKS_INFO")
+                assertEquals("[]", JsonScan.arrayOf(edit.payload, listOf("activeTrackIds")))
+                assertEquals(8, JsonScan.longField(edit.payload, "mediaSessionId")?.toInt())
+                receiver.reply(edit, mediaStatus(8))
+                disable.get(4, TimeUnit.SECONDS)
 
                 // A live stream is still plain progressive MP4, with no HLS fields.
                 val live = CompletableFuture.runAsync { cast.load("http://127.0.0.1/media/live", "Example") }

@@ -12,10 +12,12 @@ import one.rarebit.heyarr.core.mcp.RendererListResult
 import one.rarebit.heyarr.core.playback.clockLabel
 import one.rarebit.heyarr.core.state.Toast
 import one.rarebit.heyarr.core.state.ToastAction
+import one.rarebit.heyarr.desktop.cast.CastCaption
 import one.rarebit.heyarr.desktop.cast.CastDevice
 import one.rarebit.heyarr.desktop.cast.CastRecovery
 import one.rarebit.heyarr.desktop.heyarr.CastResult
 import one.rarebit.heyarr.desktop.heyarr.HeyarrApi
+import one.rarebit.heyarr.desktop.library.Episode
 import one.rarebit.heyarr.desktop.state.AppSession
 import one.rarebit.heyarr.ui.components.FilterChip
 import one.rarebit.heyarr.ui.components.HeyarrIcons
@@ -105,16 +107,31 @@ internal fun castRecoveryText(r: CastRecovery): Pair<String, String> = when (r.k
         "${r.device} lost the stream" to "Resuming at ${clockLabel(r.position)}."
 }
 
+@Suppress("LongParameterList") // Detail and player provide the same title, sidecars and completion callback.
 internal fun castLocally(
     session: AppSession,
     device: CastDevice,
     assetId: String,
     title: String = "Media",
+    episodes: List<Episode> = session.playback.queue,
     afterSuccess: () -> Unit = {},
 ) {
     session.launch {
         val api = session.api ?: return@launch
-        session.io { session.cast.play(device, api, assetId, title) }.fold(
+        val player = session.playback.player.state.takeIf { session.playback.loadedAssetId == assetId }
+        val sidecars = episodes.firstOrNull { it.asset.id == assetId || it.copies.any { copy -> copy.id == assetId } }
+            ?.subtitles.orEmpty()
+        val captions = sidecars.mapNotNull { CastCaption.from(it, api.baseUrl, session::mediaUrl) }
+        val selected = player?.subtitles?.firstOrNull { it.selected }
+        val active = if (player == null) {
+            captions.firstOrNull()
+        } else {
+            captions.firstOrNull { it.url == selected?.externalFilename }
+        }
+        val tracks = captions.map { it.copy(selected = it == active) }
+        session.io {
+            session.cast.play(device, api, assetId, title, player?.position ?: 0.0, tracks)
+        }.fold(
             onSuccess = {
                 // The receiver owns the film now. A paused local player kept its own
                 // stream open on the node, and resuming or reopening it started a second
