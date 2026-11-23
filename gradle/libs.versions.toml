@@ -7,7 +7,7 @@ kotlin = "2.4.21"
 # AGP 9: built-in Kotlin (no kotlin-android plugin) and, for the KMP library modules, the
 # Android-KMP library plugin (com.android.kotlin.multiplatform.library) — AGP 9 refuses
 # com.android.library beside kotlin.multiplatform. Needs Gradle >= 9.1 and build-tools 36.
-agp = "9.5.1"
+agp = "9.5.2"
 # Generates the open-source licences list (res/raw/aboutlibraries.json) for the Android app.
 # Moves with AGP: 13.2.1 was the newest line that wired its output into resources on AGP 8.7,
 # and it no longer does on AGP 9 (R.raw.aboutlibraries goes missing); 15.x needs AGP >= 8.13.
@@ -20,14 +20,14 @@ void-which-binds-client = "0.12.0"
 cryptography = "0.6.0"
 coroutines = "1.11.0"
 serialization = "1.13.0"
-compose-bom = "2026.09.00"
-camerax = "1.4.2"
+compose-bom = "2026.11.01"
+camerax = "1.7.0"
 media3 = "1.4.1"
 # Google Cast (heyarr-kmp#250): the sender framework (sessions, the Default Media Receiver, its
 # notification, lock-screen and volume-key controls) and the MediaRouteButton it plugs into.
 # 22.3.x, not 23.0.0: a fresh major line of the framework, unproven against these receivers.
-play-services-cast = "22.3.1"
-mediarouter = "1.8.1"
+play-services-cast = "23.0.0"
+mediarouter = "1.9.0"
 readium = "3.4.0"
 # The PDF reader (#162): Jetpack's PdfViewerFragment, which replaced Readium's PDFium adapter.
 # That adapter's natives were 4 KB-aligned, and every Readium with aligned ones pulls its
